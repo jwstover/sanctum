@@ -26,6 +26,8 @@ defmodule SanctumWeb.Router do
   scope "/", SanctumWeb do
     pipe_through :browser
 
+    live "/", GameLive.Index, :index
+
     ash_authentication_live_session :authenticated_routes do
       # in each liveview, add one of the following at the top of the module:
       #
@@ -43,7 +45,6 @@ defmodule SanctumWeb.Router do
   scope "/", SanctumWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
     auth_routes AuthController, Sanctum.Accounts.User, path: "/auth"
     sign_out_route AuthController
 

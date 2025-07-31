@@ -28,7 +28,7 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
         "default-src 'self' 'unsafe-eval' 'unsafe-inline' 127.0.0.1:4007;" <>
           "connect-src ws://#{host}:*;" <>
           "img-src 'self' blob: data:;" <>
-          "font-src data:;"
+          "font-src 'self' data:;"
     end
   end
 end
