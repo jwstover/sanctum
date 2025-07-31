@@ -1,0 +1,40 @@
+defmodule Sanctum.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
+  @moduledoc false
+
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      SanctumWeb.Telemetry,
+      Sanctum.Repo,
+      {DNSCluster, query: Application.get_env(:sanctum, :dns_cluster_query) || :ignore},
+      {Oban,
+       AshOban.config(
+         Application.fetch_env!(:sanctum, :ash_domains),
+         Application.fetch_env!(:sanctum, Oban)
+       )},
+      {Phoenix.PubSub, name: Sanctum.PubSub},
+      # Start a worker by calling: Sanctum.Worker.start_link(arg)
+      # {Sanctum.Worker, arg},
+      # Start to serve requests, typically the last entry
+      SanctumWeb.Endpoint,
+      {AshAuthentication.Supervisor, [otp_app: :sanctum]}
+    ]
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: Sanctum.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    SanctumWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
