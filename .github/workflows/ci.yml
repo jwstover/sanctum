@@ -1,0 +1,187 @@
+name: Elixir CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  dialyzer:
+    name: Run Dialyzer
+    runs-on: ubuntu-latest
+    if: false
+    env:
+      MIX_ENV: dev
+    strategy:
+      matrix:
+        elixir: ["1.16"]
+        otp: ["26"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir Project
+        uses: ./.github/actions/elixir-setup
+        id: beam
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+          build-app: false
+
+      # Don't cache PLTs based on mix.lock hash, as Dialyzer can incrementally update even old ones
+      # Cache key based on Elixir & Erlang version (also useful when running in matrix)
+      - name: Restore PLT cache
+        uses: actions/cache@v4
+        id: plt_cache
+        with:
+          key: plt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/*.ex') }}
+          restore-keys: |
+            plt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/*.ex') }}
+            plt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}-
+            plt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-
+            plt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-
+          path: priv/plts
+
+      # Create PLTs if no cache was found.
+      # Always rebuild PLT when a job is retried
+      # (If they were cached at all, they'll be updated when we run mix dialyzer with no flags.)
+      - name: Create PLTs
+        if: steps.plt_cache.outputs.cache-hit != 'true' || github.run_attempt != '1'
+        run: mix dialyzer --plt
+
+      - name: Run Dialyzer
+        run: mix dialyzer --format github
+
+  lint:
+    name: Formatting, Credo, and Unused Deps
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        elixir: ["1.16"]
+        otp: ["26"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir Project
+        uses: ./.github/actions/elixir-setup
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+          build-app: false
+
+      - name: Check for unused deps
+        run: mix deps.unlock --check-unused
+      - name: Check code formatting
+        run: mix format --check-formatted
+        # Check formatting even if there were unused deps so that
+        # we give devs as much feedback as possible & save some time.
+        if: always()
+      - name: Run Credo
+        run: mix credo suggest --min-priority=normal
+        # allow credo to pass if only design issues are found. See -> https://hexdocs.pm/credo/exit_statuses.html
+        # Run Credo even if formatting or the unused deps check failed
+        if: always()
+      - name: Check for security vulnerabilities in Phoenix project
+        run: mix sobelow --config --exit
+        if: always()
+
+
+  build_and_test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: test
+    strategy:
+      matrix:
+        elixir: ["1.16"]
+        otp: ["26"]
+    services:
+      postgres:
+        image: postgres:16
+        ports: ['5432:5432']
+        env:
+          POSTGRES_PASSWORD: "postgres"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir Project
+        uses: ./.github/actions/elixir-setup
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+          build-flags: --all-warnings --warnings-as-errors
+
+      - name: Run Tests
+        run: mix coveralls.json --warnings-as-errors
+        if: always()
+
+
+  changelog:
+    name: Changelog
+    needs:
+      - lint
+      - build_and_test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    outputs:
+      skipped: ${{ steps.changelog.outputs.skipped }}
+      tag: ${{ steps.changelog.outputs.tag }}
+      clean_changelog: ${{ steps.changelog.outputs.clean_changelog }}
+      version: ${{ steps.changelog.outputs.version }}
+
+    env:
+      PR_BRANCH: release-ci-${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Branch
+        run: |
+          git checkout -b ${{ env.PR_BRANCH }}
+
+      - name: Create Changelog
+        uses: TriPSs/conventional-changelog-action@v5
+        id: changelog
+        with:
+          github-token: ${{ secrets.github_token }}
+          git-user-name: "github-actions[bot]"
+          git-user-email: "github-actions[bot]@users.noreply.github.com"
+          git-branch: ${{ env.PR_BRANCH }}
+          skip-git-pull: true
+          version-file: mix.exs
+          create-summary: true
+
+      - name: Create Changelog PR
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          gh pr create --base main --head ${{ env.PR_BRANCH }} --title 'chore(release): ${{ steps.changelog.outputs.tag }} [skip-ci]' --body '${{ steps.changelog.outputs.clean_changelog }}'
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+
+      - name: Merge Changelog PR
+        if: steps.changelog.outputs.skipped == 'false'
+        run: |
+          gh pr merge --merge --delete-branch ${{ env.PR_BRANCH }}
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}

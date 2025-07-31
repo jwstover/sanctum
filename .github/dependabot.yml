@@ -1,0 +1,16 @@
+version: 2
+updates:
+- package-ecosystem: mix
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "12:00"
+  groups:
+    elixir:
+      applies-to: version-updates
+      patterns:
+        - "*"
+      update-types:
+        - "minor"
+        - "patch"
+  open-pull-requests-limit: 10
