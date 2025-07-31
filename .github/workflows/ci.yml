@@ -93,7 +93,7 @@ jobs:
         # Run Credo even if formatting or the unused deps check failed
         if: always()
       - name: Check for security vulnerabilities in Phoenix project
-        run: mix sobelow
+        run: mix sobelow --config --exit
         if: always()
 
 

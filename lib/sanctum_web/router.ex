@@ -6,16 +6,20 @@ defmodule SanctumWeb.Router do
 
   import AshAuthentication.Plug.Helpers
 
+  @host :sanctum
+        |> Application.compile_env!(SanctumWeb.Endpoint)
+        |> Keyword.fetch!(:url)
+        |> Keyword.fetch!(:host)
+
   @content_security_policy (case Mix.env() do
                               :prod ->
                                 "default-src 'self';connect-src wss://#{@host};img-src 'self' blob:;"
 
                               _ ->
-                                "default-src 'self' 'unsafe-eval' 'unsafe-inline';" <>
+                                "default-src 'self' 'unsafe-eval' 'unsafe-inline' 127.0.0.1:4007;" <>
                                   "connect-src ws://#{@host}:*;" <>
-                                  "img-src 'self' blob: data:;"
-
-                                "font-src data:;"
+                                  "img-src 'self' blob: data:;" <>
+                                  "font-src data:;"
                             end)
 
   pipeline :browser do
