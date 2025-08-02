@@ -94,7 +94,11 @@ defmodule SanctumWeb.CoreComponents do
   slot :inner_block, required: true
 
   def button(%{rest: rest} = assigns) do
-    variants = %{"primary" => "btn-primary", nil => "btn-primary btn-soft"}
+    variants = %{
+      "primary" =>
+        "bg-primary text-primary-content border-2 border-r-4 border-b-4 border-black shadow-[3px_3px_0px_0px_theme(colors.black)] hover:shadow-[2px_2px_0px_0px_theme(colors.black)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-75 font-elektra font-bold uppercase tracking-wide transform hover:scale-[1.02] active:scale-100",
+      nil => "btn-primary btn-soft"
+    }
 
     assigns =
       assign_new(assigns, :class, fn ->

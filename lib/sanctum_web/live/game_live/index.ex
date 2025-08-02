@@ -10,10 +10,7 @@ defmodule SanctumWeb.GameLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <h1 class="font-metropolis font-bold">Bold Metropolis heading</h1>
-      <p class="font-exo2 font-light">Light Exo2 text</p>
-      <div class="font-komika">Comic-style Komika text</div>
-      <span class="font-elektra">Elektra Medium Pro text</span>
+      <.button variant="primary">New Game</.button>
     </Layouts.app>
     """
   end
