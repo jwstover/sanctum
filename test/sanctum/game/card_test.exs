@@ -303,7 +303,7 @@ defmodule Sanctum.Game.CardTest do
 
       # Search with no results
       empty_results = Card |> Ash.Query.for_read(:search, %{query: "NonExistent"}) |> Ash.read!()
-      assert empty_results = []
+      assert empty_results == []
     end
   end
 
