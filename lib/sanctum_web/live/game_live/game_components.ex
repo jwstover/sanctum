@@ -23,7 +23,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
       )
 
     ~H"""
-    <div class={[@aspect, "max-h-full p-1 bg-black shadow shadow-black"]}>
+    <div class={[@aspect, "game-card max-h-full p-1 bg-black shadow shadow-black"]}>
       <figure class="rounded-[4.5%] overflow-hidden">
         <img class="object-fit" src={@src} />
       </figure>

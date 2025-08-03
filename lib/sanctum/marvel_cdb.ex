@@ -12,7 +12,6 @@ defmodule Sanctum.MarvelCdb do
 
   def load_card(card_id) when is_binary(card_id) do
     "#{@base_url}/card/#{card_id}"
-    |> IO.inspect(label: "================== \n")
     |> Req.get()
     |> handle_response()
     |> case do
@@ -80,7 +79,7 @@ defmodule Sanctum.MarvelCdb do
       pack_code: mcdb_card["pack_code"],
       pack_name: mcdb_card["pack_name"],
       real_name: mcdb_card["real_name"],
-      
+
       # Card classification
       card_type: map_card_type(mcdb_card["type_code"]),
       type_code: mcdb_card["type_code"],
@@ -90,21 +89,23 @@ defmodule Sanctum.MarvelCdb do
       card_set_code: mcdb_card["card_set_code"],
       card_set_name: mcdb_card["card_set_name"],
       card_set_type_name_code: mcdb_card["card_set_type_name_code"],
-      
+
       # Basic game attributes
       cost: mcdb_card["cost"],
       text: mcdb_card["text"],
       real_text: mcdb_card["real_text"],
       flavor_text: mcdb_card["flavor"],
-      set_code: mcdb_card["pack_code"], # Using pack_code as set_code
-      card_number: mcdb_card["code"], # Using code as card_number
-      
+      # Using pack_code as set_code
+      set_code: mcdb_card["pack_code"],
+      # Using code as card_number
+      card_number: mcdb_card["code"],
+
       # Positioning and metadata
       position: mcdb_card["position"],
       set_position: mcdb_card["set_position"],
       quantity: mcdb_card["quantity"] || 1,
       unique: mcdb_card["is_unique"] || false,
-      
+
       # Combat stats
       attack: mcdb_card["attack"],
       thwart: mcdb_card["thwart"],
@@ -112,16 +113,16 @@ defmodule Sanctum.MarvelCdb do
       hit_points: mcdb_card["health"],
       scheme: mcdb_card["scheme"],
       recovery: mcdb_card["recover"],
-      
+
       # Traits and keywords
       traits: parse_traits(mcdb_card["real_traits"] || mcdb_card["traits"]),
-      
+
       # Game mechanics
       stage: mcdb_card["stage"],
       boost: mcdb_card["boost"],
       cost_per_hero: mcdb_card["cost_per_hero"] || false,
       health_per_hero: mcdb_card["health_per_hero"] || false,
-      
+
       # Star ratings
       attack_star: mcdb_card["attack_star"] || false,
       thwart_star: mcdb_card["thwart_star"] || false,
@@ -132,7 +133,7 @@ defmodule Sanctum.MarvelCdb do
       boost_star: mcdb_card["boost_star"] || false,
       threat_star: mcdb_card["threat_star"] || false,
       escalation_threat_star: mcdb_card["escalation_threat_star"] || false,
-      
+
       # Threat system
       threat: mcdb_card["threat"],
       threat_fixed: mcdb_card["threat_fixed"] || false,
@@ -140,12 +141,12 @@ defmodule Sanctum.MarvelCdb do
       base_threat_fixed: mcdb_card["base_threat_fixed"] || false,
       escalation_threat: mcdb_card["escalation_threat"],
       escalation_threat_fixed: mcdb_card["escalation_threat_fixed"] || false,
-      
+
       # Card state flags
       hidden: mcdb_card["hidden"] || false,
       permanent: mcdb_card["permanent"] || false,
       double_sided: mcdb_card["double_sided"] || false,
-      
+
       # External references
       octgn_id: mcdb_card["octgn_id"],
       url: mcdb_card["url"],
@@ -173,12 +174,14 @@ defmodule Sanctum.MarvelCdb do
       "attachment" -> :attachment
       "environment" -> :environment
       "obligation" -> :obligation
-      _ -> :resource # Default fallback
+      # Default fallback
+      _ -> :resource
     end
   end
 
   defp parse_traits(nil), do: []
   defp parse_traits(""), do: []
+
   defp parse_traits(traits_string) when is_binary(traits_string) do
     traits_string
     |> String.split(".")

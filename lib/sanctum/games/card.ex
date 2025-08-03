@@ -15,26 +15,92 @@ defmodule Sanctum.Games.Card do
 
     create :create do
       primary? true
+
       accept [
-        :name, :card_type, :cost, :text, :flavor_text, :set_code, :card_number,
-        :quantity, :unique, :aspect, :attack, :thwart, :defense, :hit_points,
-        :scheme, :recovery, :resource_type, :resource_count, :traits, :keywords,
-        :stage, :boost_icons, :hand_size, :base_threat, :escalation_threat,
-        :acceleration_icon, :consequential_damage,
+        :name,
+        :card_type,
+        :cost,
+        :text,
+        :flavor_text,
+        :set_code,
+        :card_number,
+        :quantity,
+        :unique,
+        :aspect,
+        :attack,
+        :thwart,
+        :defense,
+        :hit_points,
+        :scheme,
+        :recovery,
+        :resource_type,
+        :resource_count,
+        :traits,
+        :keywords,
+        :stage,
+        :boost_icons,
+        :hand_size,
+        :base_threat,
+        :escalation_threat,
+        :acceleration_icon,
+        :consequential_damage,
         # MarvelCDB fields
-        :code, :pack_code, :pack_name, :real_name, :subname,
-        :type_code, :type_name, :faction_code, :faction_name,
-        :card_set_code, :card_set_name, :card_set_type_name_code,
-        :position, :set_position, :linked_to_code, :linked_to_name, :deck_limit,
-        :resource_energy, :resource_physical, :resource_mental, :resource_wild,
-        :real_text, :boost, :cost_per_hero, :health_per_hero,
-        :thwart_cost, :attack_cost, :defense_cost, :recover_cost,
-        :attack_star, :thwart_star, :defense_star, :health_star, :recover_star,
-        :scheme_star, :boost_star, :threat_star, :escalation_threat_star,
-        :threat, :threat_fixed, :base_threat_fixed, :escalation_threat_fixed,
-        :hidden, :permanent, :double_sided,
-        :octgn_id, :url, :imagesrc, :illustrator, :errata, :spoiler, :meta,
-        :back_text, :back_flavor, :back_name, :backimagesrc
+        :code,
+        :pack_code,
+        :pack_name,
+        :real_name,
+        :subname,
+        :type_code,
+        :type_name,
+        :faction_code,
+        :faction_name,
+        :card_set_code,
+        :card_set_name,
+        :card_set_type_name_code,
+        :position,
+        :set_position,
+        :linked_to_code,
+        :linked_to_name,
+        :deck_limit,
+        :resource_energy,
+        :resource_physical,
+        :resource_mental,
+        :resource_wild,
+        :real_text,
+        :boost,
+        :cost_per_hero,
+        :health_per_hero,
+        :thwart_cost,
+        :attack_cost,
+        :defense_cost,
+        :recover_cost,
+        :attack_star,
+        :thwart_star,
+        :defense_star,
+        :health_star,
+        :recover_star,
+        :scheme_star,
+        :boost_star,
+        :threat_star,
+        :escalation_threat_star,
+        :threat,
+        :threat_fixed,
+        :base_threat_fixed,
+        :escalation_threat_fixed,
+        :hidden,
+        :permanent,
+        :double_sided,
+        :octgn_id,
+        :url,
+        :imagesrc,
+        :illustrator,
+        :errata,
+        :spoiler,
+        :meta,
+        :back_text,
+        :back_flavor,
+        :back_name,
+        :backimagesrc
       ]
     end
 
@@ -85,26 +151,92 @@ defmodule Sanctum.Games.Card do
 
     update :update do
       primary? true
+
       accept [
-        :name, :card_type, :cost, :text, :flavor_text, :set_code, :card_number,
-        :quantity, :unique, :aspect, :attack, :thwart, :defense, :hit_points,
-        :scheme, :recovery, :resource_type, :resource_count, :traits, :keywords,
-        :stage, :boost_icons, :hand_size, :base_threat, :escalation_threat,
-        :acceleration_icon, :consequential_damage,
+        :name,
+        :card_type,
+        :cost,
+        :text,
+        :flavor_text,
+        :set_code,
+        :card_number,
+        :quantity,
+        :unique,
+        :aspect,
+        :attack,
+        :thwart,
+        :defense,
+        :hit_points,
+        :scheme,
+        :recovery,
+        :resource_type,
+        :resource_count,
+        :traits,
+        :keywords,
+        :stage,
+        :boost_icons,
+        :hand_size,
+        :base_threat,
+        :escalation_threat,
+        :acceleration_icon,
+        :consequential_damage,
         # MarvelCDB fields
-        :code, :pack_code, :pack_name, :real_name, :subname,
-        :type_code, :type_name, :faction_code, :faction_name,
-        :card_set_code, :card_set_name, :card_set_type_name_code,
-        :position, :set_position, :linked_to_code, :linked_to_name, :deck_limit,
-        :resource_energy, :resource_physical, :resource_mental, :resource_wild,
-        :real_text, :boost, :cost_per_hero, :health_per_hero,
-        :thwart_cost, :attack_cost, :defense_cost, :recover_cost,
-        :attack_star, :thwart_star, :defense_star, :health_star, :recover_star,
-        :scheme_star, :boost_star, :threat_star, :escalation_threat_star,
-        :threat, :threat_fixed, :base_threat_fixed, :escalation_threat_fixed,
-        :hidden, :permanent, :double_sided,
-        :octgn_id, :url, :imagesrc, :illustrator, :errata, :spoiler, :meta,
-        :back_text, :back_flavor, :back_name, :backimagesrc
+        :code,
+        :pack_code,
+        :pack_name,
+        :real_name,
+        :subname,
+        :type_code,
+        :type_name,
+        :faction_code,
+        :faction_name,
+        :card_set_code,
+        :card_set_name,
+        :card_set_type_name_code,
+        :position,
+        :set_position,
+        :linked_to_code,
+        :linked_to_name,
+        :deck_limit,
+        :resource_energy,
+        :resource_physical,
+        :resource_mental,
+        :resource_wild,
+        :real_text,
+        :boost,
+        :cost_per_hero,
+        :health_per_hero,
+        :thwart_cost,
+        :attack_cost,
+        :defense_cost,
+        :recover_cost,
+        :attack_star,
+        :thwart_star,
+        :defense_star,
+        :health_star,
+        :recover_star,
+        :scheme_star,
+        :boost_star,
+        :threat_star,
+        :escalation_threat_star,
+        :threat,
+        :threat_fixed,
+        :base_threat_fixed,
+        :escalation_threat_fixed,
+        :hidden,
+        :permanent,
+        :double_sided,
+        :octgn_id,
+        :url,
+        :imagesrc,
+        :illustrator,
+        :errata,
+        :spoiler,
+        :meta,
+        :back_text,
+        :back_flavor,
+        :back_name,
+        :backimagesrc
       ]
     end
   end
@@ -150,25 +282,24 @@ defmodule Sanctum.Games.Card do
     attribute :card_type, :atom do
       allow_nil? false
       public? true
-      constraints [
-        one_of: [
-          :hero,
-          :alter_ego,
-          :villain,
-          :main_scheme,
-          :side_scheme,
-          :ally,
-          :event,
-          :resource,
-          :upgrade,
-          :support,
-          :minion,
-          :treachery,
-          :attachment,
-          :environment,
-          :obligation
-        ]
-      ]
+
+      constraints one_of: [
+                    :hero,
+                    :alter_ego,
+                    :villain,
+                    :main_scheme,
+                    :side_scheme,
+                    :ally,
+                    :event,
+                    :resource,
+                    :upgrade,
+                    :support,
+                    :minion,
+                    :treachery,
+                    :attachment,
+                    :environment,
+                    :obligation
+                  ]
     end
 
     # MarvelCDB Card Classification
@@ -206,7 +337,7 @@ defmodule Sanctum.Games.Card do
 
     attribute :cost, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :text, :string do
@@ -253,14 +384,14 @@ defmodule Sanctum.Games.Card do
       allow_nil? false
       public? true
       default 1
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :quantity, :integer do
       allow_nil? false
       public? true
       default 1
-      constraints [min: 1]
+      constraints min: 1
     end
 
     attribute :unique, :boolean do
@@ -271,39 +402,37 @@ defmodule Sanctum.Games.Card do
 
     attribute :aspect, :atom do
       public? true
-      constraints [
-        one_of: [:justice, :leadership, :aggression, :protection, :basic]
-      ]
+      constraints one_of: [:justice, :leadership, :aggression, :protection, :basic]
     end
 
     attribute :attack, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :thwart, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :defense, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :hit_points, :integer do
       public? true
-      constraints [min: 1]
+      constraints min: 1
     end
 
     attribute :scheme, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :recovery, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     # MarvelCDB Enhanced Resource System
@@ -311,43 +440,41 @@ defmodule Sanctum.Games.Card do
       allow_nil? false
       public? true
       default 0
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :resource_physical, :integer do
       allow_nil? false
       public? true
       default 0
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :resource_mental, :integer do
       allow_nil? false
       public? true
       default 0
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :resource_wild, :integer do
       allow_nil? false
       public? true
       default 0
-      constraints [min: 0]
+      constraints min: 0
     end
 
     # Legacy resource fields (keep for backward compatibility)
     attribute :resource_type, :atom do
       public? true
-      constraints [
-        one_of: [:energy, :mental, :physical, :wild]
-      ]
+      constraints one_of: [:energy, :mental, :physical, :wild]
     end
 
     attribute :resource_count, :integer do
       allow_nil? false
       public? true
       default 0
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :traits, {:array, :string} do
@@ -364,29 +491,29 @@ defmodule Sanctum.Games.Card do
 
     attribute :stage, :integer do
       public? true
-      constraints [min: 1]
+      constraints min: 1
     end
 
     attribute :boost_icons, :integer do
       allow_nil? false
       public? true
       default 0
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :hand_size, :integer do
       public? true
-      constraints [min: 1]
+      constraints min: 1
     end
 
     attribute :base_threat, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :escalation_threat, :integer do
       public? true
-      constraints [min: 1]
+      constraints min: 1
     end
 
     attribute :acceleration_icon, :boolean do
@@ -397,13 +524,13 @@ defmodule Sanctum.Games.Card do
 
     attribute :consequential_damage, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     # MarvelCDB Game Mechanics Fields
     attribute :boost, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :cost_per_hero, :boolean do
@@ -420,22 +547,22 @@ defmodule Sanctum.Games.Card do
 
     attribute :thwart_cost, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :attack_cost, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :defense_cost, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :recover_cost, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     # MarvelCDB Star Rating System
@@ -496,7 +623,7 @@ defmodule Sanctum.Games.Card do
     # MarvelCDB Enhanced Threat System
     attribute :threat, :integer do
       public? true
-      constraints [min: 0]
+      constraints min: 0
     end
 
     attribute :threat_fixed, :boolean do

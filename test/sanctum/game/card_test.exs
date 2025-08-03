@@ -1,5 +1,7 @@
-defmodule Sanctum.Games.CardTest do
-  use Sanctum.DataCase
+defmodule Sanctum.Game.CardTest do
+  @moduledoc false
+
+  use Sanctum.DataCase, async: true
 
   alias Sanctum.Games.Card
 
@@ -20,7 +22,12 @@ defmodule Sanctum.Games.CardTest do
         recovery: 3,
         hand_size: 5,
         traits: ["Avenger", "Spider"],
-        keywords: ["Web-Slinger"]
+        keywords: ["Web-Slinger"],
+        type_code: "hero",
+        type_name: "Hero",
+        faction_code: "hero",
+        faction_name: "Hero",
+        position: 1
       }
 
       assert {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
@@ -43,7 +50,12 @@ defmodule Sanctum.Games.CardTest do
         name: "Basic Resource",
         card_type: :resource,
         set_code: "core",
-        card_number: "002"
+        card_number: "002",
+        type_code: "resource",
+        type_name: "Resource",
+        faction_code: "basic",
+        faction_name: "Basic",
+        position: 2
       }
 
       assert {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
@@ -75,7 +87,12 @@ defmodule Sanctum.Games.CardTest do
         name: "Invalid Card",
         card_type: :invalid_type,
         set_code: "core",
-        card_number: "003"
+        card_number: "003",
+        type_code: "ally",
+        type_name: "Ally",
+        faction_code: "basic",
+        faction_name: "Basic",
+        position: 3
       }
 
       assert {:error, error} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
@@ -91,7 +108,12 @@ defmodule Sanctum.Games.CardTest do
         card_type: :ally,
         aspect: :invalid_aspect,
         set_code: "core",
-        card_number: "004"
+        card_number: "004",
+        type_code: "ally",
+        type_name: "Ally",
+        faction_code: "basic",
+        faction_name: "Basic",
+        position: 4
       }
 
       assert {:error, error} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
@@ -107,7 +129,12 @@ defmodule Sanctum.Games.CardTest do
         card_type: :resource,
         resource_type: :invalid_resource,
         set_code: "core",
-        card_number: "005"
+        card_number: "005",
+        type_code: "resource",
+        type_name: "Resource",
+        faction_code: "basic",
+        faction_name: "Basic",
+        position: 5
       }
 
       assert {:error, error} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
@@ -126,21 +153,32 @@ defmodule Sanctum.Games.CardTest do
         hit_points: 0,
         quantity: 0,
         set_code: "core",
-        card_number: "006"
+        card_number: "006",
+        type_code: "ally",
+        type_name: "Ally",
+        faction_code: "basic",
+        faction_name: "Basic",
+        position: 6
       }
 
       assert {:error, error} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
       assert %Ash.Error.Invalid{} = error
-      
+
       cost_error = Enum.find(error.errors, &(&1.field == :cost))
       attack_error = Enum.find(error.errors, &(&1.field == :attack))
       hit_points_error = Enum.find(error.errors, &(&1.field == :hit_points))
       quantity_error = Enum.find(error.errors, &(&1.field == :quantity))
-      
+
       assert cost_error && String.contains?(cost_error.message, "must be more than or equal to")
-      assert attack_error && String.contains?(attack_error.message, "must be more than or equal to")
-      assert hit_points_error && String.contains?(hit_points_error.message, "must be more than or equal to")
-      assert quantity_error && String.contains?(quantity_error.message, "must be more than or equal to")
+
+      assert attack_error &&
+               String.contains?(attack_error.message, "must be more than or equal to")
+
+      assert hit_points_error &&
+               String.contains?(hit_points_error.message, "must be more than or equal to")
+
+      assert quantity_error &&
+               String.contains?(quantity_error.message, "must be more than or equal to")
     end
 
     test "enforces unique card identity in set" do
@@ -148,12 +186,17 @@ defmodule Sanctum.Games.CardTest do
         name: "Duplicate Card",
         card_type: :ally,
         set_code: "core",
-        card_number: "007"
+        card_number: "007",
+        type_code: "ally",
+        type_name: "Ally",
+        faction_code: "basic",
+        faction_name: "Basic",
+        position: 7
       }
 
       assert {:ok, _card1} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
       assert {:error, error} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
-      
+
       assert %Ash.Error.Invalid{} = error
       duplicate_error = Enum.find(error.errors, &(&1.field == :set_code))
       assert duplicate_error
@@ -168,22 +211,37 @@ defmodule Sanctum.Games.CardTest do
         card_type: :hero,
         aspect: :leadership,
         set_code: "core",
-        card_number: "001"
+        card_number: "001",
+        type_code: "hero",
+        type_name: "Hero",
+        faction_code: "hero",
+        faction_name: "Hero",
+        position: 1
       }
-      
+
       ally_attrs = %{
         name: "War Machine",
         card_type: :ally,
         aspect: :leadership,
         set_code: "core",
-        card_number: "002"
+        card_number: "002",
+        type_code: "ally",
+        type_name: "Ally",
+        faction_code: "leadership",
+        faction_name: "Leadership",
+        position: 2
       }
-      
+
       villain_attrs = %{
         name: "Rhino",
         card_type: :villain,
         set_code: "rhino",
-        card_number: "001"
+        card_number: "001",
+        type_code: "villain",
+        type_name: "Villain",
+        faction_code: "villain",
+        faction_name: "Villain",
+        position: 1
       }
 
       {:ok, hero} = Card |> Ash.Changeset.for_create(:create, hero_attrs) |> Ash.create()
@@ -204,9 +262,11 @@ defmodule Sanctum.Games.CardTest do
     end
 
     test "by_aspect filters cards by aspect", %{hero: hero, ally: ally} do
-      leadership_cards = Card |> Ash.Query.for_read(:by_aspect, %{aspect: :leadership}) |> Ash.read!()
+      leadership_cards =
+        Card |> Ash.Query.for_read(:by_aspect, %{aspect: :leadership}) |> Ash.read!()
+
       assert length(leadership_cards) == 2
-      
+
       card_ids = Enum.map(leadership_cards, & &1.id)
       assert hero.id in card_ids
       assert ally.id in card_ids
@@ -215,7 +275,7 @@ defmodule Sanctum.Games.CardTest do
     test "by_set filters cards by set code", %{hero: hero, ally: ally, villain: villain} do
       core_cards = Card |> Ash.Query.for_read(:by_set, %{set_code: "core"}) |> Ash.read!()
       assert length(core_cards) == 2
-      
+
       card_ids = Enum.map(core_cards, & &1.id)
       assert hero.id in card_ids
       assert ally.id in card_ids
@@ -226,7 +286,11 @@ defmodule Sanctum.Games.CardTest do
       assert List.first(rhino_cards).id == villain.id
     end
 
-    test "search filters cards by name or text content", %{hero: hero, ally: ally, villain: _villain} do
+    test "search filters cards by name or text content", %{
+      hero: hero,
+      ally: ally,
+      villain: _villain
+    } do
       # Search by name
       iron_cards = Card |> Ash.Query.for_read(:search, %{query: "Iron"}) |> Ash.read!()
       assert length(iron_cards) == 1
@@ -239,7 +303,7 @@ defmodule Sanctum.Games.CardTest do
 
       # Search with no results
       empty_results = Card |> Ash.Query.for_read(:search, %{query: "NonExistent"}) |> Ash.read!()
-      assert length(empty_results) == 0
+      assert empty_results = []
     end
   end
 
@@ -252,7 +316,12 @@ defmodule Sanctum.Games.CardTest do
         set_code: "test",
         card_number: "001",
         attack: 1,
-        thwart: 1
+        thwart: 1,
+        type_code: "ally",
+        type_name: "Ally",
+        faction_code: "basic",
+        faction_name: "Basic",
+        position: 1
       }
 
       {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
@@ -267,7 +336,9 @@ defmodule Sanctum.Games.CardTest do
         thwart: 2
       }
 
-      assert {:ok, updated_card} = card |> Ash.Changeset.for_update(:update, update_attrs) |> Ash.update()
+      assert {:ok, updated_card} =
+               card |> Ash.Changeset.for_update(:update, update_attrs) |> Ash.update()
+
       assert updated_card.name == "Updated Card"
       assert updated_card.cost == 3
       assert updated_card.attack == 2
@@ -277,14 +348,18 @@ defmodule Sanctum.Games.CardTest do
     test "validates constraints on update", %{card: card} do
       update_attrs = %{cost: -1, attack: -5}
 
-      assert {:error, error} = card |> Ash.Changeset.for_update(:update, update_attrs) |> Ash.update()
+      assert {:error, error} =
+               card |> Ash.Changeset.for_update(:update, update_attrs) |> Ash.update()
+
       assert %Ash.Error.Invalid{} = error
-      
+
       cost_error = Enum.find(error.errors, &(&1.field == :cost))
       attack_error = Enum.find(error.errors, &(&1.field == :attack))
-      
+
       assert cost_error && String.contains?(cost_error.message, "must be more than or equal to")
-      assert attack_error && String.contains?(attack_error.message, "must be more than or equal to")
+
+      assert attack_error &&
+               String.contains?(attack_error.message, "must be more than or equal to")
     end
   end
 
@@ -294,17 +369,21 @@ defmodule Sanctum.Games.CardTest do
         name: "Temporary Card",
         card_type: :event,
         set_code: "temp",
-        card_number: "001"
+        card_number: "001",
+        type_code: "event",
+        type_name: "Event",
+        faction_code: "basic",
+        faction_name: "Basic",
+        position: 1
       }
 
       {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
       assert :ok = card |> Ash.destroy()
-      
+
       # Verify card is gone
       assert_raise Ash.Error.Invalid, fn ->
         Ash.get!(Card, card.id)
       end
     end
   end
-
 end
