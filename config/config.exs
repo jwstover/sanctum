@@ -60,7 +60,7 @@ config :spark,
 config :sanctum,
   ecto_repos: [Sanctum.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Sanctum.Accounts]
+  ash_domains: [Sanctum.Accounts, Sanctum.Games]
 
 # Configures the endpoint
 config :sanctum, SanctumWeb.Endpoint,

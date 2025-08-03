@@ -35,3 +35,4 @@ sanctum-*.tar
 npm-debug.log
 /assets/node_modules/
 /priv/plts/
+core-set.json
