@@ -1,7 +1,7 @@
-defmodule Sanctum.Game.CardTest do
+defmodule Sanctum.Games.CardTest do
   use Sanctum.DataCase
 
-  alias Sanctum.Game.Card
+  alias Sanctum.Games.Card
 
   describe "create action" do
     test "creates a card with valid attributes" do

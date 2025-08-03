@@ -1,7 +1,7 @@
-defmodule Sanctum.Game.Card do
+defmodule Sanctum.Games.Card do
   use Ash.Resource,
     otp_app: :sanctum,
-    domain: Sanctum.Game,
+    domain: Sanctum.Games,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 

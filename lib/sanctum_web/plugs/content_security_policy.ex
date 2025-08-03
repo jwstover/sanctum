@@ -27,7 +27,7 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
       _ ->
         "default-src 'self' 'unsafe-eval' 'unsafe-inline' 127.0.0.1:4007;" <>
           "connect-src ws://#{host}:*;" <>
-          "img-src 'self' blob: data:;" <>
+          "img-src 'self' blob: data: https://marvelcdb.com;" <>
           "font-src 'self' data:;"
     end
   end

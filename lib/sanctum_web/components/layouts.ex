@@ -72,6 +72,24 @@ defmodule SanctumWeb.Layouts do
     """
   end
 
+  attr :flash, :map, required: true, doc: "the map of flash messages"
+
+  attr :current_scope, :map,
+    default: nil,
+    doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
+
+  slot :inner_block, required: true
+
+  def game(assigns) do
+    ~H"""
+    <main class="w-screen h-screen overflow-hidden bg-blue-900 text-gray-100 p-2">
+      {render_slot(@inner_block)}
+    </main>
+
+    <.flash_group flash={@flash} />
+    """
+  end
+
   @doc """
   Shows the flash group with standard titles and content.
 
