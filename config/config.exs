@@ -7,6 +7,8 @@
 # General application configuration
 import Config
 
+config :sanctum, env: config_env()
+
 config :ash_oban, pro?: false
 
 config :sanctum, Oban,
