@@ -1,4 +1,13 @@
-# 0.2.0 (2025-08-03)
+## [0.2.1](https://github.com/jwstover/sanctum/compare/v0.2.0...v0.2.1) (2025-08-04)
+
+
+### Bug Fixes
+
+* resolve issue with runtime env in prod ([0b16e28](https://github.com/jwstover/sanctum/commit/0b16e28724c60eab35f7045d3bb8f86a04205f9d))
+
+
+
+# [0.2.0](https://github.com/jwstover/sanctum/compare/9609f3a873896c81f490aed6792410f6c797ab40...v0.2.0) (2025-08-03)
 
 
 ### Bug Fixes
