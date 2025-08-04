@@ -1,5 +1,9 @@
 # Marvel Champions Online
 
+## Rules
+
+- NEVER modify migrations manually. Migrations are managed using Ash and ash.codegen
+
 ## Project Overview
 
 A web-based "smart table" application for playing Marvel Champions: The Card Game online. The app provides digital deck and game state management without enforcing game rules - players manage rules themselves. Built for personal use with potential for multiplayer expansion.

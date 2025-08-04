@@ -20,9 +20,12 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
   defp content_security_policy do
     host = get_host()
 
-    case Mix.env() do
+    case Application.get_env(:sanctum, :env) do
       :prod ->
-        "default-src 'self';connect-src wss://#{host};img-src 'self' blob:;"
+        "default-src 'self';" <>
+          "connect-src wss://#{host};" <>
+          "img-src 'self' blob: data: https://marvelcdb.com;" <>
+          "font-src 'self' data:;"
 
       _ ->
         "default-src 'self' 'unsafe-eval' 'unsafe-inline' 127.0.0.1:4007;" <>

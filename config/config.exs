@@ -58,9 +58,10 @@ config :spark,
   ]
 
 config :sanctum,
+  env: config_env(),
   ecto_repos: [Sanctum.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Sanctum.Accounts, Sanctum.Games]
+  ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games]
 
 # Configures the endpoint
 config :sanctum, SanctumWeb.Endpoint,

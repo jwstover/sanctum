@@ -1,4 +1,4 @@
-defmodule Sanctum.Repo.Migrations.AddGames do
+defmodule Sanctum.Repo.Migrations.AddScenarios do
   @moduledoc """
   Updates resources based on their most recent snapshots.
 
@@ -8,12 +8,12 @@ defmodule Sanctum.Repo.Migrations.AddGames do
   use Ecto.Migration
 
   def up do
-    create table(:games, primary_key: false) do
+    create table(:scenarios, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
     end
   end
 
   def down do
-    drop table(:games)
+    drop table(:scenarios)
   end
 end

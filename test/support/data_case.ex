@@ -24,6 +24,7 @@ defmodule Sanctum.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Sanctum.DataCase
+      import Sanctum.Factory
     end
   end
 

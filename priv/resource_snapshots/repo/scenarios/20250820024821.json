@@ -18,7 +18,7 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "F8BBC382F323B281EBAA4FD15C5B068BD232F3DC6EB12E021935352A089C2ED1",
+  "hash": "BD8E601C232C72A3609AC2D0A3CAB0DDC5FDAD88060990D73116C22080B7AADF",
   "identities": [],
   "multitenancy": {
     "attribute": null,
@@ -27,5 +27,5 @@
   },
   "repo": "Elixir.Sanctum.Repo",
   "schema": null,
-  "table": "games"
+  "table": "scenarios"
 }

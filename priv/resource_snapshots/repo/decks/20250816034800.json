@@ -18,30 +18,11 @@
       "generated?": false,
       "precision": null,
       "primary_key?": false,
-      "references": {
-        "deferrable": false,
-        "destination_attribute": "id",
-        "destination_attribute_default": null,
-        "destination_attribute_generated": null,
-        "index?": false,
-        "match_type": null,
-        "match_with": null,
-        "multitenancy": {
-          "attribute": null,
-          "global": null,
-          "strategy": null
-        },
-        "name": "games_villian_id_fkey",
-        "on_delete": null,
-        "on_update": null,
-        "primary_key?": true,
-        "schema": "public",
-        "table": "cards"
-      },
+      "references": null,
       "scale": null,
       "size": null,
-      "source": "villian_id",
-      "type": "uuid"
+      "source": "title",
+      "type": "text"
     },
     {
       "allow_nil?": true,
@@ -49,9 +30,21 @@
       "generated?": false,
       "precision": null,
       "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "mcdb_id",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
       "references": {
         "deferrable": false,
-        "destination_attribute": "id",
+        "destination_attribute": "code",
         "destination_attribute_default": null,
         "destination_attribute_generated": null,
         "index?": false,
@@ -62,17 +55,17 @@
           "global": null,
           "strategy": null
         },
-        "name": "games_main_scheme_id_fkey",
+        "name": "decks_hero_code_fkey",
         "on_delete": null,
         "on_update": null,
-        "primary_key?": true,
+        "primary_key?": false,
         "schema": "public",
         "table": "cards"
       },
       "scale": null,
       "size": null,
-      "source": "main_scheme_id",
-      "type": "uuid"
+      "source": "hero_code",
+      "type": "text"
     }
   ],
   "base_filter": null,
@@ -80,8 +73,23 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "E16B19FAC0E6231EC80FF7E4C16039CB496C24C621AE13B37AB7AC85CB929777",
-  "identities": [],
+  "hash": "FC872595071B9AA3CAAAD06F848AF2417DC66FF3B5EDDC9030817A41EE0D62F0",
+  "identities": [
+    {
+      "all_tenants?": false,
+      "base_filter": null,
+      "index_name": "decks_unique_mcdb_id_index",
+      "keys": [
+        {
+          "type": "atom",
+          "value": "mcdb_id"
+        }
+      ],
+      "name": "unique_mcdb_id",
+      "nils_distinct?": true,
+      "where": null
+    }
+  ],
   "multitenancy": {
     "attribute": null,
     "global": null,
@@ -89,5 +97,5 @@
   },
   "repo": "Elixir.Sanctum.Repo",
   "schema": null,
-  "table": "games"
+  "table": "decks"
 }

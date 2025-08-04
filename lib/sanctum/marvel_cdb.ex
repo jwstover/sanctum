@@ -1,7 +1,70 @@
 defmodule Sanctum.MarvelCdb do
   @moduledoc false
+  alias Sanctum.Games.Card
+  alias Sanctum.Decks
+  alias Sanctum.Games
 
   @base_url "https://marvelcdb.com/api/public"
+
+  def load_deck("https://marvelcdb.com/decklist/view/" <> rest) when is_binary(rest) do
+    [deck_id | _] = String.split(rest, "/")
+    load_deck(deck_id)
+  end
+
+  def load_deck(mcdb_deck_id) when is_binary(mcdb_deck_id) do
+    "#{@base_url}/decklist/#{mcdb_deck_id}"
+    |> Req.get()
+    |> handle_response()
+    |> case do
+      {:ok, decklist} ->
+        decklist
+        |> prepare_deck_attrs()
+        |> Decks.create_with_cards(load: [:hero, :cards])
+
+      err ->
+        err
+    end
+  end
+
+  defp prepare_deck_attrs(%{"slots" => cards_map} = decklist) do
+    {:ok, hero} = load_card(decklist["hero_code"])
+
+    card_codes = Map.keys(cards_map)
+
+    cards =
+      Enum.map(card_codes, fn card_code ->
+        card = load_card!(card_code)
+        {card.code, card}
+      end)
+      |> Map.new()
+
+    card_ids =
+      Enum.reduce(cards_map, [], fn {code, count}, acc ->
+        card = Map.get(cards, code)
+        acc ++ Enum.map(1..count, fn _ -> card.id end)
+      end)
+
+    %{
+      mcdb_id: decklist["id"] |> Integer.to_string(),
+      title: decklist["name"],
+      hero_code: hero.code,
+      card_ids: card_ids
+    }
+  end
+
+  def load_pack(pack_code) when is_binary(pack_code) do
+    get_cards_by_pack(pack_code)
+    |> case do
+      {:ok, cards} ->
+        cards
+        |> Enum.map(&prepare_card_attrs/1)
+        |> Ash.bulk_create!(Card, :create,
+          upsert?: true,
+          upsert_identity: :unique_marvelcdb_code,
+          upsert_fields: [:replace_all]
+        )
+    end
+  end
 
   def load_card(card_id) when is_integer(card_id) do
     card_id
@@ -11,13 +74,44 @@ defmodule Sanctum.MarvelCdb do
   end
 
   def load_card(card_id) when is_binary(card_id) do
-    "#{@base_url}/card/#{card_id}"
+    Games.get_card_by_code(card_id)
+    |> case do
+      %Games.Card{} = card ->
+        {:ok, card}
+
+      _ ->
+        "#{@base_url}/card/#{card_id}"
+        |> Req.get()
+        |> handle_response()
+        |> case do
+          {:ok, resp} ->
+            prepare_card_attrs(resp)
+            |> Sanctum.Games.create_card()
+
+          err ->
+            err
+        end
+    end
+  end
+
+  def load_card!(card_id) when is_binary(card_id) do
+    case load_card(card_id) do
+      {:ok, card} ->
+        card
+
+      err ->
+        raise err
+    end
+  end
+
+  @spec get_cards_by_pack(String.t()) :: {:ok, list(map())}
+  def get_cards_by_pack(pack_code) when is_binary(pack_code) do
+    "#{@base_url}/cards/#{pack_code}"
     |> Req.get()
     |> handle_response()
     |> case do
-      {:ok, resp} ->
-        prepare_card_attrs(resp)
-        |> Sanctum.Games.create_card()
+      {:ok, cards} ->
+        {:ok, cards}
 
       err ->
         err
@@ -75,83 +169,50 @@ defmodule Sanctum.MarvelCdb do
     %{
       # Core identity fields
       name: mcdb_card["name"],
+      subname: mcdb_card["real_name"],
       code: mcdb_card["code"],
-      pack_code: mcdb_card["pack_code"],
-      pack_name: mcdb_card["pack_name"],
-      real_name: mcdb_card["real_name"],
+      text: mcdb_card["text"] || mcdb_card["real_text"],
+      traits: parse_traits(mcdb_card["real_traits"] || mcdb_card["traits"]),
 
-      # Card classification
-      card_type: map_card_type(mcdb_card["type_code"]),
-      type_code: mcdb_card["type_code"],
-      type_name: mcdb_card["type_name"],
-      faction_code: mcdb_card["faction_code"],
-      faction_name: mcdb_card["faction_name"],
-      card_set_code: mcdb_card["card_set_code"],
-      card_set_name: mcdb_card["card_set_name"],
-      card_set_type_name_code: mcdb_card["card_set_type_name_code"],
-
-      # Basic game attributes
-      cost: mcdb_card["cost"],
-      text: mcdb_card["text"],
-      real_text: mcdb_card["real_text"],
-      flavor_text: mcdb_card["flavor"],
-      # Using pack_code as set_code
-      set_code: mcdb_card["pack_code"],
-      # Using code as card_number
-      card_number: mcdb_card["code"],
-
-      # Positioning and metadata
-      position: mcdb_card["position"],
-      set_position: mcdb_card["set_position"],
-      quantity: mcdb_card["quantity"] || 1,
-      unique: mcdb_card["is_unique"] || false,
+      # Card classification using new enums
+      type: map_card_type(mcdb_card["type_code"]),
+      aspect: map_aspect(mcdb_card["faction_code"]),
 
       # Combat stats
       attack: mcdb_card["attack"],
       thwart: mcdb_card["thwart"],
       defense: mcdb_card["defense"],
-      hit_points: mcdb_card["health"],
-      scheme: mcdb_card["scheme"],
-      recovery: mcdb_card["recover"],
+      health: mcdb_card["health"],
 
-      # Traits and keywords
-      traits: parse_traits(mcdb_card["real_traits"] || mcdb_card["traits"]),
-
-      # Game mechanics
-      stage: mcdb_card["stage"],
-      boost: mcdb_card["boost"],
-      cost_per_hero: mcdb_card["cost_per_hero"] || false,
-      health_per_hero: mcdb_card["health_per_hero"] || false,
-
-      # Star ratings
-      attack_star: mcdb_card["attack_star"] || false,
-      thwart_star: mcdb_card["thwart_star"] || false,
-      defense_star: mcdb_card["defense_star"] || false,
-      health_star: mcdb_card["health_star"] || false,
-      recover_star: mcdb_card["recover_star"] || false,
-      scheme_star: mcdb_card["scheme_star"] || false,
-      boost_star: mcdb_card["boost_star"] || false,
-      threat_star: mcdb_card["threat_star"] || false,
-      escalation_threat_star: mcdb_card["escalation_threat_star"] || false,
-
-      # Threat system
-      threat: mcdb_card["threat"],
-      threat_fixed: mcdb_card["threat_fixed"] || false,
-      base_threat: mcdb_card["base_threat"],
-      base_threat_fixed: mcdb_card["base_threat_fixed"] || false,
-      escalation_threat: mcdb_card["escalation_threat"],
-      escalation_threat_fixed: mcdb_card["escalation_threat_fixed"] || false,
-
-      # Card state flags
-      hidden: mcdb_card["hidden"] || false,
+      # Cost and economics
+      cost: mcdb_card["cost"],
+      deck_limit: mcdb_card["quantity"] || 1,
+      unique: mcdb_card["is_unique"] || false,
       permanent: mcdb_card["permanent"] || false,
-      double_sided: mcdb_card["double_sided"] || false,
 
-      # External references
-      octgn_id: mcdb_card["octgn_id"],
-      url: mcdb_card["url"],
-      imagesrc: mcdb_card["imagesrc"],
-      spoiler: mcdb_card["spoiler"]
+      # Icons (using existing boost_star mapping as example)
+      boost_star: mcdb_card["boost_star"] || false,
+
+      # Hero-specific fields
+      hand_size: mcdb_card["hand_size"],
+      recover: mcdb_card["recover"],
+
+      # Villain-specific fields
+      health_per_hero: mcdb_card["health_per_hero"] || false,
+      stage: mcdb_card["stage"],
+
+      # Scheme-specific fields
+      base_threat: mcdb_card["base_threat"],
+      escalation_threat: mcdb_card["escalation_threat"],
+      max_threat: mcdb_card["threat"],
+
+      # Encounter-specific fields
+      boost: mcdb_card["boost"],
+
+      # Categorization fields
+      set: mcdb_card["card_set_code"],
+      pack: mcdb_card["pack_code"],
+      image_url: build_image_url(mcdb_card["imagesrc"])
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
@@ -179,14 +240,50 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
+  defp map_aspect(faction_code) do
+    case faction_code do
+      "aggression" -> :aggression
+      "justice" -> :justice
+      "leadership" -> :leadership
+      "protection" -> :protection
+      "basic" -> :basic
+      "encounter" -> :encounter
+      _ -> nil
+    end
+  end
+
+  defp build_image_url(nil), do: nil
+  defp build_image_url(""), do: nil
+
+  defp build_image_url(imagesrc) when is_binary(imagesrc) do
+    case String.starts_with?(imagesrc, "http") do
+      true -> imagesrc
+      false -> "https://marvelcdb.com#{imagesrc}"
+    end
+  end
+
   defp parse_traits(nil), do: []
   defp parse_traits(""), do: []
 
   defp parse_traits(traits_string) when is_binary(traits_string) do
     traits_string
-    |> String.split(".")
-    |> Enum.map(&String.trim/1)
+    |> String.split(". ")
+    |> Enum.map(&trim_trait/1)
     |> Enum.reject(&(&1 == ""))
+  end
+
+  defp trim_trait(string) when is_binary(string) do
+    trait =
+      string
+      |> String.trim()
+
+    trait
+    |> String.split(".")
+    |> case do
+      [trait] -> trait
+      [trait, ""] -> trait
+      _ -> trait
+    end
   end
 
   defp handle_response(response) do

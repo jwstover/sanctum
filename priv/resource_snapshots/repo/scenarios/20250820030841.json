@@ -13,35 +13,28 @@
       "type": "uuid"
     },
     {
-      "allow_nil?": true,
+      "allow_nil?": false,
       "default": "nil",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
-      "references": {
-        "deferrable": false,
-        "destination_attribute": "id",
-        "destination_attribute_default": null,
-        "destination_attribute_generated": null,
-        "index?": false,
-        "match_type": null,
-        "match_with": null,
-        "multitenancy": {
-          "attribute": null,
-          "global": null,
-          "strategy": null
-        },
-        "name": "games_villian_id_fkey",
-        "on_delete": null,
-        "on_update": null,
-        "primary_key?": true,
-        "schema": "public",
-        "table": "cards"
-      },
+      "references": null,
       "scale": null,
       "size": null,
-      "source": "villian_id",
-      "type": "uuid"
+      "source": "name",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "set",
+      "type": "text"
     }
   ],
   "base_filter": null,
@@ -49,7 +42,7 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "9811D68F685EFD60A5BC4FA75C5D50BE4D6FB752ECBC3437CDC324BA734208D0",
+  "hash": "A9A51C7298564657AA7FF9C0D59EB26B2D4AD6A55CBA0C0694356176B9E39C13",
   "identities": [],
   "multitenancy": {
     "attribute": null,
@@ -58,5 +51,5 @@
   },
   "repo": "Elixir.Sanctum.Repo",
   "schema": null,
-  "table": "games"
+  "table": "scenarios"
 }

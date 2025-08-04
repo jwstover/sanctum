@@ -1,0 +1,241 @@
+		$mandatoryFields = [
+			'code',
+			'position',
+			'quantity',
+			'name'
+		];
+
+		$optionalFields = [
+			'illustrator',
+			'errata',
+			'flavor',
+			'traits',
+			'text',
+			'cost',
+			'cost_per_hero',
+			'octgn_id',
+			'subname',
+			'deck_limit',
+			'back_text',
+			'back_name',
+			'back_flavor',
+			'permanent',
+			'hidden',
+			'double_sided',
+			'card_set',
+			'set_position',
+			'is_unique',
+			'meta'
+		];
+
+		$externalFields = [
+			'faction',
+			'faction2',
+			'pack',
+			'card_set',
+			'type',
+			'linked_to',
+			'duplicate_of'
+		];
+
+		switch($this->type->getCode()) {
+			case 'event':
+			case 'upgrade':
+			case 'support':
+				$mandatoryFields[] = 'cost';
+				$optionalFields[] = 'resource_energy';
+				$optionalFields[] = 'resource_physical';
+				$optionalFields[] = 'resource_mental';
+				$optionalFields[] = 'resource_wild';
+				break;
+			case 'resource':
+				$optionalFields[] = 'resource_energy';
+				$optionalFields[] = 'resource_physical';
+				$optionalFields[] = 'resource_mental';
+				$optionalFields[] = 'resource_wild';
+				break;
+			case 'player_side_scheme':
+				$mandatoryFields[] = 'cost';
+				$mandatoryFields[] = 'base_threat';
+				$optionalFields[] = 'base_threat_fixed';
+				$optionalFields[] = 'resource_energy';
+				$optionalFields[] = 'resource_physical';
+				$optionalFields[] = 'resource_mental';
+				$optionalFields[] = 'resource_wild';
+				$optionalFields[] = 'scheme_acceleration';
+				$optionalFields[] = 'scheme_amplify';
+				$optionalFields[] = 'scheme_crisis';
+				$optionalFields[] = 'scheme_hazard';
+			case 'ally':
+				$mandatoryFields[] = 'cost';
+				$optionalFields[] = 'attack';
+				$optionalFields[] = 'attack_cost';
+				$optionalFields[] = 'attack_star';
+				$optionalFields[] = 'health';
+				$optionalFields[] = 'health_star';
+				$optionalFields[] = 'resource_energy';
+				$optionalFields[] = 'resource_physical';
+				$optionalFields[] = 'resource_mental';
+				$optionalFields[] = 'resource_wild';
+				$optionalFields[] = 'thwart';
+				$optionalFields[] = 'thwart_cost';
+				$optionalFields[] = 'thwart_star';
+				break;
+			case 'hero':
+				$mandatoryFields[] = 'attack';
+				$mandatoryFields[] = 'deck_requirements';
+				$mandatoryFields[] = 'defense';
+				$mandatoryFields[] = 'hand_size';
+				$mandatoryFields[] = 'health';
+				$mandatoryFields[] = 'thwart';
+				$optionalFields[] = 'attack_star';
+				$optionalFields[] = 'defense_star';
+				$optionalFields[] = 'health_star';
+				$optionalFields[] = 'thwart_star';
+				break;
+			case 'alter_ego':
+				$mandatoryFields[] = 'hand_size';
+				$mandatoryFields[] = 'deck_requirements';
+				$mandatoryFields[] = 'health';
+				$mandatoryFields[] = 'recover';
+				$optionalFields[] = 'health_star';
+				$optionalFields[] = 'recover_star';
+				break;
+			case "treachery":
+				$externalFields[] = 'subtype';
+				$optionalFields[] = 'boost';
+				$optionalFields[] = 'boost_star';
+				break;
+			case "attachment":
+				$externalFields[] = 'subtype';
+				$optionalFields[] = 'attack';
+				$optionalFields[] = 'attack_star';
+				$optionalFields[] = 'boost';
+				$optionalFields[] = 'boost_star';
+				$optionalFields[] = 'scheme';
+				$optionalFields[] = 'scheme_star';
+				break;
+			case "villain":
+				$optionalFields[] = 'attack';
+				$optionalFields[] = 'attack_star';
+				$optionalFields[] = 'health';
+				$optionalFields[] = 'health_per_hero';
+				$optionalFields[] = 'health_star';
+				$optionalFields[] = 'scheme';
+				$optionalFields[] = 'scheme_star';
+				$optionalFields[] = 'stage';
+			case "minion":
+				$externalFields[] = 'subtype';
+				$optionalFields[] = 'attack';
+				$optionalFields[] = 'attack_star';
+				$optionalFields[] = 'boost';
+				$optionalFields[] = 'boost_star';
+				$optionalFields[] = 'health';
+				$optionalFields[] = 'health_per_hero';
+				$optionalFields[] = 'health_star';
+				$optionalFields[] = 'scheme';
+				$optionalFields[] = 'scheme_star';
+			case "sideScheme":
+				$externalFields[] = 'subtype';
+				$optionalFields[] = 'base_threat';
+				$optionalFields[] = 'base_threat_fixed';
+				$optionalFields[] = 'boost';
+				$optionalFields[] = 'boost_star';
+				$optionalFields[] = 'escalation_threat';
+				$optionalFields[] = 'escalation_threat_fixed';
+				$optionalFields[] = 'escalation_threat_star';
+				$optionalFields[] = 'scheme_acceleration';
+				$optionalFields[] = 'scheme_amplify';
+				$optionalFields[] = 'scheme_crisis';
+				$optionalFields[] = 'scheme_hazard';
+				break;
+			case "mainScheme":
+				$externalFields[] = 'subtype';
+				$optionalFields[] = 'base_threat';
+				$optionalFields[] = 'base_threat_fixed';
+				$optionalFields[] = 'escalation_threat';
+				$optionalFields[] = 'escalation_threat_fixed';
+				$optionalFields[] = 'escalation_threat_star';
+				$optionalFields[] = 'stage';
+				$optionalFields[] = 'threat';
+				$optionalFields[] = 'threat_fixed';
+				$optionalFields[] = 'threat_star';
+				break;
+		}
+
+
+ally
+alter_ego
+attack
+attack_cost
+attack_star
+back_flavor
+back_name
+back_text
+base_threat
+base_threat_fixed
+boost
+boost_star
+card_set
+code
+cost
+cost_per_hero
+deck_limit
+deck_requirements
+defense
+defense_star
+double_sided
+duplicate_of
+errata
+escalation_threat
+escalation_threat_fixed
+escalation_threat_star
+event
+faction
+faction2
+flavor
+hand_size
+health
+health_per_hero
+health_star
+hero
+hidden
+illustrator
+is_unique
+linked_to
+meta
+name
+octgn_id
+pack
+permanent
+player_side_scheme
+position
+quantity
+recover
+recover_star
+resource
+resource_energy
+resource_mental
+resource_physical
+resource_wild
+scheme
+scheme_acceleration
+scheme_amplify
+scheme_crisis
+scheme_hazard
+scheme_star
+set_position
+stage
+subname
+subtype
+support
+text
+threat
+threat_fixed
+threat_star
+thwart
+thwart_cost
+thwart_star
+traits
+type
+upgrade

@@ -25,7 +25,7 @@
       "type": "text"
     },
     {
-      "allow_nil?": false,
+      "allow_nil?": true,
       "default": "nil",
       "generated?": false,
       "precision": null,
@@ -33,7 +33,7 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "card_type",
+      "source": "subname",
       "type": "text"
     },
     {
@@ -45,8 +45,11 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "cost",
-      "type": "bigint"
+      "source": "traits",
+      "type": [
+        "array",
+        "text"
+      ]
     },
     {
       "allow_nil?": true,
@@ -57,68 +60,8 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "text",
+      "source": "type",
       "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "flavor_text",
-      "type": "text"
-    },
-    {
-      "allow_nil?": false,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "set_code",
-      "type": "text"
-    },
-    {
-      "allow_nil?": false,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "card_number",
-      "type": "text"
-    },
-    {
-      "allow_nil?": false,
-      "default": "1",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "quantity",
-      "type": "bigint"
-    },
-    {
-      "allow_nil?": false,
-      "default": "false",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "unique",
-      "type": "boolean"
     },
     {
       "allow_nil?": true,
@@ -130,6 +73,18 @@
       "scale": null,
       "size": null,
       "source": "aspect",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "text",
       "type": "text"
     },
     {
@@ -153,7 +108,31 @@
       "references": null,
       "scale": null,
       "size": null,
+      "source": "attack_cost",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
       "source": "thwart",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "thwart_cost",
       "type": "bigint"
     },
     {
@@ -177,7 +156,7 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "hit_points",
+      "source": "defense_cost",
       "type": "bigint"
     },
     {
@@ -189,7 +168,7 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "scheme",
+      "source": "health",
       "type": "bigint"
     },
     {
@@ -201,7 +180,7 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "recovery",
+      "source": "cost",
       "type": "bigint"
     },
     {
@@ -213,50 +192,80 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "resource_type",
-      "type": "text"
-    },
-    {
-      "allow_nil?": false,
-      "default": "0",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "resource_count",
+      "source": "deck_limit",
       "type": "bigint"
     },
     {
-      "allow_nil?": false,
-      "default": "[]",
+      "allow_nil?": true,
+      "default": "false",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "traits",
-      "type": [
-        "array",
-        "text"
-      ]
+      "source": "unique",
+      "type": "boolean"
     },
     {
-      "allow_nil?": false,
-      "default": "[]",
+      "allow_nil?": true,
+      "default": "false",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "keywords",
-      "type": [
-        "array",
-        "text"
-      ]
+      "source": "permanent",
+      "type": "boolean"
+    },
+    {
+      "allow_nil?": true,
+      "default": "false",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "acceleration_icon",
+      "type": "boolean"
+    },
+    {
+      "allow_nil?": true,
+      "default": "false",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "amplify_icon",
+      "type": "boolean"
+    },
+    {
+      "allow_nil?": true,
+      "default": "false",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "crisis_icon",
+      "type": "boolean"
+    },
+    {
+      "allow_nil?": true,
+      "default": "false",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "hazard_icon",
+      "type": "boolean"
     },
     {
       "allow_nil?": true,
@@ -267,19 +276,43 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "stage",
+      "source": "resource_energy_count",
       "type": "bigint"
     },
     {
-      "allow_nil?": false,
-      "default": "0",
+      "allow_nil?": true,
+      "default": "nil",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "boost_icons",
+      "source": "resource_physical_count",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "resource_mental_count",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "resource_wild_count",
       "type": "bigint"
     },
     {
@@ -292,6 +325,42 @@
       "scale": null,
       "size": null,
       "source": "hand_size",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "recover",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
+      "default": "false",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "health_per_hero",
+      "type": "boolean"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "stage",
       "type": "bigint"
     },
     {
@@ -319,7 +388,19 @@
       "type": "bigint"
     },
     {
-      "allow_nil?": false,
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "boost",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
       "default": "false",
       "generated?": false,
       "precision": null,
@@ -327,7 +408,7 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "acceleration_icon",
+      "source": "boost_star",
       "type": "boolean"
     },
     {
@@ -339,8 +420,32 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "consequential_damage",
-      "type": "bigint"
+      "source": "card_set",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "code",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "image_url",
+      "type": "text"
     },
     {
       "allow_nil?": false,
@@ -372,23 +477,19 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "2C0D09FDAFC33E85EA06DB31816EEC3952FAEDC4DF52C15E42A2D7375F5E249C",
+  "hash": "95C702CDBD9365D23F79DCCCEEDFA7A6A310BC63A97146AE63D9EFD0764386A2",
   "identities": [
     {
       "all_tenants?": false,
       "base_filter": null,
-      "index_name": "cards_unique_card_in_set_index",
+      "index_name": "cards_unique_marvelcdb_code_index",
       "keys": [
         {
           "type": "atom",
-          "value": "set_code"
-        },
-        {
-          "type": "atom",
-          "value": "card_number"
+          "value": "code"
         }
       ],
-      "name": "unique_card_in_set",
+      "name": "unique_marvelcdb_code",
       "nils_distinct?": true,
       "where": null
     }
