@@ -20,7 +20,7 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
   defp content_security_policy do
     host = get_host()
 
-    case Mix.env() do
+    case Application.get_env(:sanctum, :env) do
       :prod ->
         "default-src 'self';connect-src wss://#{host};img-src 'self' blob:;"
 
