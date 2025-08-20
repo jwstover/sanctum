@@ -12,7 +12,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
 
   def card(assigns) do
     assigns =
-      assign(assigns, :src, assigns.imgsrc || "https://marvelcdb.com" <> assigns.card.imagesrc)
+      assign(assigns, :src, assigns.imgsrc || assigns.card.image_url)
       |> assign(
         :aspect,
         if assigns.card && assigns.card.card_type in @landscape_types do

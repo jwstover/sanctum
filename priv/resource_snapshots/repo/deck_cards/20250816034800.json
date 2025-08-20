@@ -31,7 +31,7 @@
           "global": null,
           "strategy": null
         },
-        "name": "games_hero_id_fkey",
+        "name": "deck_cards_card_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
@@ -40,7 +40,7 @@
       },
       "scale": null,
       "size": null,
-      "source": "hero_id",
+      "source": "card_id",
       "type": "uuid"
     },
     {
@@ -62,47 +62,16 @@
           "global": null,
           "strategy": null
         },
-        "name": "games_villian_id_fkey",
+        "name": "deck_cards_deck_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
         "schema": "public",
-        "table": "cards"
+        "table": "decks"
       },
       "scale": null,
       "size": null,
-      "source": "villian_id",
-      "type": "uuid"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": {
-        "deferrable": false,
-        "destination_attribute": "id",
-        "destination_attribute_default": null,
-        "destination_attribute_generated": null,
-        "index?": false,
-        "match_type": null,
-        "match_with": null,
-        "multitenancy": {
-          "attribute": null,
-          "global": null,
-          "strategy": null
-        },
-        "name": "games_main_scheme_id_fkey",
-        "on_delete": null,
-        "on_update": null,
-        "primary_key?": true,
-        "schema": "public",
-        "table": "cards"
-      },
-      "scale": null,
-      "size": null,
-      "source": "main_scheme_id",
+      "source": "deck_id",
       "type": "uuid"
     }
   ],
@@ -111,7 +80,7 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "6C9D610A19A770E9C720222C96E3AA48672ECAF3CD7A8A3A483BF36EA425C0B5",
+  "hash": "878F81F073674C36A7FFDD6BAA39854EFE0075E4C8CBB4A6C7E58605D9E43BAA",
   "identities": [],
   "multitenancy": {
     "attribute": null,
@@ -120,5 +89,5 @@
   },
   "repo": "Elixir.Sanctum.Repo",
   "schema": null,
-  "table": "games"
+  "table": "deck_cards"
 }

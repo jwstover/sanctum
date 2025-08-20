@@ -1,14 +1,14 @@
-defmodule Sanctum.Games.Game do
+defmodule Sanctum.Decks.DeckCard do
   @moduledoc false
 
   use Ash.Resource,
     otp_app: :sanctum,
-    domain: Sanctum.Games,
+    domain: Sanctum.Decks,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
   postgres do
-    table "games"
+    table "deck_cards"
     repo Sanctum.Repo
   end
 
@@ -27,15 +27,11 @@ defmodule Sanctum.Games.Game do
   end
 
   relationships do
-    belongs_to :hero, Sanctum.Games.Card do
+    belongs_to :card, Sanctum.Games.Card do
       public? true
     end
 
-    belongs_to :villain, Sanctum.Games.Card do
-      public? true
-    end
-
-    belongs_to :main_scheme, Sanctum.Games.Card do
+    belongs_to :deck, Sanctum.Decks.Deck do
       public? true
     end
   end

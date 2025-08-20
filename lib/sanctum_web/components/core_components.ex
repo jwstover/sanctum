@@ -89,7 +89,7 @@ defmodule SanctumWeb.CoreComponents do
       <.button navigate={~p"/"}>Home</.button>
   """
   attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
-  attr :class, :string
+  attr :class, :string, default: ""
   attr :variant, :string, values: ~w(primary)
   slot :inner_block, required: true
 
@@ -97,13 +97,16 @@ defmodule SanctumWeb.CoreComponents do
     variants = %{
       "primary" =>
         "bg-primary text-primary-content border-2 border-r-4 border-b-4 border-black shadow-[3px_3px_0px_0px_theme(colors.black)] hover:shadow-[2px_2px_0px_0px_theme(colors.black)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-75 font-elektra font-bold uppercase tracking-wide transform hover:scale-[1.02] active:scale-100",
-      nil => "btn-primary btn-soft"
+      nil =>
+        "btn-primary font-elektra uppercase font-bold border-r-4 border-b-4 border-black shadow-black shadow-none"
     }
 
     assigns =
-      assign_new(assigns, :class, fn ->
-        ["btn", Map.fetch!(variants, assigns[:variant])]
-      end)
+      assign(assigns, :class, [
+        "btn",
+        Map.fetch!(variants, assigns[:variant]),
+        Map.fetch!(assigns, :class)
+      ])
 
     if rest[:href] || rest[:navigate] || rest[:patch] do
       ~H"""
@@ -189,7 +192,7 @@ defmodule SanctumWeb.CoreComponents do
       end)
 
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="fieldset">
       <label>
         <input type="hidden" name={@name} value="false" disabled={@rest[:disabled]} />
         <span class="label">
@@ -211,7 +214,7 @@ defmodule SanctumWeb.CoreComponents do
 
   def input(%{type: "select"} = assigns) do
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="fieldset">
       <label>
         <span :if={@label} class="label mb-1">{@label}</span>
         <select
@@ -232,7 +235,7 @@ defmodule SanctumWeb.CoreComponents do
 
   def input(%{type: "textarea"} = assigns) do
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="fieldset">
       <label>
         <span :if={@label} class="label mb-1">{@label}</span>
         <textarea
@@ -253,23 +256,21 @@ defmodule SanctumWeb.CoreComponents do
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
     ~H"""
-    <div class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <input
-          type={@type}
-          name={@name}
-          id={@id}
-          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-          class={[
-            @class || "w-full input",
-            @errors != [] && (@error_class || "input-error")
-          ]}
-          {@rest}
-        />
-      </label>
+    <fieldset class="fieldset p-0">
+      <legend :if={@label} class="fieldset-legend">{@label}</legend>
+      <input
+        type={@type}
+        name={@name}
+        id={@id}
+        value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+        class={[
+          @class || "w-full input rounded",
+          @errors != [] && (@error_class || "input-error")
+        ]}
+        {@rest}
+      />
       <.error :for={msg <- @errors}>{msg}</.error>
-    </div>
+    </fieldset>
     """
   end
 
@@ -294,7 +295,7 @@ defmodule SanctumWeb.CoreComponents do
     ~H"""
     <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8">
+        <h1 class="text-2xl font-exo2 font-bold leading-8">
           {render_slot(@inner_block)}
         </h1>
         <p :if={@subtitle != []} class="text-sm text-base-content/70">

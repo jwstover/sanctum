@@ -6,14 +6,18 @@ defmodule SanctumWeb.GameLive.Show do
   import SanctumWeb.GameLive.GameComponents
 
   alias Sanctum.Games
+  alias Sanctum.Games.Game
 
   def mount(%{"id" => game_id}, _session, socket) do
-    {:ok,
-     socket
-     |> assign(
-       :game,
-       Games.get_game!(game_id, load: [:hero, :villian, :main_scheme])
-     )}
+    {:ok, socket |> assign_game(game_id)}
+  end
+
+  @spec assign_game(Phoenix.LiveView.Socket.t(), String.t()) :: Phoenix.LiveView.Socket.t()
+  defp assign_game(socket, game_id) when is_binary(game_id) do
+    case Games.get_game(game_id, load: [:hero, :villain, :main_scheme]) do
+      {:ok, %Game{}} = game -> assign(socket, :game, game)
+      {:error, _err} -> push_navigate(socket, to: ~p"/")
+    end
   end
 
   def render(assigns) do
@@ -26,8 +30,8 @@ defmodule SanctumWeb.GameLive.Show do
         >
           Side Schemes
         </div>
-        <div id="villian-area" class="flex flex-row items-center justify-center border border-red-500">
-          <.card card={@game.villian} />
+        <div id="villain-area" class="flex flex-row items-center justify-center border border-red-500">
+          <.card card={@game.villain} />
         </div>
         <div
           id="main-schema-area"
