@@ -1,3 +1,12 @@
+# [0.3.0](https://github.com/jwstover/sanctum/compare/v0.2.1...v0.3.0) (2025-08-20)
+
+
+### Features
+
+* add scenarios resource ([1e925c7](https://github.com/jwstover/sanctum/commit/1e925c7daeb6e4fe09f5c1a7dce9ec09a4d6f2c1))
+
+
+
 ## [0.2.1](https://github.com/jwstover/sanctum/compare/v0.2.0...v0.2.1) (2025-08-04)
 
 
