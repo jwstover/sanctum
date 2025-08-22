@@ -90,13 +90,14 @@ defmodule SanctumWeb.CoreComponents do
   """
   attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
   attr :class, :string, default: ""
-  attr :variant, :string, values: ~w(primary)
+  attr :variant, :string, values: ~w(primary icon)
   slot :inner_block, required: true
 
   def button(%{rest: rest} = assigns) do
     variants = %{
       "primary" =>
         "bg-primary text-primary-content border-2 border-r-4 border-b-4 border-black shadow-[3px_3px_0px_0px_theme(colors.black)] hover:shadow-[2px_2px_0px_0px_theme(colors.black)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-75 font-elektra font-bold uppercase tracking-wide transform hover:scale-[1.02] active:scale-100",
+      "icon" => "btn-circle bg-gray-900 text-gray-100 border-none shadow-none",
       nil =>
         "btn-primary font-elektra uppercase font-bold border-r-4 border-b-4 border-black shadow-black shadow-none"
     }

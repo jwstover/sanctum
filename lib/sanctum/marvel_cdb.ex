@@ -1,5 +1,6 @@
 defmodule Sanctum.MarvelCdb do
   @moduledoc false
+
   alias Sanctum.Games.Card
   alias Sanctum.Decks
   alias Sanctum.Games
@@ -27,7 +28,14 @@ defmodule Sanctum.MarvelCdb do
   end
 
   defp prepare_deck_attrs(%{"slots" => cards_map} = decklist) do
+    alter_ego_code =
+      decklist["hero_code"]
+      |> String.trim()
+      |> String.trim_trailing("a")
+      |> Kernel.<>("b")
+
     {:ok, hero} = load_card(decklist["hero_code"])
+    {:ok, _alter_ego} = load_card(alter_ego_code)
 
     card_codes = Map.keys(cards_map)
 
@@ -48,6 +56,7 @@ defmodule Sanctum.MarvelCdb do
       mcdb_id: decklist["id"] |> Integer.to_string(),
       title: decklist["name"],
       hero_code: hero.code,
+      alter_ego_code: alter_ego_code,
       card_ids: card_ids
     }
   end
@@ -200,6 +209,7 @@ defmodule Sanctum.MarvelCdb do
       # Villain-specific fields
       health_per_hero: mcdb_card["health_per_hero"] || false,
       stage: mcdb_card["stage"],
+      scheme: mcdb_card["scheme"],
 
       # Scheme-specific fields
       base_threat: mcdb_card["base_threat"],

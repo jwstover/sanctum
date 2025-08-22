@@ -15,7 +15,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
       assign(assigns, :src, assigns.imgsrc || assigns.card.image_url)
       |> assign(
         :aspect,
-        if assigns.card && assigns.card.card_type in @landscape_types do
+        if assigns.card && assigns.card.type in @landscape_types do
           "aspect-[calc(88/63)] h-[110px]"
         else
           "aspect-[calc(63/88)] h-[153px]"
@@ -34,6 +34,12 @@ defmodule SanctumWeb.GameLive.GameComponents do
   def encounter_back(assigns) do
     ~H"""
     <.card imgsrc={~p"/images/encounter-back.webp"} />
+    """
+  end
+
+  def player_back(assigns) do
+    ~H"""
+    <.card imgsrc={~p"/images/player-back.webp"} />
     """
   end
 end

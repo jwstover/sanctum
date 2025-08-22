@@ -1,6 +1,11 @@
 defmodule Sanctum.Games.Game do
   @moduledoc false
 
+  alias Sanctum.Games.Changes.SetRecommendedModularSets
+  alias Sanctum.Games.Changes.CreateGamePlayer
+  alias Sanctum.Games.Changes.CreateGameScheme
+  alias Sanctum.Games.Changes.CreateGameVillian
+
   use Ash.Resource,
     otp_app: :sanctum,
     domain: Sanctum.Games,
@@ -13,7 +18,17 @@ defmodule Sanctum.Games.Game do
   end
 
   actions do
-    defaults [:read, create: :*]
+    defaults [:read]
+
+    create :create do
+      accept [:*]
+
+      change set_attribute(:state, :setup)
+      change SetRecommendedModularSets, only_when_valid?: true
+      change CreateGamePlayer, only_when_valid?: true
+      change CreateGameScheme, only_when_valid?: true
+      change CreateGameVillian, only_when_valid?: true
+    end
   end
 
   policies do
@@ -24,19 +39,24 @@ defmodule Sanctum.Games.Game do
 
   attributes do
     uuid_v7_primary_key :id
+
+    attribute :state, :atom,
+      constraints: [one_of: [:setup, :player, :villian, :complete]],
+      public?: true,
+      allow_nil?: false
+
+    attribute :player_order, {:array, :string}, public?: true
+
+    attribute :modular_sets, {:array, :string}, public?: true, allow_nil?: false
+
+    timestamps()
   end
 
   relationships do
-    belongs_to :hero, Sanctum.Games.Card do
-      public? true
-    end
+    belongs_to :scenario, Sanctum.Games.Scenario, public?: true, allow_nil?: false
 
-    belongs_to :villain, Sanctum.Games.Card do
-      public? true
-    end
-
-    belongs_to :main_scheme, Sanctum.Games.Card do
-      public? true
-    end
+    has_one :game_villian, Sanctum.Games.GameVillian
+    has_many :game_players, Sanctum.Games.GamePlayer
+    has_many :game_schemes, Sanctum.Games.GameScheme
   end
 end

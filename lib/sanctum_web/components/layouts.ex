@@ -27,6 +27,8 @@ defmodule SanctumWeb.Layouts do
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
 
+  attr :current_user, Sanctum.Accounts.User, required: false
+
   attr :current_scope, :map,
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
@@ -50,7 +52,7 @@ defmodule SanctumWeb.Layouts do
         </ul>
       </div>
       <div>
-        <.button variant="primary" navigate={~p"/games/new"}>New Game</.button>
+        <.button :if={!@current_user} variant="primary" navigate={~p"/sign-in"}>Sign In</.button>
       </div>
     </header>
 

@@ -115,6 +115,7 @@ defmodule Sanctum.Games.Card do
 
     attribute :health_per_hero, :boolean, public?: true, default: false
     attribute :stage, :integer, public?: true
+    attribute :scheme, :integer, public?: true
 
     # ── Scheme Fields ─────────────────────────────────────────────────────
 
@@ -135,6 +136,10 @@ defmodule Sanctum.Games.Card do
     attribute :image_url, :string, public?: true, allow_nil?: true
 
     timestamps()
+  end
+
+  relationships do
+    many_to_many :decks, Sanctum.Decks.Deck, through: Sanctum.Decks.DeckCard
   end
 
   identities do

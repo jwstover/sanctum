@@ -20,7 +20,44 @@ defmodule Sanctum.Games do
 
     resource Sanctum.Games.Scenario do
       define :create_scenario, action: :create
+      define :get_scenario, get_by: :id, action: :read
       define :get_scenario_by_set, get_by: :set, action: :read
+      define :list_scenarios, action: :read
     end
+
+    resource Sanctum.Games.ModularSet do
+      define :create_modular_set, action: :create
+    end
+
+    resource Sanctum.Games.GamePlayer do
+      define :flip_identity, action: :flip
+      define :get_game_player, get_by: :game_id, action: :read
+      define :select_deck, action: :select_deck
+    end
+
+    resource Sanctum.Games.GameVillian
+    resource Sanctum.Games.GameScheme
+
+    resource Sanctum.Games.GameCard do
+      define :peek_cards, action: :peek, args: [:game_player_id, :count, {:optional, :zone}]
+      define :update_game_card, action: :update
+    end
+  end
+
+  def draw_cards(game_player_id, count, current_hand_size, opts \\ []) do
+    {:ok, cards} = peek_cards(game_player_id, count, :hero_deck, opts)
+
+    cards
+    |> Enum.with_index()
+    |> Enum.map(fn {card, index} ->
+      card
+      |> update_game_card!(
+        %{
+          zone: :hero_hand,
+          order: current_hand_size + index
+        },
+        opts
+      )
+    end)
   end
 end
