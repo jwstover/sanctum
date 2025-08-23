@@ -1,3 +1,12 @@
+# [0.4.0](https://github.com/jwstover/sanctum/compare/v0.3.0...v0.4.0) (2025-08-23)
+
+
+### Features
+
+* add ability to create game with set scenario ([ab6d193](https://github.com/jwstover/sanctum/commit/ab6d19379c8bc1cca5c574faae33566faed88263))
+
+
+
 # [0.3.0](https://github.com/jwstover/sanctum/compare/v0.2.1...v0.3.0) (2025-08-20)
 
 
