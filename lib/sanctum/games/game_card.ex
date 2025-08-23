@@ -1,0 +1,72 @@
+defmodule Sanctum.Games.GameCard do
+  use Ash.Resource,
+    otp_app: :sanctum,
+    domain: Sanctum.Games,
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
+
+  postgres do
+    table "game_cards"
+    repo Sanctum.Repo
+  end
+
+  actions do
+    defaults [:read, :destroy, create: :*, update: :*]
+
+    read :peek do
+      argument :game_player_id, :uuid, allow_nil?: false
+      argument :count, :integer, allow_nil?: false
+      argument :zone, :atom, default: :hero_deck
+
+      prepare build(sort: [:order], limit: arg(:count))
+
+      filter expr(game_player_id == ^arg(:game_player_id))
+      filter expr(zone == ^arg(:zone))
+    end
+  end
+
+  policies do
+    policy always() do
+      authorize_if always()
+    end
+  end
+
+  attributes do
+    uuid_v7_primary_key :id
+
+    attribute :zone, :atom,
+      public?: true,
+      allow_nil?: false,
+      constraints: [
+        one_of: [
+          :hero_deck,
+          :hero_hand,
+          :hero_discard,
+          :hero_play,
+          :encounter_deck,
+          :encounter_discard,
+          :villian_play,
+          :main_scheme,
+          :side_scheme,
+          :removed_from_game,
+          :victory_display
+        ]
+      ]
+
+    attribute :order, :integer, public?: true, allow_nil?: false
+
+    attribute :status, :atom,
+      constraints: [one_of: [:ready, :exhausted]],
+      public?: true,
+      default: :ready
+
+    attribute :face_up, :boolean, public?: true, default: false
+
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :game_player, Sanctum.Games.GamePlayer, public?: true
+    belongs_to :card, Sanctum.Games.Card, public?: true
+  end
+end

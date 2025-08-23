@@ -71,6 +71,14 @@ defmodule Sanctum.Decks.Deck do
       source_attribute :hero_code
       destination_attribute :code
     end
+
+    belongs_to :alter_ego, Sanctum.Games.Card do
+      allow_nil? false
+      public? true
+      attribute_type :string
+      source_attribute :alter_ego_code
+      destination_attribute :code
+    end
   end
 
   identities do

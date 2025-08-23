@@ -3,6 +3,8 @@ defmodule SanctumWeb.GameLive.Index do
 
   use SanctumWeb, :live_view
 
+  on_mount {SanctumWeb.LiveUserAuth, :live_user_optional}
+
   def mount(_params, _session, socket) do
     {:ok, socket}
   end
@@ -13,8 +15,8 @@ defmodule SanctumWeb.GameLive.Index do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
-      <.button variant="primary" phx-click="new-game">New Game</.button>
+    <Layouts.app current_user={@current_user} flash={@flash}>
+      <.button :if={@current_user} variant="primary" phx-click="new-game">New Game</.button>
     </Layouts.app>
     """
   end

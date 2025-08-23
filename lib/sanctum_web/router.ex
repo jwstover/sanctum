@@ -26,17 +26,6 @@ defmodule SanctumWeb.Router do
   scope "/", SanctumWeb do
     pipe_through :browser
 
-    live "/", GameLive.Index, :index
-    live "/games/new", GameLive.New, :new
-    live "/games/:id", GameLive.Show, :show
-
-    live "/cards", CardLive.Index, :index
-    live "/cards/new", CardLive.Form, :new
-    live "/cards/:id/edit", CardLive.Form, :edit
-
-    live "/cards/:id", CardLive.Show, :show
-    live "/cards/:id/show/edit", CardLive.Show, :edit
-
     ash_authentication_live_session :authenticated_routes do
       # in each liveview, add one of the following at the top of the module:
       #
@@ -48,6 +37,17 @@ defmodule SanctumWeb.Router do
       #
       # If an authenticated user must *not* be present:
       # on_mount {SanctumWeb.LiveUserAuth, :live_no_user}
+
+      live "/", GameLive.Index, :index
+      live "/games/new", GameLive.New, :new
+      live "/games/:id", GameLive.Show, :show
+
+      live "/cards", CardLive.Index, :index
+      live "/cards/new", CardLive.Form, :new
+      live "/cards/:id/edit", CardLive.Form, :edit
+
+      live "/cards/:id", CardLive.Show, :show
+      live "/cards/:id/show/edit", CardLive.Show, :edit
     end
   end
 

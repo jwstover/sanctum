@@ -3,6 +3,6 @@ defmodule SanctumWeb.PageControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "New Game"
+    assert html_response(conn, 200) =~ "Sanctum"
   end
 end

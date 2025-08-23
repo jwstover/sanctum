@@ -3,39 +3,36 @@ defmodule SanctumWeb.GameLive.New do
 
   use SanctumWeb, :live_view
 
-  alias Sanctum.MarvelCdb
-  alias Sanctum.Decks.Deck
-  alias Sanctum.Decks
   alias Sanctum.Games
+
+  on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign_decks()
-     |> assign_form()
-     |> assign_mcdb_form()}
+     |> assign_scenarios()
+     |> assign_form()}
   end
 
-  def handle_event("import-deck", %{"deck_url" => deck_url}, socket) do
-    case MarvelCdb.load_deck(deck_url) do
-      {:ok, %Deck{} = deck} ->
-        {:noreply, put_flash(socket, :info, "Imported deck #{deck.title}") |> assign_decks()}
+  def handle_event("create", %{"form" => game_params}, socket) do
+    current_user = socket.assigns.current_user
 
-      _ ->
-        {:noreply, put_flash(socket, :error, "Failed to import deck")}
+    case Games.create_game(game_params, actor: current_user) do
+      {:ok, game} ->
+        {:noreply, push_navigate(socket, to: ~p"/games/#{game.id}")}
+
+      {:error, changeset} ->
+        {:noreply,
+         socket
+         |> assign(:form, to_form(changeset))
+         |> put_flash(:error, "Failed to create game")}
     end
   end
 
-  defp assign_decks(socket) do
-    case Decks.list_decks() do
-      {:ok, decks} when is_list(decks) ->
-        assign(socket, :decks, decks |> Enum.map(&{&1.title, &1.id}))
+  defp assign_scenarios(socket) do
+    {:ok, scenarios} = Games.list_scenarios()
 
-      _ ->
-        socket
-        |> assign(:decks, [])
-        |> put_flash(:error, "Failed to load decks")
-    end
+    assign(socket, :scenarios, Enum.map(scenarios, &{&1.name, &1.id}))
   end
 
   defp assign_form(socket) do
@@ -43,34 +40,25 @@ defmodule SanctumWeb.GameLive.New do
     assign(socket, :form, form)
   end
 
-  defp assign_mcdb_form(socket) do
-    assign(socket, :mcdb_form, to_form(%{}))
-  end
-
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app current_user={@current_user} flash={@flash}>
       <.header>New Game</.header>
-
-      <.form for={@mcdb_form} phx-submit="import-deck">
-        <div class="flex items-end w-full gap-2">
-          <div class="flex-1">
-            <.input label="MarvelCDB Deck Link" value="" name="deck_url" />
-          </div>
-          <div>
-            <.button type="submit">Import</.button>
-          </div>
-        </div>
-      </.form>
 
       <.form for={@form} phx-submit="create">
         <.input
           type="select"
-          field={@form[:deck_id]}
-          label="Deck"
-          prompt="Choose a deck"
-          options={@decks}
+          field={@form[:scenario_id]}
+          label="Scenario"
+          prompt="Choose a Scenario"
+          options={@scenarios}
         />
+
+        <div class="mt-2">
+          <.button phx-disable-with="Creating..." variant="primary" type="submit">
+            Create Game
+          </.button>
+        </div>
       </.form>
     </Layouts.app>
     """

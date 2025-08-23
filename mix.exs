@@ -107,7 +107,12 @@ defmodule Sanctum.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      ck: ["format", "credo suggest --min-priority=normal", "sobelow --config --exit"],
+      ck: [
+        "compile --warnings-as-errors",
+        "format",
+        "credo suggest --min-priority=normal",
+        "sobelow --config --exit"
+      ],
       setup: ["deps.get", "ash.setup", "assets.setup", "assets.build", "run priv/repo/seeds.exs"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
