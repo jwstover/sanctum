@@ -17,11 +17,12 @@ defmodule Sanctum.Games.Changes.AssignOrder do
       game_player_id = Ash.Changeset.get_attribute(changeset, :game_player_id)
       game_encounter_deck_id = Ash.Changeset.get_attribute(changeset, :game_encounter_deck_id)
 
-      where = if game_encounter_deck_id do
-        [game_encounter_deck_id: game_encounter_deck_id]
-      else
-        [game_player_id: game_player_id]
-      end
+      where =
+        if game_encounter_deck_id do
+          [game_encounter_deck_id: game_encounter_deck_id]
+        else
+          [game_player_id: game_player_id]
+        end
 
       max_order =
         Sanctum.Repo.one(

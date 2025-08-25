@@ -33,9 +33,7 @@ defmodule SanctumWeb.GameLive.Show do
 
     facedown_encounter_cards =
       socket.assigns.game.encounter_deck.facedown_encounter_cards
-      |> IO.inspect()
       |> Enum.filter(&(&1.game_player_id == game_player_id))
-      |> IO.inspect()
 
     stream(socket, :facedown_encounters, facedown_encounter_cards, reset: true)
   end
@@ -92,8 +90,6 @@ defmodule SanctumWeb.GameLive.Show do
         _ ->
           socket
       end
-
-    IO.inspect(socket)
 
     {:noreply, socket}
   end
@@ -164,8 +160,7 @@ defmodule SanctumWeb.GameLive.Show do
              ]
            ],
            actor: current_user
-         )
-         |> IO.inspect() do
+         ) do
       {:ok, %Game{} = game} -> assign(socket, :game, game)
       {:error, _err} -> push_navigate(socket, to: ~p"/")
     end
@@ -358,7 +353,7 @@ defmodule SanctumWeb.GameLive.Show do
           </a>
         </li>
         <li class="hover:text-orange-400">
-          <a  phx-click="reload">
+          <a phx-click="reload">
             Reload
           </a>
         </li>
