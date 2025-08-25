@@ -5,6 +5,8 @@ defmodule Sanctum.Games.GameCard do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
+  alias Sanctum.Games.Changes.AssignOrder
+
   postgres do
     table "game_cards"
     repo Sanctum.Repo
@@ -22,6 +24,14 @@ defmodule Sanctum.Games.GameCard do
 
       filter expr(game_player_id == ^arg(:game_player_id))
       filter expr(zone == ^arg(:zone))
+    end
+
+    update :move do
+      accept [:zone]
+      require_atomic? false
+      
+
+      change AssignOrder
     end
   end
 

@@ -22,10 +22,21 @@ defmodule SanctumWeb.GameLive.Show do
      |> assign_game_player()}
   end
 
-  def handle_info({:deck_selected, game_player}, socket) do
+  def handle_info({:deck_selected, _game_player}, socket) do
     {:noreply,
-     assign(socket, :game_player, game_player)
+     socket
+     |> assign_game_player()
      |> assign(:show_player_form, false)}
+  end
+
+  def handle_event("card-dropped", %{"card" => game_card_id, "zone" => zone_name}, socket) do
+    user = socket.assigns.current_user
+    game_card = Games.get_game_card!(game_card_id, actor: user)
+
+    Games.move_game_card(game_card, %{zone: zone_name}, actor: user)
+    |> IO.inspect()
+
+    {:noreply, socket |> assign_game_player()}
   end
 
   def handle_event("show-player-form", _params, socket) do
@@ -91,6 +102,7 @@ defmodule SanctumWeb.GameLive.Show do
           :current_hand_size,
           :max_hand_size,
           :hand_size,
+          hero_play_cards: [:card],
           hand_cards: [:card],
           deck: [:hero, :alter_ego]
         ],
@@ -121,8 +133,7 @@ defmodule SanctumWeb.GameLive.Show do
     ~H"""
     <div
       id="game-board"
-      class="h-full overflow-hidden grid grid-rows-[auto_repeat(5,1fr)] grid-cols-4 gap-4"
-      phx-hook="CardDrag"
+      class="h-full overflow-x-hidden overflow-y-auto grid grid-rows-[auto_repeat(5,1fr)] grid-cols-4 gap-4"
     >
       <div class="col-span-4">
         <.menu_dropdown />
@@ -134,19 +145,23 @@ defmodule SanctumWeb.GameLive.Show do
         Side Schemes
       </div>
       <div id="villain-area" class="flex flex-row items-center justify-center border border-red-500">
-        <.card card={@game.game_villian.card} />
+        <.card id={@game.game_villian.card.id} card={@game.game_villian.card} />
       </div>
       <div
         id="main-schema-area"
         class="flex flex-row items-center justify-center border border-black"
       >
-        <.card :for={main_scheme <- @game.game_schemes} card={main_scheme.card} />
+        <.card
+          :for={main_scheme <- @game.game_schemes}
+          id={main_scheme.card.id}
+          card={main_scheme.card}
+        />
       </div>
       <div
         id="encounter-deck-area"
         class="flex flex-row items-center justify-center border border-black"
       >
-        <.encounter_back />
+        <.encounter_back id="encounter-deck" />
       </div>
       <div
         id="encounter-area"
@@ -158,11 +173,14 @@ defmodule SanctumWeb.GameLive.Show do
       </div>
       <div
         id="player-area"
-        class="col-span-4 flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+        class="col-span-4 relative flex flex-row flex-wrap items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+        phx-hook="DragDrop"
+        data-drop_zone="hero_play"
       >
-        <div class="text-3xl font-komika opacity-50">
+        <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-3xl font-komika opacity-50">
           Player Area
         </div>
+        <.card :for={card <- @game_player.hero_play_cards} id={card.id} card={card.card} />
       </div>
 
       <div
@@ -183,12 +201,15 @@ defmodule SanctumWeb.GameLive.Show do
       >
         <.deck deck_cards={@game_player.deck_cards} />
       </div>
+      <div></div>
 
       <div
         id="player-hand-area"
-        class="flex flex-row items-center justify-center col-span-4"
+        class="col-span-4 relative min-h-[100px]"
       >
-        <.card :for={card <- @game_player.hand_cards} card={card.card} />
+        <div id="player-hand" class="fixed bottom-0 w-full max-h-max" phx-hook="LayoutHand">
+          <.card :for={card <- @game_player.hand_cards} id={card.id} card={card.card} />
+        </div>
       </div>
     </div>
     """
@@ -223,8 +244,8 @@ defmodule SanctumWeb.GameLive.Show do
   def deck(assigns) do
     ~H"""
     <div class="relative group flex flex-col" tabindex="0">
-      <.player_back :if={!Enum.empty?(@deck_cards)} />
-      <div class="flex flex-row justify-center w-full">
+      <.player_back :if={!Enum.empty?(@deck_cards)} id="player-deck" />
+      <div class="absolute bottom-3 opacity-50 left-0 flex flex-row justify-center w-full">
         <div><span>{Enum.count(@deck_cards)}</span></div>
       </div>
 
@@ -240,13 +261,10 @@ defmodule SanctumWeb.GameLive.Show do
 
   def identity(assigns) do
     ~H"""
-    <div class="relative group flex flex-col" tabindex="0">
-      <.card
-        :if={@game_player.deck}
-        card={
-          if @game_player.form == :hero, do: @game_player.deck.hero, else: @game_player.deck.alter_ego
-        }
-      />
+    <div :if={@game_player.deck} class="relative group flex flex-col" tabindex="0">
+      <% card =
+        if @game_player.form == :hero, do: @game_player.deck.hero, else: @game_player.deck.alter_ego %>
+      <.card id={card.id} card={card} />
       <div class="absolute hidden group-hover:flex group-focus:flex flex-col gap-1 left-full top-0 px-2">
         <.button variant="icon" phx-click="flip-hero"><.icon name="hero-arrow-uturn-left" /></.button>
       </div>

@@ -29,6 +29,12 @@ defmodule Sanctum.Accounts.User do
 
         sender Sanctum.Accounts.User.Senders.SendMagicLinkEmail
       end
+
+      google do
+        client_id Sanctum.Secrets
+        redirect_uri Sanctum.Secrets
+        client_secret Sanctum.Secrets
+      end
     end
   end
 
@@ -85,6 +91,28 @@ defmodule Sanctum.Accounts.User do
 
       run AshAuthentication.Strategy.MagicLink.Request
     end
+
+    create :register_with_google do
+      argument :user_info, :map, allow_nil?: false
+      argument :oauth_tokens, :map, allow_nil?: false
+      upsert? true
+      upsert_identity :unique_email
+
+      change AshAuthentication.GenerateTokenChange
+
+      # Required if you have the `identity_resource` configuration enabled.
+      change AshAuthentication.Strategy.OAuth2.IdentityChange
+
+      change fn changeset, _ ->
+        user_info = Ash.Changeset.get_argument(changeset, :user_info)
+
+        Ash.Changeset.change_attributes(changeset, Map.take(user_info, ["email"]))
+      end
+
+      # Required if you're using the password & confirmation strategies
+      upsert_fields []
+      change set_attribute(:confirmed_at, &DateTime.utc_now/0)
+    end
   end
 
   policies do
@@ -104,6 +132,8 @@ defmodule Sanctum.Accounts.User do
       allow_nil? false
       public? true
     end
+
+    attribute :confirmed_at, :utc_datetime, public?: true, allow_nil?: true
   end
 
   identities do

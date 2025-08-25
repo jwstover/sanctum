@@ -1,6 +1,8 @@
 import Config
 config :ash, policies: [show_policy_breakdowns?: true]
 
+config :sanctum, google_redirect_uri: "http://localhost:4000/auth/user/google/callback"
+
 # Configure your database
 config :sanctum, Sanctum.Repo,
   username: "postgres",
@@ -20,7 +22,7 @@ config :sanctum, Sanctum.Repo,
 config :sanctum, SanctumWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
+  http: [ip: {0, 0, 0, 0}, port: String.to_integer(System.get_env("PORT") || "4000")],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,

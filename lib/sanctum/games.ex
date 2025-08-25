@@ -39,8 +39,10 @@ defmodule Sanctum.Games do
     resource Sanctum.Games.GameScheme
 
     resource Sanctum.Games.GameCard do
+      define :get_game_card, get_by: :id, action: :read
       define :peek_cards, action: :peek, args: [:game_player_id, :count, {:optional, :zone}]
       define :update_game_card, action: :update
+      define :move_game_card, action: :move
     end
   end
 
