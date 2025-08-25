@@ -104,6 +104,7 @@ defmodule SanctumWeb.GameLive.Show do
           :hand_size,
           hero_play_cards: [:card],
           hand_cards: [:card],
+          hero_discard: [:card],
           deck: [:hero, :alter_ego]
         ],
         actor: socket.assigns.current_user
@@ -201,11 +202,22 @@ defmodule SanctumWeb.GameLive.Show do
       >
         <.deck deck_cards={@game_player.deck_cards} />
       </div>
-      <div></div>
+      <div
+        id="hero-discard"
+        class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+        phx-hook="DragDrop"
+        data-drop_zone="hero_discard"
+      >
+        <.card
+          :if={!Enum.empty?(@game_player.hero_discard)}
+          id="hero-discard"
+          card={List.last(@game_player.hero_discard) |> Map.get(:card)}
+        />
+      </div>
 
       <div
         id="player-hand-area"
-        class="col-span-4 relative min-h-[100px]"
+        class="col-span-4 min-h-[100px]"
       >
         <div id="player-hand" class="fixed bottom-0 w-full max-h-max" phx-hook="LayoutHand">
           <.card :for={card <- @game_player.hand_cards} id={card.id} card={card.card} />

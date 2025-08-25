@@ -18,9 +18,16 @@ export default {
         listeners: {
           start(event) {
             // Initialize position data on the element if it doesn't exist
+            const boundingRect = event.target.getBoundingClientRect();
+            console.log(boundingRect)
+
             event.target.dataset.x = event.target.dataset.x || 0;
             event.target.dataset.y = event.target.dataset.y || 0;
 
+            event.target.style.left = `${boundingRect.x}px`;
+            event.target.style.top = `${boundingRect.y}px`;
+            event.target.style.position = "fixed";
+            event.target.style.zIndex = 100;
             event.target.style.transform = "translate(0px, 0px)";
             event.target.style.scale = 1.2;
 

@@ -98,6 +98,13 @@ defmodule Sanctum.Games.GamePlayer do
       filter expr(zone == :hero_hand)
       sort [order: :asc]
     end
+
+    has_many :hero_discard, Sanctum.Games.GameCard do
+      source_attribute :id
+      destination_attribute :game_player_id
+      filter expr(zone == :hero_discard)
+      sort [order: :asc]
+    end
   end
 
   calculations do
