@@ -1,6 +1,6 @@
 import Config
 
-config :sanctum, google_redirect_uri: "http://sanctum.fly.dev/auth/user/google/callback"
+config :sanctum, google_redirect_uri: "https://sanctum.fly.dev/auth/user/google/callback"
 
 # Note we also include the path to a cache manifest
 # containing the digested version of static files. This
