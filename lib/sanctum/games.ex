@@ -49,6 +49,7 @@ defmodule Sanctum.Games do
 
       define :update_game_card, action: :update
       define :move_game_card, action: :move
+      define :flip_card, action: :flip
     end
   end
 
