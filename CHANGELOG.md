@@ -1,3 +1,12 @@
+# [0.6.0](https://github.com/jwstover/sanctum/compare/v0.5.0...v0.6.0) (2025-08-25)
+
+
+### Features
+
+* add ability to flip encounter cards ([9d0d7b1](https://github.com/jwstover/sanctum/commit/9d0d7b1d67456d4ab2faef35a1de2add4c754a2e))
+
+
+
 # [0.5.0](https://github.com/jwstover/sanctum/compare/v0.4.0...v0.5.0) (2025-08-25)
 
 
@@ -40,22 +49,6 @@
 ### Bug Fixes
 
 * resolve issue with runtime env in prod ([0b16e28](https://github.com/jwstover/sanctum/commit/0b16e28724c60eab35f7045d3bb8f86a04205f9d))
-
-
-
-# [0.2.0](https://github.com/jwstover/sanctum/compare/9609f3a873896c81f490aed6792410f6c797ab40...v0.2.0) (2025-08-03)
-
-
-### Bug Fixes
-
-* move content security policy to separate module ([9609f3a](https://github.com/jwstover/sanctum/commit/9609f3a873896c81f490aed6792410f6c797ab40))
-
-
-### Features
-
-* add card resource ([98dfe0a](https://github.com/jwstover/sanctum/commit/98dfe0aedac127faf899b531ee13adea91b7fbf0))
-* begin work on card drag ([55a051f](https://github.com/jwstover/sanctum/commit/55a051fcdef707f95d1f400b8c8147f7de589511))
-* begin work on play area ([baf11e6](https://github.com/jwstover/sanctum/commit/baf11e6d1ffea0ec4320363a0c864ef21a8a17d2))
 
 
 
