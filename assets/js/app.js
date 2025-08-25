@@ -25,12 +25,14 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/sanctum"
 import topbar from "../vendor/topbar"
 import CardDrag from "./hooks/card-drag";
+import DragDrop from "./hooks/drag-drop";
+import LayoutHand from "./hooks/layout-hand";
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, CardDrag},
+  hooks: {...colocatedHooks, CardDrag, DragDrop, LayoutHand},
 })
 
 // Show progress bar on live navigation and form submits

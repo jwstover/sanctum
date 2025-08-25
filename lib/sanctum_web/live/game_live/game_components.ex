@@ -7,8 +7,11 @@ defmodule SanctumWeb.GameLive.GameComponents do
     :main_scheme
   ]
 
+  attr :id, :string, required: true
   attr :card, Sanctum.Games.Card, default: nil
+  attr :game_card_id, :string, default: nil
   attr :imgsrc, :string, default: nil
+  attr :zone, :string, default: nil
 
   def card(assigns) do
     assigns =
@@ -16,30 +19,41 @@ defmodule SanctumWeb.GameLive.GameComponents do
       |> assign(
         :aspect,
         if assigns.card && assigns.card.type in @landscape_types do
-          "aspect-[calc(88/63)] h-[110px]"
+          "max-h-[71px] lg:h-[110px]"
         else
-          "aspect-[calc(63/88)] h-[153px]"
+          "max-h-[100px] lg:h-[153px]"
         end
       )
 
     ~H"""
-    <div class={[@aspect, "game-card max-h-full p-1 bg-black shadow shadow-black"]}>
+    <div
+      id={@id}
+      class={["game-card max-w-fit relative p-1 bg-black border border-gray-700 shadow shadow-black"]}
+      phx-hook="CardDrag"
+      data-game_card_id={@game_card_id}
+      data-zone={@zone}
+    >
       <figure class="rounded-[4.5%] overflow-hidden">
-        <img class="object-fit" src={@src} />
+        <img class={[@aspect, "object-fit"]} src={@src} />
       </figure>
+      <div class="absolute top-0 left-0 w-full h-full touch-none" />
     </div>
     """
   end
 
+  attr :id, :string, required: true
+
   def encounter_back(assigns) do
     ~H"""
-    <.card imgsrc={~p"/images/encounter-back.webp"} />
+    <.card id={@id} imgsrc={~p"/images/encounter-back.webp"} />
     """
   end
 
+  attr :id, :string, required: true
+
   def player_back(assigns) do
     ~H"""
-    <.card imgsrc={~p"/images/player-back.webp"} />
+    <.card id={@id} imgsrc={~p"/images/player-back.webp"} />
     """
   end
 end

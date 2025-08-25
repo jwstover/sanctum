@@ -23,13 +23,13 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
     case Application.get_env(:sanctum, :env) do
       :prod ->
         "default-src 'self';" <>
-          "connect-src wss://#{host};" <>
+          "connect-src wss://#{host} https://#{host}:*;" <>
           "img-src 'self' blob: data: https://marvelcdb.com;" <>
           "font-src 'self' data:;"
 
       _ ->
-        "default-src 'self' 'unsafe-eval' 'unsafe-inline' 127.0.0.1:4007;" <>
-          "connect-src ws://#{host}:* http://#{host}:*;" <>
+        "default-src 'self' 'unsafe-eval' 'unsafe-inline' #{host}:4007;" <>
+          "connect-src * ws://#{host}:* http://#{host}:*;" <>
           "img-src 'self' blob: data: https://marvelcdb.com;" <>
           "font-src 'self' data:;"
     end

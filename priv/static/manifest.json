@@ -1,0 +1,25 @@
+{
+  "name": "Marvel Champions Online",
+  "short_name": "Sanctum",
+  "description": "A web-based smart table application for playing Marvel Champions: The Card Game online",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1C398E",
+  "orientation": "any",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/images/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512.svg", 
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

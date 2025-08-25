@@ -20,6 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :sanctum, SanctumWeb.Endpoint, server: true
 end
 
+config :sanctum,
+  google_client_id: System.get_env("GOOGLE_CLIENT_ID"),
+  google_client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
