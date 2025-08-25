@@ -29,7 +29,6 @@ defmodule Sanctum.Games.GameCard do
     update :move do
       accept [:zone]
       require_atomic? false
-      
 
       change AssignOrder
     end
@@ -77,6 +76,7 @@ defmodule Sanctum.Games.GameCard do
 
   relationships do
     belongs_to :game_player, Sanctum.Games.GamePlayer, public?: true
+    belongs_to :game_encounter_deck, Sanctum.Games.GameEncounterDeck, public?: true
     belongs_to :card, Sanctum.Games.Card, public?: true
   end
 end

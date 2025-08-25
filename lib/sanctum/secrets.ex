@@ -14,11 +14,21 @@ defmodule Sanctum.Secrets do
     Application.fetch_env(:sanctum, :google_client_id)
   end
 
-  def secret_for([:authentication, :strategies, :google, :client_secret], Sanctum.Accounts.User, _, _) do
+  def secret_for(
+        [:authentication, :strategies, :google, :client_secret],
+        Sanctum.Accounts.User,
+        _,
+        _
+      ) do
     Application.fetch_env(:sanctum, :google_client_secret)
   end
 
-  def secret_for([:authentication, :strategies, :google, :redirect_uri], Sanctum.Accounts.User, _, _) do
+  def secret_for(
+        [:authentication, :strategies, :google, :redirect_uri],
+        Sanctum.Accounts.User,
+        _,
+        _
+      ) do
     Application.fetch_env(:sanctum, :google_redirect_uri)
   end
 end

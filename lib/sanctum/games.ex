@@ -37,6 +37,7 @@ defmodule Sanctum.Games do
 
     resource Sanctum.Games.GameVillian
     resource Sanctum.Games.GameScheme
+    resource Sanctum.Games.GameEncounterDeck
 
     resource Sanctum.Games.GameCard do
       define :get_game_card, get_by: :id, action: :read

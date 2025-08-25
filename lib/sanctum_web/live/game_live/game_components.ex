@@ -24,7 +24,11 @@ defmodule SanctumWeb.GameLive.GameComponents do
       )
 
     ~H"""
-    <div id={@id} class={["game-card max-w-fit relative p-1 bg-black border border-gray-700 shadow shadow-black"]} phx-hook="CardDrag">
+    <div
+      id={@id}
+      class={["game-card max-w-fit relative p-1 bg-black border border-gray-700 shadow shadow-black"]}
+      phx-hook="CardDrag"
+    >
       <figure class="rounded-[4.5%] overflow-hidden">
         <img class={[@aspect, "object-fit"]} src={@src} />
       </figure>

@@ -82,28 +82,28 @@ defmodule Sanctum.Games.GamePlayer do
       source_attribute :id
       destination_attribute :game_player_id
       filter expr(zone == :hero_deck)
-      sort [order: :asc]
+      sort order: :asc
     end
 
     has_many :hero_play_cards, Sanctum.Games.GameCard do
       source_attribute :id
       destination_attribute :game_player_id
       filter expr(zone == :hero_play)
-      sort [order: :asc]
+      sort order: :asc
     end
 
     has_many :hand_cards, Sanctum.Games.GameCard do
       source_attribute :id
       destination_attribute :game_player_id
       filter expr(zone == :hero_hand)
-      sort [order: :asc]
+      sort order: :asc
     end
 
     has_many :hero_discard, Sanctum.Games.GameCard do
       source_attribute :id
       destination_attribute :game_player_id
       filter expr(zone == :hero_discard)
-      sort [order: :asc]
+      sort order: :asc
     end
   end
 

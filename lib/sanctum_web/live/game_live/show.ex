@@ -82,9 +82,16 @@ defmodule SanctumWeb.GameLive.Show do
   defp assign_game(%{assigns: %{game_id: game_id, current_user: current_user}} = socket)
        when is_binary(game_id) do
     case Games.get_game(game_id,
-           load: [game_villian: [:card], game_schemes: [:card]],
+           load: [
+             game_villian: [:card],
+             game_schemes: [:card],
+             encounter_deck: [
+               deck_cards: [:card]
+             ]
+           ],
            actor: current_user
-         ) do
+         )
+         |> IO.inspect() do
       {:ok, %Game{} = game} -> assign(socket, :game, game)
       {:error, _err} -> push_navigate(socket, to: ~p"/")
     end
@@ -245,6 +252,9 @@ defmodule SanctumWeb.GameLive.Show do
           <a data-confirm="Are you sure? This will reset the game." phx-click="show-player-form">
             Change Deck
           </a>
+          <.link navigate={~p"/"}>
+            Leave Game
+          </.link>
         </li>
       </ul>
     </div>
