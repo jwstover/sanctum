@@ -18,8 +18,22 @@ defmodule SanctumWeb.GameLive.Show do
        game_id: game_id,
        show_player_form: false
      })
+     |> stream(:facedown_encounters, [])
      |> assign_game()
-     |> assign_game_player()}
+     |> assign_game_player()
+     |> stream_facedown_encounters()}
+  end
+
+  defp stream_facedown_encounters(socket) do
+    game_player_id = socket.assigns.game_player.id
+
+    facedown_encounter_cards =
+      socket.assigns.game.encounter_deck.facedown_encounter_cards
+      |> IO.inspect()
+      |> Enum.filter(&(&1.game_player_id == game_player_id))
+      |> IO.inspect()
+
+    stream(socket, :facedown_encounters, facedown_encounter_cards, reset: true)
   end
 
   def handle_info({:deck_selected, _game_player}, socket) do
@@ -34,13 +48,26 @@ defmodule SanctumWeb.GameLive.Show do
     game_card = Games.get_game_card!(game_card_id, actor: user)
 
     Games.move_game_card(game_card, %{zone: zone_name}, actor: user)
-    |> IO.inspect()
 
     {:noreply, socket |> assign_game_player()}
   end
 
   def handle_event("show-player-form", _params, socket) do
     {:noreply, assign(socket, :show_player_form, true)}
+  end
+
+  def handle_event("deal-encounter", params, socket) do
+    count = Map.get(params, "count", 1)
+
+    game_encounter_deck_id = socket.assigns.game.encounter_deck.id
+    game_player_id = socket.assigns.game_player.id
+
+    cards =
+      Games.deal_facedown_encounter_cards(game_encounter_deck_id, count, game_player_id,
+        actor: socket.assigns.current_user
+      )
+
+    {:noreply, stream(socket, :facedown_encounters, cards)}
   end
 
   def handle_event("draw-1", _params, socket) do
@@ -86,7 +113,8 @@ defmodule SanctumWeb.GameLive.Show do
              game_villian: [:card],
              game_schemes: [:card],
              encounter_deck: [
-               deck_cards: [:card]
+               deck_cards: [:card],
+               facedown_encounter_cards: [:card]
              ]
            ],
            actor: current_user
@@ -129,11 +157,12 @@ defmodule SanctumWeb.GameLive.Show do
         current_user={@current_user}
         game_player={@game_player}
       />
-      <.play_area game={@game} game_player={@game_player} />
+      <.play_area game={@game} game_player={@game_player} facedown_encounters={@streams.facedown_encounters} />
     </Layouts.game>
     """
   end
 
+  attr :facedown_encounters, :any, required: true
   attr :game, Game, required: true
   attr :game_player, GamePlayer, required: true
 
@@ -169,14 +198,32 @@ defmodule SanctumWeb.GameLive.Show do
         id="encounter-deck-area"
         class="flex flex-row items-center justify-center border border-black"
       >
-        <.encounter_back id="encounter-deck" />
+        <.encounter_deck encounter_deck={@game.encounter_deck} />
       </div>
       <div
         id="encounter-area"
-        class="col-span-4 flex flex-row items-center justify-center bg-orange-300/5 rounded border-4 border-gray-100/10"
+        class="col-span-4 relative flex flex-row items-center justify-center bg-orange-300/5 rounded border-4 border-gray-100/10"
       >
-        <div class="text-3xl font-komika opacity-50">
+        <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-3xl font-komika opacity-50">
           Encounter Area
+        </div>
+
+        <div
+          id="facedown-encounters"
+          class="flex flex-row flex-wrap items-center justify-center"
+          phx-update="stream"
+        >
+          <%= for {_, card} <- @facedown_encounters do %>
+    <div id={"encounter-#{card.id}"} class="relative group" tabindex="0">
+      <.card :if={card.face_up} id={card.id} card={card.card} />
+      <.encounter_back :if={!card.face_up} id={card.id} />
+      <div class="absolute hidden group-hover:flex group-focus:flex w-full bottom-2 flex flex-col items-center">
+        <button class="btn btn-sm bg-gray-900 text-gray-100 border-none rounded shadow shadow-gray-800 font-elektra">
+          Flip
+        </button>
+      </div>
+    </div>
+          <% end %>
         </div>
       </div>
       <div
@@ -261,6 +308,17 @@ defmodule SanctumWeb.GameLive.Show do
     """
   end
 
+  def encounter_deck(assigns) do
+    ~H"""
+    <div class="relative group" tabindex="0">
+      <.encounter_back id="encounter-deck" />
+      <ul class="absolute top-[100%] right-0 hidden group-hover:flex group-focus:flex menu dropdown-content bg-gray-900 rounded-box z-1 w-52 p-2 shadow-sm">
+        <li phx-click="deal-encounter"><a>Deal Encounter</a></li>
+      </ul>
+    </div>
+    """
+  end
+
   attr :deck_cards, :list, required: true
 
   def deck(assigns) do
@@ -291,6 +349,11 @@ defmodule SanctumWeb.GameLive.Show do
         <.button variant="icon" phx-click="flip-hero"><.icon name="hero-arrow-uturn-left" /></.button>
       </div>
     </div>
+    """
+  end
+
+  def encounter_card(assigns) do
+    ~H"""
     """
   end
 end

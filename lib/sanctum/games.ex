@@ -42,6 +42,11 @@ defmodule Sanctum.Games do
     resource Sanctum.Games.GameCard do
       define :get_game_card, get_by: :id, action: :read
       define :peek_cards, action: :peek, args: [:game_player_id, :count, {:optional, :zone}]
+
+      define :peek_encounter_cards,
+        action: :peek_encounter,
+        args: [:game_encounter_deck_id, :count]
+
       define :update_game_card, action: :update
       define :move_game_card, action: :move
     end
@@ -58,6 +63,23 @@ defmodule Sanctum.Games do
         %{
           zone: :hero_hand,
           order: current_hand_size + index
+        },
+        opts
+      )
+    end)
+  end
+
+  def deal_facedown_encounter_cards(game_encounter_deck_id, count, game_player_id, opts \\ []) do
+    {:ok, cards} = peek_encounter_cards(game_encounter_deck_id, count)
+
+    cards
+    |> Enum.with_index()
+    |> Enum.map(fn {card, _index} ->
+      card
+      |> move_game_card!(
+        %{
+          game_player_id: game_player_id,
+          zone: :facedown_encounter
         },
         opts
       )

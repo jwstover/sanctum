@@ -44,6 +44,13 @@ defmodule Sanctum.Games.GameEncounterDeck do
       sort order: :asc
     end
 
+    has_many :facedown_encounter_cards, Sanctum.Games.GameCard do
+      source_attribute :id
+      destination_attribute :game_encounter_deck_id
+      filter expr(zone == :facedown_encounter)
+      sort order: :asc
+    end
+
     has_many :discard_cards, Sanctum.Games.GameCard do
       source_attribute :id
       destination_attribute :game_encounter_deck_id

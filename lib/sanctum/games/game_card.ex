@@ -26,8 +26,18 @@ defmodule Sanctum.Games.GameCard do
       filter expr(zone == ^arg(:zone))
     end
 
+    read :peek_encounter do
+      argument :game_encounter_deck_id, :uuid, allow_nil?: false
+      argument :count, :integer, allow_nil?: false
+
+      prepare build(sort: [:order], limit: arg(:count))
+
+      filter expr(game_encounter_deck_id == ^arg(:game_encounter_deck_id))
+      filter expr(zone == :encounter_deck)
+    end
+
     update :move do
-      accept [:zone]
+      accept [:game_player_id, :zone]
       require_atomic? false
 
       change AssignOrder
@@ -55,6 +65,7 @@ defmodule Sanctum.Games.GameCard do
           :encounter_deck,
           :encounter_discard,
           :villian_play,
+          :facedown_encounter,
           :main_scheme,
           :side_scheme,
           :removed_from_game,
