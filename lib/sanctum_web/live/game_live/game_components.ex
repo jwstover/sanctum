@@ -19,24 +19,33 @@ defmodule SanctumWeb.GameLive.GameComponents do
       |> assign(
         :aspect,
         if assigns.card && assigns.card.type in @landscape_types do
-          "max-h-[71px] lg:h-[110px]"
+          "max-h-[71px] lg:max-h-[110px]"
         else
-          "max-h-[100px] lg:h-[153px]"
+          "max-h-[100px] lg:max-h-[153px]"
         end
       )
 
     ~H"""
-    <div
-      id={@id}
-      class={["game-card max-w-fit relative p-1 bg-black border border-gray-700 shadow shadow-black"]}
-      phx-hook="CardDrag"
-      data-game_card_id={@game_card_id}
-      data-zone={@zone}
-    >
-      <figure class="rounded-[4.5%] overflow-hidden">
-        <img class={[@aspect, "object-fit"]} src={@src} />
-      </figure>
-      <div class="absolute top-0 left-0 w-full h-full touch-none" />
+    <div id={@id}>
+      <div
+        id={@id <> "-drag"}
+        class={[
+          "game-card max-w-fit peer relative p-1 bg-black border border-gray-700 shadow shadow-black"
+        ]}
+        phx-hook="CardDrag"
+        data-game_card_id={@game_card_id}
+        data-zone={@zone}
+      >
+        <figure class="rounded-[4.5%] overflow-hidden">
+          <img class={[@aspect, "object-fit"]} src={@src} />
+        </figure>
+        <div class="absolute top-0 left-0 w-full h-full touch-none" />
+      </div>
+      <div class="fixed left-2 bottom-2 hidden peer-hover:not-peer-[.game-card-dragging]:block z-1000 p-4 bg-black ">
+        <figure class="rounded-[4.5%] overflow-hidden">
+          <img class={["h-[30vh] object-fit"]} src={@src} />
+        </figure>
+      </div>
     </div>
     """
   end

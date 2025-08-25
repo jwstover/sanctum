@@ -14,6 +14,7 @@ defmodule Sanctum.Games.Changes.SetGameCards do
 
         cards =
           deck.cards
+          |> Enum.shuffle()
           |> Enum.reject(&(&1.type in [:alter_ego, :main_scheme, :villian, :hero]))
           |> Enum.with_index()
           |> Enum.map(fn {card, index} ->

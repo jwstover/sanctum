@@ -42,6 +42,10 @@ defmodule Sanctum.Games.GameCard do
 
       change AssignOrder
     end
+
+    update :flip do
+      change atomic_update(:face_up, expr(not face_up))
+    end
   end
 
   policies do

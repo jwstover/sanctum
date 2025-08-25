@@ -25,7 +25,8 @@ defmodule SanctumWeb.GameLive.Show do
      |> assign_game_player()
      |> stream_facedown_encounters()
      |> stream_hero_play_cards()
-     |> stream_hand_cards()}
+     |> stream_hand_cards()
+     |> assign_hero_discard()}
   end
 
   defp stream_facedown_encounters(socket) do
@@ -87,6 +88,10 @@ defmodule SanctumWeb.GameLive.Show do
           updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
           stream_insert(socket, :hand_cards, updated_card)
 
+        "hero_discard" ->
+          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
+          assign(socket, :hero_discard, [updated_card | socket.assigns.hero_discard])
+
         _ ->
           socket
       end
@@ -147,6 +152,21 @@ defmodule SanctumWeb.GameLive.Show do
     {:noreply, socket |> assign_game_player()}
   end
 
+  def handle_event("flip", %{"game_card_id" => game_card_id}, socket) do
+    {:ok, card} =
+      Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
+      |> Games.flip_card()
+
+    zone =
+      case card.zone do
+        :hero_hand -> :hand_cards
+        :hero_play -> :hero_play_cards
+        :facedown_encounter -> :facedown_encounters
+      end
+
+    {:noreply, stream_insert(socket, zone, card)}
+  end
+
   @spec assign_game(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
   defp assign_game(%{assigns: %{game_id: game_id, current_user: current_user}} = socket)
        when is_binary(game_id) do
@@ -188,6 +208,12 @@ defmodule SanctumWeb.GameLive.Show do
     )
   end
 
+  defp assign_hero_discard(socket) do
+    game_player = socket.assigns.game_player
+
+    assign(socket, :hero_discard, game_player.hero_discard |> Enum.reverse())
+  end
+
   def render(assigns) do
     ~H"""
     <Layouts.game flash={@flash}>
@@ -198,7 +224,12 @@ defmodule SanctumWeb.GameLive.Show do
         current_user={@current_user}
         game_player={@game_player}
       />
-      <.play_area game={@game} game_player={@game_player} streams={@streams} />
+      <.play_area
+        game={@game}
+        game_player={@game_player}
+        streams={@streams}
+        hero_discard={@hero_discard}
+      />
     </Layouts.game>
     """
   end
@@ -206,6 +237,7 @@ defmodule SanctumWeb.GameLive.Show do
   attr :streams, :any, required: true
   attr :game, Game, required: true
   attr :game_player, GamePlayer, required: true
+  attr :hero_discard, :list, required: true
 
   def play_area(assigns) do
     ~H"""
@@ -217,17 +249,8 @@ defmodule SanctumWeb.GameLive.Show do
         <.menu_dropdown />
       </div>
       <div
-        id="side-schema-area"
-        class="flex flex-row items-center justify-center border border-black"
-      >
-        Side Schemes
-      </div>
-      <div id="villain-area" class="flex flex-row items-center justify-center border border-red-500">
-        <.card id={@game.game_villian.card.id} card={@game.game_villian.card} />
-      </div>
-      <div
         id="main-schema-area"
-        class="flex flex-row items-center justify-center border border-black"
+        class="flex flex-col items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
       >
         <.card
           :for={main_scheme <- @game.game_schemes}
@@ -236,14 +259,25 @@ defmodule SanctumWeb.GameLive.Show do
         />
       </div>
       <div
+        id="villian-area"
+        class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+      >
+        <.card id={@game.game_villian.card.id} card={@game.game_villian.card} />
+      </div>
+      <div
         id="encounter-deck-area"
-        class="flex flex-row items-center justify-center border border-black"
+        class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
       >
         <.encounter_deck encounter_deck={@game.encounter_deck} />
       </div>
       <div
+        id="encounter-discard-area"
+        class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+      >
+      </div>
+      <div
         id="encounter-area"
-        class="col-span-4 relative flex flex-row items-center justify-center bg-orange-300/5 rounded border-4 border-gray-100/10"
+        class="col-span-4 relative flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
       >
         <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-3xl font-komika opacity-50">
           Encounter Area
@@ -251,7 +285,7 @@ defmodule SanctumWeb.GameLive.Show do
 
         <div
           id="facedown-encounters"
-          class="flex flex-row flex-wrap items-center justify-center"
+          class="flex flex-row flex-wrap gap-1 items-center justify-center"
           phx-update="stream"
         >
           <%= for {dom_id, card} <- @streams.facedown_encounters do %>
@@ -259,7 +293,11 @@ defmodule SanctumWeb.GameLive.Show do
               <.card :if={card.face_up} id={card.id} card={card.card} />
               <.encounter_back :if={!card.face_up} id={card.id} />
               <div class="absolute hidden group-hover:flex group-focus:flex w-full bottom-2 flex flex-col items-center">
-                <button class="btn btn-sm bg-gray-900 text-gray-100 border-none rounded shadow shadow-gray-800 font-elektra">
+                <button
+                  class="btn btn-sm bg-gray-900 text-gray-100 border-none rounded shadow shadow-gray-800 font-elektra"
+                  phx-click="flip"
+                  phx-value-game_card_id={card.id}
+                >
                   Flip
                 </button>
               </div>
@@ -276,7 +314,11 @@ defmodule SanctumWeb.GameLive.Show do
         <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-3xl font-komika opacity-50">
           Player Area
         </div>
-        <div id="player-area-cards" phx-update="stream">
+        <div
+          id="player-area-cards"
+          class="flex flex-row flex-wrap items-center justify-center"
+          phx-update="stream"
+        >
           <%= for {dom_id, card} <- @streams.hero_play_cards do %>
             <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hero_play" />
           <% end %>
@@ -291,13 +333,13 @@ defmodule SanctumWeb.GameLive.Show do
 
       <div
         id="hero-area"
-        class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+        class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10 z-20"
       >
         <.identity game_player={@game_player} />
       </div>
       <div
         id="player-deck-area"
-        class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+        class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10 z-10"
       >
         <.deck deck_cards={@game_player.deck_cards} />
       </div>
@@ -308,15 +350,15 @@ defmodule SanctumWeb.GameLive.Show do
         data-drop_zone="hero_discard"
       >
         <.card
-          :if={!Enum.empty?(@game_player.hero_discard)}
+          :if={!Enum.empty?(@hero_discard)}
           id="hero-discard-pile"
-          card={List.last(@game_player.hero_discard) |> Map.get(:card)}
+          card={hd(@hero_discard) |> Map.get(:card)}
         />
       </div>
 
       <div
         id="player-hand-area"
-        class="col-span-4 min-h-[100px]"
+        class="col-span-4 min-h-[100px] z-100"
       >
         <div
           id="player-hand"

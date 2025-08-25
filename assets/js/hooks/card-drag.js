@@ -21,15 +21,17 @@ export default {
             const boundingRect = event.target.getBoundingClientRect();
             console.log(boundingRect)
 
-            event.target.dataset.x = event.target.dataset.x || 0;
-            event.target.dataset.y = event.target.dataset.y || 0;
+            event.target.dataset.x = 0;
+            event.target.dataset.y = 0;
+            event.target.dataset.starting_left = event.target.style.left
 
             event.target.style.left = `${boundingRect.x}px`;
             event.target.style.top = `${boundingRect.y}px`;
             event.target.style.position = "fixed";
-            event.target.style.zIndex = 100;
+            event.target.style.zIndex = 1001;
             event.target.style.transform = "translate(0px, 0px)";
             event.target.style.scale = 1.2;
+            event.target.classList.add("game-card-dragging");
 
           },
           move(event) {
@@ -43,6 +45,11 @@ export default {
           },
           end(event) {
             event.target.style.scale = 1;
+            event.target.style.position="absolute";
+            event.target.style.transform= null;
+            event.target.style.left = event.target.dataset.starting_left;
+            event.target.style.top = null;
+            event.target.classList.remove("game-card-dragging");
           }
         },
       })
