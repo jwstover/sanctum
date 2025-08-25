@@ -9,7 +9,9 @@ defmodule SanctumWeb.GameLive.GameComponents do
 
   attr :id, :string, required: true
   attr :card, Sanctum.Games.Card, default: nil
+  attr :game_card_id, :string, default: nil
   attr :imgsrc, :string, default: nil
+  attr :zone, :string, default: nil
 
   def card(assigns) do
     assigns =
@@ -28,6 +30,8 @@ defmodule SanctumWeb.GameLive.GameComponents do
       id={@id}
       class={["game-card max-w-fit relative p-1 bg-black border border-gray-700 shadow shadow-black"]}
       phx-hook="CardDrag"
+      data-game_card_id={@game_card_id}
+      data-zone={@zone}
     >
       <figure class="rounded-[4.5%] overflow-hidden">
         <img class={[@aspect, "object-fit"]} src={@src} />

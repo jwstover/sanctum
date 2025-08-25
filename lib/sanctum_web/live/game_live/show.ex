@@ -19,9 +19,13 @@ defmodule SanctumWeb.GameLive.Show do
        show_player_form: false
      })
      |> stream(:facedown_encounters, [])
+     |> stream(:hero_play_cards, [])
+     |> stream(:hand_cards, [])
      |> assign_game()
      |> assign_game_player()
-     |> stream_facedown_encounters()}
+     |> stream_facedown_encounters()
+     |> stream_hero_play_cards()
+     |> stream_hand_cards()}
   end
 
   defp stream_facedown_encounters(socket) do
@@ -36,6 +40,18 @@ defmodule SanctumWeb.GameLive.Show do
     stream(socket, :facedown_encounters, facedown_encounter_cards, reset: true)
   end
 
+  defp stream_hero_play_cards(socket) do
+    hero_play_cards = socket.assigns.game_player.hero_play_cards
+
+    stream(socket, :hero_play_cards, hero_play_cards, reset: true)
+  end
+
+  defp stream_hand_cards(socket) do
+    hand_cards = socket.assigns.game_player.hand_cards
+
+    stream(socket, :hand_cards, hand_cards, reset: true)
+  end
+
   def handle_info({:deck_selected, _game_player}, socket) do
     {:noreply,
      socket
@@ -43,13 +59,43 @@ defmodule SanctumWeb.GameLive.Show do
      |> assign(:show_player_form, false)}
   end
 
-  def handle_event("card-dropped", %{"card" => game_card_id, "zone" => zone_name}, socket) do
+  def handle_event(
+        "card-dropped",
+        %{"card" => game_card_id, "zone" => zone_name} = params,
+        socket
+      ) do
+    source_zone = Map.get(params, "source_zone")
     user = socket.assigns.current_user
     game_card = Games.get_game_card!(game_card_id, actor: user)
 
     Games.move_game_card(game_card, %{zone: zone_name}, actor: user)
 
-    {:noreply, socket |> assign_game_player()}
+    # Remove from source stream
+    socket =
+      case source_zone do
+        "hero_play" -> stream_delete(socket, :hero_play_cards, game_card)
+        "hand" -> stream_delete(socket, :hand_cards, game_card)
+        _ -> socket
+      end
+
+    # Add to destination stream  
+    socket =
+      case zone_name do
+        "hero_play" ->
+          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
+          stream_insert(socket, :hero_play_cards, updated_card)
+
+        "hand" ->
+          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
+          stream_insert(socket, :hand_cards, updated_card)
+
+        _ ->
+          socket
+      end
+
+    IO.inspect(socket)
+
+    {:noreply, socket}
   end
 
   def handle_event("show-player-form", _params, socket) do
@@ -77,7 +123,7 @@ defmodule SanctumWeb.GameLive.Show do
       actor: socket.assigns.current_user
     )
 
-    {:noreply, socket |> assign_game_player()}
+    {:noreply, socket |> assign_game_player() |> stream_hand_cards()}
   end
 
   def handle_event("draw-hand", _params, socket) do
@@ -94,7 +140,7 @@ defmodule SanctumWeb.GameLive.Show do
         actor: socket.assigns.current_user
       )
 
-    {:noreply, socket |> assign_game_player()}
+    {:noreply, socket |> assign_game_player() |> stream_hand_cards()}
   end
 
   def handle_event("flip-hero", _params, socket) do
@@ -157,12 +203,12 @@ defmodule SanctumWeb.GameLive.Show do
         current_user={@current_user}
         game_player={@game_player}
       />
-      <.play_area game={@game} game_player={@game_player} facedown_encounters={@streams.facedown_encounters} />
+      <.play_area game={@game} game_player={@game_player} streams={@streams} />
     </Layouts.game>
     """
   end
 
-  attr :facedown_encounters, :any, required: true
+  attr :streams, :any, required: true
   attr :game, Game, required: true
   attr :game_player, GamePlayer, required: true
 
@@ -213,16 +259,16 @@ defmodule SanctumWeb.GameLive.Show do
           class="flex flex-row flex-wrap items-center justify-center"
           phx-update="stream"
         >
-          <%= for {_, card} <- @facedown_encounters do %>
-    <div id={"encounter-#{card.id}"} class="relative group" tabindex="0">
-      <.card :if={card.face_up} id={card.id} card={card.card} />
-      <.encounter_back :if={!card.face_up} id={card.id} />
-      <div class="absolute hidden group-hover:flex group-focus:flex w-full bottom-2 flex flex-col items-center">
-        <button class="btn btn-sm bg-gray-900 text-gray-100 border-none rounded shadow shadow-gray-800 font-elektra">
-          Flip
-        </button>
-      </div>
-    </div>
+          <%= for {dom_id, card} <- @streams.facedown_encounters do %>
+            <div id={dom_id} class="relative group" tabindex="0">
+              <.card :if={card.face_up} id={card.id} card={card.card} />
+              <.encounter_back :if={!card.face_up} id={card.id} />
+              <div class="absolute hidden group-hover:flex group-focus:flex w-full bottom-2 flex flex-col items-center">
+                <button class="btn btn-sm bg-gray-900 text-gray-100 border-none rounded shadow shadow-gray-800 font-elektra">
+                  Flip
+                </button>
+              </div>
+            </div>
           <% end %>
         </div>
       </div>
@@ -235,7 +281,11 @@ defmodule SanctumWeb.GameLive.Show do
         <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-3xl font-komika opacity-50">
           Player Area
         </div>
-        <.card :for={card <- @game_player.hero_play_cards} id={card.id} card={card.card} />
+        <div id="player-area-cards" phx-update="stream">
+          <%= for {dom_id, card} <- @streams.hero_play_cards do %>
+            <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hero_play" />
+          <% end %>
+        </div>
       </div>
 
       <div
@@ -264,7 +314,7 @@ defmodule SanctumWeb.GameLive.Show do
       >
         <.card
           :if={!Enum.empty?(@game_player.hero_discard)}
-          id="hero-discard"
+          id="hero-discard-pile"
           card={List.last(@game_player.hero_discard) |> Map.get(:card)}
         />
       </div>
@@ -273,8 +323,15 @@ defmodule SanctumWeb.GameLive.Show do
         id="player-hand-area"
         class="col-span-4 min-h-[100px]"
       >
-        <div id="player-hand" class="fixed bottom-0 w-full max-h-max" phx-hook="LayoutHand">
-          <.card :for={card <- @game_player.hand_cards} id={card.id} card={card.card} />
+        <div
+          id="player-hand"
+          class="fixed bottom-0 w-full max-h-max"
+          phx-hook="LayoutHand"
+          phx-update="stream"
+        >
+          <%= for {dom_id, card} <- @streams.hand_cards do %>
+            <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hand" />
+          <% end %>
         </div>
       </div>
     </div>
@@ -299,6 +356,13 @@ defmodule SanctumWeb.GameLive.Show do
           <a data-confirm="Are you sure? This will reset the game." phx-click="show-player-form">
             Change Deck
           </a>
+        </li>
+        <li class="hover:text-orange-400">
+          <a  phx-click="reload">
+            Reload
+          </a>
+        </li>
+        <li>
           <.link navigate={~p"/"}>
             Leave Game
           </.link>
