@@ -1,3 +1,21 @@
+# [0.5.0](https://github.com/jwstover/sanctum/compare/v0.4.0...v0.5.0) (2025-08-25)
+
+
+### Bug Fixes
+
+* refactor play areas to use streams ([f2bfd2e](https://github.com/jwstover/sanctum/commit/f2bfd2e8fabdf6abfa2c4a22b7366a0bf873b63f))
+
+
+### Features
+
+* add ability to deal facedown encounter card ([4b9db37](https://github.com/jwstover/sanctum/commit/4b9db37cc83d096cf03ad3d5ef4a0fae53772fb7))
+* add ability to move cards from hand to play area ([c8e3f45](https://github.com/jwstover/sanctum/commit/c8e3f4561f0c7363badd5584c77eae4fff4165a3))
+* add ability to move cards to discard ([77cb0be](https://github.com/jwstover/sanctum/commit/77cb0be96e8d7da2c9bf9fe7581ae78be1593954))
+* add encounter cards to encounter deck on game creation ([0c07219](https://github.com/jwstover/sanctum/commit/0c072191f46f167e0a5fdc3d8876c3a3999db1a5))
+* make PWA ([b85f6c2](https://github.com/jwstover/sanctum/commit/b85f6c227791823d69b0da5cff4306e8e0bf9858))
+
+
+
 # [0.4.0](https://github.com/jwstover/sanctum/compare/v0.3.0...v0.4.0) (2025-08-23)
 
 
