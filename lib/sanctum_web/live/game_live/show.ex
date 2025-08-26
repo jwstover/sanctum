@@ -427,11 +427,18 @@ defmodule SanctumWeb.GameLive.Show do
           id="player-hand"
           class="fixed bottom-0 w-full max-h-max"
           phx-hook="LayoutHand"
-          phx-update="stream"
         >
-          <%= for {dom_id, card} <- @streams.hand_cards do %>
-            <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hand" />
-          <% end %>
+          <div
+            id="player-hand-dropzone"
+            class="w-full h-full border-4 rounded border-transparent"
+            phx-hook="DragDrop"
+            phx-update="stream"
+            data-drop_zone="hand"
+          >
+            <%= for {dom_id, card} <- @streams.hand_cards do %>
+              <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hand" />
+            <% end %>
+          </div>
         </div>
       </div>
     </div>

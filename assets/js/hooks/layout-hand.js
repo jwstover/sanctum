@@ -9,6 +9,7 @@ const LayoutHand = {
 
   updated() {
     // Re-layout when cards are added/removed
+    console.log("layout");
     this.layoutCards();
   },
 
@@ -102,15 +103,18 @@ const LayoutHand = {
         card.style.setProperty("--original-transform", card.style.transform);
         card.style.setProperty("--hover-transform", hoverTransform);
       });
+
+      // Set container height to accommodate the fanned cards
+      const maxY = Math.max(
+        ...Array.from(cards).map((_, i) => {
+          const angle = startAngle + angleStep * i;
+          const angleRad = (angle * Math.PI) / 180;
+          return Math.abs(Math.sin(angleRad)) * (fanRadius - cardHeight) * 0.1;
+        }),
+      );
+
+      this.el.style.height = `${cardHeight + maxY}px`;
     }
-    // Set container height to accommodate the fanned cards
-    // const maxY = Math.max(...Array.from(cards).map((_, i) => {
-    //   const angle = startAngle + (angleStep * i)
-    //   const angleRad = (angle * Math.PI) / 180
-    //   return Math.abs(Math.sin(angleRad)) * (fanRadius - cardHeight) * 0.1
-    // }))
-    //
-    // this.el.style.height = `${cardHeight + maxY}px`
   },
 };
 

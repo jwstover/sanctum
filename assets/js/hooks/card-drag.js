@@ -8,7 +8,7 @@ export default {
       .draggable({
         inertia: false,
         // manualStart: true,
-        hold: 500,
+        // hold: 500,
         modifiers: [
           interact.modifiers.restrictRect({
             restriction: container,
