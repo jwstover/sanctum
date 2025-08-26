@@ -26,7 +26,8 @@ defmodule SanctumWeb.GameLive.Show do
      |> stream_facedown_encounters()
      |> stream_hero_play_cards()
      |> stream_hand_cards()
-     |> assign_hero_discard()}
+     |> assign_hero_discard()
+     |> assign_encounter_discard()}
   end
 
   defp stream_facedown_encounters(socket) do
@@ -74,6 +75,7 @@ defmodule SanctumWeb.GameLive.Show do
       case source_zone do
         "hero_play" -> stream_delete(socket, :hero_play_cards, game_card)
         "hand" -> stream_delete(socket, :hand_cards, game_card)
+        "facedown_encounter" -> stream_delete(socket, :facedown_encounters, game_card)
         _ -> socket
       end
 
@@ -91,6 +93,10 @@ defmodule SanctumWeb.GameLive.Show do
         "hero_discard" ->
           updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
           assign(socket, :hero_discard, [updated_card | socket.assigns.hero_discard])
+
+        "encounter_discard" ->
+          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
+          assign(socket, :encounter_discard, [updated_card | socket.assigns.encounter_discard])
 
         _ ->
           socket
@@ -196,7 +202,8 @@ defmodule SanctumWeb.GameLive.Show do
              game_schemes: [:card],
              encounter_deck: [
                deck_cards: [:card],
-               facedown_encounter_cards: [:card]
+               facedown_encounter_cards: [:card],
+               discard_cards: [:card]
              ]
            ],
            actor: current_user
@@ -234,6 +241,12 @@ defmodule SanctumWeb.GameLive.Show do
     assign(socket, :hero_discard, game_player.hero_discard |> Enum.reverse())
   end
 
+  defp assign_encounter_discard(socket) do
+    encounter_discard = socket.assigns.game.encounter_deck.discard_cards |> Enum.reverse()
+
+    assign(socket, :encounter_discard, encounter_discard)
+  end
+
   def render(assigns) do
     ~H"""
     <Layouts.game flash={@flash}>
@@ -249,6 +262,7 @@ defmodule SanctumWeb.GameLive.Show do
         game_player={@game_player}
         streams={@streams}
         hero_discard={@hero_discard}
+        encounter_discard={@encounter_discard}
       />
     </Layouts.game>
     """
@@ -258,6 +272,7 @@ defmodule SanctumWeb.GameLive.Show do
   attr :game, Game, required: true
   attr :game_player, GamePlayer, required: true
   attr :hero_discard, :list, required: true
+  attr :encounter_discard, :list, required: true
 
   def play_area(assigns) do
     ~H"""
@@ -319,6 +334,11 @@ defmodule SanctumWeb.GameLive.Show do
           id={main_scheme.card.id}
           card={main_scheme.card}
         />
+        <div class="flex flex-row gap-2 mt-2">
+          <.threat_token id="threat-token-1" value={3} />
+          <.damage_token value={20} />
+          <.counter_token value={3} />
+        </div>
       </div>
       <div
         id="villian-area"
@@ -335,7 +355,14 @@ defmodule SanctumWeb.GameLive.Show do
       <div
         id="encounter-discard-area"
         class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+        phx-hook="DragDrop"
+        data-drop_zone="encounter_discard"
       >
+        <.card
+          :if={!Enum.empty?(@encounter_discard)}
+          id="encounter-discard-pile"
+          card={hd(@encounter_discard) |> Map.get(:card)}
+        />
       </div>
       <div
         id="encounter-area"
@@ -352,7 +379,13 @@ defmodule SanctumWeb.GameLive.Show do
         >
           <%= for {dom_id, card} <- @streams.facedown_encounters do %>
             <div id={dom_id} class="relative group" tabindex="0">
-              <.card :if={card.face_up} id={card.id} card={card.card} />
+              <.card
+                :if={card.face_up}
+                id={card.id}
+                card={card.card}
+                game_card_id={card.id}
+                zone="facedown_encounter"
+              />
               <.encounter_back :if={!card.face_up} id={card.id} />
               <div class="absolute hidden group-hover:flex group-focus:flex w-full bottom-2 flex flex-col items-center">
                 <button

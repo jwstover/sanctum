@@ -5,7 +5,8 @@ defmodule Sanctum.Games.GamePlayerTest do
 
   defp create_test_game_player do
     # Create a unique test user
-    email = "test#{:rand.uniform(100000)}@example.com"
+    email = "test#{:rand.uniform(100_000)}@example.com"
+
     {:ok, user} =
       Sanctum.Accounts.User
       |> Ash.Changeset.for_create(:create, %{
@@ -15,7 +16,8 @@ defmodule Sanctum.Games.GamePlayerTest do
       |> Ash.create(authorize?: false)
 
     # Create a scenario with a villain
-    set_name = "test_scenario_#{:rand.uniform(100000)}"
+    set_name = "test_scenario_#{:rand.uniform(100_000)}"
+
     {:ok, scenario} =
       Games.create_scenario(%{
         name: "Test Scenario",
@@ -29,7 +31,7 @@ defmodule Sanctum.Games.GamePlayerTest do
         name: "Test Villain",
         type: :villain,
         set: set_name,
-        code: "testv#{:rand.uniform(100000)}",
+        code: "testv#{:rand.uniform(100_000)}",
         health: 10,
         attack: 2,
         scheme: 1
@@ -40,10 +42,10 @@ defmodule Sanctum.Games.GamePlayerTest do
     {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
 
     # Get the automatically created game player and update it with test values
-    game_player = 
-      game 
-      |> Ash.load!(:game_players, actor: user) 
-      |> Map.get(:game_players) 
+    game_player =
+      game
+      |> Ash.load!(:game_players, actor: user)
+      |> Map.get(:game_players)
       |> List.first()
       |> Ash.Changeset.for_update(:update, %{health: 25, max_health: 30})
       |> Ash.update!(actor: user)
@@ -104,7 +106,9 @@ defmodule Sanctum.Games.GamePlayerTest do
 
     test "requires integer amount" do
       {user, _game, game_player} = create_test_game_player()
-      assert {:error, %Ash.Error.Invalid{}} = Games.change_health(game_player, %{amount: "not_a_number"}, actor: user)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Games.change_health(game_player, %{amount: "not_a_number"}, actor: user)
     end
   end
 end
