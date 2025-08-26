@@ -12,7 +12,6 @@ defmodule Sanctum.Games.Changes.SetGameCards do
       {:ok, deck_id} when is_binary(deck_id) ->
         deck = Sanctum.Decks.get_deck!(deck_id, load: [:cards, :hero, :alter_ego])
         changeset = Changeset.put_context(changeset, :loaded_deck, deck)
-        |> IO.inspect(label: "================== SetCards\n")
 
         cards =
           deck.cards

@@ -245,8 +245,26 @@ defmodule SanctumWeb.GameLive.Show do
       id="game-board"
       class="h-full overflow-x-hidden overflow-y-auto grid grid-rows-[auto_repeat(5,1fr)] grid-cols-4 gap-4"
     >
-      <div class="col-span-4">
+      <div class="col-span-4 bg-gray-900 p-2 flex flex-row items-center justify-between">
         <.menu_dropdown />
+
+        <div class="flex flex-row items-center">
+          <button class="py-1 px-2 text-lg w-8"><span class="text-white font-komika">-</span></button>
+          <div class="flex flex-col items-center bg-red-800 text-white transition-all font-komika text-lg py-1 px-4 border-y-1 -skew-x-6 border-x-2 border-gray-100 shadow shadow-black">
+            {@game.game_villian.health}
+            <span class="text-xs font-elektra">Villian</span>
+          </div>
+          <button class="p-1 px-2 text-lg w-8"><span class="text-white font-komika">+</span></button>
+        </div>
+
+        <div class="flex flex-row items-center">
+          <button class="py-1 px-2 text-lg w-8"><span class="text-white font-komika">-</span></button>
+          <div class="flex flex-col items-center bg-green-800 text-white transition-all font-komika text-lg py-1 px-4 border-y-1 -skew-x-6 border-x-2 border-gray-100 shadow shadow-black">
+            {@game_player.health}
+            <span class="text-xs font-elektra">Hero</span>
+          </div>
+          <button class="p-1 px-2 text-lg w-8"><span class="text-white font-komika">+</span></button>
+        </div>
       </div>
       <div
         id="main-schema-area"
@@ -305,6 +323,7 @@ defmodule SanctumWeb.GameLive.Show do
           <% end %>
         </div>
       </div>
+
       <div
         id="player-area"
         class="col-span-4 relative flex flex-row flex-wrap items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
