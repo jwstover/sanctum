@@ -12,6 +12,19 @@ defmodule Sanctum.Games.GameVillian do
 
   actions do
     defaults [:read, create: :*]
+
+    update :update do
+      primary? true
+      accept [:health, :max_health, :attack, :scheme]
+    end
+
+    update :change_health do
+      argument :amount, :integer, allow_nil?: false
+
+      change atomic_update(:health, expr(
+        fragment("LEAST(?, GREATEST(0, ? + ?))", max_health, health, ^arg(:amount))
+      ))
+    end
   end
 
   policies do

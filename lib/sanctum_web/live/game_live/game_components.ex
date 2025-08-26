@@ -41,7 +41,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
         </figure>
         <div class="absolute top-0 left-0 w-full h-full touch-none" />
       </div>
-      <div class="fixed left-2 bottom-2 hidden peer-hover:not-peer-[.game-card-dragging]:block z-1000 p-4 bg-black ">
+      <div class="pointer-events-none fixed left-2 bottom-2 hidden peer-hover:not-peer-[.game-card-dragging]:block z-1000 p-3 bg-black ">
         <figure class="rounded-[4.5%] overflow-hidden">
           <img class={["h-[30vh] object-fit"]} src={@src} />
         </figure>
