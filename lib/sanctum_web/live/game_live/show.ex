@@ -68,14 +68,17 @@ defmodule SanctumWeb.GameLive.Show do
     user = socket.assigns.current_user
     game_card = Games.get_game_card!(game_card_id, actor: user)
 
-    Games.move_game_card(game_card, %{zone: zone_name}, actor: user)
+    {:ok, updated_card} =
+      Games.move_game_card(game_card, %{zone: zone_name}, load: [:card], actor: user)
 
     # Remove from source stream
     socket =
       case source_zone do
         "hero_play" -> stream_delete(socket, :hero_play_cards, game_card)
-        "hand" -> stream_delete(socket, :hand_cards, game_card)
+        "hero_hand" -> stream_delete(socket, :hand_cards, game_card)
         "facedown_encounter" -> stream_delete(socket, :facedown_encounters, game_card)
+        "hero_discard" -> assign(socket, :hero_discard, Enum.drop(socket.assigns.hero_discard, 1))
+        "encounter_discard" -> assign(socket, :encounter_discard, Enum.drop(socket.assigns.hero_discard, 1))
         _ -> socket
       end
 
@@ -83,19 +86,15 @@ defmodule SanctumWeb.GameLive.Show do
     socket =
       case zone_name do
         "hero_play" ->
-          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
           stream_insert(socket, :hero_play_cards, updated_card)
 
-        "hand" ->
-          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
+        "hero_hand" ->
           stream_insert(socket, :hand_cards, updated_card)
 
         "hero_discard" ->
-          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
           assign(socket, :hero_discard, [updated_card | socket.assigns.hero_discard])
 
         "encounter_discard" ->
-          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
           assign(socket, :encounter_discard, [updated_card | socket.assigns.encounter_discard])
 
         _ ->
@@ -362,6 +361,7 @@ defmodule SanctumWeb.GameLive.Show do
           :if={!Enum.empty?(@encounter_discard)}
           id="encounter-discard-pile"
           card={hd(@encounter_discard) |> Map.get(:card)}
+          zone="encounter_discard"
         />
       </div>
       <div
@@ -449,6 +449,8 @@ defmodule SanctumWeb.GameLive.Show do
           :if={!Enum.empty?(@hero_discard)}
           id="hero-discard-pile"
           card={hd(@hero_discard) |> Map.get(:card)}
+          game_card_id={hd(@hero_discard).id}
+          zone="hero_discard"
         />
       </div>
 
@@ -466,10 +468,10 @@ defmodule SanctumWeb.GameLive.Show do
             class="w-full h-full border-4 rounded border-transparent"
             phx-hook="DragDrop"
             phx-update="stream"
-            data-drop_zone="hand"
+            data-drop_zone="hero_hand"
           >
             <%= for {dom_id, card} <- @streams.hand_cards do %>
-              <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hand" />
+              <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hero_hand" />
             <% end %>
           </div>
         </div>
