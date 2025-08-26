@@ -1,3 +1,22 @@
+# [0.7.0](https://github.com/jwstover/sanctum/compare/v0.6.0...v0.7.0) (2025-08-26)
+
+
+### Bug Fixes
+
+* set player health when deck selected ([1ad0a93](https://github.com/jwstover/sanctum/commit/1ad0a93ca17c53c91b608f74aa0a72e7b6d84cdd))
+
+
+### Features
+
+* add drop zone indicator and allow dropping to hand ([652ec6f](https://github.com/jwstover/sanctum/commit/652ec6ff6196f736e97c5e0bd3aee4e582b44397))
+* add threat, damage, and counter tokens ([f746694](https://github.com/jwstover/sanctum/commit/f7466943fb9726fa8009787ad77135158782dda3))
+* allow adding to villain discard ([3a7d06b](https://github.com/jwstover/sanctum/commit/3a7d06babb7355db21cc2983857daa8de4473601))
+* allow changing player health ([245da31](https://github.com/jwstover/sanctum/commit/245da31fe7e7f3441d2b0a43ccaea94b84146ed1))
+* allow changing villain health ([39b4e00](https://github.com/jwstover/sanctum/commit/39b4e00e91c7087423aa14e160409b595f0f1387))
+* display villian and hero health ([5ac2891](https://github.com/jwstover/sanctum/commit/5ac28911eaa9f7d03a1cb1f810f449daf86b095f))
+
+
+
 # [0.6.0](https://github.com/jwstover/sanctum/compare/v0.5.0...v0.6.0) (2025-08-25)
 
 
@@ -40,15 +59,6 @@
 ### Features
 
 * add scenarios resource ([1e925c7](https://github.com/jwstover/sanctum/commit/1e925c7daeb6e4fe09f5c1a7dce9ec09a4d6f2c1))
-
-
-
-## [0.2.1](https://github.com/jwstover/sanctum/compare/v0.2.0...v0.2.1) (2025-08-04)
-
-
-### Bug Fixes
-
-* resolve issue with runtime env in prod ([0b16e28](https://github.com/jwstover/sanctum/commit/0b16e28724c60eab35f7045d3bb8f86a04205f9d))
 
 
 
