@@ -33,9 +33,13 @@ defmodule Sanctum.Games do
       define :flip_identity, action: :flip
       define :get_game_player, get_by: :game_id, action: :read
       define :select_deck, action: :select_deck
+      define :change_health, action: :change_health
     end
 
-    resource Sanctum.Games.GameVillian
+    resource Sanctum.Games.GameVillian do
+      define :change_villain_health, action: :change_health
+    end
+
     resource Sanctum.Games.GameScheme
     resource Sanctum.Games.GameEncounterDeck
 

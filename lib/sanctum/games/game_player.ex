@@ -8,6 +8,7 @@ defmodule Sanctum.Games.GamePlayer do
 
   alias Sanctum.ManualRelationships.HasOneThrough
   alias Sanctum.Games.Changes.SetGameCards
+  alias Sanctum.Games.Changes.SetHealth
 
   postgres do
     table "game_players"
@@ -25,11 +26,17 @@ defmodule Sanctum.Games.GamePlayer do
       accept [:*]
     end
 
+    update :update do
+      primary? true
+      accept [:health, :max_health, :hand_size_mod, :form]
+    end
+
     update :select_deck do
       accept [:deck_id]
       require_atomic? false
 
       change SetGameCards
+      change SetHealth
     end
 
     update :flip do
@@ -42,6 +49,15 @@ defmodule Sanctum.Games.GamePlayer do
           _ -> changeset
         end
       end
+    end
+
+    update :change_health do
+      argument :amount, :integer, allow_nil?: false
+
+      change atomic_update(
+               :health,
+               expr(fragment("LEAST(?, GREATEST(0, ? + ?))", max_health, health, ^arg(:amount)))
+             )
     end
   end
 

@@ -8,7 +8,7 @@ export default {
       .draggable({
         inertia: false,
         // manualStart: true,
-        hold: 500,
+        // hold: 500,
         modifiers: [
           interact.modifiers.restrictRect({
             restriction: container,
@@ -24,6 +24,7 @@ export default {
             event.target.dataset.x = 0;
             event.target.dataset.y = 0;
             event.target.dataset.starting_left = event.target.style.left
+            event.target.dataset.starting_pos = event.target.style.position;
 
             event.target.style.left = `${boundingRect.x}px`;
             event.target.style.top = `${boundingRect.y}px`;
@@ -45,7 +46,8 @@ export default {
           },
           end(event) {
             event.target.style.scale = 1;
-            event.target.style.position="absolute";
+            event.target.style.position= event.target.dataset.starting_pos;
+            event.target.style.zIndex = null;
             event.target.style.transform= null;
             event.target.style.left = event.target.dataset.starting_left;
             event.target.style.top = null;

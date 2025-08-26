@@ -10,7 +10,8 @@ defmodule Sanctum.Games.Changes.SetGameCards do
 
     case Changeset.fetch_attribute(changeset, :deck_id) do
       {:ok, deck_id} when is_binary(deck_id) ->
-        deck = Sanctum.Decks.get_deck!(deck_id, load: [:cards])
+        deck = Sanctum.Decks.get_deck!(deck_id, load: [:cards, :hero, :alter_ego])
+        changeset = Changeset.put_context(changeset, :loaded_deck, deck)
 
         cards =
           deck.cards

@@ -76,7 +76,7 @@ defmodule SanctumWeb.Layouts do
 
   def game(assigns) do
     ~H"""
-    <main class="w-[100vw] h-[100dvh] overflow-hidden bg-blue-900 text-gray-100 p-2">
+    <main class="w-[100vw] h-[100dvh] overflow-hidden bg-blue-900 text-gray-100">
       {render_slot(@inner_block)}
     </main>
 

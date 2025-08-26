@@ -26,7 +26,8 @@ defmodule SanctumWeb.GameLive.Show do
      |> stream_facedown_encounters()
      |> stream_hero_play_cards()
      |> stream_hand_cards()
-     |> assign_hero_discard()}
+     |> assign_hero_discard()
+     |> assign_encounter_discard()}
   end
 
   defp stream_facedown_encounters(socket) do
@@ -74,6 +75,7 @@ defmodule SanctumWeb.GameLive.Show do
       case source_zone do
         "hero_play" -> stream_delete(socket, :hero_play_cards, game_card)
         "hand" -> stream_delete(socket, :hand_cards, game_card)
+        "facedown_encounter" -> stream_delete(socket, :facedown_encounters, game_card)
         _ -> socket
       end
 
@@ -91,6 +93,10 @@ defmodule SanctumWeb.GameLive.Show do
         "hero_discard" ->
           updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
           assign(socket, :hero_discard, [updated_card | socket.assigns.hero_discard])
+
+        "encounter_discard" ->
+          updated_card = Games.get_game_card!(game_card_id, load: [:card], actor: user)
+          assign(socket, :encounter_discard, [updated_card | socket.assigns.encounter_discard])
 
         _ ->
           socket
@@ -152,6 +158,26 @@ defmodule SanctumWeb.GameLive.Show do
     {:noreply, socket |> assign_game_player()}
   end
 
+  def handle_event("change-health", %{"amount" => amount_str}, socket) do
+    game_player = socket.assigns.game_player
+    amount = String.to_integer(amount_str)
+
+    Games.change_health(game_player, %{amount: amount}, actor: socket.assigns.current_user)
+
+    {:noreply, socket |> assign_game_player()}
+  end
+
+  def handle_event("change-villain-health", %{"amount" => amount_str}, socket) do
+    game_villain = socket.assigns.game.game_villian
+    amount = String.to_integer(amount_str)
+
+    Games.change_villain_health(game_villain, %{amount: amount},
+      actor: socket.assigns.current_user
+    )
+
+    {:noreply, socket |> assign_game()}
+  end
+
   def handle_event("flip", %{"game_card_id" => game_card_id}, socket) do
     {:ok, card} =
       Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
@@ -176,7 +202,8 @@ defmodule SanctumWeb.GameLive.Show do
              game_schemes: [:card],
              encounter_deck: [
                deck_cards: [:card],
-               facedown_encounter_cards: [:card]
+               facedown_encounter_cards: [:card],
+               discard_cards: [:card]
              ]
            ],
            actor: current_user
@@ -214,6 +241,12 @@ defmodule SanctumWeb.GameLive.Show do
     assign(socket, :hero_discard, game_player.hero_discard |> Enum.reverse())
   end
 
+  defp assign_encounter_discard(socket) do
+    encounter_discard = socket.assigns.game.encounter_deck.discard_cards |> Enum.reverse()
+
+    assign(socket, :encounter_discard, encounter_discard)
+  end
+
   def render(assigns) do
     ~H"""
     <Layouts.game flash={@flash}>
@@ -229,6 +262,7 @@ defmodule SanctumWeb.GameLive.Show do
         game_player={@game_player}
         streams={@streams}
         hero_discard={@hero_discard}
+        encounter_discard={@encounter_discard}
       />
     </Layouts.game>
     """
@@ -238,6 +272,7 @@ defmodule SanctumWeb.GameLive.Show do
   attr :game, Game, required: true
   attr :game_player, GamePlayer, required: true
   attr :hero_discard, :list, required: true
+  attr :encounter_discard, :list, required: true
 
   def play_area(assigns) do
     ~H"""
@@ -245,8 +280,50 @@ defmodule SanctumWeb.GameLive.Show do
       id="game-board"
       class="h-full overflow-x-hidden overflow-y-auto grid grid-rows-[auto_repeat(5,1fr)] grid-cols-4 gap-4"
     >
-      <div class="col-span-4">
+      <div class="col-span-4 bg-gray-900 p-2 flex flex-row items-center justify-between">
         <.menu_dropdown />
+
+        <div class="flex flex-row items-center">
+          <button
+            class="cursor-pointer py-1 px-2 text-lg w-8"
+            phx-click="change-villain-health"
+            phx-value-amount="-1"
+          >
+            <span class="text-white font-komika">-</span>
+          </button>
+          <div class="flex flex-col items-center bg-red-800 text-white transition-all font-komika text-lg py-1 px-4 border-y-1 -skew-x-6 border-x-2 border-gray-100 shadow shadow-black">
+            {@game.game_villian.health}
+            <span class="text-xs font-elektra">Villian</span>
+          </div>
+          <button
+            class="cursor-pointer p-1 px-2 text-lg w-8"
+            phx-click="change-villain-health"
+            phx-value-amount="1"
+          >
+            <span class="text-white font-komika">+</span>
+          </button>
+        </div>
+
+        <div class="flex flex-row items-center">
+          <button
+            class="cursor-pointer py-1 px-2 text-lg w-8"
+            phx-click="change-health"
+            phx-value-amount="-1"
+          >
+            <span class="text-white font-komika">-</span>
+          </button>
+          <div class="flex flex-col items-center bg-green-800 text-white transition-all font-komika text-lg py-1 px-4 border-y-1 -skew-x-6 border-x-2 border-gray-100 shadow shadow-black">
+            {@game_player.health}
+            <span class="text-xs font-elektra">Hero</span>
+          </div>
+          <button
+            class="cursor-pointer p-1 px-2 text-lg w-8"
+            phx-click="change-health"
+            phx-value-amount="1"
+          >
+            <span class="text-white font-komika">+</span>
+          </button>
+        </div>
       </div>
       <div
         id="main-schema-area"
@@ -257,6 +334,11 @@ defmodule SanctumWeb.GameLive.Show do
           id={main_scheme.card.id}
           card={main_scheme.card}
         />
+        <div class="flex flex-row gap-2 mt-2">
+          <.threat_token id="threat-token-1" value={3} />
+          <.damage_token value={20} />
+          <.counter_token value={3} />
+        </div>
       </div>
       <div
         id="villian-area"
@@ -273,7 +355,14 @@ defmodule SanctumWeb.GameLive.Show do
       <div
         id="encounter-discard-area"
         class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+        phx-hook="DragDrop"
+        data-drop_zone="encounter_discard"
       >
+        <.card
+          :if={!Enum.empty?(@encounter_discard)}
+          id="encounter-discard-pile"
+          card={hd(@encounter_discard) |> Map.get(:card)}
+        />
       </div>
       <div
         id="encounter-area"
@@ -290,7 +379,13 @@ defmodule SanctumWeb.GameLive.Show do
         >
           <%= for {dom_id, card} <- @streams.facedown_encounters do %>
             <div id={dom_id} class="relative group" tabindex="0">
-              <.card :if={card.face_up} id={card.id} card={card.card} />
+              <.card
+                :if={card.face_up}
+                id={card.id}
+                card={card.card}
+                game_card_id={card.id}
+                zone="facedown_encounter"
+              />
               <.encounter_back :if={!card.face_up} id={card.id} />
               <div class="absolute hidden group-hover:flex group-focus:flex w-full bottom-2 flex flex-col items-center">
                 <button
@@ -305,6 +400,7 @@ defmodule SanctumWeb.GameLive.Show do
           <% end %>
         </div>
       </div>
+
       <div
         id="player-area"
         class="col-span-4 relative flex flex-row flex-wrap items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
@@ -364,11 +460,18 @@ defmodule SanctumWeb.GameLive.Show do
           id="player-hand"
           class="fixed bottom-0 w-full max-h-max"
           phx-hook="LayoutHand"
-          phx-update="stream"
         >
-          <%= for {dom_id, card} <- @streams.hand_cards do %>
-            <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hand" />
-          <% end %>
+          <div
+            id="player-hand-dropzone"
+            class="w-full h-full border-4 rounded border-transparent"
+            phx-hook="DragDrop"
+            phx-update="stream"
+            data-drop_zone="hand"
+          >
+            <%= for {dom_id, card} <- @streams.hand_cards do %>
+              <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hand" />
+            <% end %>
+          </div>
         </div>
       </div>
     </div>
