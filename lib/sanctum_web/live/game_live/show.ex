@@ -74,12 +74,23 @@ defmodule SanctumWeb.GameLive.Show do
     # Remove from source stream
     socket =
       case source_zone do
-        "hero_play" -> stream_delete(socket, :hero_play_cards, game_card)
-        "hero_hand" -> stream_delete(socket, :hand_cards, game_card)
-        "facedown_encounter" -> stream_delete(socket, :facedown_encounters, game_card)
-        "hero_discard" -> assign(socket, :hero_discard, Enum.drop(socket.assigns.hero_discard, 1))
-        "encounter_discard" -> assign(socket, :encounter_discard, Enum.drop(socket.assigns.hero_discard, 1))
-        _ -> socket
+        "hero_play" ->
+          stream_delete(socket, :hero_play_cards, game_card)
+
+        "hero_hand" ->
+          stream_delete(socket, :hand_cards, game_card)
+
+        "facedown_encounter" ->
+          stream_delete(socket, :facedown_encounters, game_card)
+
+        "hero_discard" ->
+          assign(socket, :hero_discard, Enum.drop(socket.assigns.hero_discard, 1))
+
+        "encounter_discard" ->
+          assign(socket, :encounter_discard, Enum.drop(socket.assigns.hero_discard, 1))
+
+        _ ->
+          socket
       end
 
     # Add to destination stream  

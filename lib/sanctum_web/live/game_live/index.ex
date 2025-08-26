@@ -16,14 +16,18 @@ defmodule SanctumWeb.GameLive.Index do
   end
 
   def assign_games(socket) do
-    {:ok, games} =
-      Games.list_games(socket.assigns.current_user.id,
-        query: [sort: [inserted_at: :desc]],
-        load: [game_villian: [:card]],
-        actor: socket.assigns.current_user
-      )
+    if socket.assigns.current_user do
+      {:ok, games} =
+        Games.list_games(socket.assigns.current_user.id,
+          query: [sort: [inserted_at: :desc]],
+          load: [game_villian: [:card]],
+          actor: socket.assigns.current_user
+        )
 
-    assign(socket, :games, games)
+      assign(socket, :games, games)
+    else
+      assign(socket, :games, [])
+    end
   end
 
   def render(assigns) do
