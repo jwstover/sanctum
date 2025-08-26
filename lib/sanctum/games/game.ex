@@ -31,6 +31,12 @@ defmodule Sanctum.Games.Game do
       change CreateGameVillian, only_when_valid?: true
       change CreateGameEncounterDeck, only_when_valid?: true
     end
+
+    read :read_games_for_user do
+      argument :user_id, :uuid, allow_nil?: false
+      prepare build(load: [:game_players])
+      filter expr(^arg(:user_id) == game_players.user_id)
+    end
   end
 
   policies do
