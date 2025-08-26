@@ -152,6 +152,15 @@ defmodule SanctumWeb.GameLive.Show do
     {:noreply, socket |> assign_game_player()}
   end
 
+  def handle_event("change-health", %{"amount" => amount_str}, socket) do
+    game_player = socket.assigns.game_player
+    amount = String.to_integer(amount_str)
+
+    Games.change_health(game_player, %{amount: amount}, actor: socket.assigns.current_user)
+
+    {:noreply, socket |> assign_game_player()}
+  end
+
   def handle_event("flip", %{"game_card_id" => game_card_id}, socket) do
     {:ok, card} =
       Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
@@ -258,12 +267,12 @@ defmodule SanctumWeb.GameLive.Show do
         </div>
 
         <div class="flex flex-row items-center">
-          <button class="py-1 px-2 text-lg w-8"><span class="text-white font-komika">-</span></button>
+          <button class="py-1 px-2 text-lg w-8" phx-click="change-health" phx-value-amount="-1"><span class="text-white font-komika">-</span></button>
           <div class="flex flex-col items-center bg-green-800 text-white transition-all font-komika text-lg py-1 px-4 border-y-1 -skew-x-6 border-x-2 border-gray-100 shadow shadow-black">
             {@game_player.health}
             <span class="text-xs font-elektra">Hero</span>
           </div>
-          <button class="p-1 px-2 text-lg w-8"><span class="text-white font-komika">+</span></button>
+          <button class="p-1 px-2 text-lg w-8" phx-click="change-health" phx-value-amount="1"><span class="text-white font-komika">+</span></button>
         </div>
       </div>
       <div

@@ -26,6 +26,11 @@ defmodule Sanctum.Games.GamePlayer do
       accept [:*]
     end
 
+    update :update do
+      primary? true
+      accept [:health, :max_health, :hand_size_mod, :form]
+    end
+
     update :select_deck do
       accept [:deck_id]
       require_atomic? false
@@ -44,6 +49,14 @@ defmodule Sanctum.Games.GamePlayer do
           _ -> changeset
         end
       end
+    end
+
+    update :change_health do
+      argument :amount, :integer, allow_nil?: false
+
+      change atomic_update(:health, expr(
+        fragment("LEAST(?, GREATEST(0, ? + ?))", max_health, health, ^arg(:amount))
+      ))
     end
   end
 
