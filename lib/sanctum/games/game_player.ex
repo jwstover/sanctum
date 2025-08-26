@@ -8,6 +8,7 @@ defmodule Sanctum.Games.GamePlayer do
 
   alias Sanctum.ManualRelationships.HasOneThrough
   alias Sanctum.Games.Changes.SetGameCards
+  alias Sanctum.Games.Changes.SetHealth
 
   postgres do
     table "game_players"
@@ -30,6 +31,7 @@ defmodule Sanctum.Games.GamePlayer do
       require_atomic? false
 
       change SetGameCards
+      change SetHealth
     end
 
     update :flip do
