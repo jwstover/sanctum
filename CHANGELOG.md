@@ -1,3 +1,13 @@
+# [0.8.0](https://github.com/jwstover/sanctum/compare/v0.7.0...v0.8.0) (2025-08-26)
+
+
+### Features
+
+* allow removing top card from discard pile ([e120ee2](https://github.com/jwstover/sanctum/commit/e120ee29f83c5b3738a86dc4771ac98a8533831e))
+* show all games on home page ([d66aac1](https://github.com/jwstover/sanctum/commit/d66aac152ceb9bb9cff4f16fe605fc67c32ffcd7))
+
+
+
 # [0.7.0](https://github.com/jwstover/sanctum/compare/v0.6.0...v0.7.0) (2025-08-26)
 
 
@@ -50,15 +60,6 @@
 ### Features
 
 * add ability to create game with set scenario ([ab6d193](https://github.com/jwstover/sanctum/commit/ab6d19379c8bc1cca5c574faae33566faed88263))
-
-
-
-# [0.3.0](https://github.com/jwstover/sanctum/compare/v0.2.1...v0.3.0) (2025-08-20)
-
-
-### Features
-
-* add scenarios resource ([1e925c7](https://github.com/jwstover/sanctum/commit/1e925c7daeb6e4fe09f5c1a7dce9ec09a4d6f2c1))
 
 
 
