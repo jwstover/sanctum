@@ -54,9 +54,10 @@ defmodule Sanctum.Games.GamePlayer do
     update :change_health do
       argument :amount, :integer, allow_nil?: false
 
-      change atomic_update(:health, expr(
-        fragment("LEAST(?, GREATEST(0, ? + ?))", max_health, health, ^arg(:amount))
-      ))
+      change atomic_update(
+               :health,
+               expr(fragment("LEAST(?, GREATEST(0, ? + ?))", max_health, health, ^arg(:amount)))
+             )
     end
   end
 

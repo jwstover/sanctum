@@ -39,7 +39,7 @@ defmodule Sanctum.Games do
     resource Sanctum.Games.GameVillian do
       define :change_villain_health, action: :change_health
     end
-    
+
     resource Sanctum.Games.GameScheme
     resource Sanctum.Games.GameEncounterDeck
 
