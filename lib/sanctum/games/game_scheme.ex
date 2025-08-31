@@ -12,6 +12,18 @@ defmodule Sanctum.Games.GameScheme do
 
   actions do
     defaults [:read, create: :*]
+
+    update :update_threat do
+      argument :delta, :integer, allow_nil?: false
+
+      change atomic_update(:threat, expr(threat + ^arg(:delta)))
+    end
+
+    update :update_counter do
+      argument :delta, :integer, allow_nil?: false
+
+      change atomic_update(:counter, expr(counter + ^arg(:delta)))
+    end
   end
 
   policies do
@@ -26,6 +38,7 @@ defmodule Sanctum.Games.GameScheme do
     attribute :threat, :integer, public?: true
     attribute :max_threat, :integer, public?: true
     attribute :escalation_threat, :integer, public?: true
+    attribute :counter, :integer, default: 0, public?: true
     attribute :is_main_scheme, :boolean, public?: true
 
     timestamps()

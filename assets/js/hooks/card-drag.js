@@ -29,6 +29,7 @@ export default {
             event.target.style.left = `${boundingRect.x}px`;
             event.target.style.top = `${boundingRect.y}px`;
             event.target.style.position = "fixed";
+            event.target.style.bottom = null;
             event.target.style.zIndex = 1001;
             event.target.style.transform = "translate(0px, 0px)";
             event.target.style.scale = 1.2;
@@ -47,6 +48,7 @@ export default {
           end(event) {
             event.target.style.scale = 1;
             event.target.style.position= event.target.dataset.starting_pos;
+            event.target.style.bottom = "0px"
             event.target.style.zIndex = null;
             event.target.style.transform= null;
             event.target.style.left = event.target.dataset.starting_left;

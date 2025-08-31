@@ -46,6 +46,16 @@ defmodule Sanctum.Games.GameCard do
     update :flip do
       change atomic_update(:face_up, expr(not face_up))
     end
+
+    update :update_counters do
+      argument :threat_delta, :integer, default: 0
+      argument :damage_delta, :integer, default: 0
+      argument :counter_delta, :integer, default: 0
+
+      change atomic_update(:threat, expr(threat + ^arg(:threat_delta)))
+      change atomic_update(:damage, expr(damage + ^arg(:damage_delta)))
+      change atomic_update(:counter, expr(counter + ^arg(:counter_delta)))
+    end
   end
 
   policies do
@@ -85,6 +95,10 @@ defmodule Sanctum.Games.GameCard do
       default: :ready
 
     attribute :face_up, :boolean, public?: true, default: false
+
+    attribute :threat, :integer, public?: true, default: 0
+    attribute :damage, :integer, public?: true, default: 0
+    attribute :counter, :integer, public?: true, default: 0
 
     timestamps()
   end
