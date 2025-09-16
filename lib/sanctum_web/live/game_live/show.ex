@@ -23,6 +23,7 @@ defmodule SanctumWeb.GameLive.Show do
      |> stream(:hand_cards, [])
      |> assign_game()
      |> assign_game_player()
+     |> assign_hand_sizes()
      |> stream_facedown_encounters()
      |> stream_hero_play_cards()
      |> stream_hand_cards()
@@ -85,7 +86,9 @@ defmodule SanctumWeb.GameLive.Show do
           stream_delete(socket, :hero_play_cards, game_card)
 
         "hero_hand" ->
-          stream_delete(socket, :hand_cards, game_card)
+          socket
+          |> stream_delete(:hand_cards, game_card)
+          |> assign(:current_hand_size, socket.assigns.current_hand_size - 1)
 
         "facedown_encounter" ->
           stream_delete(socket, :facedown_encounters, game_card)
@@ -107,7 +110,9 @@ defmodule SanctumWeb.GameLive.Show do
           stream_insert(socket, :hero_play_cards, updated_card)
 
         "hero_hand" ->
-          stream_insert(socket, :hand_cards, updated_card)
+          socket
+          |> stream_insert(:hand_cards, updated_card)
+          |> assign(:current_hand_size, socket.assigns.current_hand_size + 1)
 
         "hero_discard" ->
           assign(socket, :hero_discard, [updated_card | socket.assigns.hero_discard])
@@ -143,28 +148,39 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("draw-1", _params, socket) do
     game_player = socket.assigns.game_player
 
-    Games.draw_cards(game_player.id, 1, game_player.current_hand_size,
+    Games.draw_cards(game_player.id, 1, socket.assigns.current_hand_size,
       actor: socket.assigns.current_user
     )
 
-    {:noreply, socket |> assign_game_player() |> stream_hand_cards()}
+    {:noreply,
+     socket
+     |> assign_game_player()
+     |> stream_hand_cards()
+     |> assign(:current_hand_size, socket.assigns.current_hand_size + 1)}
   end
 
   def handle_event("draw-hand", _params, socket) do
     game_player = socket.assigns.game_player
 
     count =
-      game_player.max_hand_size - game_player.current_hand_size
+      socket.assigns.max_hand_size - socket.assigns.current_hand_size
 
-    count > 0 &&
+    if count > 0 do
       Games.draw_cards(
         game_player.id,
         count,
-        game_player.current_hand_size,
+        socket.assigns.current_hand_size,
         actor: socket.assigns.current_user
       )
 
-    {:noreply, socket |> assign_game_player() |> stream_hand_cards()}
+      {:noreply,
+       socket
+       |> assign_game_player()
+       |> stream_hand_cards()
+       |> assign(:current_hand_size, socket.assigns.current_hand_size + count)}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("flip-hero", _params, socket) do
@@ -253,7 +269,10 @@ defmodule SanctumWeb.GameLive.Show do
       ) do
     game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
 
-    Games.update_scheme_threat(game_scheme, delta, load: [:card], actor: socket.assigns.current_user)
+    Games.update_scheme_threat(game_scheme, delta,
+      load: [:card],
+      actor: socket.assigns.current_user
+    )
     |> case do
       {:ok, scheme} -> stream_insert(socket, :main_schemes, scheme)
       _ -> socket
@@ -268,7 +287,10 @@ defmodule SanctumWeb.GameLive.Show do
       ) do
     game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
 
-    Games.update_scheme_counter(game_scheme, delta, load: [:card], actor: socket.assigns.current_user)
+    Games.update_scheme_counter(game_scheme, delta,
+      load: [:card],
+      actor: socket.assigns.current_user
+    )
     |> case do
       {:ok, scheme} -> stream_insert(socket, :main_schemes, scheme)
       _ -> socket
@@ -316,6 +338,15 @@ defmodule SanctumWeb.GameLive.Show do
         actor: socket.assigns.current_user
       )
     )
+  end
+
+  defp assign_hand_sizes(socket) do
+    game_player = socket.assigns.game_player
+
+    assign(socket, %{
+      current_hand_size: game_player.current_hand_size,
+      max_hand_size: game_player.max_hand_size
+    })
   end
 
   defp assign_hero_discard(socket) do
@@ -546,17 +577,22 @@ defmodule SanctumWeb.GameLive.Show do
         <div
           id="player-hand"
           class="fixed bottom-0 w-full max-h-max"
-          phx-hook="LayoutHand"
         >
           <div
             id="player-hand-dropzone"
-            class="w-full h-full border-4 rounded border-transparent"
+            class="flex items-center justify-center  w-full h-full border-4 rounded border-transparent"
             phx-hook="DragDrop"
             phx-update="stream"
             data-drop_zone="hero_hand"
           >
             <%= for {dom_id, card} <- @streams.hand_cards do %>
-              <.card id={dom_id} game_card={card} zone="hero_hand" show_tokens={false} />
+              <.card
+                id={dom_id}
+                class={"-mx-6 z-[#{card.order}]"}
+                game_card={card}
+                zone="hero_hand"
+                show_tokens={false}
+              />
             <% end %>
           </div>
         </div>

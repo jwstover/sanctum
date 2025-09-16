@@ -60,6 +60,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
   end
 
   attr :id, :string, required: true
+  attr :class, :string, default: ""
   attr :game_card, Sanctum.Games.GameCard, required: true
   attr :imgsrc, :string, default: nil
   attr :zone, :string, default: nil
@@ -78,12 +79,14 @@ defmodule SanctumWeb.GameLive.GameComponents do
       )
 
     ~H"""
-    <div id={@id} class="relative group" tabindex="0">
+    <div id={@id} class={["relative group hover:z-100 group"]} tabindex="0">
       <.token_buttons :if={@show_tokens} game_card_id={@game_card.id} />
       <div
         id={@id <> "-drag"}
         class={[
-          "game-card max-w-fit peer relative p-1 bg-black border border-gray-700 shadow shadow-black"
+          "game-card max-w-fit peer relative p-1 bg-black border border-gray-700 shadow shadow-black",
+          @zone == "hero_hand" && "transition-all hover:scale-115 hover:-translate-y-6",
+          @class
         ]}
         phx-hook="CardDrag"
         data-game_card_id={@game_card.id}
@@ -148,7 +151,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
 
   def token_buttons(assigns) do
     ~H"""
-    <div class="absolute opacity-0 left-1/3 group-hover:not-peer-[.game-card-dragging]:opacity-100 space-y-2 group-focus:not-peer-[.game-card-dragging]:opacity-100 top-0 group-hover:left-[90%] group-focus:left-[90%] transition-all pt-[2px] pb-[4px] pl-[2px] pr-[4px] border-2 border-r-3 border-black  bg-white -skew-x-6">
+    <div class="absolute opacity-0 left-1/3 group-hover:not-peer-[.game-card-dragging]:opacity-100 space-y-2 group-focus:not-peer-[.game-card-dragging]:opacity-100 top-0 group-hover:left-[85%] group-focus:left-[85%] transition-all pt-[2px] pb-[4px] pl-[2px] pr-[4px] border-2 border-r-3 border-black  bg-white -skew-x-6">
       <div class="h-full w-full p-1 pr-2 pl-7 bg-gray-900">
         <div class="skew-x-6">
           <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
