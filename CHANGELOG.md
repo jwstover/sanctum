@@ -1,3 +1,18 @@
+# [0.9.0](https://github.com/jwstover/sanctum/compare/v0.8.0...v0.9.0) (2025-09-17)
+
+
+### Bug Fixes
+
+* fix hand size not being properly tracked ([4150bd3](https://github.com/jwstover/sanctum/commit/4150bd300438c6a43c2a6889e690819656be5fc8))
+* resolve issue with hand-size not being set on new game ([e533068](https://github.com/jwstover/sanctum/commit/e53306862f3fb114873eae69380c06ce1e8b5bc2))
+
+
+### Features
+
+* allow placing tokens on play area cards and schemes ([b58c661](https://github.com/jwstover/sanctum/commit/b58c661bd555abb914db57eafe7f368675d61464))
+
+
+
 # [0.8.0](https://github.com/jwstover/sanctum/compare/v0.7.0...v0.8.0) (2025-08-26)
 
 
@@ -51,15 +66,6 @@
 * add ability to move cards to discard ([77cb0be](https://github.com/jwstover/sanctum/commit/77cb0be96e8d7da2c9bf9fe7581ae78be1593954))
 * add encounter cards to encounter deck on game creation ([0c07219](https://github.com/jwstover/sanctum/commit/0c072191f46f167e0a5fdc3d8876c3a3999db1a5))
 * make PWA ([b85f6c2](https://github.com/jwstover/sanctum/commit/b85f6c227791823d69b0da5cff4306e8e0bf9858))
-
-
-
-# [0.4.0](https://github.com/jwstover/sanctum/compare/v0.3.0...v0.4.0) (2025-08-23)
-
-
-### Features
-
-* add ability to create game with set scenario ([ab6d193](https://github.com/jwstover/sanctum/commit/ab6d19379c8bc1cca5c574faae33566faed88263))
 
 
 
