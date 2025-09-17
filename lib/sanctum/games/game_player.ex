@@ -3,8 +3,7 @@ defmodule Sanctum.Games.GamePlayer do
     otp_app: :sanctum,
     domain: Sanctum.Games,
     data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer],
-    primary_read_warning?: false
+    authorizers: [Ash.Policy.Authorizer]
 
   alias Sanctum.ManualRelationships.HasOneThrough
   alias Sanctum.Games.Changes.SetGameCards
@@ -18,7 +17,6 @@ defmodule Sanctum.Games.GamePlayer do
   actions do
     read :read do
       primary? true
-      filter expr(user_id == ^actor(:id))
     end
 
     create :create do

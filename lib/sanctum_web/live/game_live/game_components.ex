@@ -9,44 +9,47 @@ defmodule SanctumWeb.GameLive.GameComponents do
 
   def scheme_card(assigns) do
     ~H"""
-    <div id={@id} class="relative group" tabindex="0">
-      <div class="absolute opacity-0 left-1/3 group-hover:not-peer-[.game-card-dragging]:opacity-100 space-y-2 group-focus:not-peer-[.game-card-dragging]:opacity-100 top-0 group-hover:left-[90%] group-focus:left-[90%] transition-all pt-[2px] pb-[4px] pl-[2px] pr-[4px] border-2 border-r-3 border-black  bg-white -skew-x-6">
-        <div class="h-full w-full p-1 pr-2 pl-7 bg-gray-900">
-          <div class="skew-x-6">
-            <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
-              <button
-                class="cursor-pointer hover:scale-105 active:scale-95"
-                phx-click="update-scheme-threat"
-                phx-value-game_scheme_id={@game_scheme.id}
-                phx-value-delta="-1"
-              >
-                <.threat_token value="-1" size="size-8" />
-              </button>
-              <button
-                class="cursor-pointer hover:scale-105 active:scale-95"
-                phx-click="update-scheme-threat"
-                phx-value-game_scheme_id={@game_scheme.id}
-                phx-value-delta="1"
-              >
-                <.threat_token value="+1" size="size-8" />
-              </button>
-              <button
-                class="cursor-pointer hover:scale-105 active:scale-95"
-                phx-click="update-scheme-counter"
-                phx-value-game_scheme_id={@game_scheme.id}
-                phx-value-delta="-1"
-              >
-                <.counter_token value="-1" size="size-8" />
-              </button>
-              <button
-                class="cursor-pointer hover:scale-105 active:scale-95"
-                phx-click="update-scheme-counter"
-                phx-value-game_scheme_id={@game_scheme.id}
-                phx-value-delta="1"
-              >
-                <.counter_token value="+1" size="size-8" />
-              </button>
-            </div>
+    <div
+      id={@id}
+      class="relative group"
+      tabindex="0"
+      phx-click={JS.push("select-scheme", value: %{card_id: @game_scheme.id})}
+    >
+      <div class="absolute opacity-0 left-1/3 sm:group-hover:not-peer-[.game-card-dragging]:opacity-100 space-y-2 sm:group-focus:not-peer-[.game-card-dragging]:opacity-100 top-0 group-hover:left-[90%] group-focus:left-[90%] transition-all pt-[2px] pb-[4px] pl-[2px] pr-[4px]">
+        <div class="h-full w-full p-1 pr-2 pl-7 ">
+          <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
+            <button
+              class="cursor-pointer hover:scale-105 active:scale-95"
+              phx-click="update-scheme-threat"
+              phx-value-game_scheme_id={@game_scheme.id}
+              phx-value-delta="-1"
+            >
+              <.threat_token value="-1" size="size-8" />
+            </button>
+            <button
+              class="cursor-pointer hover:scale-105 active:scale-95"
+              phx-click="update-scheme-threat"
+              phx-value-game_scheme_id={@game_scheme.id}
+              phx-value-delta="1"
+            >
+              <.threat_token value="+1" size="size-8" />
+            </button>
+            <button
+              class="cursor-pointer hover:scale-105 active:scale-95"
+              phx-click="update-scheme-counter"
+              phx-value-game_scheme_id={@game_scheme.id}
+              phx-value-delta="-1"
+            >
+              <.counter_token value="-1" size="size-8" />
+            </button>
+            <button
+              class="cursor-pointer hover:scale-105 active:scale-95"
+              phx-click="update-scheme-counter"
+              phx-value-game_scheme_id={@game_scheme.id}
+              phx-value-delta="1"
+            >
+              <.counter_token value="+1" size="size-8" />
+            </button>
           </div>
         </div>
       </div>
@@ -79,19 +82,25 @@ defmodule SanctumWeb.GameLive.GameComponents do
       )
 
     ~H"""
-    <div id={@id} class={["relative group hover:z-100 group"]} tabindex="0">
-      <.token_buttons :if={@show_tokens} game_card_id={@game_card.id} />
+    <div
+      id={@id}
+      class={["relative group hover:z-100 group"]}
+      tabindex="0"
+      phx-click={JS.push("select-card", value: %{card_id: @game_card.id})}
+    >
       <div
         id={@id <> "-drag"}
         class={[
-          "game-card max-w-fit peer relative p-1 bg-black border border-gray-700 shadow shadow-black",
-          @zone == "hero_hand" && "transition-all hover:scale-115 hover:-translate-y-6",
+          "game-card max-w-fit peer relative p-1 bg-black border border-gray-700 shadow shadow-black hover:z-50 focus:z-50",
+          @zone == "hero_hand" &&
+            "not-[.game-card-dragging]:transition-all hover:not-[.game-card-dragging]:scale-115 hover:not-[.game-card-dragging]:-translate-y-6",
           @class
         ]}
         phx-hook="CardDrag"
         data-game_card_id={@game_card.id}
         data-zone={@zone}
       >
+        <.token_buttons_group :if={@show_tokens} game_card_id={@game_card.id} />
         <div class="relative">
           <figure class="rounded-[4.5%] overflow-hidden">
             <img class={[@aspect, "object-fit"]} src={@src} />
@@ -118,6 +127,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
 
   attr :id, :string, required: true
   attr :card, Sanctum.Games.Card, default: nil
+  attr :class, :string, default: ""
   attr :imgsrc, :string, default: nil
 
   def plain_card(assigns) do
@@ -136,7 +146,8 @@ defmodule SanctumWeb.GameLive.GameComponents do
     <div
       id={@id}
       class={[
-        "game-card max-w-fit peer relative p-1 bg-black border border-gray-700 shadow shadow-black"
+        "game-card max-w-fit group peer relative p-1 bg-black border border-gray-700 shadow shadow-black hover:z-50 focus:z-50",
+        @class
       ]}
     >
       <div class="relative">
@@ -145,73 +156,87 @@ defmodule SanctumWeb.GameLive.GameComponents do
         </figure>
         <div class="absolute top-0 left-0 w-full h-full touch-none" />
       </div>
+      <div class="pointer-events-none fixed left-2 bottom-2 hidden group-hover:not-peer-[.game-card-dragging]:block z-1000 p-3 bg-black ">
+        <figure class="rounded-[4.5%] overflow-hidden">
+          <img class={["h-[30vh] object-fit"]} src={@src} />
+        </figure>
+      </div>
     </div>
     """
   end
 
+  def token_buttons_group(assigns) do
+    ~H"""
+    <div class={[
+      "absolute pointer-events-none opacity-0 left-1/3 space-y-2 top-0 transition-all pt-[2px] pb-[4px] pl-[2px] pr-[4px] z-50",
+      "sm:group-hover:not-peer-[.game-card-dragging]:opacity-100 sm:group-focus:not-peer-[.game-card-dragging]:opacity-100 group-hover:left-[85%] group-focus:left-[85%] group-hover:pointer-events-auto group-focus:pointer-events-auto"
+    ]}>
+      <div class="h-full w-full p-1 pr-2 pl-7 ">
+        <.token_buttons game_card_id={@game_card_id} />
+      </div>
+    </div>
+    """
+  end
+
+  attr :size, :string, default: "size-9"
+
   def token_buttons(assigns) do
     ~H"""
-    <div class="absolute opacity-0 left-1/3 group-hover:not-peer-[.game-card-dragging]:opacity-100 space-y-2 group-focus:not-peer-[.game-card-dragging]:opacity-100 top-0 group-hover:left-[85%] group-focus:left-[85%] transition-all pt-[2px] pb-[4px] pl-[2px] pr-[4px] border-2 border-r-3 border-black  bg-white -skew-x-6">
-      <div class="h-full w-full p-1 pr-2 pl-7 bg-gray-900">
-        <div class="skew-x-6">
-          <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-counter"
-              phx-value-game_card_id={@game_card_id}
-              phx-value-counter_type="threat"
-              phx-value-delta="-1"
-            >
-              <.threat_token value="-1" size="size-8" />
-            </button>
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-counter"
-              phx-value-game_card_id={@game_card_id}
-              phx-value-counter_type="threat"
-              phx-value-delta="1"
-            >
-              <.threat_token value="+1" size="size-8" />
-            </button>
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-counter"
-              phx-value-game_card_id={@game_card_id}
-              phx-value-counter_type="damage"
-              phx-value-delta="-1"
-            >
-              <.damage_token value="-1" size="size-8" />
-            </button>
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-counter"
-              phx-value-game_card_id={@game_card_id}
-              phx-value-counter_type="damage"
-              phx-value-delta="1"
-            >
-              <.damage_token value="+1" size="size-8" />
-            </button>
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-counter"
-              phx-value-game_card_id={@game_card_id}
-              phx-value-counter_type="counter"
-              phx-value-delta="-1"
-            >
-              <.counter_token value="-1" size="size-8" />
-            </button>
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-counter"
-              phx-value-game_card_id={@game_card_id}
-              phx-value-counter_type="counter"
-              phx-value-delta="1"
-            >
-              <.counter_token value="+1" size="size-8" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
+      <button
+        class="cursor-pointer hover:scale-105 active:scale-95"
+        phx-click="update-counter"
+        phx-value-game_card_id={@game_card_id}
+        phx-value-counter_type="threat"
+        phx-value-delta="-1"
+      >
+        <.threat_token value="-1" size={@size} />
+      </button>
+      <button
+        class="cursor-pointer hover:scale-105 active:scale-95"
+        phx-click="update-counter"
+        phx-value-game_card_id={@game_card_id}
+        phx-value-counter_type="threat"
+        phx-value-delta="1"
+      >
+        <.threat_token value="+1" size={@size} />
+      </button>
+      <button
+        class="cursor-pointer hover:scale-105 active:scale-95"
+        phx-click="update-counter"
+        phx-value-game_card_id={@game_card_id}
+        phx-value-counter_type="damage"
+        phx-value-delta="-1"
+      >
+        <.damage_token value="-1" size={@size} />
+      </button>
+      <button
+        class="cursor-pointer hover:scale-105 active:scale-95"
+        phx-click="update-counter"
+        phx-value-game_card_id={@game_card_id}
+        phx-value-counter_type="damage"
+        phx-value-delta="1"
+      >
+        <.damage_token value="+1" size={@size} />
+      </button>
+      <button
+        class="cursor-pointer hover:scale-105 active:scale-95"
+        phx-click="update-counter"
+        phx-value-game_card_id={@game_card_id}
+        phx-value-counter_type="counter"
+        phx-value-delta="-1"
+      >
+        <.counter_token value="-1" size={@size} />
+      </button>
+      <button
+        class="cursor-pointer hover:scale-105 active:scale-95"
+        phx-click="update-counter"
+        phx-value-game_card_id={@game_card_id}
+        phx-value-counter_type="counter"
+        phx-value-delta="1"
+      >
+        <.counter_token value="+1" size={@size} />
+      </button>
     </div>
     """
   end
@@ -263,9 +288,14 @@ defmodule SanctumWeb.GameLive.GameComponents do
     """
   end
 
+  attr :size, :string, default: "w-9 h-9"
+
   def damage_token(assigns) do
     ~H"""
-    <div class="relative w-8 h-8 rounded-full flex items-center justify-center bg-red-700 border-4 border-black">
+    <div class={[
+      "relative rounded-full flex items-center justify-center bg-red-700 border-4 border-black",
+      @size
+    ]}>
       <span class="text-xl -mt-[2px] -mr-[1px] font-komika text-bold text-white text-shadow-[0_0_2px_black,0_0_2px_black,0_0_2px_black,0_0_2px_black]">
         {@value}
       </span>
@@ -273,9 +303,14 @@ defmodule SanctumWeb.GameLive.GameComponents do
     """
   end
 
+  attr :size, :string, default: "w-9 h-9"
+
   def counter_token(assigns) do
     ~H"""
-    <div class="relative w-8 h-8 grid place-items-center rounded-lg bg-emerald-500 border-4 border-black">
+    <div class={[
+      "relative grid place-items-center rounded-lg bg-emerald-500 border-4 border-black",
+      @size
+    ]}>
       <span class="text-xl -mt-1 font-komika text-bold text-white text-shadow-[0_0_2px_black,0_0_2px_black,0_0_2px_black,0_0_2px_black]">
         {@value}
       </span>
