@@ -155,9 +155,7 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("draw-1", _params, socket) do
     game_player = socket.assigns.game_player
 
-    Games.draw_cards(game_player.id, 1, socket.assigns.current_hand_size,
-      actor: socket.assigns.current_user
-    )
+    Games.draw_cards(game_player.id, 1, actor: socket.assigns.current_user)
 
     {:noreply,
      socket
@@ -173,12 +171,7 @@ defmodule SanctumWeb.GameLive.Show do
       socket.assigns.max_hand_size - socket.assigns.current_hand_size
 
     if count > 0 do
-      Games.draw_cards(
-        game_player.id,
-        count,
-        socket.assigns.current_hand_size,
-        actor: socket.assigns.current_user
-      )
+      Games.draw_cards(game_player.id, count, actor: socket.assigns.current_user)
 
       {:noreply,
        socket
@@ -318,7 +311,6 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("select-card", %{"card_id" => game_card_id}, socket) do
     game_card =
       Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
-      |> IO.inspect(label: "================== \n")
 
     {:noreply, assign(socket, :selected_card, game_card)}
   end

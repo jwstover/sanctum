@@ -64,12 +64,11 @@ defmodule Sanctum.Games do
     end
   end
 
-  def draw_cards(game_player_id, count, current_hand_size, opts \\ []) do
+  def draw_cards(game_player_id, count, opts \\ []) do
     {:ok, cards} = peek_cards(game_player_id, count, :hero_deck, opts)
 
     cards
-    |> Enum.with_index()
-    |> Enum.map(fn {card, index} ->
+    |> Enum.map(fn card ->
       card
       |> move_game_card!(
         %{

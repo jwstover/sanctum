@@ -165,6 +165,8 @@ defmodule SanctumWeb.GameLive.GameComponents do
     """
   end
 
+  attr :game_card_id, :integer, required: true
+
   def token_buttons_group(assigns) do
     ~H"""
     <div class={[
@@ -178,6 +180,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
     """
   end
 
+  attr :game_card_id, :integer, required: true
   attr :size, :string, default: "size-9"
 
   def token_buttons(assigns) do
@@ -289,6 +292,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
   end
 
   attr :size, :string, default: "w-9 h-9"
+  attr :value, :any, required: true
 
   def damage_token(assigns) do
     ~H"""
@@ -304,6 +308,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
   end
 
   attr :size, :string, default: "w-9 h-9"
+  attr :value, :any, required: true
 
   def counter_token(assigns) do
     ~H"""
