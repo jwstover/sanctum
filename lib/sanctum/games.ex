@@ -41,10 +41,16 @@ defmodule Sanctum.Games do
       define :change_villain_health, action: :change_health
     end
 
-    resource Sanctum.Games.GameScheme
+    resource Sanctum.Games.GameScheme do
+      define :get_game_scheme, get_by: :id, action: :read
+      define :update_scheme_threat, args: [:delta], action: :update_threat
+      define :update_scheme_counter, args: [:delta], action: :update_counter
+    end
+
     resource Sanctum.Games.GameEncounterDeck
 
     resource Sanctum.Games.GameCard do
+      define :list_game_cards, action: :read
       define :get_game_card, get_by: :id, action: :read
       define :peek_cards, action: :peek, args: [:game_player_id, :count, {:optional, :zone}]
 
@@ -58,17 +64,16 @@ defmodule Sanctum.Games do
     end
   end
 
-  def draw_cards(game_player_id, count, current_hand_size, opts \\ []) do
+  def draw_cards(game_player_id, count, opts \\ []) do
     {:ok, cards} = peek_cards(game_player_id, count, :hero_deck, opts)
 
     cards
-    |> Enum.with_index()
-    |> Enum.map(fn {card, index} ->
+    |> Enum.map(fn card ->
       card
-      |> update_game_card!(
+      |> move_game_card!(
         %{
-          zone: :hero_hand,
-          order: current_hand_size + index
+          game_player_id: game_player_id,
+          zone: :hero_hand
         },
         opts
       )

@@ -14,14 +14,15 @@ defmodule Sanctum.Games.Changes.AssignOrder do
     if Ash.Changeset.changing_attribute?(changeset, :order) do
       changeset
     else
+      zone = Ash.Changeset.get_attribute(changeset, :zone)
       game_player_id = Ash.Changeset.get_attribute(changeset, :game_player_id)
       game_encounter_deck_id = Ash.Changeset.get_attribute(changeset, :game_encounter_deck_id)
 
       where =
         if game_encounter_deck_id do
-          [game_encounter_deck_id: game_encounter_deck_id]
+          [game_encounter_deck_id: game_encounter_deck_id, zone: zone]
         else
-          [game_player_id: game_player_id]
+          [game_player_id: game_player_id, zone: zone]
         end
 
       max_order =

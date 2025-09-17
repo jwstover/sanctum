@@ -3,6 +3,10 @@ defmodule SanctumWeb.GameLive.Show do
 
   use SanctumWeb, :live_view
 
+  @landscape_types [
+    :main_scheme
+  ]
+
   import SanctumWeb.GameLive.GameComponents
 
   alias Sanctum.Games.GamePlayer
@@ -16,16 +20,20 @@ defmodule SanctumWeb.GameLive.Show do
      socket
      |> assign(%{
        game_id: game_id,
-       show_player_form: false
+       selected_card: nil,
+       show_player_form: false,
+       landscape_types: @landscape_types
      })
      |> stream(:facedown_encounters, [])
      |> stream(:hero_play_cards, [])
      |> stream(:hand_cards, [])
      |> assign_game()
      |> assign_game_player()
+     |> assign_hand_sizes()
      |> stream_facedown_encounters()
      |> stream_hero_play_cards()
      |> stream_hand_cards()
+     |> stream_main_schemes()
      |> assign_hero_discard()
      |> assign_encounter_discard()}
   end
@@ -52,10 +60,17 @@ defmodule SanctumWeb.GameLive.Show do
     stream(socket, :hand_cards, hand_cards, reset: true)
   end
 
+  defp stream_main_schemes(socket) do
+    main_schemes = socket.assigns.game.game_schemes
+
+    stream(socket, :main_schemes, main_schemes, reset: true)
+  end
+
   def handle_info({:deck_selected, _game_player}, socket) do
     {:noreply,
      socket
      |> assign_game_player()
+     |> assign_hand_sizes()
      |> assign(:show_player_form, false)}
   end
 
@@ -78,7 +93,9 @@ defmodule SanctumWeb.GameLive.Show do
           stream_delete(socket, :hero_play_cards, game_card)
 
         "hero_hand" ->
-          stream_delete(socket, :hand_cards, game_card)
+          socket
+          |> stream_delete(:hand_cards, game_card)
+          |> assign(:current_hand_size, socket.assigns.current_hand_size - 1)
 
         "facedown_encounter" ->
           stream_delete(socket, :facedown_encounters, game_card)
@@ -100,7 +117,9 @@ defmodule SanctumWeb.GameLive.Show do
           stream_insert(socket, :hero_play_cards, updated_card)
 
         "hero_hand" ->
-          stream_insert(socket, :hand_cards, updated_card)
+          socket
+          |> stream_insert(:hand_cards, updated_card)
+          |> assign(:current_hand_size, socket.assigns.current_hand_size + 1)
 
         "hero_discard" ->
           assign(socket, :hero_discard, [updated_card | socket.assigns.hero_discard])
@@ -136,28 +155,32 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("draw-1", _params, socket) do
     game_player = socket.assigns.game_player
 
-    Games.draw_cards(game_player.id, 1, game_player.current_hand_size,
-      actor: socket.assigns.current_user
-    )
+    Games.draw_cards(game_player.id, 1, actor: socket.assigns.current_user)
 
-    {:noreply, socket |> assign_game_player() |> stream_hand_cards()}
+    {:noreply,
+     socket
+     |> assign_game_player()
+     |> stream_hand_cards()
+     |> assign(:current_hand_size, socket.assigns.current_hand_size + 1)}
   end
 
   def handle_event("draw-hand", _params, socket) do
     game_player = socket.assigns.game_player
 
     count =
-      game_player.max_hand_size - game_player.current_hand_size
+      socket.assigns.max_hand_size - socket.assigns.current_hand_size
 
-    count > 0 &&
-      Games.draw_cards(
-        game_player.id,
-        count,
-        game_player.current_hand_size,
-        actor: socket.assigns.current_user
-      )
+    if count > 0 do
+      Games.draw_cards(game_player.id, count, actor: socket.assigns.current_user)
 
-    {:noreply, socket |> assign_game_player() |> stream_hand_cards()}
+      {:noreply,
+       socket
+       |> assign_game_player()
+       |> stream_hand_cards()
+       |> assign(:current_hand_size, socket.assigns.current_hand_size + count)}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("flip-hero", _params, socket) do
@@ -165,7 +188,7 @@ defmodule SanctumWeb.GameLive.Show do
 
     Games.flip_identity(game_player)
 
-    {:noreply, socket |> assign_game_player()}
+    {:noreply, socket |> assign_game_player() |> assign_hand_sizes()}
   end
 
   def handle_event("change-health", %{"amount" => amount_str}, socket) do
@@ -201,6 +224,106 @@ defmodule SanctumWeb.GameLive.Show do
       end
 
     {:noreply, stream_insert(socket, zone, card)}
+  end
+
+  def handle_event(
+        "update-counter",
+        %{
+          "game_card_id" => game_card_id,
+          "counter_type" => counter_type,
+          "delta" => delta_str
+        },
+        socket
+      ) do
+    delta = String.to_integer(delta_str)
+
+    # Build arguments based on counter type
+    args =
+      case counter_type do
+        "threat" -> %{threat_delta: delta}
+        "damage" -> %{damage_delta: delta}
+        "counter" -> %{counter_delta: delta}
+      end
+
+    card = Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
+
+    card =
+      card
+      |> Ash.Changeset.for_update(:update_counters, args)
+      |> Ash.update!(actor: socket.assigns.current_user)
+
+    socket = maybe_update_selected_card(socket, card)
+
+    zone =
+      case card.zone do
+        :hero_hand -> :hand_cards
+        :hero_play -> :hero_play_cards
+        :facedown_encounter -> :facedown_encounters
+      end
+
+    {:noreply, stream_insert(socket, zone, card)}
+  end
+
+  def handle_event(
+        "update-scheme-threat",
+        %{"delta" => delta, "game_scheme_id" => game_scheme_id},
+        socket
+      ) do
+    game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
+
+    case Games.update_scheme_threat(game_scheme, delta,
+           load: [:card],
+           actor: socket.assigns.current_user
+         ) do
+      {:ok, scheme} ->
+        socket
+        |> stream_insert(:main_schemes, scheme)
+        |> maybe_update_selected_card(scheme)
+
+      _ ->
+        socket
+    end
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event(
+        "update-scheme-counter",
+        %{"delta" => delta, "game_scheme_id" => game_scheme_id},
+        socket
+      ) do
+    game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
+
+    case Games.update_scheme_counter(game_scheme, delta,
+           load: [:card],
+           actor: socket.assigns.current_user
+         ) do
+      {:ok, scheme} ->
+        socket
+        |> stream_insert(:main_schemes, scheme)
+        |> maybe_update_selected_card(scheme)
+
+      _ ->
+        socket
+    end
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("select-card", %{"card_id" => game_card_id}, socket) do
+    game_card =
+      Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
+
+    {:noreply, assign(socket, :selected_card, game_card)}
+  end
+
+  def handle_event("select-scheme", %{"card_id" => game_card_id}, socket) do
+    game_card =
+      Games.get_game_scheme!(game_card_id, load: [:card], actor: socket.assigns.current_user)
+
+    {:noreply, assign(socket, :selected_card, game_card)}
+  end
+
+  def handle_event("deselect-card", _params, socket) do
+    {:noreply, assign(socket, :selected_card, nil)}
   end
 
   @spec assign_game(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
@@ -245,6 +368,15 @@ defmodule SanctumWeb.GameLive.Show do
     )
   end
 
+  defp assign_hand_sizes(socket) do
+    game_player = socket.assigns.game_player
+
+    assign(socket, %{
+      current_hand_size: game_player.current_hand_size,
+      max_hand_size: game_player.max_hand_size
+    })
+  end
+
   defp assign_hero_discard(socket) do
     game_player = socket.assigns.game_player
 
@@ -255,6 +387,14 @@ defmodule SanctumWeb.GameLive.Show do
     encounter_discard = socket.assigns.game.encounter_deck.discard_cards |> Enum.reverse()
 
     assign(socket, :encounter_discard, encounter_discard)
+  end
+
+  defp maybe_update_selected_card(socket, updated_item) do
+    if socket.assigns.selected_card && updated_item.id == socket.assigns.selected_card.id do
+      assign(socket, :selected_card, updated_item)
+    else
+      socket
+    end
   end
 
   def render(assigns) do
@@ -274,6 +414,90 @@ defmodule SanctumWeb.GameLive.Show do
         hero_discard={@hero_discard}
         encounter_discard={@encounter_discard}
       />
+      <dialog :if={@selected_card} id="selected-card-modal" class="modal modal-open">
+        <div phx-key="escape" phx-window-keyup="deselect-card" phx-click-away="deselect-card">
+          <div class="p-3 bg-black mx-4">
+            <figure class={[
+              "relative rounded-[4.5%] overflow-hidden",
+              @selected_card.card.type in @landscape_types && "h-[30dvh]",
+              @selected_card.card.type not in @landscape_types && "h-[50dvh]"
+            ]}>
+              <img class="h-full object-contain" src={@selected_card.card.image_url} />
+              <div class="absolute bottom-2 right-2 flex flex-col flex-reverse gap-1 pointer-events-none">
+                <.threat_token
+                  :if={Map.get(@selected_card, :threat, 0) > 0}
+                  size="size-14"
+                  value={@selected_card.threat}
+                />
+                <.damage_token
+                  :if={Map.get(@selected_card, :damage, 0) > 0}
+                  size="size-14"
+                  value={@selected_card.damage}
+                />
+                <.counter_token
+                  :if={Map.get(@selected_card, :counter, 0) > 0}
+                  size="size-14"
+                  value={@selected_card.counter}
+                />
+              </div>
+            </figure>
+          </div>
+
+          <div :if={
+            Map.get(@selected_card, :zone) not in [
+              :hero_discard,
+              :hero_hand,
+              :encounter_discard,
+              :encounter_deck,
+              :removed_from_game,
+              :victory_display
+            ]
+          }>
+            <%= case @selected_card do %>
+              <% %Sanctum.Games.GameCard{} -> %>
+                <.token_buttons game_card_id={@selected_card.id} size="size-12" />
+              <% %Sanctum.Games.GameScheme{} -> %>
+                <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
+                  <button
+                    class="cursor-pointer hover:scale-105 active:scale-95"
+                    phx-click="update-scheme-threat"
+                    phx-value-game_scheme_id={@selected_card.id}
+                    phx-value-delta="-1"
+                  >
+                    <.threat_token value="-1" size="size-12" />
+                  </button>
+                  <button
+                    class="cursor-pointer hover:scale-105 active:scale-95"
+                    phx-click="update-scheme-threat"
+                    phx-value-game_scheme_id={@selected_card.id}
+                    phx-value-delta="1"
+                  >
+                    <.threat_token value="+1" size="size-12" />
+                  </button>
+                  <button
+                    class="cursor-pointer hover:scale-105 active:scale-95"
+                    phx-click="update-scheme-counter"
+                    phx-value-game_scheme_id={@selected_card.id}
+                    phx-value-delta="-1"
+                  >
+                    <.counter_token value="-1" size="size-12" />
+                  </button>
+                  <button
+                    class="cursor-pointer hover:scale-105 active:scale-95"
+                    phx-click="update-scheme-counter"
+                    phx-value-game_scheme_id={@selected_card.id}
+                    phx-value-delta="1"
+                  >
+                    <.counter_token value="+1" size="size-12" />
+                  </button>
+                </div>
+            <% end %>
+          </div>
+          <div class="mt-8 flex items-center justify-center">
+            <.button phx-click="deselect-card" class="btn btn-primary">Close</.button>
+          </div>
+        </div>
+      </dialog>
     </Layouts.game>
     """
   end
@@ -338,23 +562,22 @@ defmodule SanctumWeb.GameLive.Show do
       <div
         id="main-schema-area"
         class="flex flex-col items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
+        phx-update="stream"
       >
-        <.card
-          :for={main_scheme <- @game.game_schemes}
-          id={main_scheme.card.id}
-          card={main_scheme.card}
+        <.scheme_card
+          :for={{dom_id, main_scheme} <- @streams.main_schemes}
+          id={dom_id}
+          game_scheme={main_scheme}
         />
-        <div class="flex flex-row gap-2 mt-2">
-          <.threat_token id="threat-token-1" value={3} />
-          <.damage_token value={20} />
-          <.counter_token value={3} />
-        </div>
       </div>
       <div
         id="villian-area"
         class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
       >
-        <.card id={@game.game_villian.card.id} card={@game.game_villian.card} />
+        <.plain_card
+          id={@game.game_villian.card.id}
+          card={@game.game_villian.card}
+        />
       </div>
       <div
         id="encounter-deck-area"
@@ -371,7 +594,8 @@ defmodule SanctumWeb.GameLive.Show do
         <.card
           :if={!Enum.empty?(@encounter_discard)}
           id="encounter-discard-pile"
-          card={hd(@encounter_discard) |> Map.get(:card)}
+          game_card={hd(@encounter_discard)}
+          show_tokens={false}
           zone="encounter_discard"
         />
       </div>
@@ -389,23 +613,24 @@ defmodule SanctumWeb.GameLive.Show do
           phx-update="stream"
         >
           <%= for {dom_id, card} <- @streams.facedown_encounters do %>
-            <div id={dom_id} class="relative group" tabindex="0">
-              <.card
-                :if={card.face_up}
-                id={card.id}
-                card={card.card}
-                game_card_id={card.id}
-                zone="facedown_encounter"
-              />
-              <.encounter_back :if={!card.face_up} id={card.id} />
-              <div class="absolute hidden group-hover:flex group-focus:flex w-full bottom-2 flex flex-col items-center">
-                <button
-                  class="btn btn-sm bg-gray-900 text-gray-100 border-none rounded shadow shadow-gray-800 font-elektra"
-                  phx-click="flip"
-                  phx-value-game_card_id={card.id}
-                >
-                  Flip
-                </button>
+            <div id={dom_id} class="relative group/enc" tabindex="0">
+              <div class="relative">
+                <.card
+                  :if={card.face_up}
+                  id={card.id}
+                  game_card={card}
+                  zone="facedown_encounter"
+                />
+                <.encounter_back :if={!card.face_up} id={card.id} />
+                <div class="absolute hidden group-hover/enc:flex group-focus-within/enc:flex w-full bottom-2 flex-col items-center z-100">
+                  <button
+                    class="btn btn-sm bg-gray-900 text-gray-100 border-none rounded shadow shadow-gray-800 font-elektra"
+                    phx-click="flip"
+                    phx-value-game_card_id={card.id}
+                  >
+                    Flip
+                  </button>
+                </div>
               </div>
             </div>
           <% end %>
@@ -427,7 +652,7 @@ defmodule SanctumWeb.GameLive.Show do
           phx-update="stream"
         >
           <%= for {dom_id, card} <- @streams.hero_play_cards do %>
-            <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hero_play" />
+            <.card id={dom_id} game_card={card} zone="hero_play" />
           <% end %>
         </div>
       </div>
@@ -459,9 +684,9 @@ defmodule SanctumWeb.GameLive.Show do
         <.card
           :if={!Enum.empty?(@hero_discard)}
           id="hero-discard-pile"
-          card={hd(@hero_discard) |> Map.get(:card)}
-          game_card_id={hd(@hero_discard).id}
+          game_card={hd(@hero_discard)}
           zone="hero_discard"
+          show_tokens={false}
         />
       </div>
 
@@ -472,17 +697,22 @@ defmodule SanctumWeb.GameLive.Show do
         <div
           id="player-hand"
           class="fixed bottom-0 w-full max-h-max"
-          phx-hook="LayoutHand"
         >
           <div
             id="player-hand-dropzone"
-            class="w-full h-full border-4 rounded border-transparent"
+            class="flex items-center justify-center  w-full h-full border-4 rounded border-transparent"
             phx-hook="DragDrop"
             phx-update="stream"
             data-drop_zone="hero_hand"
           >
             <%= for {dom_id, card} <- @streams.hand_cards do %>
-              <.card id={dom_id} card={card.card} game_card_id={card.id} zone="hero_hand" />
+              <.card
+                id={dom_id}
+                class={"-mx-6 z-[#{card.order}]"}
+                game_card={card}
+                zone="hero_hand"
+                show_tokens={false}
+              />
             <% end %>
           </div>
         </div>
@@ -540,13 +770,16 @@ defmodule SanctumWeb.GameLive.Show do
 
   def deck(assigns) do
     ~H"""
-    <div class="relative group flex flex-col" tabindex="0">
+    <div class="relative group/deck flex flex-col" tabindex="0">
       <.player_back :if={!Enum.empty?(@deck_cards)} id="player-deck" />
       <div class="absolute bottom-3 opacity-50 left-0 flex flex-row justify-center w-full">
         <div><span>{Enum.count(@deck_cards)}</span></div>
       </div>
 
-      <div class="absolute hidden group-hover:flex group-focus:flex flex-col gap-1 left-full top-0 px-2">
+      <div
+        class="absolute hidden group-hover/deck:flex group-focus-within/deck:flex flex-col gap-1 left-full top-0 px-2"
+        tabindex="0"
+      >
         <.button variant="icon" phx-click="draw-1"><.icon name="hero-arrow-up-on-square" /></.button>
         <.button variant="icon" phx-click="draw-hand">
           <.icon name="hero-arrow-up-on-square-stack" />
@@ -561,7 +794,7 @@ defmodule SanctumWeb.GameLive.Show do
     <div :if={@game_player.deck} class="relative group flex flex-col" tabindex="0">
       <% card =
         if @game_player.form == :hero, do: @game_player.deck.hero, else: @game_player.deck.alter_ego %>
-      <.card id={card.id} card={card} />
+      <.plain_card id={card.id} card={card} />
       <div class="absolute hidden group-hover:flex group-focus:flex flex-col gap-1 left-full top-0 px-2">
         <.button variant="icon" phx-click="flip-hero"><.icon name="hero-arrow-uturn-left" /></.button>
       </div>
