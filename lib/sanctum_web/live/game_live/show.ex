@@ -70,6 +70,7 @@ defmodule SanctumWeb.GameLive.Show do
     {:noreply,
      socket
      |> assign_game_player()
+     |> assign_hand_sizes()
      |> assign(:show_player_form, false)}
   end
 
