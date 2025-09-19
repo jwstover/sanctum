@@ -33,23 +33,39 @@ defmodule SanctumWeb.CardLive.Index do
           <:col :let={{_id, card}} label="Code">{card.code}</:col>
           <:col :let={{_id, card}} label="Type">{card.type}</:col>
           <:col :let={{_id, card}} label="Aspect">{card.aspect}</:col>
-          <:col :let={{_id, card}} label="Cost">{card.cost}</:col>
           <:col :let={{_id, card}} label="Text">{card.text}</:col>
           <:col :let={{_id, card}} label="Traits">{Enum.join(card.traits || [], ", ")}</:col>
+          <:col :let={{_id, card}} label="Cost">{card.cost}</:col>
           <:col :let={{_id, card}} label="Attack">{card.attack}</:col>
+          <:col :let={{_id, card}} label="Attack Cost">{card.attack_cost}</:col>
           <:col :let={{_id, card}} label="Thwart">{card.thwart}</:col>
+          <:col :let={{_id, card}} label="Thwart Cost">{card.thwart_cost}</:col>
           <:col :let={{_id, card}} label="Defense">{card.defense}</:col>
+          <:col :let={{_id, card}} label="Defense Cost">{card.defense_cost}</:col>
           <:col :let={{_id, card}} label="Health">{card.health}</:col>
           <:col :let={{_id, card}} label="Deck Limit">{card.deck_limit}</:col>
           <:col :let={{_id, card}} label="Unique">{card.unique}</:col>
           <:col :let={{_id, card}} label="Permanent">{card.permanent}</:col>
+          <:col :let={{_id, card}} label="Acceleration">{card.acceleration_icon}</:col>
+          <:col :let={{_id, card}} label="Amplify">{card.amplify_icon}</:col>
+          <:col :let={{_id, card}} label="Crisis">{card.crisis_icon}</:col>
+          <:col :let={{_id, card}} label="Hazard">{card.hazard_icon}</:col>
+          <:col :let={{_id, card}} label="Energy Resources">{card.resource_energy_count}</:col>
+          <:col :let={{_id, card}} label="Physical Resources">{card.resource_physical_count}</:col>
+          <:col :let={{_id, card}} label="Mental Resources">{card.resource_mental_count}</:col>
+          <:col :let={{_id, card}} label="Wild Resources">{card.resource_wild_count}</:col>
           <:col :let={{_id, card}} label="Hand Size">{card.hand_size}</:col>
           <:col :let={{_id, card}} label="Recover">{card.recover}</:col>
+          <:col :let={{_id, card}} label="Health Per Hero">{card.health_per_hero}</:col>
           <:col :let={{_id, card}} label="Stage">{card.stage}</:col>
+          <:col :let={{_id, card}} label="Scheme">{card.scheme}</:col>
           <:col :let={{_id, card}} label="Base Threat">{card.base_threat}</:col>
           <:col :let={{_id, card}} label="Escalation Threat">{card.escalation_threat}</:col>
+          <:col :let={{_id, card}} label="Max Threat">{card.max_threat}</:col>
           <:col :let={{_id, card}} label="Boost">{card.boost}</:col>
-          <:col :let={{_id, card}} label="Card Set">{card.card_set}</:col>
+          <:col :let={{_id, card}} label="Boost Star">{card.boost_star}</:col>
+          <:col :let={{_id, card}} label="Set">{card.set}</:col>
+          <:col :let={{_id, card}} label="Pack">{card.pack}</:col>
 
           <:action :let={{_id, card}}>
             <div class="sr-only">

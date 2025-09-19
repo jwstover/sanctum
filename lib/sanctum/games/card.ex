@@ -8,6 +8,10 @@ defmodule Sanctum.Games.Card do
   postgres do
     table "cards"
     repo Sanctum.Repo
+
+    custom_indexes do
+      index [:set]
+    end
   end
 
   actions do

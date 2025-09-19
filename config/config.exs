@@ -7,8 +7,6 @@
 # General application configuration
 import Config
 
-config :sanctum, env: config_env()
-
 config :ash_oban, pro?: false
 
 config :sanctum, Oban,
@@ -63,7 +61,7 @@ config :sanctum,
   env: config_env(),
   ecto_repos: [Sanctum.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games]
+  ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games, Sanctum.Heroes]
 
 # Configures the endpoint
 config :sanctum, SanctumWeb.Endpoint,
