@@ -62,6 +62,8 @@ defmodule Sanctum.Games do
       define :move_game_card, action: :move
       define :flip_card, action: :flip
     end
+
+    resource Sanctum.Games.CardSide
   end
 
   def draw_cards(game_player_id, count, opts \\ []) do
