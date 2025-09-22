@@ -113,14 +113,23 @@ defmodule Sanctum.Games.CardTest do
         is_multi_sided: false
       }
 
-      {:ok, hero_card} = Card |> Ash.Changeset.for_create(:create, hero_card_attrs) |> Ash.create()
-      {:ok, ally_card} = Card |> Ash.Changeset.for_create(:create, ally_card_attrs) |> Ash.create()
-      {:ok, villain_card} = Card |> Ash.Changeset.for_create(:create, villain_card_attrs) |> Ash.create()
+      {:ok, hero_card} =
+        Card |> Ash.Changeset.for_create(:create, hero_card_attrs) |> Ash.create()
+
+      {:ok, ally_card} =
+        Card |> Ash.Changeset.for_create(:create, ally_card_attrs) |> Ash.create()
+
+      {:ok, villain_card} =
+        Card |> Ash.Changeset.for_create(:create, villain_card_attrs) |> Ash.create()
 
       %{hero_card: hero_card, ally_card: ally_card, villain_card: villain_card}
     end
 
-    test "by_set filters cards by set", %{hero_card: hero_card, ally_card: ally_card, villain_card: villain_card} do
+    test "by_set filters cards by set", %{
+      hero_card: hero_card,
+      ally_card: ally_card,
+      villain_card: villain_card
+    } do
       core_cards = Card |> Ash.Query.for_read(:by_set, %{set: "core"}) |> Ash.read!()
       assert length(core_cards) == 2
 
@@ -135,7 +144,9 @@ defmodule Sanctum.Games.CardTest do
     end
 
     test "by_code finds card by base_code", %{hero_card: hero_card} do
-      found_cards = Card |> Ash.Query.for_read(:by_code, %{code: hero_card.base_code}) |> Ash.read!()
+      found_cards =
+        Card |> Ash.Query.for_read(:by_code, %{code: hero_card.base_code}) |> Ash.read!()
+
       assert length(found_cards) == 1
       assert List.first(found_cards).id == hero_card.id
     end
@@ -160,9 +171,17 @@ defmodule Sanctum.Games.CardTest do
         type: :hero
       }
 
-      {:ok, _card_side} = Sanctum.Games.CardSide |> Ash.Changeset.for_create(:create, card_side_attrs) |> Ash.create()
+      {:ok, _card_side} =
+        Sanctum.Games.CardSide
+        |> Ash.Changeset.for_create(:create, card_side_attrs)
+        |> Ash.create()
 
-      card_with_sides = Card |> Ash.Query.for_read(:with_sides) |> Ash.read!() |> Enum.find(&(&1.id == hero_card.id))
+      card_with_sides =
+        Card
+        |> Ash.Query.for_read(:with_sides)
+        |> Ash.read!()
+        |> Enum.find(&(&1.id == hero_card.id))
+
       assert card_with_sides.card_sides != nil
       assert length(card_with_sides.card_sides) == 1
       assert card_with_sides.primary_side != nil

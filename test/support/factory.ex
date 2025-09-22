@@ -28,6 +28,7 @@ defmodule Sanctum.Factory do
 
   def card_factory do
     code = Faker.Util.format("%5d")
+
     %{
       base_code: code,
       code: code,

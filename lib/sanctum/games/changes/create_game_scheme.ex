@@ -14,6 +14,7 @@ defmodule Sanctum.Games.Changes.CreateGameScheme do
         attrs =
           Enum.map(main_schemes, fn scheme ->
             side = scheme.primary_side
+
             %{
               card_id: scheme.id,
               threat: side && side.base_threat,

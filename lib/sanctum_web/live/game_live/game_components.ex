@@ -70,11 +70,13 @@ defmodule SanctumWeb.GameLive.GameComponents do
   attr :show_tokens, :boolean, default: true
 
   def card(assigns) do
+    primary_side = assigns.game_card.card.primary_side
+
     assigns =
-      assign(assigns, :src, assigns.imgsrc || assigns.game_card.card.image_url)
+      assign(assigns, :src, assigns.imgsrc || (primary_side && primary_side.image_url))
       |> assign(
         :aspect,
-        if assigns.game_card.card && assigns.game_card.card.type in @landscape_types do
+        if primary_side && primary_side.type in @landscape_types do
           "max-h-[71px] lg:max-h-[110px]"
         else
           "max-h-[100px] lg:max-h-[153px]"
@@ -131,11 +133,13 @@ defmodule SanctumWeb.GameLive.GameComponents do
   attr :imgsrc, :string, default: nil
 
   def plain_card(assigns) do
+    primary_side = assigns.card && assigns.card.primary_side
+
     assigns =
-      assign(assigns, :src, assigns.imgsrc || assigns.card.image_url)
+      assign(assigns, :src, assigns.imgsrc || (primary_side && primary_side.image_url))
       |> assign(
         :aspect,
-        if assigns.card && assigns.card.type in @landscape_types do
+        if primary_side && primary_side.type in @landscape_types do
           "max-h-[71px] lg:max-h-[110px]"
         else
           "max-h-[100px] lg:max-h-[153px]"

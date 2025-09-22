@@ -8,14 +8,18 @@ defmodule Sanctum.GamesTest do
   defp create_card_with_side(card_attrs, side_attrs) do
     {:ok, card} = Card |> Ash.Changeset.for_create(:create, card_attrs) |> Ash.create()
 
-    side_attrs_with_card_id = Map.merge(side_attrs, %{
-      card_id: card.id,
-      code: card_attrs.code,
-      side_identifier: "A",
-      is_primary_side: true
-    })
+    side_attrs_with_card_id =
+      Map.merge(side_attrs, %{
+        card_id: card.id,
+        code: card_attrs.code,
+        side_identifier: "A",
+        is_primary_side: true
+      })
 
-    {:ok, _side} = Sanctum.Games.CardSide |> Ash.Changeset.for_create(:create, side_attrs_with_card_id) |> Ash.create()
+    {:ok, _side} =
+      Sanctum.Games.CardSide
+      |> Ash.Changeset.for_create(:create, side_attrs_with_card_id)
+      |> Ash.create()
 
     {:ok, card}
   end
@@ -43,75 +47,80 @@ defmodule Sanctum.GamesTest do
         })
 
       # Create a villain card for the scenario
-      {:ok, _villain_card} = create_card_with_side(
-        %{
-          base_code: "testv01",
-          code: "testv01",
-          set: "test_scenario",
-          pack: "test_scenario"
-        },
-        %{
-          name: "Test Villain",
-          type: :villain,
-          health: 10,
-          attack: 2,
-          scheme: 1
-        }
-      )
+      {:ok, _villain_card} =
+        create_card_with_side(
+          %{
+            base_code: "testv01",
+            code: "testv01",
+            set: "test_scenario",
+            pack: "test_scenario"
+          },
+          %{
+            name: "Test Villain",
+            type: :villain,
+            health: 10,
+            attack: 2,
+            scheme: 1
+          }
+        )
 
       # Create some encounter cards for the scenario
-      {:ok, encounter_card1} = create_card_with_side(
-        %{
-          base_code: "test001",
-          code: "test001",
-          set: "test_scenario",
-          pack: "test_scenario"
-        },
-        %{
-          name: "Test Encounter 1",
-          type: :minion
-        }
-      )
+      {:ok, encounter_card1} =
+        create_card_with_side(
+          %{
+            base_code: "test001",
+            code: "test001",
+            set: "test_scenario",
+            pack: "test_scenario"
+          },
+          %{
+            name: "Test Encounter 1",
+            type: :minion
+          }
+        )
 
-      {:ok, encounter_card2} = create_card_with_side(
-        %{
-          base_code: "test002",
-          code: "test002",
-          set: "test_scenario",
-          pack: "test_scenario"
-        },
-        %{
-          name: "Test Encounter 2",
-          type: :treachery
-        }
-      )
+      {:ok, encounter_card2} =
+        create_card_with_side(
+          %{
+            base_code: "test002",
+            code: "test002",
+            set: "test_scenario",
+            pack: "test_scenario"
+          },
+          %{
+            name: "Test Encounter 2",
+            type: :treachery
+          }
+        )
 
       # Create modular set cards
-      {:ok, modular_card1} = create_card_with_side(
-        %{
-          base_code: "mod001",
-          code: "mod001",
-          set: "test_modular",
-          pack: "test_modular"
-        },
-        %{
-          name: "Modular Card 1",
-          type: :attachment
-        }
-      )
+      {:ok, modular_card1} =
+        create_card_with_side(
+          %{
+            base_code: "mod001",
+            code: "mod001",
+            set: "test_modular",
+            pack: "test_modular"
+          },
+          %{
+            name: "Modular Card 1",
+            type: :attachment
+          }
+        )
 
-      {:ok, modular_card2} = create_card_with_side(
-        %{
-          base_code: "mod002",
-          code: "mod002",
-          set: "test_modular",
-          pack: "test_modular"
-        },
-        %{
-          name: "Modular Card 2",
-          type: :side_scheme
-        }
-      )
+      {:ok, modular_card2} =
+        create_card_with_side(
+          %{
+            base_code: "mod002",
+            code: "mod002",
+            set: "test_modular",
+            pack: "test_modular"
+          },
+          %{
+            name: "Modular Card 2",
+            type: :side_scheme
+          }
+        )
 
       # Create a test user
       {:ok, user} =
@@ -239,21 +248,22 @@ defmodule Sanctum.GamesTest do
         })
 
       # Create a villain for the empty scenario
-      {:ok, _empty_villain} = create_card_with_side(
-        %{
-          base_code: "emptyv01",
-          code: "emptyv01",
-          set: "empty_scenario",
-          pack: "empty_scenario"
-        },
-        %{
-          name: "Empty Villain",
-          type: :villain,
-          health: 8,
-          attack: 1,
-          scheme: 1
-        }
-      )
+      {:ok, _empty_villain} =
+        create_card_with_side(
+          %{
+            base_code: "emptyv01",
+            code: "emptyv01",
+            set: "empty_scenario",
+            pack: "empty_scenario"
+          },
+          %{
+            name: "Empty Villain",
+            type: :villain,
+            health: 8,
+            attack: 1,
+            scheme: 1
+          }
+        )
 
       game_attrs = %{
         scenario_id: empty_scenario.id,
@@ -282,18 +292,19 @@ defmodule Sanctum.GamesTest do
     } do
       # Create more cards to make shuffling more apparent
       for i <- 3..10 do
-        {:ok, _card} = create_card_with_side(
-          %{
-            base_code: "test00#{i}",
-            code: "test00#{i}",
-            set: "test_scenario",
-            pack: "test_scenario"
-          },
-          %{
-            name: "Test Encounter #{i}",
-            type: :minion
-          }
-        )
+        {:ok, _card} =
+          create_card_with_side(
+            %{
+              base_code: "test00#{i}",
+              code: "test00#{i}",
+              set: "test_scenario",
+              pack: "test_scenario"
+            },
+            %{
+              name: "Test Encounter #{i}",
+              type: :minion
+            }
+          )
       end
 
       game_attrs = %{

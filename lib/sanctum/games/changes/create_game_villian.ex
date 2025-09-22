@@ -12,6 +12,7 @@ defmodule Sanctum.Games.Changes.CreateGameVillian do
           Sanctum.Games.get_scenario!(scenario_id, load: [villains: [:primary_side]])
 
         side = villian_card.primary_side
+
         attrs = %{
           card_id: villian_card.id,
           health: side && side.health,

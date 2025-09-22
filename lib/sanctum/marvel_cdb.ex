@@ -136,33 +136,41 @@ defmodule Sanctum.MarvelCdb do
 
     case Sanctum.Games.create_card(card_attrs) do
       {:ok, card} ->
-        result = if should_create_side do
-          # Check if this side already exists
-          case Sanctum.Games.get_card_side_by_code(code) do
-            {:ok, %Sanctum.Games.CardSide{}} ->
-              # Side already exists, skip creation
-              :ok
-            {:error, _} ->
-              # Create the side
-              side_attrs = prepare_card_side_attrs(mcdb_card)
-              case Sanctum.Games.create_card_side(Map.put(side_attrs, :card_id, card.id)) do
-                {:ok, _side} -> :ok
-                err -> err
-              end
+        result =
+          if should_create_side do
+            # Check if this side already exists
+            case Sanctum.Games.get_card_side_by_code(code) do
+              {:ok, %Sanctum.Games.CardSide{}} ->
+                # Side already exists, skip creation
+                :ok
+
+              {:error, _} ->
+                # Create the side
+                side_attrs = prepare_card_side_attrs(mcdb_card)
+
+                case Sanctum.Games.create_card_side(Map.put(side_attrs, :card_id, card.id)) do
+                  {:ok, _side} -> :ok
+                  err -> err
+                end
+            end
+          else
+            :ok
           end
-        else
-          :ok
-        end
 
         case result do
           :ok ->
             if is_multi_sided do
               load_additional_sides(card, base_code)
             end
+
             {:ok, card}
-          err -> err
+
+          err ->
+            err
         end
-      err -> err
+
+      err ->
+        err
     end
   end
 
@@ -171,12 +179,18 @@ defmodule Sanctum.MarvelCdb do
     ["b", "c", "d"]
     |> Enum.each(fn suffix ->
       side_code = base_code <> suffix
+
       case fetch_card_side(side_code) do
         {:ok, side_data} ->
-          side_attrs = prepare_card_side_attrs(side_data)
-          |> Map.put(:card_id, card.id)
+          side_attrs =
+            prepare_card_side_attrs(side_data)
+            |> Map.put(:card_id, card.id)
+
           Sanctum.Games.create_card_side(side_attrs)
-        _ -> :ok  # Side doesn't exist, continue
+
+        # Side doesn't exist, continue
+        _ ->
+          :ok
       end
     end)
   end

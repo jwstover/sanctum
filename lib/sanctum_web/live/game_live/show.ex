@@ -84,7 +84,10 @@ defmodule SanctumWeb.GameLive.Show do
     game_card = Games.get_game_card!(game_card_id, actor: user)
 
     {:ok, updated_card} =
-      Games.move_game_card(game_card, %{zone: zone_name}, load: [:card], actor: user)
+      Games.move_game_card(game_card, %{zone: zone_name},
+        load: [card: [:primary_side]],
+        actor: user
+      )
 
     # Remove from source stream
     socket =
@@ -213,7 +216,10 @@ defmodule SanctumWeb.GameLive.Show do
 
   def handle_event("flip", %{"game_card_id" => game_card_id}, socket) do
     {:ok, card} =
-      Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
+      Games.get_game_card!(game_card_id,
+        load: [card: [:primary_side]],
+        actor: socket.assigns.current_user
+      )
       |> Games.flip_card()
 
     zone =
@@ -245,7 +251,11 @@ defmodule SanctumWeb.GameLive.Show do
         "counter" -> %{counter_delta: delta}
       end
 
-    card = Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
+    card =
+      Games.get_game_card!(game_card_id,
+        load: [card: [:primary_side]],
+        actor: socket.assigns.current_user
+      )
 
     card =
       card
@@ -272,7 +282,7 @@ defmodule SanctumWeb.GameLive.Show do
     game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
 
     case Games.update_scheme_threat(game_scheme, delta,
-           load: [:card],
+           load: [card: [:primary_side]],
            actor: socket.assigns.current_user
          ) do
       {:ok, scheme} ->
@@ -294,7 +304,7 @@ defmodule SanctumWeb.GameLive.Show do
     game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
 
     case Games.update_scheme_counter(game_scheme, delta,
-           load: [:card],
+           load: [card: [:primary_side]],
            actor: socket.assigns.current_user
          ) do
       {:ok, scheme} ->
@@ -310,14 +320,20 @@ defmodule SanctumWeb.GameLive.Show do
 
   def handle_event("select-card", %{"card_id" => game_card_id}, socket) do
     game_card =
-      Games.get_game_card!(game_card_id, load: [:card], actor: socket.assigns.current_user)
+      Games.get_game_card!(game_card_id,
+        load: [card: [:primary_side]],
+        actor: socket.assigns.current_user
+      )
 
     {:noreply, assign(socket, :selected_card, game_card)}
   end
 
   def handle_event("select-scheme", %{"card_id" => game_card_id}, socket) do
     game_card =
-      Games.get_game_scheme!(game_card_id, load: [:card], actor: socket.assigns.current_user)
+      Games.get_game_scheme!(game_card_id,
+        load: [card: [:primary_side]],
+        actor: socket.assigns.current_user
+      )
 
     {:noreply, assign(socket, :selected_card, game_card)}
   end
@@ -331,12 +347,12 @@ defmodule SanctumWeb.GameLive.Show do
        when is_binary(game_id) do
     case Games.get_game(game_id,
            load: [
-             game_villian: [:card],
-             game_schemes: [:card],
+             game_villian: [card: [:primary_side]],
+             game_schemes: [card: [:primary_side]],
              encounter_deck: [
-               deck_cards: [:card],
-               facedown_encounter_cards: [:card],
-               discard_cards: [:card]
+               deck_cards: [card: [:primary_side]],
+               facedown_encounter_cards: [card: [:primary_side]],
+               discard_cards: [card: [:primary_side]]
              ]
            ],
            actor: current_user
@@ -358,10 +374,10 @@ defmodule SanctumWeb.GameLive.Show do
           :current_hand_size,
           :max_hand_size,
           :hand_size,
-          hero_play_cards: [:card],
-          hand_cards: [:card],
-          hero_discard: [:card],
-          deck: [:hero, :alter_ego]
+          hero_play_cards: [card: [:primary_side]],
+          hand_cards: [card: [:primary_side]],
+          hero_discard: [card: [:primary_side]],
+          deck: [hero: [:primary_side], alter_ego: [:primary_side]]
         ],
         actor: socket.assigns.current_user
       )
@@ -419,10 +435,15 @@ defmodule SanctumWeb.GameLive.Show do
           <div class="p-3 bg-black mx-4">
             <figure class={[
               "relative rounded-[4.5%] overflow-hidden",
-              @selected_card.card.type in @landscape_types && "h-[30dvh]",
-              @selected_card.card.type not in @landscape_types && "h-[50dvh]"
+              @selected_card.card.primary_side &&
+                @selected_card.card.primary_side.type in @landscape_types && "h-[30dvh]",
+              (!@selected_card.card.primary_side ||
+                 @selected_card.card.primary_side.type not in @landscape_types) && "h-[50dvh]"
             ]}>
-              <img class="h-full object-contain" src={@selected_card.card.image_url} />
+              <img
+                class="h-full object-contain"
+                src={@selected_card.card.primary_side && @selected_card.card.primary_side.image_url}
+              />
               <div class="absolute bottom-2 right-2 flex flex-col flex-reverse gap-1 pointer-events-none">
                 <.threat_token
                   :if={Map.get(@selected_card, :threat, 0) > 0}
