@@ -13,6 +13,12 @@ defmodule Sanctum.Games do
       define :get_cards_by_set, args: [:set], action: :by_set
     end
 
+    resource Sanctum.Games.CardSide do
+      define :create_card_side, action: :create
+      define :get_card_side, get_by: :id, action: :read
+      define :get_card_side_by_code, args: [:code], get?: true, action: :by_code
+    end
+
     resource Sanctum.Games.Game do
       define :create_game, action: :create
       define :get_game, get_by: :id, action: :read
@@ -62,8 +68,6 @@ defmodule Sanctum.Games do
       define :move_game_card, action: :move
       define :flip_card, action: :flip
     end
-
-    resource Sanctum.Games.CardSide
   end
 
   def draw_cards(game_player_id, count, opts \\ []) do
