@@ -25,13 +25,28 @@ defmodule Sanctum.Games.GamePlayerTest do
         recommended_modular_sets: []
       })
 
-    {:ok, _villain_card} =
+    villain_code = "testv#{:rand.uniform(100_000)}"
+
+    {:ok, villain_card} =
       Sanctum.Games.Card
       |> Ash.Changeset.for_create(:create, %{
-        name: "Test Villain",
-        type: :villain,
+        base_code: villain_code,
+        code: villain_code,
         set: set_name,
-        code: "testv#{:rand.uniform(100_000)}",
+        pack: set_name
+      })
+      |> Ash.create()
+
+    # Create the villain card side
+    {:ok, _villain_side} =
+      Sanctum.Games.CardSide
+      |> Ash.Changeset.for_create(:create, %{
+        card_id: villain_card.id,
+        name: "Test Villain",
+        code: villain_code,
+        side_identifier: "A",
+        is_primary_side: true,
+        type: :villain,
         health: 10,
         attack: 2,
         scheme: 1

@@ -53,7 +53,7 @@ defmodule Sanctum.MarvelCdbTest do
   end
 
   test "loads spider man hero" do
-    card = MarvelCdb.load_card("01001a")
+    _card = MarvelCdb.load_card("01001a")
     |> IO.inspect(label: "================== \n")
   end
 end

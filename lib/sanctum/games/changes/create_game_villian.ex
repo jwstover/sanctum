@@ -9,14 +9,15 @@ defmodule Sanctum.Games.Changes.CreateGameVillian do
     case Changeset.fetch_attribute(changeset, :scenario_id) do
       {:ok, scenario_id} when is_binary(scenario_id) ->
         %{villains: [villian_card | _]} =
-          Sanctum.Games.get_scenario!(scenario_id, load: [:villains])
+          Sanctum.Games.get_scenario!(scenario_id, load: [villains: [:primary_side]])
 
+        side = villian_card.primary_side
         attrs = %{
           card_id: villian_card.id,
-          health: villian_card.health,
-          max_health: villian_card.health,
-          attack: villian_card.attack,
-          scheme: villian_card.scheme
+          health: side && side.health,
+          max_health: side && side.health,
+          attack: side && side.attack,
+          scheme: side && side.scheme
         }
 
         Ash.Changeset.manage_relationship(changeset, :game_villian, attrs, type: :create)

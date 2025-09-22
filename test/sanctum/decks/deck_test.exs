@@ -8,7 +8,26 @@ defmodule Sanctum.Decks.DeckTest do
   describe "create" do
     test "creates a deck with a hero" do
       hero = create(Sanctum.Games.Card)
+      # Create hero CardSide (factory creates hero type by default, but being explicit)
+      _side = create(Sanctum.Games.CardSide, attrs: %{
+        card_id: hero.id,
+        name: "Test Hero",
+        type: :hero,
+        code: hero.code,
+        side_identifier: "A",
+        is_primary_side: true
+      })
+
       alter_ego = create(Sanctum.Games.Card)
+      # Create alter ego CardSide
+      _side = create(Sanctum.Games.CardSide, attrs: %{
+        card_id: alter_ego.id,
+        name: "Test Alter Ego",
+        type: :alter_ego,
+        code: alter_ego.code,
+        side_identifier: "A",
+        is_primary_side: true
+      })
 
       attrs = %{
         title: "Test with hero",
@@ -22,14 +41,32 @@ defmodule Sanctum.Decks.DeckTest do
     end
 
     test "prevents adding a non-hero card as a hero" do
-      card = create(Sanctum.Games.Card, attrs: %{type: :event})
-      alter_ego = create(Sanctum.Games.Card)
+      # Create a non-hero card (event type)
+      event_card = create(Sanctum.Games.Card, attrs: %{})
+      # Create a CardSide for the event card with non-hero type
+      _side = create(Sanctum.Games.CardSide, attrs: %{
+        card_id: event_card.id,
+        name: "Test Event",
+        type: :event,
+        code: event_card.code,
+        side_identifier: "A",
+        is_primary_side: true
+      })
 
-      assert card.type == :event
+      alter_ego = create(Sanctum.Games.Card)
+      # Create hero CardSide for alter ego
+      _side = create(Sanctum.Games.CardSide, attrs: %{
+        card_id: alter_ego.id,
+        name: "Test Hero Alter Ego",
+        type: :alter_ego,
+        code: alter_ego.code,
+        side_identifier: "A",
+        is_primary_side: true
+      })
 
       attrs = %{
         title: "Test with non-hero",
-        hero_code: card.code,
+        hero_code: event_card.code,
         alter_ego_code: alter_ego.code
       }
 
@@ -39,8 +76,28 @@ defmodule Sanctum.Decks.DeckTest do
 
   test "creates a deck with cards" do
     hero = create(Sanctum.Games.Card)
+    # Create hero CardSide
+    _side = create(Sanctum.Games.CardSide, attrs: %{
+      card_id: hero.id,
+      name: "Test Hero",
+      type: :hero,
+      code: hero.code,
+      side_identifier: "A",
+      is_primary_side: true
+    })
+
     alter_ego = create(Sanctum.Games.Card)
-    cards = create(Sanctum.Games.Card, count: 3, attrs: %{type: :event})
+    # Create alter ego CardSide
+    _side = create(Sanctum.Games.CardSide, attrs: %{
+      card_id: alter_ego.id,
+      name: "Test Alter Ego",
+      type: :alter_ego,
+      code: alter_ego.code,
+      side_identifier: "A",
+      is_primary_side: true
+    })
+
+    cards = create(Sanctum.Games.Card, count: 3)
     card_ids = Enum.map(cards, & &1.id)
 
     title = "Test with cards"

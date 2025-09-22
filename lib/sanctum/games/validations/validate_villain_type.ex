@@ -18,12 +18,18 @@ defmodule Sanctum.Games.Validations.ValidateVillainType do
     if value do
       case Sanctum.Games.get_card!(value, load: [:primary_side]) do
         %Sanctum.Games.Card{
-          # primary_side: %{type: :villain}
+          primary_side: %{type: :villain}
         } ->
           :ok
 
+        %Sanctum.Games.Card{primary_side: nil} ->
+          {:error, field: :villain_id, message: "villain card must have a primary side"}
+
+        %Sanctum.Games.Card{primary_side: %{type: type}} ->
+          {:error, field: :villain_id, message: "villain must have type villain, got #{type}"}
+
         _ ->
-          {:error, field: :villain_id, message: "villain must have type_code villain"}
+          {:error, field: :villain_id, message: "villain must have type villain"}
       end
     else
       {:error, field: :villain_id, message: "must have a valid villain"}

@@ -27,13 +27,28 @@ defmodule Sanctum.Factory do
   end
 
   def card_factory do
+    code = Faker.Util.format("%5d")
+    %{
+      base_code: code,
+      code: code,
+      set: "core",
+      pack: "core",
+      deck_limit: 3,
+      unique: false,
+      permanent: false,
+      is_multi_sided: false
+    }
+  end
+
+  def card_side_factory do
     %{
       name: Faker.Superhero.name(),
+      code: Faker.Util.format("%5da"),
+      side_identifier: "A",
+      is_primary_side: true,
       type: :hero,
       cost: 0,
       text: Faker.Superhero.descriptor(),
-      set: "core",
-      code: Faker.Util.format("%5d"),
       aspect: :justice,
       attack: 2,
       thwart: 3,
