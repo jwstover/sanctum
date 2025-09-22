@@ -22,13 +22,13 @@ defmodule Sanctum.Accounts.User do
     end
 
     strategies do
-      magic_link do
-        identity_field :email
-        registration_enabled? true
-        require_interaction? true
-
-        sender Sanctum.Accounts.User.Senders.SendMagicLinkEmail
-      end
+      # magic_link do
+      #   identity_field :email
+      #   registration_enabled? true
+      #   require_interaction? true
+      #
+      #   sender Sanctum.Accounts.User.Senders.SendMagicLinkEmail
+      # end
 
       google do
         client_id Sanctum.Secrets
