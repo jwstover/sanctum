@@ -2,6 +2,7 @@ defmodule Sanctum.Games.Changes.SetHealth do
   @moduledoc false
 
   alias Ash.Changeset
+  alias Sanctum.Heroes
   use Ash.Resource.Change
 
   def change(changeset, _opts, _context) do
@@ -12,10 +13,13 @@ defmodule Sanctum.Games.Changes.SetHealth do
       deck ->
         current_form = Changeset.get_attribute(changeset, :form) || :alter_ego
 
+        # We need to load the sides to get health values
+        hero = Ash.get!(Heroes.Hero, deck.hero.id, load: [:hero_side, :alter_ego_side])
+
         {health, max_health} =
           case current_form do
-            :hero -> {deck.hero.health, deck.hero.health}
-            :alter_ego -> {deck.alter_ego.health, deck.alter_ego.health}
+            :hero -> {hero.hero_side.health, hero.hero_side.health}
+            :alter_ego -> {hero.alter_ego_side.health, hero.alter_ego_side.health}
           end
 
         changeset

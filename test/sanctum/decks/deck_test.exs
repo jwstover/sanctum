@@ -7,79 +7,77 @@ defmodule Sanctum.Decks.DeckTest do
 
   describe "create" do
     test "creates a deck with a hero" do
-      hero = create(Sanctum.Games.Card)
-      # Create hero CardSide (factory creates hero type by default, but being explicit)
+      hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "01001", set: "spider_man"})
+      # Create hero CardSide
       _side =
         create(Sanctum.Games.CardSide,
           attrs: %{
-            card_id: hero.id,
-            name: "Test Hero",
+            card_id: hero_card.id,
+            name: "Spider-Man",
             type: :hero,
-            code: hero.code,
+            code: hero_card.code,
             side_identifier: "A",
             is_primary_side: true
           }
         )
 
-      alter_ego = create(Sanctum.Games.Card)
+      alter_ego_card = create(Sanctum.Games.Card, attrs: %{base_code: "01001", set: "spider_man"})
       # Create alter ego CardSide
       _side =
         create(Sanctum.Games.CardSide,
           attrs: %{
-            card_id: alter_ego.id,
-            name: "Test Alter Ego",
+            card_id: alter_ego_card.id,
+            name: "Peter Parker",
             type: :alter_ego,
-            code: alter_ego.code,
-            side_identifier: "A",
+            code: alter_ego_card.code,
+            side_identifier: "B",
             is_primary_side: true
           }
         )
+
+      # Create Hero record
+      {:ok, hero} = Sanctum.Heroes.find_or_create_hero(%{
+        hero_name: "Spider-Man",
+        alter_ego_name: "Peter Parker",
+        set: "spider_man",
+        base_code: hero_card.base_code
+      })
 
       attrs = %{
         title: "Test with hero",
-        hero_code: hero.code,
-        alter_ego_code: alter_ego.code
+        hero_id: hero.id
       }
 
       assert {:ok, deck} = Deck |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
-      assert deck.hero_code == hero.code
-      assert deck.alter_ego_code == alter_ego.code
+      assert deck.hero_id == hero.id
     end
 
-    test "prevents adding a non-hero card as a hero" do
-      # Create a non-hero card (event type)
-      event_card = create(Sanctum.Games.Card, attrs: %{})
-      # Create a CardSide for the event card with non-hero type
+    test "prevents creating a deck with invalid hero" do
+      # Create Hero with incomplete cards (missing alter ego card)
+      hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "01001", set: "spider_man"})
       _side =
         create(Sanctum.Games.CardSide,
           attrs: %{
-            card_id: event_card.id,
-            name: "Test Event",
-            type: :event,
-            code: event_card.code,
+            card_id: hero_card.id,
+            name: "Spider-Man",
+            type: :hero,
+            code: hero_card.code,
             side_identifier: "A",
             is_primary_side: true
           }
         )
 
-      alter_ego = create(Sanctum.Games.Card)
-      # Create hero CardSide for alter ego
-      _side =
-        create(Sanctum.Games.CardSide,
-          attrs: %{
-            card_id: alter_ego.id,
-            name: "Test Hero Alter Ego",
-            type: :alter_ego,
-            code: alter_ego.code,
-            side_identifier: "A",
-            is_primary_side: true
-          }
-        )
+      # Create Hero record with valid hero card but invalid base code
+      {:ok, hero} = Sanctum.Heroes.find_or_create_hero(%{
+        hero_name: "Spider-Man",
+        alter_ego_name: "Peter Parker",
+        set: "spider_man",
+        base_code: "nonexistent"
+      })
 
       attrs = %{
-        title: "Test with non-hero",
-        hero_code: event_card.code,
-        alter_ego_code: alter_ego.code
+        title: "Test with invalid hero",
+        hero_id: hero.id
       }
 
       assert {:error, _} = Deck |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
@@ -87,33 +85,41 @@ defmodule Sanctum.Decks.DeckTest do
   end
 
   test "creates a deck with cards" do
-    hero = create(Sanctum.Games.Card)
+    hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "01002", set: "captain_marvel"})
     # Create hero CardSide
     _side =
       create(Sanctum.Games.CardSide,
         attrs: %{
-          card_id: hero.id,
-          name: "Test Hero",
+          card_id: hero_card.id,
+          name: "Captain Marvel",
           type: :hero,
-          code: hero.code,
+          code: hero_card.code,
           side_identifier: "A",
           is_primary_side: true
         }
       )
 
-    alter_ego = create(Sanctum.Games.Card)
+    alter_ego_card = create(Sanctum.Games.Card, attrs: %{base_code: "01002", set: "captain_marvel"})
     # Create alter ego CardSide
     _side =
       create(Sanctum.Games.CardSide,
         attrs: %{
-          card_id: alter_ego.id,
-          name: "Test Alter Ego",
+          card_id: alter_ego_card.id,
+          name: "Carol Danvers",
           type: :alter_ego,
-          code: alter_ego.code,
-          side_identifier: "A",
+          code: alter_ego_card.code,
+          side_identifier: "B",
           is_primary_side: true
         }
       )
+
+    # Create Hero record
+    {:ok, hero} = Sanctum.Heroes.find_or_create_hero(%{
+      hero_name: "Captain Marvel",
+      alter_ego_name: "Carol Danvers",
+      set: "captain_marvel",
+      base_code: hero_card.base_code
+    })
 
     cards = create(Sanctum.Games.Card, count: 3)
     card_ids = Enum.map(cards, & &1.id)
@@ -125,8 +131,7 @@ defmodule Sanctum.Decks.DeckTest do
              |> Ash.Changeset.for_create(:create_with_cards, %{
                card_ids: card_ids,
                title: title,
-               hero_code: hero.code,
-               alter_ego_code: alter_ego.code
+               hero_id: hero.id
              })
              |> Ash.create(load: [:deck_cards])
 

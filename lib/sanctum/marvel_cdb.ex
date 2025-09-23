@@ -3,6 +3,7 @@ defmodule Sanctum.MarvelCdb do
 
   alias Sanctum.Decks
   alias Sanctum.Games
+  alias Sanctum.Heroes
 
   @base_url "https://marvelcdb.com/api/public"
 
@@ -19,7 +20,7 @@ defmodule Sanctum.MarvelCdb do
       {:ok, decklist} ->
         decklist
         |> prepare_deck_attrs()
-        |> Decks.create_with_cards(load: [:hero, :cards])
+        |> Decks.create_with_cards(load: [:cards, hero: [:hero_card, :alter_ego_card]])
 
       err ->
         err
@@ -33,8 +34,11 @@ defmodule Sanctum.MarvelCdb do
       |> String.trim_trailing("a")
       |> Kernel.<>("b")
 
-    {:ok, hero} = load_card(decklist["hero_code"])
-    {:ok, _alter_ego} = load_card(alter_ego_code)
+    {:ok, hero_card} = load_card(decklist["hero_code"])
+    {:ok, alter_ego_card} = load_card(alter_ego_code)
+
+    # Create or find the Hero record
+    {:ok, hero} = create_or_find_hero(hero_card, alter_ego_card)
 
     card_codes = Map.keys(cards_map)
 
@@ -54,10 +58,26 @@ defmodule Sanctum.MarvelCdb do
     %{
       mcdb_id: decklist["id"] |> Integer.to_string(),
       title: decklist["name"],
-      hero_code: hero.base_code,
-      alter_ego_code: alter_ego_code,
+      hero_id: hero.id,
       card_ids: card_ids
     }
+  end
+
+  defp create_or_find_hero(hero_card, _alter_ego_card) do
+    # Load the card with all its sides to get both hero and alter ego names
+    card_loaded = Games.get_card!(hero_card.id, load: [:card_sides])
+
+    hero_side = Enum.find(card_loaded.card_sides, &(&1.type == :hero))
+    alter_ego_side = Enum.find(card_loaded.card_sides, &(&1.type == :alter_ego))
+
+    hero_attrs = %{
+      hero_name: hero_side.name,
+      alter_ego_name: alter_ego_side.name,
+      set: hero_card.set,
+      base_code: hero_card.base_code
+    }
+
+    Heroes.find_or_create_hero(hero_attrs)
   end
 
   def load_pack(pack_code) when is_binary(pack_code) do

@@ -17,43 +17,55 @@ defmodule SanctumWeb.GameLive.GameComponents do
     >
       <div class="absolute opacity-0 left-1/3 sm:group-hover:not-peer-[.game-card-dragging]:opacity-100 space-y-2 sm:group-focus:not-peer-[.game-card-dragging]:opacity-100 top-0 group-hover:left-[90%] group-focus:left-[90%] transition-all pt-[2px] pb-[4px] pl-[2px] pr-[4px]">
         <div class="h-full w-full p-1 pr-2 pl-7 ">
-          <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
+          <div class="flex flex-col gap-2">
+            <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
+              <button
+                class="cursor-pointer hover:scale-105 active:scale-95"
+                phx-click="update-scheme-threat"
+                phx-value-game_scheme_id={@game_scheme.id}
+                phx-value-delta="-1"
+              >
+                <.threat_token value="-1" size="size-8" />
+              </button>
+              <button
+                class="cursor-pointer hover:scale-105 active:scale-95"
+                phx-click="update-scheme-threat"
+                phx-value-game_scheme_id={@game_scheme.id}
+                phx-value-delta="1"
+              >
+                <.threat_token value="+1" size="size-8" />
+              </button>
+              <button
+                class="cursor-pointer hover:scale-105 active:scale-95"
+                phx-click="update-scheme-counter"
+                phx-value-game_scheme_id={@game_scheme.id}
+                phx-value-delta="-1"
+              >
+                <.counter_token value="-1" size="size-8" />
+              </button>
+              <button
+                class="cursor-pointer hover:scale-105 active:scale-95"
+                phx-click="update-scheme-counter"
+                phx-value-game_scheme_id={@game_scheme.id}
+                phx-value-delta="1"
+              >
+                <.counter_token value="+1" size="size-8" />
+              </button>
+            </div>
             <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-scheme-threat"
+              class="btn btn-xs bg-gray-800 text-gray-100 border-none rounded shadow shadow-gray-700 font-elektra"
+              phx-click="flip-scheme"
               phx-value-game_scheme_id={@game_scheme.id}
-              phx-value-delta="-1"
             >
-              <.threat_token value="-1" size="size-8" />
-            </button>
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-scheme-threat"
-              phx-value-game_scheme_id={@game_scheme.id}
-              phx-value-delta="1"
-            >
-              <.threat_token value="+1" size="size-8" />
-            </button>
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-scheme-counter"
-              phx-value-game_scheme_id={@game_scheme.id}
-              phx-value-delta="-1"
-            >
-              <.counter_token value="-1" size="size-8" />
-            </button>
-            <button
-              class="cursor-pointer hover:scale-105 active:scale-95"
-              phx-click="update-scheme-counter"
-              phx-value-game_scheme_id={@game_scheme.id}
-              phx-value-delta="1"
-            >
-              <.counter_token value="+1" size="size-8" />
+              Flip
             </button>
           </div>
         </div>
       </div>
-      <.plain_card id={@game_scheme.id} card={@game_scheme.card} />
+      <.plain_card
+        id={@game_scheme.id}
+        card={@game_scheme.card}
+        imgsrc={@game_scheme.active_side && @game_scheme.active_side.image_url} />
       <div class="absolute bottom-2 right-2 flex flex-col flex-reverse gap-1 pointer-events-none">
         <.threat_token :if={@game_scheme.threat > 0} value={@game_scheme.threat} />
         <.counter_token :if={@game_scheme.counter > 0} value={@game_scheme.counter} />
@@ -70,13 +82,13 @@ defmodule SanctumWeb.GameLive.GameComponents do
   attr :show_tokens, :boolean, default: true
 
   def card(assigns) do
-    primary_side = assigns.game_card.card.primary_side
+    active_side = assigns.game_card.active_side
 
     assigns =
-      assign(assigns, :src, assigns.imgsrc || (primary_side && primary_side.image_url))
+      assign(assigns, :src, assigns.imgsrc || (active_side && active_side.image_url))
       |> assign(
         :aspect,
-        if primary_side && primary_side.type in @landscape_types do
+        if active_side && active_side.type in @landscape_types do
           "max-h-[71px] lg:max-h-[110px]"
         else
           "max-h-[100px] lg:max-h-[153px]"

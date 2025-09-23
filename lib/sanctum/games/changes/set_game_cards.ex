@@ -10,13 +10,13 @@ defmodule Sanctum.Games.Changes.SetGameCards do
 
     case Changeset.fetch_attribute(changeset, :deck_id) do
       {:ok, deck_id} when is_binary(deck_id) ->
-        deck = Sanctum.Decks.get_deck!(deck_id, load: [:cards, :hero, :alter_ego])
+        deck = Sanctum.Decks.get_deck!(deck_id, load: [cards: [:primary_side], hero: [:card]])
         changeset = Changeset.put_context(changeset, :loaded_deck, deck)
 
         cards =
           deck.cards
           |> Enum.shuffle()
-          |> Enum.reject(&(&1.type in [:alter_ego, :main_scheme, :villian, :hero]))
+          |> Enum.reject(&(&1.primary_side && &1.primary_side.type in [:alter_ego, :main_scheme, :villain, :hero]))
           |> Enum.with_index()
           |> Enum.map(fn {card, index} ->
             %{
@@ -24,7 +24,7 @@ defmodule Sanctum.Games.Changes.SetGameCards do
               card_id: card.id,
               game_player_id: game_player_id,
               zone:
-                case card.type do
+                case card.primary_side && card.primary_side.type do
                   type when type in [:ally, :attachment, :event, :resource, :support, :upgrade] ->
                     :hero_deck
 

@@ -161,22 +161,8 @@
   ],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "581D9D104E68059F36CBB50A145500F79B20BED2337FF3E014E4F599CB747089",
+  "hash": "03B7CF44B6530CE26A078646F0F7F7BA12C33C5038F9BB4551FBD632E05500A5",
   "identities": [
-    {
-      "all_tenants?": false,
-      "base_filter": null,
-      "index_name": "cards_unique_marvelcdb_base_code_index",
-      "keys": [
-        {
-          "type": "atom",
-          "value": "base_code"
-        }
-      ],
-      "name": "unique_marvelcdb_base_code",
-      "nils_distinct?": true,
-      "where": null
-    },
     {
       "all_tenants?": false,
       "base_filter": null,
@@ -188,6 +174,20 @@
         }
       ],
       "name": "unique_marvelcdb_code",
+      "nils_distinct?": true,
+      "where": null
+    },
+    {
+      "all_tenants?": false,
+      "base_filter": null,
+      "index_name": "cards_unique_marvelcdb_base_code_index",
+      "keys": [
+        {
+          "type": "atom",
+          "value": "base_code"
+        }
+      ],
+      "name": "unique_marvelcdb_base_code",
       "nils_distinct?": true,
       "where": null
     }

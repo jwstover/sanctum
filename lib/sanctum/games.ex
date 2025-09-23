@@ -52,6 +52,7 @@ defmodule Sanctum.Games do
       define :get_game_scheme, get_by: :id, action: :read
       define :update_scheme_threat, args: [:delta], action: :update_threat
       define :update_scheme_counter, args: [:delta], action: :update_counter
+      define :flip_scheme, action: :flip
     end
 
     resource Sanctum.Games.GameEncounterDeck

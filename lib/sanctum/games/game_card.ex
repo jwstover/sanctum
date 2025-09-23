@@ -13,7 +13,29 @@ defmodule Sanctum.Games.GameCard do
   end
 
   actions do
-    defaults [:read, :destroy, create: :*, update: :*]
+    defaults [:read, :destroy, update: :*]
+
+    create :create do
+      primary? true
+      accept [:*]
+
+      change fn changeset, _context ->
+        card_id = Ash.Changeset.get_attribute(changeset, :card_id)
+
+        if card_id do
+          # Load the card with its sides to set initial active_side
+          card = Sanctum.Games.get_card!(card_id, load: [:primary_side])
+
+          if card.primary_side do
+            Ash.Changeset.change_attribute(changeset, :active_side_id, card.primary_side.id)
+          else
+            changeset
+          end
+        else
+          changeset
+        end
+      end
+    end
 
     read :peek do
       argument :game_player_id, :uuid, allow_nil?: false
@@ -44,7 +66,9 @@ defmodule Sanctum.Games.GameCard do
     end
 
     update :flip do
-      change atomic_update(:face_up, expr(not face_up))
+      require_atomic? false
+
+      change {Sanctum.Games.Changes.FlipToNextSide, set_face_up: true}
     end
 
     update :update_counters do
@@ -107,5 +131,10 @@ defmodule Sanctum.Games.GameCard do
     belongs_to :game_player, Sanctum.Games.GamePlayer, public?: true
     belongs_to :game_encounter_deck, Sanctum.Games.GameEncounterDeck, public?: true
     belongs_to :card, Sanctum.Games.Card, public?: true
+
+    belongs_to :active_side, Sanctum.Games.CardSide do
+      public? true
+      allow_nil? true
+    end
   end
 end

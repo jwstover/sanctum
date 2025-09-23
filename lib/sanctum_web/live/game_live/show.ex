@@ -85,7 +85,7 @@ defmodule SanctumWeb.GameLive.Show do
 
     {:ok, updated_card} =
       Games.move_game_card(game_card, %{zone: zone_name},
-        load: [card: [:primary_side]],
+        load: [:active_side],
         actor: user
       )
 
@@ -217,7 +217,7 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("flip", %{"game_card_id" => game_card_id}, socket) do
     {:ok, card} =
       Games.get_game_card!(game_card_id,
-        load: [card: [:primary_side]],
+        load: [:active_side],
         actor: socket.assigns.current_user
       )
       |> Games.flip_card()
@@ -253,7 +253,7 @@ defmodule SanctumWeb.GameLive.Show do
 
     card =
       Games.get_game_card!(game_card_id,
-        load: [card: [:primary_side]],
+        load: [:active_side],
         actor: socket.assigns.current_user
       )
 
@@ -282,7 +282,7 @@ defmodule SanctumWeb.GameLive.Show do
     game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
 
     case Games.update_scheme_threat(game_scheme, delta,
-           load: [card: [:primary_side]],
+           load: [:active_side],
            actor: socket.assigns.current_user
          ) do
       {:ok, scheme} ->
@@ -296,6 +296,20 @@ defmodule SanctumWeb.GameLive.Show do
     |> then(&{:noreply, &1})
   end
 
+  def handle_event("flip-scheme", %{"game_scheme_id" => game_scheme_id}, socket) do
+    {:ok, scheme} =
+      Games.get_game_scheme!(game_scheme_id,
+        load: [:active_side],
+        actor: socket.assigns.current_user
+      )
+      |> Games.flip_scheme()
+
+    socket = stream_insert(socket, :main_schemes, scheme)
+    socket = maybe_update_selected_card(socket, scheme)
+
+    {:noreply, socket}
+  end
+
   def handle_event(
         "update-scheme-counter",
         %{"delta" => delta, "game_scheme_id" => game_scheme_id},
@@ -304,7 +318,7 @@ defmodule SanctumWeb.GameLive.Show do
     game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
 
     case Games.update_scheme_counter(game_scheme, delta,
-           load: [card: [:primary_side]],
+           load: [:active_side],
            actor: socket.assigns.current_user
          ) do
       {:ok, scheme} ->
@@ -321,7 +335,7 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("select-card", %{"card_id" => game_card_id}, socket) do
     game_card =
       Games.get_game_card!(game_card_id,
-        load: [card: [:primary_side]],
+        load: [:active_side],
         actor: socket.assigns.current_user
       )
 
@@ -331,7 +345,7 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("select-scheme", %{"card_id" => game_card_id}, socket) do
     game_card =
       Games.get_game_scheme!(game_card_id,
-        load: [card: [:primary_side]],
+        load: [:active_side],
         actor: socket.assigns.current_user
       )
 
@@ -348,11 +362,11 @@ defmodule SanctumWeb.GameLive.Show do
     case Games.get_game(game_id,
            load: [
              game_villian: [card: [:primary_side]],
-             game_schemes: [card: [:primary_side]],
+             game_schemes: [:active_side],
              encounter_deck: [
-               deck_cards: [card: [:primary_side]],
-               facedown_encounter_cards: [card: [:primary_side]],
-               discard_cards: [card: [:primary_side]]
+               deck_cards: [:active_side],
+               facedown_encounter_cards: [:active_side],
+               discard_cards: [:active_side]
              ]
            ],
            actor: current_user
@@ -374,10 +388,10 @@ defmodule SanctumWeb.GameLive.Show do
           :current_hand_size,
           :max_hand_size,
           :hand_size,
-          hero_play_cards: [card: [:primary_side]],
-          hand_cards: [card: [:primary_side]],
-          hero_discard: [card: [:primary_side]],
-          deck: [hero: [:primary_side], alter_ego: [:primary_side]]
+          hero_play_cards: [:active_side],
+          hand_cards: [:active_side],
+          hero_discard: [:active_side],
+          deck: [hero: [card: [:card_sides]]]
         ],
         actor: socket.assigns.current_user
       )
@@ -433,16 +447,18 @@ defmodule SanctumWeb.GameLive.Show do
       <dialog :if={@selected_card} id="selected-card-modal" class="modal modal-open">
         <div phx-key="escape" phx-window-keyup="deselect-card" phx-click-away="deselect-card">
           <div class="p-3 bg-black mx-4">
+            <% display_side = case @selected_card do
+              %Sanctum.Games.GameCard{} -> @selected_card.active_side
+              %Sanctum.Games.GameScheme{} -> @selected_card.card.primary_side
+            end %>
             <figure class={[
               "relative rounded-[4.5%] overflow-hidden",
-              @selected_card.card.primary_side &&
-                @selected_card.card.primary_side.type in @landscape_types && "h-[30dvh]",
-              (!@selected_card.card.primary_side ||
-                 @selected_card.card.primary_side.type not in @landscape_types) && "h-[50dvh]"
+              display_side && display_side.type in @landscape_types && "h-[30dvh]",
+              (!display_side || display_side.type not in @landscape_types) && "h-[50dvh]"
             ]}>
               <img
                 class="h-full object-contain"
-                src={@selected_card.card.primary_side && @selected_card.card.primary_side.image_url}
+                src={display_side && display_side.image_url}
               />
               <div class="absolute bottom-2 right-2 flex flex-col flex-reverse gap-1 pointer-events-none">
                 <.threat_token
@@ -813,9 +829,11 @@ defmodule SanctumWeb.GameLive.Show do
   def identity(assigns) do
     ~H"""
     <div :if={@game_player.deck} class="relative group flex flex-col" tabindex="0">
-      <% card =
-        if @game_player.form == :hero, do: @game_player.deck.hero, else: @game_player.deck.alter_ego %>
-      <.plain_card id={card.id} card={card} />
+      <% card = @game_player.deck.hero.card %>
+      <% current_side =
+        card.card_sides
+        |> Enum.find(&(&1.type == @game_player.form)) %>
+      <.plain_card id={card.id} card={card} imgsrc={current_side && current_side.image_url} />
       <div class="absolute hidden group-hover:flex group-focus:flex flex-col gap-1 left-full top-0 px-2">
         <.button variant="icon" phx-click="flip-hero"><.icon name="hero-arrow-uturn-left" /></.button>
       </div>

@@ -126,10 +126,10 @@ defmodule Sanctum.Games.GamePlayer do
               :integer,
               expr(
                 if form == :hero,
-                  do: deck.hero.primary_side.hand_size,
-                  else: deck.alter_ego.primary_side.hand_size
+                  do: deck.hero.hero_side.hand_size,
+                  else: deck.hero.alter_ego_side.hand_size
               ),
-              load: [deck: [hero: [:primary_side], alter_ego: [:primary_side]]]
+              load: [deck: [hero: [:hero_side, :alter_ego_side]]]
 
     calculate :current_hand_size, :integer, expr(count(hand_cards)), load: [:hand_cards]
     calculate :max_hand_size, :integer, expr(hand_size + hand_size_mod), load: [:hand_size]

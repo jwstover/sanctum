@@ -47,7 +47,7 @@ defmodule Sanctum.Decks.Deck do
   end
 
   validations do
-    validate {Sanctum.Decks.Validations.ValidateHeroType, []},
+    validate {Sanctum.Decks.Validations.ValidateHero, []},
       only_when_valid?: true,
       before_action?: true
   end
@@ -64,20 +64,9 @@ defmodule Sanctum.Decks.Deck do
 
     many_to_many :cards, Sanctum.Games.Card, through: Sanctum.Decks.DeckCard
 
-    belongs_to :hero, Sanctum.Games.Card do
+    belongs_to :hero, Sanctum.Heroes.Hero do
       allow_nil? false
       public? true
-      attribute_type :string
-      source_attribute :hero_code
-      destination_attribute :code
-    end
-
-    belongs_to :alter_ego, Sanctum.Games.Card do
-      allow_nil? false
-      public? true
-      attribute_type :string
-      source_attribute :alter_ego_code
-      destination_attribute :code
     end
   end
 
