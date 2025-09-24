@@ -26,6 +26,25 @@ defmodule Sanctum.Games.Card do
       upsert_identity :unique_marvelcdb_base_code
     end
 
+    create :create_with_sides do
+      accept [:*]
+
+      argument :card_sides, {:array, :map}
+
+      change manage_relationship(:card_sides, type: :direct_control)
+
+      upsert? true
+      upsert_identity :unique_marvelcdb_base_code
+    end
+
+    update :update_with_sides do
+      accept [:*]
+      require_atomic? false
+      argument :card_sides, {:array, :map}
+
+      change manage_relationship(:card_sides, type: :direct_control)
+    end
+
     read :with_sides do
       prepare build(load: [:card_sides, :primary_side])
     end

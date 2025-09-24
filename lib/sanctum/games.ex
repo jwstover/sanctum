@@ -44,8 +44,10 @@ defmodule Sanctum.Games do
       define :change_health, action: :change_health
     end
 
-    resource Sanctum.Games.GameVillian do
+    resource Sanctum.Games.GameVillain do
       define :change_villain_health, action: :change_health
+      define :advance_villain_stage, action: :advance_stage
+      define :flip_villain_stage, action: :flip_stage
     end
 
     resource Sanctum.Games.GameScheme do

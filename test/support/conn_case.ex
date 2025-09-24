@@ -28,11 +28,26 @@ defmodule SanctumWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import SanctumWeb.ConnCase
+      import Sanctum.AccountsFixtures
     end
   end
 
   setup tags do
     Sanctum.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
+  end
+
+  @doc """
+  Logs the given `user` into the `conn`.
+
+  It returns an updated `conn`.
+  """
+  def log_in_user(conn, user) do
+    # Create a session for the user using AshAuthentication
+    {:ok, token, _claims} = AshAuthentication.Jwt.token_for_user(user)
+
+    conn
+    |> Phoenix.ConnTest.init_test_session(%{})
+    |> Plug.Conn.put_session("user_token", token)
   end
 end

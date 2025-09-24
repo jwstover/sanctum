@@ -204,7 +204,7 @@ defmodule SanctumWeb.GameLive.Show do
   end
 
   def handle_event("change-villain-health", %{"amount" => amount_str}, socket) do
-    game_villain = socket.assigns.game.game_villian
+    game_villain = socket.assigns.game.game_villain
     amount = String.to_integer(amount_str)
 
     Games.change_villain_health(game_villain, %{amount: amount},
@@ -361,7 +361,7 @@ defmodule SanctumWeb.GameLive.Show do
        when is_binary(game_id) do
     case Games.get_game(game_id,
            load: [
-             game_villian: [card: [:primary_side]],
+             game_villain: [active_stage_card: [:active_side]],
              game_schemes: [:active_side],
              encounter_deck: [
                deck_cards: [:active_side],
@@ -563,8 +563,8 @@ defmodule SanctumWeb.GameLive.Show do
             <span class="text-white font-komika">-</span>
           </button>
           <div class="flex flex-col items-center bg-red-800 text-white transition-all font-komika text-lg py-1 px-4 border-y-1 -skew-x-6 border-x-2 border-gray-100 shadow shadow-black">
-            {@game.game_villian.health}
-            <span class="text-xs font-elektra">Villian</span>
+            {@game.game_villain.health}
+            <span class="text-xs font-elektra">Villain</span>
           </div>
           <button
             class="cursor-pointer p-1 px-2 text-lg w-8"
@@ -608,12 +608,12 @@ defmodule SanctumWeb.GameLive.Show do
         />
       </div>
       <div
-        id="villian-area"
+        id="villain-area"
         class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
       >
         <.plain_card
-          id={@game.game_villian.card.id}
-          card={@game.game_villian.card}
+          id={@game.game_villain.active_stage_card.id}
+          card={@game.game_villain.active_stage_card}
         />
       </div>
       <div

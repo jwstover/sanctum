@@ -80,6 +80,17 @@ defmodule Sanctum.MarvelCdb do
     Heroes.find_or_create_hero(hero_attrs)
   end
 
+  defp create_or_find_villain(card, side) when side.type == :villain do
+    villain_attrs = %{
+      villain_name: side.name,
+      set: card.set
+    }
+
+    Sanctum.Villains.find_or_create_villain(villain_attrs)
+  end
+
+  defp create_or_find_villain(_card, _side), do: {:ok, nil}
+
   def load_pack(pack_code) when is_binary(pack_code) do
     get_cards_by_pack(pack_code)
     |> case do
@@ -160,8 +171,9 @@ defmodule Sanctum.MarvelCdb do
           if should_create_side do
             # Check if this side already exists
             case Sanctum.Games.get_card_side_by_code(code) do
-              {:ok, %Sanctum.Games.CardSide{}} ->
-                # Side already exists, skip creation
+              {:ok, existing_side} ->
+                # Side already exists, but create villain if needed
+                create_or_find_villain(card, existing_side)
                 :ok
 
               {:error, _} ->
@@ -169,7 +181,10 @@ defmodule Sanctum.MarvelCdb do
                 side_attrs = prepare_card_side_attrs(mcdb_card)
 
                 case Sanctum.Games.create_card_side(Map.put(side_attrs, :card_id, card.id)) do
-                  {:ok, _side} -> :ok
+                  {:ok, side} ->
+                    # Create villain resource if this is a villain side
+                    create_or_find_villain(card, side)
+                    :ok
                   err -> err
                 end
             end
@@ -206,7 +221,12 @@ defmodule Sanctum.MarvelCdb do
             prepare_card_side_attrs(side_data)
             |> Map.put(:card_id, card.id)
 
-          Sanctum.Games.create_card_side(side_attrs)
+          case Sanctum.Games.create_card_side(side_attrs) do
+            {:ok, side} ->
+              # Create villain resource if this is a villain side
+              create_or_find_villain(card, side)
+            _ -> :ok
+          end
 
         # Side doesn't exist, continue
         _ ->
@@ -320,7 +340,7 @@ defmodule Sanctum.MarvelCdb do
 
       # Villain fields
       health_per_hero: mcdb_card["health_per_hero"] || false,
-      stage: mcdb_card["stage"],
+      stage: stage_to_integer(mcdb_card["stage"]),
       scheme: mcdb_card["scheme"],
 
       # Scheme fields
@@ -337,6 +357,24 @@ defmodule Sanctum.MarvelCdb do
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
+  end
+
+  defp stage_to_integer(nil), do: nil
+  defp stage_to_integer(stage) do
+    case stage do
+      "I" -> 1
+      "II" -> 2
+      "III" -> 3
+      "1A" -> 1
+      "1B" -> 1
+      "1C" -> 1
+      "2A" -> 2
+      "2B" -> 2
+      "2C" -> 2
+      "3A" -> 3
+      "3B" -> 3
+      "3C" -> 3
+    end
   end
 
   defp map_card_type(type_code) do

@@ -61,7 +61,7 @@ config :sanctum,
   env: config_env(),
   ecto_repos: [Sanctum.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games, Sanctum.Heroes]
+  ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games, Sanctum.Heroes, Sanctum.Villains]
 
 # Configures the endpoint
 config :sanctum, SanctumWeb.Endpoint,

@@ -30,14 +30,15 @@ defmodule Sanctum.Games.CardTest do
     end
 
     test "creates a card with minimal required attributes" do
+      unique_id = :rand.uniform(100_000)
       attrs = %{
-        base_code: "01002",
-        code: "01002"
+        base_code: "test#{unique_id}",
+        code: "test#{unique_id}"
       }
 
       assert {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
-      assert card.base_code == "01002"
-      assert card.code == "01002"
+      assert card.base_code == "test#{unique_id}"
+      assert card.code == "test#{unique_id}"
       assert card.unique == false
       assert card.permanent == false
       assert card.is_multi_sided == false
@@ -89,27 +90,30 @@ defmodule Sanctum.Games.CardTest do
 
   describe "read actions" do
     setup do
+      # Use random codes to avoid conflicts with other tests
+      unique_id = :rand.uniform(100_000)
+
       hero_card_attrs = %{
-        base_code: "01010",
-        code: "01010a",
-        set: "core",
-        pack: "core",
+        base_code: "test#{unique_id}1",
+        code: "test#{unique_id}1a",
+        set: "test_core_#{unique_id}",
+        pack: "test_core_#{unique_id}",
         is_multi_sided: true
       }
 
       ally_card_attrs = %{
-        base_code: "01011",
-        code: "01011",
-        set: "core",
-        pack: "core",
+        base_code: "test#{unique_id}2",
+        code: "test#{unique_id}2",
+        set: "test_core_#{unique_id}",
+        pack: "test_core_#{unique_id}",
         is_multi_sided: false
       }
 
       villain_card_attrs = %{
-        base_code: "02001",
-        code: "02001",
-        set: "rhino",
-        pack: "rhino",
+        base_code: "test#{unique_id}3",
+        code: "test#{unique_id}3",
+        set: "test_rhino_#{unique_id}",
+        pack: "test_rhino_#{unique_id}",
         is_multi_sided: false
       }
 
@@ -122,15 +126,17 @@ defmodule Sanctum.Games.CardTest do
       {:ok, villain_card} =
         Card |> Ash.Changeset.for_create(:create, villain_card_attrs) |> Ash.create()
 
-      %{hero_card: hero_card, ally_card: ally_card, villain_card: villain_card}
+      %{hero_card: hero_card, ally_card: ally_card, villain_card: villain_card, hero_card_attrs: hero_card_attrs, villain_card_attrs: villain_card_attrs}
     end
 
     test "by_set filters cards by set", %{
       hero_card: hero_card,
       ally_card: ally_card,
-      villain_card: villain_card
+      villain_card: villain_card,
+      hero_card_attrs: hero_card_attrs,
+      villain_card_attrs: villain_card_attrs
     } do
-      core_cards = Card |> Ash.Query.for_read(:by_set, %{set: "core"}) |> Ash.read!()
+      core_cards = Card |> Ash.Query.for_read(:by_set, %{set: hero_card_attrs.set}) |> Ash.read!()
       assert length(core_cards) == 2
 
       card_ids = Enum.map(core_cards, & &1.id)
@@ -138,7 +144,7 @@ defmodule Sanctum.Games.CardTest do
       assert ally_card.id in card_ids
       refute villain_card.id in card_ids
 
-      rhino_cards = Card |> Ash.Query.for_read(:by_set, %{set: "rhino"}) |> Ash.read!()
+      rhino_cards = Card |> Ash.Query.for_read(:by_set, %{set: villain_card_attrs.set}) |> Ash.read!()
       assert length(rhino_cards) == 1
       assert List.first(rhino_cards).id == villain_card.id
     end
@@ -151,8 +157,8 @@ defmodule Sanctum.Games.CardTest do
       assert List.first(found_cards).id == hero_card.id
     end
 
-    test "by_pack filters cards by pack", %{hero_card: hero_card, ally_card: ally_card} do
-      core_pack_cards = Card |> Ash.Query.for_read(:by_pack, %{pack: "core"}) |> Ash.read!()
+    test "by_pack filters cards by pack", %{hero_card: hero_card, ally_card: ally_card, hero_card_attrs: hero_card_attrs} do
+      core_pack_cards = Card |> Ash.Query.for_read(:by_pack, %{pack: hero_card_attrs.pack}) |> Ash.read!()
       assert length(core_pack_cards) == 2
 
       card_ids = Enum.map(core_pack_cards, & &1.id)
@@ -162,10 +168,11 @@ defmodule Sanctum.Games.CardTest do
 
     test "with_sides loads card sides", %{hero_card: hero_card} do
       # Create a card side for the hero card
+      unique_id = :rand.uniform(100_000)
       card_side_attrs = %{
         card_id: hero_card.id,
         name: "Test Hero",
-        code: "01010a",
+        code: "test#{unique_id}side",
         side_identifier: "A",
         is_primary_side: true,
         type: :hero

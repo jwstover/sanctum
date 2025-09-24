@@ -14,8 +14,19 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
 
   def change(changeset, opts, _context) do
     resource_data = changeset.data
-    card_id = Ash.Changeset.get_attribute(changeset, :card_id) || Map.get(resource_data, :card_id)
-    current_active_side_id = Ash.Changeset.get_attribute(changeset, :active_side_id) || Map.get(resource_data, :active_side_id)
+
+    # Handle different field name patterns for different resources
+    card_id =
+      Ash.Changeset.get_attribute(changeset, :card_id) ||
+      Map.get(resource_data, :card_id) ||
+      Ash.Changeset.get_attribute(changeset, :active_stage_card_id) ||
+      Map.get(resource_data, :active_stage_card_id)
+
+    current_active_side_id =
+      Ash.Changeset.get_attribute(changeset, :active_side_id) ||
+      Map.get(resource_data, :active_side_id) ||
+      Ash.Changeset.get_attribute(changeset, :active_stage_side_id) ||
+      Map.get(resource_data, :active_stage_side_id)
 
     if card_id do
       # Load the card with all its sides
@@ -47,7 +58,17 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
 
       changeset =
         if next_side do
-          Ash.Changeset.change_attribute(changeset, :active_side_id, next_side.id)
+          # Set the appropriate field based on what exists in the resource
+          cond do
+            Map.has_key?(resource_data, :active_side_id) ->
+              Ash.Changeset.change_attribute(changeset, :active_side_id, next_side.id)
+
+            Map.has_key?(resource_data, :active_stage_side_id) ->
+              Ash.Changeset.change_attribute(changeset, :active_stage_side_id, next_side.id)
+
+            true ->
+              changeset
+          end
         else
           changeset
         end

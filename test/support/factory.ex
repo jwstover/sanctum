@@ -60,4 +60,11 @@ defmodule Sanctum.Factory do
       traits: ["Avenger", "Spider"]
     }
   end
+
+  def user_factory do
+    %{
+      email: Faker.Internet.email(),
+      confirmed_at: DateTime.utc_now()
+    }
+  end
 end
