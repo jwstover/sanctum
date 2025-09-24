@@ -56,10 +56,11 @@ defmodule Sanctum.Games.GameVillainTest do
       |> Ash.create()
 
     # Create the Villain resource
-    {:ok, villain} = Sanctum.Villains.find_or_create_villain(%{
-      villain_name: villain_name,
-      set: set_name
-    })
+    {:ok, villain} =
+      Sanctum.Villains.find_or_create_villain(%{
+        villain_name: villain_name,
+        set: set_name
+      })
 
     # Create a test game with manually created GameVillain
     {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
@@ -262,10 +263,11 @@ defmodule Sanctum.Games.GameVillainTest do
         |> Ash.create()
 
       # Create the Villain resource
-      {:ok, villain} = Sanctum.Villains.find_or_create_villain(%{
-        villain_name: villain_name,
-        set: set_name
-      })
+      {:ok, villain} =
+        Sanctum.Villains.find_or_create_villain(%{
+          villain_name: villain_name,
+          set: set_name
+        })
 
       # Create scenario and game
       {:ok, scenario} =
@@ -292,11 +294,12 @@ defmodule Sanctum.Games.GameVillainTest do
         })
         |> Ash.create(actor: user)
 
-      {user, game_villain, %{
-        stage1: %{card: stage1_card, side: stage1_side},
-        stage2: %{card: stage2_card, side: stage2_side},
-        stage3: %{card: stage3_card, side: stage3_side}
-      }}
+      {user, game_villain,
+       %{
+         stage1: %{card: stage1_card, side: stage1_side},
+         stage2: %{card: stage2_card, side: stage2_side},
+         stage3: %{card: stage3_card, side: stage3_side}
+       }}
     end
 
     test "advances from stage 1 to stage 2" do
@@ -364,7 +367,8 @@ defmodule Sanctum.Games.GameVillainTest do
       {:ok, flipped_villain} = Games.flip_villain_stage(game_villain, actor: user)
 
       assert flipped_villain.active_stage_side_id == stage1_b_side.id
-      assert flipped_villain.active_stage_card_id == stage1_card_id # Same card, different side
+      # Same card, different side
+      assert flipped_villain.active_stage_card_id == stage1_card_id
     end
   end
 end

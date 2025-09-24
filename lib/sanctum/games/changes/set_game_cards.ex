@@ -10,13 +10,33 @@ defmodule Sanctum.Games.Changes.SetGameCards do
 
     case Changeset.fetch_attribute(changeset, :deck_id) do
       {:ok, deck_id} when is_binary(deck_id) ->
-        deck = Sanctum.Decks.get_deck!(deck_id, load: [cards: [:primary_side], hero: [:card]])
+        deck =
+          Sanctum.Decks.get_deck!(deck_id,
+            load: [cards: [:primary_side], hero: [card: [:card_sides]]]
+          )
+
         changeset = Changeset.put_context(changeset, :loaded_deck, deck)
+
+        # Extract hand sizes from hero card sides
+        hero_card = deck.hero.card
+        hero_side = Enum.find(hero_card.card_sides, &(&1.type == :hero))
+        alter_ego_side = Enum.find(hero_card.card_sides, &(&1.type == :alter_ego))
+
+        changeset =
+          changeset
+          |> Changeset.change_attribute(:hero_hand_size, hero_side && hero_side.hand_size)
+          |> Changeset.change_attribute(
+            :alter_ego_hand_size,
+            alter_ego_side && alter_ego_side.hand_size
+          )
 
         cards =
           deck.cards
           |> Enum.shuffle()
-          |> Enum.reject(&(&1.primary_side && &1.primary_side.type in [:alter_ego, :main_scheme, :villain, :hero]))
+          |> Enum.reject(
+            &(&1.primary_side &&
+                &1.primary_side.type in [:alter_ego, :main_scheme, :villain, :hero])
+          )
           |> Enum.with_index()
           |> Enum.map(fn {card, index} ->
             %{

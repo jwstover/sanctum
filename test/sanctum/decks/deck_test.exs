@@ -36,12 +36,13 @@ defmodule Sanctum.Decks.DeckTest do
         )
 
       # Create Hero record
-      {:ok, hero} = Sanctum.Heroes.find_or_create_hero(%{
-        hero_name: "Spider-Man",
-        alter_ego_name: "Peter Parker",
-        set: "spider_man",
-        base_code: hero_card.base_code
-      })
+      {:ok, hero} =
+        Sanctum.Heroes.find_or_create_hero(%{
+          hero_name: "Spider-Man",
+          alter_ego_name: "Peter Parker",
+          set: "spider_man",
+          base_code: hero_card.base_code
+        })
 
       attrs = %{
         title: "Test with hero",
@@ -55,6 +56,7 @@ defmodule Sanctum.Decks.DeckTest do
     test "prevents creating a deck with invalid hero" do
       # Create Hero with incomplete cards (missing alter ego card)
       hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "01001", set: "spider_man"})
+
       _side =
         create(Sanctum.Games.CardSide,
           attrs: %{
@@ -68,12 +70,13 @@ defmodule Sanctum.Decks.DeckTest do
         )
 
       # Create Hero record with valid hero card but invalid base code
-      {:ok, hero} = Sanctum.Heroes.find_or_create_hero(%{
-        hero_name: "Spider-Man",
-        alter_ego_name: "Peter Parker",
-        set: "spider_man",
-        base_code: "nonexistent"
-      })
+      {:ok, hero} =
+        Sanctum.Heroes.find_or_create_hero(%{
+          hero_name: "Spider-Man",
+          alter_ego_name: "Peter Parker",
+          set: "spider_man",
+          base_code: "nonexistent"
+        })
 
       attrs = %{
         title: "Test with invalid hero",
@@ -99,7 +102,9 @@ defmodule Sanctum.Decks.DeckTest do
         }
       )
 
-    alter_ego_card = create(Sanctum.Games.Card, attrs: %{base_code: "01002", set: "captain_marvel"})
+    alter_ego_card =
+      create(Sanctum.Games.Card, attrs: %{base_code: "01002", set: "captain_marvel"})
+
     # Create alter ego CardSide
     _side =
       create(Sanctum.Games.CardSide,
@@ -114,12 +119,13 @@ defmodule Sanctum.Decks.DeckTest do
       )
 
     # Create Hero record
-    {:ok, hero} = Sanctum.Heroes.find_or_create_hero(%{
-      hero_name: "Captain Marvel",
-      alter_ego_name: "Carol Danvers",
-      set: "captain_marvel",
-      base_code: hero_card.base_code
-    })
+    {:ok, hero} =
+      Sanctum.Heroes.find_or_create_hero(%{
+        hero_name: "Captain Marvel",
+        alter_ego_name: "Carol Danvers",
+        set: "captain_marvel",
+        base_code: hero_card.base_code
+      })
 
     cards = create(Sanctum.Games.Card, count: 3)
     card_ids = Enum.map(cards, & &1.id)

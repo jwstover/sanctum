@@ -31,6 +31,7 @@ defmodule Sanctum.Games.CardTest do
 
     test "creates a card with minimal required attributes" do
       unique_id = :rand.uniform(100_000)
+
       attrs = %{
         base_code: "test#{unique_id}",
         code: "test#{unique_id}"
@@ -126,7 +127,13 @@ defmodule Sanctum.Games.CardTest do
       {:ok, villain_card} =
         Card |> Ash.Changeset.for_create(:create, villain_card_attrs) |> Ash.create()
 
-      %{hero_card: hero_card, ally_card: ally_card, villain_card: villain_card, hero_card_attrs: hero_card_attrs, villain_card_attrs: villain_card_attrs}
+      %{
+        hero_card: hero_card,
+        ally_card: ally_card,
+        villain_card: villain_card,
+        hero_card_attrs: hero_card_attrs,
+        villain_card_attrs: villain_card_attrs
+      }
     end
 
     test "by_set filters cards by set", %{
@@ -144,7 +151,9 @@ defmodule Sanctum.Games.CardTest do
       assert ally_card.id in card_ids
       refute villain_card.id in card_ids
 
-      rhino_cards = Card |> Ash.Query.for_read(:by_set, %{set: villain_card_attrs.set}) |> Ash.read!()
+      rhino_cards =
+        Card |> Ash.Query.for_read(:by_set, %{set: villain_card_attrs.set}) |> Ash.read!()
+
       assert length(rhino_cards) == 1
       assert List.first(rhino_cards).id == villain_card.id
     end
@@ -157,8 +166,14 @@ defmodule Sanctum.Games.CardTest do
       assert List.first(found_cards).id == hero_card.id
     end
 
-    test "by_pack filters cards by pack", %{hero_card: hero_card, ally_card: ally_card, hero_card_attrs: hero_card_attrs} do
-      core_pack_cards = Card |> Ash.Query.for_read(:by_pack, %{pack: hero_card_attrs.pack}) |> Ash.read!()
+    test "by_pack filters cards by pack", %{
+      hero_card: hero_card,
+      ally_card: ally_card,
+      hero_card_attrs: hero_card_attrs
+    } do
+      core_pack_cards =
+        Card |> Ash.Query.for_read(:by_pack, %{pack: hero_card_attrs.pack}) |> Ash.read!()
+
       assert length(core_pack_cards) == 2
 
       card_ids = Enum.map(core_pack_cards, & &1.id)
@@ -169,6 +184,7 @@ defmodule Sanctum.Games.CardTest do
     test "with_sides loads card sides", %{hero_card: hero_card} do
       # Create a card side for the hero card
       unique_id = :rand.uniform(100_000)
+
       card_side_attrs = %{
         card_id: hero_card.id,
         name: "Test Hero",

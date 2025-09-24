@@ -47,11 +47,13 @@ defmodule Sanctum.Heroes.Hero do
     end
 
     has_one :hero_side, Sanctum.Games.CardSide do
-      manual {Sanctum.ManualRelationships.HasOneThrough, [through: [:card, :card_sides], filter: [type: :hero, is_primary_side: true]]}
+      manual {Sanctum.ManualRelationships.HasOneThrough, [through: [:card, :card_sides]]}
+      filter expr(type == :hero)
     end
 
     has_one :alter_ego_side, Sanctum.Games.CardSide do
-      manual {Sanctum.ManualRelationships.HasOneThrough, [through: [:card, :card_sides], filter: [type: :alter_ego, is_primary_side: true]]}
+      manual {Sanctum.ManualRelationships.HasOneThrough, [through: [:card, :card_sides]]}
+      filter expr(type == :alter_ego)
     end
 
     has_many :cards, Sanctum.Games.Card do

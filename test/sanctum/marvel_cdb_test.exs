@@ -43,7 +43,9 @@ defmodule Sanctum.MarvelCdbTest do
 
     # Find the villain sides (should be one per card)
     villain_sides = Enum.filter(card_sides, &(&1.type == :villain))
-    assert length(villain_sides) >= 3, "Expected at least 3 villain sides, got #{length(villain_sides)}"
+
+    assert length(villain_sides) >= 3,
+           "Expected at least 3 villain sides, got #{length(villain_sides)}"
 
     # Get the villain name from any villain side (they should all have the same name)
     villain_name = hd(villain_sides).name
@@ -59,7 +61,7 @@ defmodule Sanctum.MarvelCdbTest do
 
         # Should have at least 3 stages
         assert length(rhino_with_sides.stage_sides) >= 3,
-          "Expected at least 3 stage sides, got #{length(rhino_with_sides.stage_sides)}"
+               "Expected at least 3 stage sides, got #{length(rhino_with_sides.stage_sides)}"
 
         # Verify stage numbers are present
         stage_numbers =
@@ -83,9 +85,10 @@ defmodule Sanctum.MarvelCdbTest do
 
           # Rhino should get stronger with each stage
           assert stage1.health <= stage2.health,
-            "Stage 2 health (#{stage2.health}) should be >= Stage 1 health (#{stage1.health})"
+                 "Stage 2 health (#{stage2.health}) should be >= Stage 1 health (#{stage1.health})"
+
           assert stage2.health <= stage3.health,
-            "Stage 3 health (#{stage3.health}) should be >= Stage 2 health (#{stage2.health})"
+                 "Stage 3 health (#{stage3.health}) should be >= Stage 2 health (#{stage2.health})"
         end
 
       error ->

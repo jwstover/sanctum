@@ -77,7 +77,6 @@ defmodule SanctumWeb.CardLive.FormTest do
       assert html =~ "Card Sides"
       assert html =~ "Multi-sided"
     end
-
   end
 
   describe "edit card form" do
@@ -238,4 +237,3 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
   end
 end
-

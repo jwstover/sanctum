@@ -26,7 +26,8 @@ defmodule Sanctum.Decks.Validations.ValidateHero do
           if hero_side && alter_ego_side do
             :ok
           else
-            {:error, field: :hero_id, message: "hero card must have both hero and alter ego sides"}
+            {:error,
+             field: :hero_id, message: "hero card must have both hero and alter ego sides"}
           end
 
         %Sanctum.Heroes.Hero{card: nil} ->

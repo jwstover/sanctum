@@ -20,7 +20,7 @@ defmodule SanctumWeb.GameLive.Index do
       {:ok, games} =
         Games.list_games(socket.assigns.current_user.id,
           query: [sort: [inserted_at: :desc]],
-          load: [game_villain: [:active_stage_card]],
+          load: [game_villain: [:villain]],
           actor: socket.assigns.current_user
         )
 
@@ -41,7 +41,7 @@ defmodule SanctumWeb.GameLive.Index do
           class="px-4 py-2 border-b-4 border-t-2 border-l-1 border-r-4 border-black rounded skew-x-6 grid grid-cols-3 gap-4 items-center"
         >
           <span class="font-komika">
-            {game.game_villain.active_stage_card.name}
+            {game.game_villain.villain.villain_name}
           </span>
 
           <span class="text-sm">{Calendar.strftime(game.inserted_at, "%a %b %d %H:%M %p")}</span>

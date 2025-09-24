@@ -185,7 +185,9 @@ defmodule Sanctum.MarvelCdb do
                     # Create villain resource if this is a villain side
                     create_or_find_villain(card, side)
                     :ok
-                  err -> err
+
+                  err ->
+                    err
                 end
             end
           else
@@ -225,7 +227,9 @@ defmodule Sanctum.MarvelCdb do
             {:ok, side} ->
               # Create villain resource if this is a villain side
               create_or_find_villain(card, side)
-            _ -> :ok
+
+            _ ->
+              :ok
           end
 
         # Side doesn't exist, continue
@@ -360,6 +364,7 @@ defmodule Sanctum.MarvelCdb do
   end
 
   defp stage_to_integer(nil), do: nil
+
   defp stage_to_integer(stage) do
     case stage do
       "I" -> 1

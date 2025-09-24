@@ -106,10 +106,11 @@ defmodule Sanctum.Villains.VillainTest do
       villain_name = "Test Multi-Stage"
 
       # Create villain
-      {:ok, villain} = Villains.find_or_create_villain(%{
-        villain_name: villain_name,
-        set: set_name
-      })
+      {:ok, villain} =
+        Villains.find_or_create_villain(%{
+          villain_name: villain_name,
+          set: set_name
+        })
 
       # Create cards and sides for different stages
       {:ok, stage1_card} =
@@ -194,10 +195,11 @@ defmodule Sanctum.Villains.VillainTest do
       other_villain_name = "Other Villain"
 
       # Create villain
-      {:ok, villain} = Villains.find_or_create_villain(%{
-        villain_name: villain_name,
-        set: set_name
-      })
+      {:ok, villain} =
+        Villains.find_or_create_villain(%{
+          villain_name: villain_name,
+          set: set_name
+        })
 
       # Create card
       {:ok, card} =
@@ -253,20 +255,23 @@ defmodule Sanctum.Villains.VillainTest do
       set2 = "test_set_2_#{:rand.uniform(100_000)}"
 
       # Create villains in different sets
-      {:ok, villain1} = Villains.find_or_create_villain(%{
-        villain_name: "Villain A",
-        set: set1
-      })
+      {:ok, villain1} =
+        Villains.find_or_create_villain(%{
+          villain_name: "Villain A",
+          set: set1
+        })
 
-      {:ok, _villain2} = Villains.find_or_create_villain(%{
-        villain_name: "Villain B",
-        set: set2
-      })
+      {:ok, _villain2} =
+        Villains.find_or_create_villain(%{
+          villain_name: "Villain B",
+          set: set2
+        })
 
-      {:ok, villain3} = Villains.find_or_create_villain(%{
-        villain_name: "Villain C",
-        set: set1
-      })
+      {:ok, villain3} =
+        Villains.find_or_create_villain(%{
+          villain_name: "Villain C",
+          set: set1
+        })
 
       # Get villains by set1
       {:ok, set1_villains} = Villains.get_by_set(set1)

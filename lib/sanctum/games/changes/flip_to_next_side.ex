@@ -18,15 +18,15 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
     # Handle different field name patterns for different resources
     card_id =
       Ash.Changeset.get_attribute(changeset, :card_id) ||
-      Map.get(resource_data, :card_id) ||
-      Ash.Changeset.get_attribute(changeset, :active_stage_card_id) ||
-      Map.get(resource_data, :active_stage_card_id)
+        Map.get(resource_data, :card_id) ||
+        Ash.Changeset.get_attribute(changeset, :active_stage_card_id) ||
+        Map.get(resource_data, :active_stage_card_id)
 
     current_active_side_id =
       Ash.Changeset.get_attribute(changeset, :active_side_id) ||
-      Map.get(resource_data, :active_side_id) ||
-      Ash.Changeset.get_attribute(changeset, :active_stage_side_id) ||
-      Map.get(resource_data, :active_stage_side_id)
+        Map.get(resource_data, :active_side_id) ||
+        Ash.Changeset.get_attribute(changeset, :active_stage_side_id) ||
+        Map.get(resource_data, :active_stage_side_id)
 
     if card_id do
       # Load the card with all its sides
@@ -41,7 +41,7 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
         case current_active_side_id do
           nil ->
             # No active side, use the primary side (first side)
-            Enum.find(available_sides, &(&1.is_primary_side)) || List.first(available_sides)
+            Enum.find(available_sides, & &1.is_primary_side) || List.first(available_sides)
 
           current_side_id ->
             # Find current side index and get next side

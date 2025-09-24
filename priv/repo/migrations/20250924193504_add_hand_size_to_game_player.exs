@@ -1,4 +1,4 @@
-defmodule Sanctum.Repo.Migrations.MigrateResources1 do
+defmodule Sanctum.Repo.Migrations.AddHandSizeToGamePlayer do
   @moduledoc """
   Updates resources based on their most recent snapshots.
 
@@ -10,8 +10,8 @@ defmodule Sanctum.Repo.Migrations.MigrateResources1 do
   def up do
     create table(:villains, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
-      add :villain_name, :text
-      add :set, :text
+      add :villain_name, :text, null: false
+      add :set, :text, null: false
 
       add :inserted_at, :utc_datetime_usec,
         null: false,
@@ -75,9 +75,19 @@ defmodule Sanctum.Repo.Migrations.MigrateResources1 do
             prefix: "public"
           )
     end
+
+    alter table(:game_players) do
+      add :hero_hand_size, :bigint
+      add :alter_ego_hand_size, :bigint
+    end
   end
 
   def down do
+    alter table(:game_players) do
+      remove :alter_ego_hand_size
+      remove :hero_hand_size
+    end
+
     drop constraint(:game_villains, "game_villains_game_id_fkey")
 
     drop constraint(:game_villains, "game_villains_villain_id_fkey")

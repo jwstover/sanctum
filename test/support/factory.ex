@@ -17,7 +17,7 @@ defmodule Sanctum.Factory do
       Enum.map(attrs_list, fn attrs ->
         unquote(resource)
         |> Ash.Changeset.for_create(action, attrs)
-        |> Ash.create!()
+        |> Ash.create!(authorize?: false)
       end)
       |> case do
         [one] -> one
@@ -65,6 +65,31 @@ defmodule Sanctum.Factory do
     %{
       email: Faker.Internet.email(),
       confirmed_at: DateTime.utc_now()
+    }
+  end
+
+  def game_player_factory do
+    %{
+      form: :alter_ego,
+      health: 25,
+      max_health: 30,
+      hand_size_mod: 0
+    }
+  end
+
+  def scenario_factory do
+    unique_id = :rand.uniform(100_000)
+
+    %{
+      name: "Test Scenario #{unique_id}",
+      set: "test_scenario_#{unique_id}",
+      recommended_modular_sets: []
+    }
+  end
+
+  def game_factory do
+    %{
+      modular_sets: []
     }
   end
 end
