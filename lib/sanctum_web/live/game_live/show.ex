@@ -323,7 +323,7 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("flip-scheme", %{"game_scheme_id" => game_scheme_id}, socket) do
     {:ok, scheme} =
       Games.get_game_scheme!(game_scheme_id,
-        load: [:active_side],
+        load: [:active_side, :card],
         actor: socket.assigns.current_user
       )
       |> Games.flip_scheme()

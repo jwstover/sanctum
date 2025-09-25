@@ -1,6 +1,8 @@
 defmodule Sanctum.MarvelCdb do
   @moduledoc false
 
+  require Logger
+
   alias Sanctum.Decks
   alias Sanctum.Games
   alias Sanctum.Heroes
@@ -20,7 +22,7 @@ defmodule Sanctum.MarvelCdb do
       {:ok, decklist} ->
         decklist
         |> prepare_deck_attrs()
-        |> Decks.create_with_cards(load: [:cards, hero: [:hero_card, :alter_ego_card]])
+        |> Decks.create_with_cards(load: [:cards, hero: [:hero_side, :alter_ego_side]])
 
       err ->
         err
@@ -108,9 +110,12 @@ defmodule Sanctum.MarvelCdb do
   end
 
   def load_card(card_id) when is_binary(card_id) do
-    Games.get_card_by_code(card_id)
+    IO.inspect(card_id, label: "================== CARD_ID\n")
+    Games.get_card_side_by_code(card_id, load: [:card])
+    |> IO.inspect(label: "================== CARD\n")
     |> case do
-      %Games.Card{} = card ->
+      {:ok, %Games.CardSide{card: %Games.Card{} = card}} ->
+        Logger.info("Not loading existing card #{card_id}")
         {:ok, card}
 
       _ ->

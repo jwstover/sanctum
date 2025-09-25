@@ -63,7 +63,7 @@ defmodule Sanctum.Games.GameScheme do
   attributes do
     uuid_v7_primary_key :id
 
-    attribute :threat, :integer, public?: true
+    attribute :threat, :integer, public?: true, default: 0
     attribute :max_threat, :integer, public?: true
     attribute :escalation_threat, :integer, public?: true
     attribute :counter, :integer, default: 0, public?: true

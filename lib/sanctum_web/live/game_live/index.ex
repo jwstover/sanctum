@@ -38,6 +38,7 @@ defmodule SanctumWeb.GameLive.Index do
       <div class="flex flex-col gap-2 mt-2 font-elektra">
         <div
           :for={game <- @games}
+          :if={game.game_villain}
           class="px-4 py-2 border-b-4 border-t-2 border-l-1 border-r-4 border-black rounded skew-x-6 grid grid-cols-3 gap-4 items-center"
         >
           <span class="font-komika">
