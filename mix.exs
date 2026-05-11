@@ -57,7 +57,7 @@ defmodule Sanctum.MixProject do
       {:oban, "~> 2.0"},
       {:ash_ai, "~> 0.2"},
       {:tidewave, "~> 0.2", only: [:dev]},
-      {:live_debugger, "~> 0.3", only: [:dev]},
+      {:live_debugger, "~> 1.0", only: [:dev]},
       {:ash_events, "~> 0.4"},
       {:ash_state_machine, "~> 0.2"},
       {:oban_web, "~> 2.0"},
