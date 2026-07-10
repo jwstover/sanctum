@@ -24,6 +24,97 @@ defmodule Sanctum.GamesTest do
     {:ok, card}
   end
 
+  describe "villain enum values" do
+    setup do
+      {:ok, scenario} =
+        Games.create_scenario(%{
+          name: "Villain Zone Scenario",
+          set: "villain_zone_scenario",
+          recommended_modular_sets: []
+        })
+
+      {:ok, card} =
+        create_card_with_side(
+          %{
+            base_code: "zonev01",
+            code: "zonev01",
+            set: "villain_zone_scenario",
+            pack: "villain_zone_scenario"
+          },
+          %{
+            name: "Zone Test Villain",
+            type: :villain,
+            health: 10,
+            attack: 2,
+            scheme: 1
+          }
+        )
+
+      {:ok, user} =
+        Sanctum.Accounts.User
+        |> Ash.Changeset.for_create(:create, %{
+          email: "villain-zone@example.com",
+          confirmed_at: DateTime.utc_now()
+        })
+        |> Ash.create(authorize?: false)
+
+      %{card: card, scenario: scenario, user: user}
+    end
+
+    test "game card can be created in the :villain_play zone", %{card: card} do
+      assert {:ok, game_card} =
+               Sanctum.Games.GameCard
+               |> Ash.Changeset.for_create(:create, %{
+                 card_id: card.id,
+                 zone: :villain_play,
+                 order: 0
+               })
+               |> Ash.create(authorize?: false)
+
+      assert game_card.zone == :villain_play
+    end
+
+    test "game card can be moved to the :villain_play zone", %{
+      card: card,
+      scenario: scenario,
+      user: user
+    } do
+      {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+      game = Games.get_game!(game.id, load: [:game_players])
+      game_player = hd(game.game_players)
+
+      {:ok, game_card} =
+        Sanctum.Games.GameCard
+        |> Ash.Changeset.for_create(:create, %{
+          card_id: card.id,
+          game_player_id: game_player.id,
+          zone: :hero_hand,
+          order: 0
+        })
+        |> Ash.create(authorize?: false)
+
+      assert {:ok, moved} =
+               Games.move_game_card(
+                 game_card,
+                 %{game_player_id: game_player.id, zone: :villain_play},
+                 authorize?: false
+               )
+
+      assert moved.zone == :villain_play
+    end
+
+    test "the misspelled :villian_play zone is rejected", %{card: card} do
+      assert {:error, _} =
+               Sanctum.Games.GameCard
+               |> Ash.Changeset.for_create(:create, %{
+                 card_id: card.id,
+                 zone: :villian_play,
+                 order: 0
+               })
+               |> Ash.create(authorize?: false)
+    end
+  end
+
   describe "create_scenario" do
     test "creates a scenario with valid input" do
       attrs = %{
