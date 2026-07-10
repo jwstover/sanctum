@@ -131,8 +131,8 @@ defmodule Sanctum.Games.GamePlayer do
                   else: alter_ego_hand_size
               )
 
-    calculate :current_hand_size, :integer, expr(count(hand_cards)), load: [:hand_cards]
-    calculate :max_hand_size, :integer, expr(hand_size + hand_size_mod), load: [:hand_size]
+    calculate :current_hand_size, :integer, expr(count(hand_cards))
+    calculate :max_hand_size, :integer, expr(hand_size + hand_size_mod)
   end
 
   identities do

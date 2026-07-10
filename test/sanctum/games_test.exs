@@ -482,7 +482,7 @@ defmodule Sanctum.GamesTest do
         |> Ash.Query.filter(game_id == ^game.id)
         |> Ash.read!(authorize?: false)
 
-      assert length(game_cards) > 0
+      refute Enum.empty?(game_cards)
       assert Enum.all?(game_cards, &(&1.game_id == game.id))
     end
 
@@ -559,7 +559,7 @@ defmodule Sanctum.GamesTest do
         |> Ash.Query.filter(game_player_id == ^game_player.id)
         |> Ash.read!(authorize?: false)
 
-      assert length(player_cards) > 0
+      refute Enum.empty?(player_cards)
       assert Enum.all?(player_cards, &(&1.game_id == game.id))
     end
   end
