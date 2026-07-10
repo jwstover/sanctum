@@ -1,3 +1,12 @@
+## [0.10.1](https://github.com/jwstover/sanctum/compare/v0.10.0...v0.10.1) (2026-07-10)
+
+
+### Bug Fixes
+
+* correct 'villian' misspelling in stored enums ([7b674b5](https://github.com/jwstover/sanctum/commit/7b674b57b3adf9ca26967f508e7c92218566a5ad))
+
+
+
 # [0.10.0](https://github.com/jwstover/sanctum/compare/v0.9.0...v0.10.0) (2026-07-10)
 
 
@@ -49,15 +58,6 @@
 * allow changing player health ([245da31](https://github.com/jwstover/sanctum/commit/245da31fe7e7f3441d2b0a43ccaea94b84146ed1))
 * allow changing villain health ([39b4e00](https://github.com/jwstover/sanctum/commit/39b4e00e91c7087423aa14e160409b595f0f1387))
 * display villian and hero health ([5ac2891](https://github.com/jwstover/sanctum/commit/5ac28911eaa9f7d03a1cb1f810f449daf86b095f))
-
-
-
-# [0.6.0](https://github.com/jwstover/sanctum/compare/v0.5.0...v0.6.0) (2025-08-25)
-
-
-### Features
-
-* add ability to flip encounter cards ([9d0d7b1](https://github.com/jwstover/sanctum/commit/9d0d7b1d67456d4ab2faef35a1de2add4c754a2e))
 
 
 
