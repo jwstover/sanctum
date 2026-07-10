@@ -102,6 +102,7 @@ defmodule Sanctum.Games.GameCardTest do
         {:ok, game_card} =
           GameCard
           |> Ash.Changeset.for_create(:create, %{
+            game_id: game.id,
             game_player_id: game_player.id,
             card_id: card.id,
             zone: :hero_deck,

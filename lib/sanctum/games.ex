@@ -51,13 +51,6 @@ defmodule Sanctum.Games do
       define :flip_villain_stage, action: :flip_stage
     end
 
-    resource Sanctum.Games.GameScheme do
-      define :get_game_scheme, get_by: :id, action: :read
-      define :update_scheme_threat, args: [:delta], action: :update_threat
-      define :update_scheme_counter, args: [:delta], action: :update_counter
-      define :flip_scheme, action: :flip
-    end
-
     resource Sanctum.Games.GameEncounterDeck
 
     resource Sanctum.Games.GameCard do
@@ -70,8 +63,10 @@ defmodule Sanctum.Games do
         args: [:game_encounter_deck_id, :count]
 
       define :update_game_card, action: :update
+      define :update_game_card_counters, action: :update_counters
       define :move_game_card, action: :move
       define :flip_card, action: :flip
+      define :flip_scheme_card, action: :flip_scheme
     end
   end
 

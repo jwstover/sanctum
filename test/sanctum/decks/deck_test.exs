@@ -181,7 +181,8 @@ defmodule Sanctum.Decks.DeckTest do
         hero_name: "She-Hulk",
         alter_ego_name: "Jennifer Walters",
         set: "she_hulk",
-        base_code: hero_card.base_code
+        base_code: hero_card.base_code,
+        card_id: hero_card.id
       })
 
     cards = create(Sanctum.Games.Card, count: 3)
