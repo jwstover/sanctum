@@ -8,6 +8,10 @@ defmodule Sanctum.Games.GameVillain do
   postgres do
     table "game_villains"
     repo Sanctum.Repo
+
+    references do
+      reference :game, on_delete: :delete, on_update: :update
+    end
   end
 
   actions do

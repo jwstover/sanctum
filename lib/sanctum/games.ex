@@ -24,6 +24,7 @@ defmodule Sanctum.Games do
       define :create_game, action: :create
       define :get_game, get_by: :id, action: :read
       define :list_games, action: :read_games_for_user, args: [:user_id]
+      define :destroy_game, action: :destroy
     end
 
     resource Sanctum.Games.Scenario do

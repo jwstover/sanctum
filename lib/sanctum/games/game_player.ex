@@ -11,6 +11,10 @@ defmodule Sanctum.Games.GamePlayer do
   postgres do
     table "game_players"
     repo Sanctum.Repo
+
+    references do
+      reference :game, on_delete: :delete, on_update: :update
+    end
   end
 
   actions do

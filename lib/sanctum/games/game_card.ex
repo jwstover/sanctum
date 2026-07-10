@@ -10,6 +10,18 @@ defmodule Sanctum.Games.GameCard do
   postgres do
     table "game_cards"
     repo Sanctum.Repo
+
+    references do
+      reference :game_player, on_delete: :delete, on_update: :update
+      reference :game_encounter_deck, on_delete: :delete, on_update: :update
+    end
+
+    custom_indexes do
+      index [:game_player_id]
+      index [:game_encounter_deck_id]
+      index [:game_player_id, :zone]
+      index [:game_encounter_deck_id, :zone]
+    end
   end
 
   actions do
