@@ -76,7 +76,8 @@ defmodule Sanctum.MarvelCdb do
       hero_name: hero_side.name,
       alter_ego_name: alter_ego_side.name,
       set: hero_card.set,
-      base_code: hero_card.base_code
+      base_code: hero_card.base_code,
+      card_id: hero_card.id
     }
 
     Heroes.find_or_create_hero(hero_attrs)

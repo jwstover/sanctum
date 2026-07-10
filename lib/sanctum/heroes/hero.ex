@@ -16,7 +16,7 @@ defmodule Sanctum.Heroes.Hero do
     defaults [:read, create: :*]
 
     create :find_or_create do
-      accept [:hero_name, :alter_ego_name, :set, :base_code]
+      accept [:hero_name, :alter_ego_name, :set, :base_code, :card_id]
       upsert? true
       upsert_identity :unique_hero_set
     end
@@ -40,19 +40,20 @@ defmodule Sanctum.Heroes.Hero do
   end
 
   relationships do
-    has_one :card, Sanctum.Games.Card do
-      source_attribute :base_code
-      destination_attribute :base_code
-      filter expr(exists(card_sides, type == :hero and is_primary_side == true))
+    belongs_to :card, Sanctum.Games.Card do
+      public? true
+      allow_nil? false
     end
 
     has_one :hero_side, Sanctum.Games.CardSide do
-      manual {Sanctum.ManualRelationships.HasOneThrough, [through: [:card, :card_sides]]}
+      source_attribute :card_id
+      destination_attribute :card_id
       filter expr(type == :hero)
     end
 
     has_one :alter_ego_side, Sanctum.Games.CardSide do
-      manual {Sanctum.ManualRelationships.HasOneThrough, [through: [:card, :card_sides]]}
+      source_attribute :card_id
+      destination_attribute :card_id
       filter expr(type == :alter_ego)
     end
 
