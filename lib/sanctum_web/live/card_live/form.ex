@@ -103,23 +103,24 @@ defmodule SanctumWeb.CardLive.Form do
 
   defp update_traits(%{"card_sides" => %{}} = params) do
     Map.update(params, "card_sides", %{}, fn sides_map ->
-      sides_map
-      |> Enum.reduce(sides_map, fn {k, _}, sides_map ->
-        Map.update(sides_map, k, %{}, fn side ->
-          Map.put(
-            side,
-            "traits",
-            Map.get(side, "traits_string")
-            |> String.split(",")
-            |> Enum.map(&String.trim/1)
-            |> Enum.reject(&(&1 == ""))
-          )
-        end)
+      Enum.reduce(sides_map, sides_map, fn {k, _}, acc ->
+        Map.update(acc, k, %{}, &put_side_traits/1)
       end)
     end)
   end
 
   defp update_traits(params), do: params
+
+  defp put_side_traits(side) do
+    traits =
+      side
+      |> Map.get("traits_string")
+      |> String.split(",")
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    Map.put(side, "traits", traits)
+  end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 

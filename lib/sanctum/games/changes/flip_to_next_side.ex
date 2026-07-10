@@ -22,63 +22,69 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
         Ash.Changeset.get_attribute(changeset, :active_stage_card_id) ||
         Map.get(resource_data, :active_stage_card_id)
 
+    if card_id do
+      changeset
+      |> flip_active_side(card_id, resource_data)
+      |> maybe_set_face_up(opts)
+    else
+      changeset
+    end
+  end
+
+  defp flip_active_side(changeset, card_id, resource_data) do
     current_active_side_id =
       Ash.Changeset.get_attribute(changeset, :active_side_id) ||
         Map.get(resource_data, :active_side_id) ||
         Ash.Changeset.get_attribute(changeset, :active_stage_side_id) ||
         Map.get(resource_data, :active_stage_side_id)
 
-    if card_id do
-      # Load the card with all its sides
-      card = Sanctum.Games.get_card!(card_id, load: [:card_sides])
+    # Load the card with all its sides, sorted by side_identifier for consistent cycling
+    available_sides =
+      card_id
+      |> Sanctum.Games.get_card!(load: [:card_sides])
+      |> Map.get(:card_sides)
+      |> Enum.sort_by(& &1.side_identifier)
 
-      # Get all sides sorted by side_identifier for consistent cycling
-      available_sides =
-        card.card_sides
-        |> Enum.sort_by(& &1.side_identifier)
+    case next_side(available_sides, current_active_side_id) do
+      nil -> changeset
+      next_side -> put_active_side(changeset, resource_data, next_side.id)
+    end
+  end
 
-      next_side =
-        case current_active_side_id do
-          nil ->
-            # No active side, use the primary side (first side)
-            Enum.find(available_sides, & &1.is_primary_side) || List.first(available_sides)
+  # No active side yet: use the primary side (or the first available).
+  defp next_side(available_sides, nil) do
+    Enum.find(available_sides, & &1.is_primary_side) || List.first(available_sides)
+  end
 
-          current_side_id ->
-            # Find current side index and get next side
-            current_index = Enum.find_index(available_sides, &(&1.id == current_side_id))
+  # Cycle to the side after the current one, wrapping around.
+  defp next_side(available_sides, current_side_id) do
+    case Enum.find_index(available_sides, &(&1.id == current_side_id)) do
+      nil ->
+        List.first(available_sides)
 
-            if current_index do
-              next_index = rem(current_index + 1, length(available_sides))
-              Enum.at(available_sides, next_index)
-            else
-              # Fallback if active_side_id is invalid
-              List.first(available_sides)
-            end
-        end
+      current_index ->
+        next_index = rem(current_index + 1, length(available_sides))
+        Enum.at(available_sides, next_index)
+    end
+  end
 
-      changeset =
-        if next_side do
-          # Set the appropriate field based on what exists in the resource
-          cond do
-            Map.has_key?(resource_data, :active_side_id) ->
-              Ash.Changeset.change_attribute(changeset, :active_side_id, next_side.id)
+  # Set whichever active-side field this resource actually has.
+  defp put_active_side(changeset, resource_data, next_side_id) do
+    cond do
+      Map.has_key?(resource_data, :active_side_id) ->
+        Ash.Changeset.change_attribute(changeset, :active_side_id, next_side_id)
 
-            Map.has_key?(resource_data, :active_stage_side_id) ->
-              Ash.Changeset.change_attribute(changeset, :active_stage_side_id, next_side.id)
+      Map.has_key?(resource_data, :active_stage_side_id) ->
+        Ash.Changeset.change_attribute(changeset, :active_stage_side_id, next_side_id)
 
-            true ->
-              changeset
-          end
-        else
-          changeset
-        end
-
-      # Optionally set face_up if requested
-      if Keyword.get(opts, :set_face_up, false) do
-        Ash.Changeset.change_attribute(changeset, :face_up, true)
-      else
+      true ->
         changeset
-      end
+    end
+  end
+
+  defp maybe_set_face_up(changeset, opts) do
+    if Keyword.get(opts, :set_face_up, false) do
+      Ash.Changeset.change_attribute(changeset, :face_up, true)
     else
       changeset
     end

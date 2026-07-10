@@ -110,9 +110,7 @@ defmodule Sanctum.MarvelCdb do
   end
 
   def load_card(card_id) when is_binary(card_id) do
-    IO.inspect(card_id, label: "================== CARD_ID\n")
     Games.get_card_side_by_code(card_id, load: [:card])
-    |> IO.inspect(label: "================== CARD\n")
     |> case do
       {:ok, %Games.CardSide{card: %Games.Card{} = card}} ->
         Logger.info("Not loading existing card #{card_id}")
@@ -170,78 +168,49 @@ defmodule Sanctum.MarvelCdb do
 
     card_attrs = prepare_card_attrs(mcdb_card, is_multi_sided)
 
-    case Sanctum.Games.create_card(card_attrs) do
-      {:ok, card} ->
-        result =
-          if should_create_side do
-            # Check if this side already exists
-            case Sanctum.Games.get_card_side_by_code(code) do
-              {:ok, existing_side} ->
-                # Side already exists, but create villain if needed
-                create_or_find_villain(card, existing_side)
-                :ok
+    with {:ok, card} <- Sanctum.Games.create_card(card_attrs),
+         :ok <- maybe_create_primary_side(card, mcdb_card, code, should_create_side) do
+      if is_multi_sided, do: load_additional_sides(card, base_code)
+      {:ok, card}
+    end
+  end
 
-              {:error, _} ->
-                # Create the side
-                side_attrs = prepare_card_side_attrs(mcdb_card)
+  # Creates the card's primary side if needed, reusing an existing side when one
+  # already exists for this code. Returns :ok or an error tuple.
+  defp maybe_create_primary_side(_card, _mcdb_card, _code, false), do: :ok
 
-                case Sanctum.Games.create_card_side(Map.put(side_attrs, :card_id, card.id)) do
-                  {:ok, side} ->
-                    # Create villain resource if this is a villain side
-                    create_or_find_villain(card, side)
-                    :ok
+  defp maybe_create_primary_side(card, mcdb_card, code, true) do
+    case Sanctum.Games.get_card_side_by_code(code) do
+      {:ok, existing_side} ->
+        create_or_find_villain(card, existing_side)
+        :ok
 
-                  err ->
-                    err
-                end
-            end
-          else
-            :ok
-          end
-
-        case result do
-          :ok ->
-            if is_multi_sided do
-              load_additional_sides(card, base_code)
-            end
-
-            {:ok, card}
-
-          err ->
-            err
-        end
-
-      err ->
-        err
+      {:error, _} ->
+        create_side(card, prepare_card_side_attrs(mcdb_card))
     end
   end
 
   defp load_additional_sides(card, base_code) do
     # For multi-sided cards, try to load sides b, c, etc.
-    ["b", "c", "d"]
-    |> Enum.each(fn suffix ->
-      side_code = base_code <> suffix
-
-      case fetch_card_side(side_code) do
-        {:ok, side_data} ->
-          side_attrs =
-            prepare_card_side_attrs(side_data)
-            |> Map.put(:card_id, card.id)
-
-          case Sanctum.Games.create_card_side(side_attrs) do
-            {:ok, side} ->
-              # Create villain resource if this is a villain side
-              create_or_find_villain(card, side)
-
-            _ ->
-              :ok
-          end
-
+    Enum.each(["b", "c", "d"], fn suffix ->
+      case fetch_card_side(base_code <> suffix) do
+        {:ok, side_data} -> create_side(card, prepare_card_side_attrs(side_data))
         # Side doesn't exist, continue
-        _ ->
-          :ok
+        _ -> :ok
       end
     end)
+  end
+
+  # Creates a card side and, when it is a villain side, the backing Villain.
+  defp create_side(card, side_attrs) do
+    case Sanctum.Games.create_card_side(Map.put(side_attrs, :card_id, card.id)) do
+      {:ok, side} ->
+        create_or_find_villain(card, side)
+        :ok
+
+      err ->
+        err
+    end
   end
 
   defp fetch_card_side(side_code) do

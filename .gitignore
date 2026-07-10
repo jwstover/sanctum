@@ -36,3 +36,6 @@ npm-debug.log
 /assets/node_modules/
 /priv/plts/
 core-set.json
+
+# Claude Code worktrees and local state
+.claude/

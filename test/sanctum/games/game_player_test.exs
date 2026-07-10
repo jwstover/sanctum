@@ -143,14 +143,18 @@ defmodule Sanctum.Games.GamePlayerTest do
         |> Ash.update!(actor: user)
 
       # Load with hand_size calculation
-      game_player = Sanctum.Games.GamePlayer |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
 
       # Should use hero_hand_size when form is :hero
       assert game_player.form == :hero
       assert game_player.hero_hand_size == 5
       assert game_player.alter_ego_hand_size == 6
-      assert game_player.hand_size == 5  # Uses hero_hand_size
-      assert game_player.max_hand_size == 5  # 5 + 0 modifier
+      # Uses hero_hand_size
+      assert game_player.hand_size == 5
+      # 5 + 0 modifier
+      assert game_player.max_hand_size == 5
     end
 
     test "hand_size calculation uses alter_ego_hand_size when in alter_ego form" do
@@ -168,14 +172,18 @@ defmodule Sanctum.Games.GamePlayerTest do
         |> Ash.update!(actor: user)
 
       # Load with hand_size calculation
-      game_player = Sanctum.Games.GamePlayer |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
 
       # Should use alter_ego_hand_size when form is :alter_ego
       assert game_player.form == :alter_ego
       assert game_player.hero_hand_size == 5
       assert game_player.alter_ego_hand_size == 6
-      assert game_player.hand_size == 6  # Uses alter_ego_hand_size
-      assert game_player.max_hand_size == 6  # 6 + 0 modifier
+      # Uses alter_ego_hand_size
+      assert game_player.hand_size == 6
+      # 6 + 0 modifier
+      assert game_player.max_hand_size == 6
     end
 
     test "max_hand_size calculation includes hand_size_mod" do
@@ -193,11 +201,15 @@ defmodule Sanctum.Games.GamePlayerTest do
         |> Ash.update!(actor: user)
 
       # Load with calculations
-      game_player = Sanctum.Games.GamePlayer |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
 
       # Max hand size should include the modifier
-      assert game_player.hand_size == 4  # Base hero hand size
-      assert game_player.max_hand_size == 6  # 4 + 2 modifier
+      # Base hero hand size
+      assert game_player.hand_size == 4
+      # 4 + 2 modifier
+      assert game_player.max_hand_size == 6
     end
 
     test "hand_size calculation handles nil values gracefully" do
@@ -211,7 +223,9 @@ defmodule Sanctum.Games.GamePlayerTest do
         |> Ash.update!(actor: user)
 
       # Load with calculations
-      game_player = Sanctum.Games.GamePlayer |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
 
       # Should handle nil gracefully
       assert is_nil(game_player.hero_hand_size)
@@ -235,7 +249,9 @@ defmodule Sanctum.Games.GamePlayerTest do
         |> Ash.update!(actor: user)
 
       # Initially should use alter_ego_hand_size
-      game_player = Sanctum.Games.GamePlayer |> Ash.get!(game_player.id, load: [:hand_size], actor: user)
+      game_player =
+        Sanctum.Games.GamePlayer |> Ash.get!(game_player.id, load: [:hand_size], actor: user)
+
       assert game_player.form == :alter_ego
       assert game_player.hand_size == 7
 
@@ -246,7 +262,9 @@ defmodule Sanctum.Games.GamePlayerTest do
         |> Ash.update(actor: user)
 
       # Should now use hero_hand_size
-      flipped_player = Sanctum.Games.GamePlayer |> Ash.get!(flipped_player.id, load: [:hand_size], actor: user)
+      flipped_player =
+        Sanctum.Games.GamePlayer |> Ash.get!(flipped_player.id, load: [:hand_size], actor: user)
+
       assert flipped_player.form == :hero
       assert flipped_player.hand_size == 4
     end
@@ -266,10 +284,14 @@ defmodule Sanctum.Games.GamePlayerTest do
         |> Ash.update!(actor: user)
 
       # In hero form
-      game_player = Sanctum.Games.GamePlayer |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+
       assert game_player.form == :hero
       assert game_player.hand_size == 3
-      assert game_player.max_hand_size == 4  # 3 + 1 modifier
+      # 3 + 1 modifier
+      assert game_player.max_hand_size == 4
 
       # Flip to alter_ego form
       {:ok, flipped_player} =
@@ -278,10 +300,14 @@ defmodule Sanctum.Games.GamePlayerTest do
         |> Ash.update(actor: user)
 
       # In alter_ego form
-      flipped_player = Sanctum.Games.GamePlayer |> Ash.get!(flipped_player.id, load: [:hand_size, :max_hand_size], actor: user)
+      flipped_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(flipped_player.id, load: [:hand_size, :max_hand_size], actor: user)
+
       assert flipped_player.form == :alter_ego
       assert flipped_player.hand_size == 8
-      assert flipped_player.max_hand_size == 9  # 8 + 1 modifier
+      # 8 + 1 modifier
+      assert flipped_player.max_hand_size == 9
     end
   end
 end

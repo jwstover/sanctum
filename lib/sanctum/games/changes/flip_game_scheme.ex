@@ -22,7 +22,7 @@ defmodule Sanctum.Games.Changes.FlipGameScheme do
     # Get the new active_side_id that was set by FlipToNextSide
     new_active_side_id =
       Ash.Changeset.get_attribute(changeset, :active_side_id) ||
-      Map.get(changeset.data, :active_side_id)
+        Map.get(changeset.data, :active_side_id)
 
     if new_active_side_id do
       # Load the new active side to get its threat values

@@ -17,7 +17,7 @@ defmodule Sanctum.Games.Changes.CreateGameScheme do
 
             %{
               card_id: scheme.id,
-              threat: side && side.base_threat || 0,
+              threat: (side && side.base_threat) || 0,
               max_threat: side && side.max_threat,
               escalation_threat: side && side.escalation_threat,
               is_main_scheme: true

@@ -68,7 +68,10 @@ defmodule SanctumWeb.GameLive.GameComponents do
         imgsrc={@game_scheme.active_side && @game_scheme.active_side.image_url}
       />
       <div class="absolute bottom-2 right-2 flex flex-col flex-reverse gap-1 pointer-events-none">
-        <.threat_token :if={@game_scheme.threat |> IO.inspect(label: "================== \n") > 0} value={@game_scheme.threat} />
+        <.threat_token
+          :if={@game_scheme.threat |> IO.inspect(label: "================== \n") > 0}
+          value={@game_scheme.threat}
+        />
         <.counter_token :if={@game_scheme.counter > 0} value={@game_scheme.counter} />
       </div>
     </div>
