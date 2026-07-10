@@ -46,7 +46,7 @@ defmodule Sanctum.Villains.Villain do
     has_many :stage_sides, Sanctum.Games.CardSide do
       source_attribute :villain_name
       destination_attribute :name
-      filter expr(type == :villain)
+      filter expr(type == :villain and card.set == parent(set))
     end
   end
 
