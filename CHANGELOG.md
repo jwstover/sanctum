@@ -1,3 +1,12 @@
+## [0.10.3](https://github.com/jwstover/sanctum/compare/v0.10.2...v0.10.3) (2026-07-10)
+
+
+### Bug Fixes
+
+* transactional card draws and race-safe order assignment ([e2ecc24](https://github.com/jwstover/sanctum/commit/e2ecc243b647448df364f0d7ca353cbbf2990805))
+
+
+
 ## [0.10.2](https://github.com/jwstover/sanctum/compare/v0.10.1...v0.10.2) (2026-07-10)
 
 
@@ -39,16 +48,6 @@
 ### Features
 
 * allow placing tokens on play area cards and schemes ([b58c661](https://github.com/jwstover/sanctum/commit/b58c661bd555abb914db57eafe7f368675d61464))
-
-
-
-# [0.8.0](https://github.com/jwstover/sanctum/compare/v0.7.0...v0.8.0) (2025-08-26)
-
-
-### Features
-
-* allow removing top card from discard pile ([e120ee2](https://github.com/jwstover/sanctum/commit/e120ee29f83c5b3738a86dc4771ac98a8533831e))
-* show all games on home page ([d66aac1](https://github.com/jwstover/sanctum/commit/d66aac152ceb9bb9cff4f16fe605fc67c32ffcd7))
 
 
 
