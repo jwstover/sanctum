@@ -41,8 +41,8 @@ defmodule Sanctum.Games.GameVillain do
         villain = Sanctum.Villains.get_villain!(game_villain.villain_id, load: [:stage_sides])
 
         current_stage =
-          if game_villain.active_stage_side_id do
-            Enum.find(villain.stage_sides, &(&1.id == game_villain.active_stage_side_id))
+          if game_villain.active_side_id do
+            Enum.find(villain.stage_sides, &(&1.id == game_villain.active_side_id))
           else
             nil
           end
@@ -59,8 +59,8 @@ defmodule Sanctum.Games.GameVillain do
           next_stage_card = Sanctum.Games.get_card!(next_stage_side.card_id)
 
           changeset
-          |> Ash.Changeset.change_attribute(:active_stage_card_id, next_stage_card.id)
-          |> Ash.Changeset.change_attribute(:active_stage_side_id, next_stage_side.id)
+          |> Ash.Changeset.change_attribute(:card_id, next_stage_card.id)
+          |> Ash.Changeset.change_attribute(:active_side_id, next_stage_side.id)
         else
           changeset
         end
@@ -96,12 +96,12 @@ defmodule Sanctum.Games.GameVillain do
     belongs_to :game, Sanctum.Games.Game, public?: true, allow_nil?: false
     belongs_to :villain, Sanctum.Villains.Villain, public?: true, allow_nil?: false
 
-    belongs_to :active_stage_card, Sanctum.Games.Card do
+    belongs_to :card, Sanctum.Games.Card do
       public? true
       allow_nil? true
     end
 
-    belongs_to :active_stage_side, Sanctum.Games.CardSide do
+    belongs_to :active_side, Sanctum.Games.CardSide do
       public? true
       allow_nil? true
     end

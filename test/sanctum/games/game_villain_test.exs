@@ -71,8 +71,8 @@ defmodule Sanctum.Games.GameVillainTest do
       |> Ash.Changeset.for_create(:create, %{
         game_id: game.id,
         villain_id: villain.id,
-        active_stage_card_id: villain_card.id,
-        active_stage_side_id: villain_side.id,
+        card_id: villain_card.id,
+        active_side_id: villain_side.id,
         health: 12,
         max_health: 15,
         attack: 2,
@@ -285,8 +285,8 @@ defmodule Sanctum.Games.GameVillainTest do
         |> Ash.Changeset.for_create(:create, %{
           game_id: game.id,
           villain_id: villain.id,
-          active_stage_card_id: stage1_card.id,
-          active_stage_side_id: stage1_side.id,
+          card_id: stage1_card.id,
+          active_side_id: stage1_side.id,
           health: 10,
           max_health: 10,
           attack: 1,
@@ -305,12 +305,12 @@ defmodule Sanctum.Games.GameVillainTest do
     test "advances from stage 1 to stage 2" do
       {user, game_villain, stages} = create_multi_stage_villain()
 
-      assert game_villain.active_stage_side_id == stages.stage1.side.id
+      assert game_villain.active_side_id == stages.stage1.side.id
 
       {:ok, advanced_villain} = Games.advance_villain_stage(game_villain, actor: user)
 
-      assert advanced_villain.active_stage_side_id == stages.stage2.side.id
-      assert advanced_villain.active_stage_card_id == stages.stage2.card.id
+      assert advanced_villain.active_side_id == stages.stage2.side.id
+      assert advanced_villain.card_id == stages.stage2.card.id
     end
 
     test "advances from stage 2 to stage 3" do
@@ -322,8 +322,8 @@ defmodule Sanctum.Games.GameVillainTest do
       # Then advance to stage 3
       {:ok, stage3_villain} = Games.advance_villain_stage(stage2_villain, actor: user)
 
-      assert stage3_villain.active_stage_side_id == stages.stage3.side.id
-      assert stage3_villain.active_stage_card_id == stages.stage3.card.id
+      assert stage3_villain.active_side_id == stages.stage3.side.id
+      assert stage3_villain.card_id == stages.stage3.card.id
     end
 
     test "does not advance beyond final stage" do
@@ -337,15 +337,15 @@ defmodule Sanctum.Games.GameVillainTest do
       # Try to advance beyond stage 3 - should remain at stage 3
       {:ok, final_villain} = Games.advance_villain_stage(stage3_villain, actor: user)
 
-      assert final_villain.active_stage_side_id == stage3_villain.active_stage_side_id
-      assert final_villain.active_stage_card_id == stage3_villain.active_stage_card_id
+      assert final_villain.active_side_id == stage3_villain.active_side_id
+      assert final_villain.card_id == stage3_villain.card_id
     end
 
     test "flip_stage works with FlipToNextSide change module" do
       {user, game_villain, _stages} = create_multi_stage_villain()
 
       # Add a B side to stage 1 card for flipping test
-      stage1_card_id = game_villain.active_stage_card_id
+      stage1_card_id = game_villain.card_id
 
       {:ok, stage1_b_side} =
         Sanctum.Games.CardSide
@@ -366,9 +366,9 @@ defmodule Sanctum.Games.GameVillainTest do
       # Now flip the stage
       {:ok, flipped_villain} = Games.flip_villain_stage(game_villain, actor: user)
 
-      assert flipped_villain.active_stage_side_id == stage1_b_side.id
+      assert flipped_villain.active_side_id == stage1_b_side.id
       # Same card, different side
-      assert flipped_villain.active_stage_card_id == stage1_card_id
+      assert flipped_villain.card_id == stage1_card_id
     end
   end
 end

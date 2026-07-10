@@ -26,8 +26,8 @@ defmodule Sanctum.Games.Changes.CreateGameVillain do
 
         attrs = %{
           villain_id: villain.id,
-          active_stage_card_id: villain_card.id,
-          active_stage_side_id: side.id,
+          card_id: villain_card.id,
+          active_side_id: side.id,
           health: side && side.health,
           max_health: side && side.health,
           attack: side && side.attack,
