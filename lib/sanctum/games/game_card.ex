@@ -102,7 +102,7 @@ defmodule Sanctum.Games.GameCard do
           :hero_play,
           :encounter_deck,
           :encounter_discard,
-          :villian_play,
+          :villain_play,
           :facedown_encounter,
           :main_scheme,
           :side_scheme,

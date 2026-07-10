@@ -49,7 +49,7 @@ defmodule Sanctum.Games.Game do
     uuid_v7_primary_key :id
 
     attribute :state, :atom,
-      constraints: [one_of: [:setup, :player, :villian, :complete]],
+      constraints: [one_of: [:setup, :player, :villain, :complete]],
       public?: true,
       allow_nil?: false
 
