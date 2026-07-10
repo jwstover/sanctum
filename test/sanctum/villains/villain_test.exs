@@ -247,6 +247,74 @@ defmodule Sanctum.Villains.VillainTest do
       assert length(loaded_villain.stage_sides) == 1
       assert hd(loaded_villain.stage_sides).id == matching_side.id
     end
+
+    test "scopes stage sides by set when the same villain name exists in multiple sets" do
+      villain_name = "Duplicate Villain"
+      set1 = "test_dup_set_1_#{:rand.uniform(100_000)}"
+      set2 = "test_dup_set_2_#{:rand.uniform(100_000)}"
+
+      # Two villains sharing a name, but in different sets
+      {:ok, villain1} =
+        Villains.find_or_create_villain(%{villain_name: villain_name, set: set1})
+
+      {:ok, villain2} =
+        Villains.find_or_create_villain(%{villain_name: villain_name, set: set2})
+
+      # Stage side belonging to set1
+      {:ok, card1} =
+        Sanctum.Games.Card
+        |> Ash.Changeset.for_create(:create, %{
+          base_code: "dup1",
+          code: "dup1",
+          set: set1,
+          pack: set1
+        })
+        |> Ash.create()
+
+      {:ok, side1} =
+        Sanctum.Games.CardSide
+        |> Ash.Changeset.for_create(:create, %{
+          card_id: card1.id,
+          name: villain_name,
+          code: "dup1",
+          side_identifier: "A",
+          is_primary_side: true,
+          type: :villain,
+          stage: 1
+        })
+        |> Ash.create()
+
+      # Stage side belonging to set2
+      {:ok, card2} =
+        Sanctum.Games.Card
+        |> Ash.Changeset.for_create(:create, %{
+          base_code: "dup2",
+          code: "dup2",
+          set: set2,
+          pack: set2
+        })
+        |> Ash.create()
+
+      {:ok, side2} =
+        Sanctum.Games.CardSide
+        |> Ash.Changeset.for_create(:create, %{
+          card_id: card2.id,
+          name: villain_name,
+          code: "dup2",
+          side_identifier: "A",
+          is_primary_side: true,
+          type: :villain,
+          stage: 1
+        })
+        |> Ash.create()
+
+      loaded_villain1 = Ash.load!(villain1, [:stage_sides])
+      loaded_villain2 = Ash.load!(villain2, [:stage_sides])
+
+      # Each villain should only see the stage side from its own set
+      assert Enum.map(loaded_villain1.stage_sides, & &1.id) == [side1.id]
+      assert Enum.map(loaded_villain2.stage_sides, & &1.id) == [side2.id]
+    end
   end
 
   describe "read actions" do
