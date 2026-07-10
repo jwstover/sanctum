@@ -15,12 +15,9 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
   def change(changeset, opts, _context) do
     resource_data = changeset.data
 
-    # Handle different field name patterns for different resources
     card_id =
       Ash.Changeset.get_attribute(changeset, :card_id) ||
-        Map.get(resource_data, :card_id) ||
-        Ash.Changeset.get_attribute(changeset, :active_stage_card_id) ||
-        Map.get(resource_data, :active_stage_card_id)
+        Map.get(resource_data, :card_id)
 
     if card_id do
       changeset
@@ -34,9 +31,7 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
   defp flip_active_side(changeset, card_id, resource_data) do
     current_active_side_id =
       Ash.Changeset.get_attribute(changeset, :active_side_id) ||
-        Map.get(resource_data, :active_side_id) ||
-        Ash.Changeset.get_attribute(changeset, :active_stage_side_id) ||
-        Map.get(resource_data, :active_stage_side_id)
+        Map.get(resource_data, :active_side_id)
 
     # Load the card with all its sides, sorted by side_identifier for consistent cycling
     available_sides =
@@ -47,7 +42,7 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
 
     case next_side(available_sides, current_active_side_id) do
       nil -> changeset
-      next_side -> put_active_side(changeset, resource_data, next_side.id)
+      next_side -> put_active_side(changeset, next_side.id)
     end
   end
 
@@ -68,18 +63,8 @@ defmodule Sanctum.Games.Changes.FlipToNextSide do
     end
   end
 
-  # Set whichever active-side field this resource actually has.
-  defp put_active_side(changeset, resource_data, next_side_id) do
-    cond do
-      Map.has_key?(resource_data, :active_side_id) ->
-        Ash.Changeset.change_attribute(changeset, :active_side_id, next_side_id)
-
-      Map.has_key?(resource_data, :active_stage_side_id) ->
-        Ash.Changeset.change_attribute(changeset, :active_stage_side_id, next_side_id)
-
-      true ->
-        changeset
-    end
+  defp put_active_side(changeset, next_side_id) do
+    Ash.Changeset.change_attribute(changeset, :active_side_id, next_side_id)
   end
 
   defp maybe_set_face_up(changeset, opts) do

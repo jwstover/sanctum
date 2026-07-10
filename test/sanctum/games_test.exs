@@ -274,6 +274,20 @@ defmodule Sanctum.GamesTest do
       end
     end
 
+    test "creates game_villain with card_id and active_side_id set", %{
+      scenario: scenario,
+      user: user
+    } do
+      assert {:ok, game} =
+               Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+
+      game = Games.get_game!(game.id, load: [:game_villain])
+
+      assert game.game_villain
+      assert game.game_villain.card_id
+      assert game.game_villain.active_side_id
+    end
+
     test "creates game with encounter deck including modular set cards", %{
       encounter_cards: encounter_cards,
       modular_cards: modular_cards,

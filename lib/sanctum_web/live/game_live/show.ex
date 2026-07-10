@@ -386,7 +386,7 @@ defmodule SanctumWeb.GameLive.Show do
        when is_binary(game_id) do
     case Games.get_game(game_id,
            load: [
-             game_villain: [:active_stage_side, active_stage_card: [:primary_side]],
+             game_villain: [:active_side, card: [:primary_side]],
              game_schemes: [active_side: [], card: [:primary_side]],
              encounter_deck: [
                deck_cards: [:active_side],
@@ -666,9 +666,9 @@ defmodule SanctumWeb.GameLive.Show do
         class="flex flex-row items-center justify-center bg-blue-300/5 rounded border-4 border-gray-100/10"
       >
         <.plain_card
-          id={@game.game_villain.active_stage_card.id}
-          card={@game.game_villain.active_stage_card}
-          active_side={@game.game_villain.active_stage_side}
+          id={@game.game_villain.card.id}
+          card={@game.game_villain.card}
+          active_side={@game.game_villain.active_side}
         />
       </div>
       <div
