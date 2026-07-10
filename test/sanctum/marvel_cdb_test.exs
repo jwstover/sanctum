@@ -12,7 +12,7 @@ defmodule Sanctum.MarvelCdbTest do
     assert {:ok, _} = MarvelCdb.load_deck(mcdb_deck_id)
   end
 
-  @tag :integration
+  @tag :external
   test "loads Rhino villain stages and creates proper Villain resource" do
     # Load the three Rhino stage cards
     rhino_stage_codes = ["01094", "01095", "01096"]
@@ -136,7 +136,8 @@ defmodule Sanctum.MarvelCdbTest do
     end
   end
 
+  @tag :external
   test "loads spider man hero" do
-    _card = MarvelCdb.load_card("01001a")
+    assert {:ok, _card} = MarvelCdb.load_card("01001a")
   end
 end
