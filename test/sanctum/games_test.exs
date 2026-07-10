@@ -525,7 +525,8 @@ defmodule Sanctum.GamesTest do
           hero_name: "Test Hero",
           alter_ego_name: "Test Alter Ego",
           set: "test_hero",
-          base_code: hero_card.base_code
+          base_code: hero_card.base_code,
+          card_id: hero_card.id
         })
 
       # A couple of playable cards for the deck.
