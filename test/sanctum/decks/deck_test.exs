@@ -143,4 +143,81 @@ defmodule Sanctum.Decks.DeckTest do
 
     assert length(deck.deck_cards) == 3
   end
+
+  test "re-importing a deck with the same mcdb_id does not duplicate deck cards" do
+    hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "01003", set: "she_hulk"})
+
+    _side =
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          name: "She-Hulk",
+          type: :hero,
+          code: hero_card.code,
+          side_identifier: "A",
+          is_primary_side: true
+        }
+      )
+
+    alter_ego_card = create(Sanctum.Games.Card, attrs: %{base_code: "01003", set: "she_hulk"})
+
+    _side =
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: alter_ego_card.id,
+          name: "Jennifer Walters",
+          type: :alter_ego,
+          code: alter_ego_card.code,
+          side_identifier: "B",
+          is_primary_side: true
+        }
+      )
+
+    {:ok, hero} =
+      Sanctum.Heroes.find_or_create_hero(%{
+        hero_name: "She-Hulk",
+        alter_ego_name: "Jennifer Walters",
+        set: "she_hulk",
+        base_code: hero_card.base_code
+      })
+
+    cards = create(Sanctum.Games.Card, count: 3)
+    card_ids = Enum.map(cards, & &1.id)
+    mcdb_id = "12345"
+
+    import_deck = fn card_ids ->
+      Sanctum.Decks.create_with_cards(
+        %{
+          card_ids: card_ids,
+          title: "Re-import test",
+          mcdb_id: mcdb_id,
+          hero_id: hero.id
+        },
+        load: [:deck_cards]
+      )
+    end
+
+    assert {:ok, deck} = import_deck.(card_ids)
+    assert length(deck.deck_cards) == 3
+
+    # Re-importing the same deck (same mcdb_id) upserts the deck and should
+    # yield exactly the new card list, not doubled.
+    assert {:ok, deck} = import_deck.(card_ids)
+    assert deck.mcdb_id == mcdb_id
+    assert length(deck.deck_cards) == 3
+
+    # A changed card list on re-import replaces the old one entirely.
+    new_cards = create(Sanctum.Games.Card, count: 2)
+    new_card_ids = Enum.map(new_cards, & &1.id)
+
+    assert {:ok, deck} = import_deck.(new_card_ids)
+    assert length(deck.deck_cards) == 2
+
+    reloaded_ids =
+      deck.deck_cards
+      |> Enum.map(& &1.card_id)
+      |> Enum.sort()
+
+    assert reloaded_ids == Enum.sort(new_card_ids)
+  end
 end

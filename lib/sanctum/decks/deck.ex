@@ -7,6 +7,8 @@ defmodule Sanctum.Decks.Deck do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
+  require Ash.Query
+
   postgres do
     table "decks"
     repo Sanctum.Repo
@@ -23,7 +25,13 @@ defmodule Sanctum.Decks.Deck do
         card_ids = Ash.Changeset.get_argument(changeset, :card_ids) || []
 
         changeset
-        |> Ash.Changeset.after_action(fn changeset, deck ->
+        |> Ash.Changeset.after_action(fn _changeset, deck ->
+          # Remove any existing deck_cards so re-importing the same deck
+          # replaces the card list rather than duplicating it.
+          Sanctum.Decks.DeckCard
+          |> Ash.Query.filter(deck_id == ^deck.id)
+          |> Ash.bulk_destroy!(:destroy, %{})
+
           deck_card_attrs =
             Enum.map(card_ids, fn card_id ->
               %{card_id: card_id, deck_id: deck.id}

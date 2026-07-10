@@ -135,8 +135,8 @@ defmodule Sanctum.MarvelCdb do
       {:ok, card} ->
         card
 
-      err ->
-        raise err
+      {:error, reason} ->
+        raise "failed to load card #{card_id}: #{inspect(reason)}"
     end
   end
 
