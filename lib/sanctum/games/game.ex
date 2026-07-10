@@ -19,7 +19,7 @@ defmodule Sanctum.Games.Game do
   end
 
   actions do
-    defaults [:read]
+    defaults [:read, :destroy]
 
     create :create do
       accept [:*]
