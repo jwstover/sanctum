@@ -61,6 +61,7 @@ defmodule Sanctum.Games.GameCard do
     update :move do
       accept [:game_player_id, :zone]
       require_atomic? false
+      transaction? true
 
       change AssignOrder
     end
