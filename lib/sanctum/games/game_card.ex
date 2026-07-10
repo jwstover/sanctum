@@ -12,6 +12,7 @@ defmodule Sanctum.Games.GameCard do
     repo Sanctum.Repo
 
     references do
+      reference :game, on_delete: :delete, on_update: :update
       reference :game_player, on_delete: :delete, on_update: :update
       reference :game_encounter_deck, on_delete: :delete, on_update: :update
     end
@@ -140,6 +141,11 @@ defmodule Sanctum.Games.GameCard do
   end
 
   relationships do
+    belongs_to :game, Sanctum.Games.Game do
+      public? true
+      allow_nil? false
+    end
+
     belongs_to :game_player, Sanctum.Games.GamePlayer, public?: true
     belongs_to :game_encounter_deck, Sanctum.Games.GameEncounterDeck, public?: true
     belongs_to :card, Sanctum.Games.Card, public?: true

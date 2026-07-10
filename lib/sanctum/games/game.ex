@@ -67,5 +67,6 @@ defmodule Sanctum.Games.Game do
     has_one :encounter_deck, Sanctum.Games.GameEncounterDeck
     has_many :game_players, Sanctum.Games.GamePlayer
     has_many :game_schemes, Sanctum.Games.GameScheme
+    has_many :game_cards, Sanctum.Games.GameCard
   end
 end
