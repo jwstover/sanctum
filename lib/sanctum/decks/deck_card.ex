@@ -13,7 +13,7 @@ defmodule Sanctum.Decks.DeckCard do
   end
 
   actions do
-    defaults [:read, create: :*]
+    defaults [:read, :destroy, create: :*]
   end
 
   policies do
