@@ -51,7 +51,7 @@ defmodule Sanctum.MixProject do
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.18", only: :test},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:usage_rules, "~> 0.1"},
+      {:usage_rules, "~> 1.2"},
       {:picosat_elixir, "~> 0.2"},
       {:sourceror, "~> 1.8"},
       {:oban, "~> 2.0"},
