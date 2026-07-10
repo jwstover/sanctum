@@ -7,6 +7,7 @@ defmodule Sanctum.Games.Changes.SetGameCards do
 
   def change(changeset, _opts, _context) do
     game_player_id = Changeset.get_attribute(changeset, :id)
+    game_id = Changeset.get_attribute(changeset, :game_id)
 
     case Changeset.fetch_attribute(changeset, :deck_id) do
       {:ok, deck_id} when is_binary(deck_id) ->
@@ -43,6 +44,7 @@ defmodule Sanctum.Games.Changes.SetGameCards do
               order: index,
               card_id: card.id,
               game_player_id: game_player_id,
+              game_id: game_id,
               zone:
                 case card.primary_side && card.primary_side.type do
                   type when type in [:ally, :attachment, :event, :resource, :support, :upgrade] ->
