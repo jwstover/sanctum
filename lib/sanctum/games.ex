@@ -11,6 +11,13 @@ defmodule Sanctum.Games do
       define :get_card, get_by: :id, action: :read
       define :get_card_by_code, args: [:code], get?: true, action: :by_code
       define :get_cards_by_set, args: [:set], action: :by_set
+      define :list_cards, action: :read
+    end
+
+    resource Sanctum.Games.CardSide do
+      define :create_card_side, action: :create
+      define :get_card_side, get_by: :id, action: :read
+      define :get_card_side_by_code, args: [:code], get?: true, action: :by_code
     end
 
     resource Sanctum.Games.Game do
@@ -37,14 +44,17 @@ defmodule Sanctum.Games do
       define :change_health, action: :change_health
     end
 
-    resource Sanctum.Games.GameVillian do
+    resource Sanctum.Games.GameVillain do
       define :change_villain_health, action: :change_health
+      define :advance_villain_stage, action: :advance_stage
+      define :flip_villain_stage, action: :flip_stage
     end
 
     resource Sanctum.Games.GameScheme do
       define :get_game_scheme, get_by: :id, action: :read
       define :update_scheme_threat, args: [:delta], action: :update_threat
       define :update_scheme_counter, args: [:delta], action: :update_counter
+      define :flip_scheme, action: :flip
     end
 
     resource Sanctum.Games.GameEncounterDeck

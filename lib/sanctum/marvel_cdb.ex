@@ -1,9 +1,11 @@
 defmodule Sanctum.MarvelCdb do
   @moduledoc false
 
-  alias Sanctum.Games.Card
+  require Logger
+
   alias Sanctum.Decks
   alias Sanctum.Games
+  alias Sanctum.Heroes
 
   @base_url "https://marvelcdb.com/api/public"
 
@@ -14,13 +16,13 @@ defmodule Sanctum.MarvelCdb do
 
   def load_deck(mcdb_deck_id) when is_binary(mcdb_deck_id) do
     "#{@base_url}/decklist/#{mcdb_deck_id}"
-    |> Req.get()
+    |> Req.get(max_retries: 1)
     |> handle_response()
     |> case do
       {:ok, decklist} ->
         decklist
         |> prepare_deck_attrs()
-        |> Decks.create_with_cards(load: [:hero, :cards])
+        |> Decks.create_with_cards(load: [:cards, hero: [:hero_side, :alter_ego_side]])
 
       err ->
         err
@@ -34,15 +36,18 @@ defmodule Sanctum.MarvelCdb do
       |> String.trim_trailing("a")
       |> Kernel.<>("b")
 
-    {:ok, hero} = load_card(decklist["hero_code"])
-    {:ok, _alter_ego} = load_card(alter_ego_code)
+    {:ok, hero_card} = load_card(decklist["hero_code"])
+    {:ok, alter_ego_card} = load_card(alter_ego_code)
+
+    # Create or find the Hero record
+    {:ok, hero} = create_or_find_hero(hero_card, alter_ego_card)
 
     card_codes = Map.keys(cards_map)
 
     cards =
       Enum.map(card_codes, fn card_code ->
         card = load_card!(card_code)
-        {card.code, card}
+        {card_code, card}
       end)
       |> Map.new()
 
@@ -55,23 +60,45 @@ defmodule Sanctum.MarvelCdb do
     %{
       mcdb_id: decklist["id"] |> Integer.to_string(),
       title: decklist["name"],
-      hero_code: hero.code,
-      alter_ego_code: alter_ego_code,
+      hero_id: hero.id,
       card_ids: card_ids
     }
   end
+
+  defp create_or_find_hero(hero_card, _alter_ego_card) do
+    # Load the card with all its sides to get both hero and alter ego names
+    card_loaded = Games.get_card!(hero_card.id, load: [:card_sides])
+
+    hero_side = Enum.find(card_loaded.card_sides, &(&1.type == :hero))
+    alter_ego_side = Enum.find(card_loaded.card_sides, &(&1.type == :alter_ego))
+
+    hero_attrs = %{
+      hero_name: hero_side.name,
+      alter_ego_name: alter_ego_side.name,
+      set: hero_card.set,
+      base_code: hero_card.base_code
+    }
+
+    Heroes.find_or_create_hero(hero_attrs)
+  end
+
+  defp create_or_find_villain(card, side) when side.type == :villain do
+    villain_attrs = %{
+      villain_name: side.name,
+      set: card.set
+    }
+
+    Sanctum.Villains.find_or_create_villain(villain_attrs)
+  end
+
+  defp create_or_find_villain(_card, _side), do: {:ok, nil}
 
   def load_pack(pack_code) when is_binary(pack_code) do
     get_cards_by_pack(pack_code)
     |> case do
       {:ok, cards} ->
         cards
-        |> Enum.map(&prepare_card_attrs/1)
-        |> Ash.bulk_create!(Card, :create,
-          upsert?: true,
-          upsert_identity: :unique_marvelcdb_code,
-          upsert_fields: [:replace_all]
-        )
+        |> Enum.each(&create_card_with_sides/1)
     end
   end
 
@@ -83,19 +110,19 @@ defmodule Sanctum.MarvelCdb do
   end
 
   def load_card(card_id) when is_binary(card_id) do
-    Games.get_card_by_code(card_id)
+    Games.get_card_side_by_code(card_id, load: [:card])
     |> case do
-      %Games.Card{} = card ->
+      {:ok, %Games.CardSide{card: %Games.Card{} = card}} ->
+        Logger.info("Not loading existing card #{card_id}")
         {:ok, card}
 
       _ ->
         "#{@base_url}/card/#{card_id}"
-        |> Req.get()
+        |> Req.get(max_retries: 1)
         |> handle_response()
         |> case do
           {:ok, resp} ->
-            prepare_card_attrs(resp)
-            |> Sanctum.Games.create_card()
+            create_card_with_sides(resp)
 
           err ->
             err
@@ -116,7 +143,7 @@ defmodule Sanctum.MarvelCdb do
   @spec get_cards_by_pack(String.t()) :: {:ok, list(map())}
   def get_cards_by_pack(pack_code) when is_binary(pack_code) do
     "#{@base_url}/cards/#{pack_code}"
-    |> Req.get()
+    |> Req.get(max_retries: 1)
     |> handle_response()
     |> case do
       {:ok, cards} ->
@@ -127,63 +154,142 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
-  # %{
-  #   "scheme" => 1,
-  #   "traits" => "Brute. Criminal.",
-  #   "set_position" => 1,
-  #   "thwart_star" => false,
-  #   "pack_name" => "Core Set",
-  #   "threat_fixed" => false,
-  #   "card_set_code" => "rhino",
-  #   "attack_star" => false,
-  #   "stage" => 1,
-  #   "permanent" => false,
-  #   "health" => 14,
-  #   "position" => 94,
-  #   "cost_per_hero" => false,
-  #   "health_per_hero" => true,
-  #   "octgn_id" => "fce46ea8-8d92-4ddc-8ef0-9c923fcf6afd",
-  #   "card_set_type_name_code" => "villain",
-  #   "hidden" => false,
-  #   "is_unique" => true,
-  #   "type_name" => "Villain",
-  #   "code" => "01094",
-  #   "faction_code" => "encounter",
-  #   "card_set_name" => "Rhino",
-  #   "flavor" => "\"I'm Rhino, I knock things down. That's what I do. That's who I am.\"",
-  #   "name" => "Rhino",
-  #   "base_threat_fixed" => false,
-  #   "attack" => 2,
-  #   "real_traits" => "Brute. Criminal.",
-  #   "boost_star" => false,
-  #   "imagesrc" => "/bundles/cards/01094.png",
-  #   "quantity" => 1,
-  #   "defense_star" => false,
-  #   "url" => "https://marvelcdb.com/card/01094",
-  #   "spoiler" => 1,
-  #   "faction_name" => "Encounter",
-  #   "real_name" => "Rhino",
-  #   "double_sided" => false,
-  #   "pack_code" => "core",
-  #   "escalation_threat_fixed" => false,
-  #   "type_code" => "villain",
-  #   "recover_star" => false,
-  #   "health_star" => false,
-  #   "scheme_star" => false,
-  #   "escalation_threat_star" => false,
-  #   "threat_star" => false
-  # }
+  defp create_card_with_sides(mcdb_card) do
+    code = mcdb_card["code"]
+    base_code = extract_base_code(code)
+    side_identifier = extract_side_identifier(code)
 
-  defp prepare_card_attrs(%{} = mcdb_card) do
+    # Determine if card is multi-sided based on multiple indicators
+    is_multi_sided = detect_multi_sided_card(mcdb_card, code, side_identifier)
+
+    # Don't create a side for base codes without side identifiers when double_sided is true
+    # This represents the card metadata, not a specific side
+    should_create_side = should_create_card_side?(mcdb_card, code, side_identifier)
+
+    card_attrs = prepare_card_attrs(mcdb_card, is_multi_sided)
+
+    with {:ok, card} <- Sanctum.Games.create_card(card_attrs),
+         :ok <- maybe_create_primary_side(card, mcdb_card, code, should_create_side) do
+      if is_multi_sided, do: load_additional_sides(card, base_code)
+      {:ok, card}
+    end
+  end
+
+  # Creates the card's primary side if needed, reusing an existing side when one
+  # already exists for this code. Returns :ok or an error tuple.
+  defp maybe_create_primary_side(_card, _mcdb_card, _code, false), do: :ok
+
+  defp maybe_create_primary_side(card, mcdb_card, code, true) do
+    case Sanctum.Games.get_card_side_by_code(code) do
+      {:ok, existing_side} ->
+        create_or_find_villain(card, existing_side)
+        :ok
+
+      {:error, _} ->
+        create_side(card, prepare_card_side_attrs(mcdb_card))
+    end
+  end
+
+  defp load_additional_sides(card, base_code) do
+    # For multi-sided cards, try to load sides b, c, etc.
+    Enum.each(["b", "c", "d"], fn suffix ->
+      case fetch_card_side(base_code <> suffix) do
+        {:ok, side_data} -> create_side(card, prepare_card_side_attrs(side_data))
+        # Side doesn't exist, continue
+        _ -> :ok
+      end
+    end)
+  end
+
+  # Creates a card side and, when it is a villain side, the backing Villain.
+  defp create_side(card, side_attrs) do
+    case Sanctum.Games.create_card_side(Map.put(side_attrs, :card_id, card.id)) do
+      {:ok, side} ->
+        create_or_find_villain(card, side)
+        :ok
+
+      err ->
+        err
+    end
+  end
+
+  defp fetch_card_side(side_code) do
+    "#{@base_url}/card/#{side_code}"
+    |> Req.get(max_retries: 1)
+    |> handle_response()
+  end
+
+  def extract_base_code(code) do
+    # Remove trailing letter (e.g., "01001a" -> "01001")
+    String.replace(code, ~r/[a-z]$/, "")
+  end
+
+  def extract_side_identifier(code) do
+    # Extract trailing letter (e.g., "01001a" -> "a"), default to "a"
+    case Regex.run(~r/([a-z])$/, code) do
+      [_, letter] -> letter
+      nil -> "a"
+    end
+  end
+
+  def detect_multi_sided_card(mcdb_card, code, _side_identifier) do
+    explicit_double_sided = mcdb_card["double_sided"] || false
+    has_side_suffix = String.match?(code, ~r/[a-z]$/)
+
+    # A card is multi-sided if:
+    # 1. MarvelCDB explicitly says it's double_sided, OR
+    # 2. The code has a side suffix (a, b, c), which implies multiple sides exist
+    explicit_double_sided || has_side_suffix
+  end
+
+  def should_create_card_side?(mcdb_card, code, _side_identifier) do
+    has_side_suffix = String.match?(code, ~r/[a-z]$/)
+    explicit_double_sided = mcdb_card["double_sided"] || false
+
+    # Create a side if:
+    # 1. Code has a side suffix (represents a specific side), OR
+    # 2. Code has no suffix AND double_sided is false (single-sided card, treat as side 'a')
+    has_side_suffix || (!has_side_suffix && !explicit_double_sided)
+  end
+
+  defp prepare_card_attrs(%{} = mcdb_card, is_multi_sided) do
     %{
-      # Core identity fields
+      # Multi-sided card support
+      is_multi_sided: is_multi_sided,
+      base_code: extract_base_code(mcdb_card["code"]),
+
+      # Primary side code (for compatibility)
+      code: mcdb_card["code"],
+
+      # Card-level properties
+      deck_limit: mcdb_card["quantity"] || 1,
+      unique: mcdb_card["is_unique"] || false,
+      permanent: mcdb_card["permanent"] || false,
+
+      # Categorization fields
+      set: mcdb_card["card_set_code"],
+      pack: mcdb_card["pack_code"]
+    }
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+  end
+
+  defp prepare_card_side_attrs(%{} = mcdb_card) do
+    side_identifier = extract_side_identifier(mcdb_card["code"])
+
+    %{
+      # Side identification
+      side_identifier: side_identifier,
+      is_primary_side: side_identifier == "a",
+      code: mcdb_card["code"],
+
+      # Core card content
       name: mcdb_card["name"],
       subname: mcdb_card["real_name"],
-      code: mcdb_card["code"],
       text: mcdb_card["text"] || mcdb_card["real_text"],
       traits: parse_traits(mcdb_card["real_traits"] || mcdb_card["traits"]),
 
-      # Card classification using new enums
+      # Card classification
       type: map_card_type(mcdb_card["type_code"]),
       aspect: map_aspect(mcdb_card["faction_code"]),
 
@@ -192,40 +298,62 @@ defmodule Sanctum.MarvelCdb do
       thwart: mcdb_card["thwart"],
       defense: mcdb_card["defense"],
       health: mcdb_card["health"],
-
-      # Cost and economics
       cost: mcdb_card["cost"],
-      deck_limit: mcdb_card["quantity"] || 1,
-      unique: mcdb_card["is_unique"] || false,
-      permanent: mcdb_card["permanent"] || false,
 
-      # Icons (using existing boost_star mapping as example)
-      boost_star: mcdb_card["boost_star"] || false,
+      # Icons
+      acceleration_icon: mcdb_card["acceleration_icon"] || false,
+      amplify_icon: mcdb_card["amplify_icon"] || false,
+      crisis_icon: mcdb_card["crisis_icon"] || false,
+      hazard_icon: mcdb_card["hazard_icon"] || false,
 
-      # Hero-specific fields
+      # Resource fields
+      resource_energy_count: mcdb_card["resource_energy_count"],
+      resource_physical_count: mcdb_card["resource_physical_count"],
+      resource_mental_count: mcdb_card["resource_mental_count"],
+      resource_wild_count: mcdb_card["resource_wild_count"],
+
+      # Hero fields
       hand_size: mcdb_card["hand_size"],
       recover: mcdb_card["recover"],
 
-      # Villain-specific fields
+      # Villain fields
       health_per_hero: mcdb_card["health_per_hero"] || false,
-      stage: mcdb_card["stage"],
+      stage: stage_to_integer(mcdb_card["stage"]),
       scheme: mcdb_card["scheme"],
 
-      # Scheme-specific fields
+      # Scheme fields
       base_threat: mcdb_card["base_threat"],
       escalation_threat: mcdb_card["escalation_threat"],
       max_threat: mcdb_card["threat"],
 
-      # Encounter-specific fields
+      # Encounter fields
       boost: mcdb_card["boost"],
+      boost_star: mcdb_card["boost_star"] || false,
 
-      # Categorization fields
-      set: mcdb_card["card_set_code"],
-      pack: mcdb_card["pack_code"],
+      # Image
       image_url: build_image_url(mcdb_card["imagesrc"])
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
+  end
+
+  defp stage_to_integer(nil), do: nil
+
+  defp stage_to_integer(stage) do
+    case stage do
+      "I" -> 1
+      "II" -> 2
+      "III" -> 3
+      "1A" -> 1
+      "1B" -> 1
+      "1C" -> 1
+      "2A" -> 2
+      "2B" -> 2
+      "2C" -> 2
+      "3A" -> 3
+      "3B" -> 3
+      "3C" -> 3
+    end
   end
 
   defp map_card_type(type_code) do

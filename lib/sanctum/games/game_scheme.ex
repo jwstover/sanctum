@@ -11,7 +11,35 @@ defmodule Sanctum.Games.GameScheme do
   end
 
   actions do
-    defaults [:read, create: :*]
+    defaults [:read]
+
+    create :create do
+      primary? true
+      accept [:*]
+
+      change fn changeset, _context ->
+        card_id = Ash.Changeset.get_attribute(changeset, :card_id)
+
+        if card_id do
+          # Load the card with its sides to set initial active_side
+          card = Sanctum.Games.get_card!(card_id, load: [:primary_side])
+
+          if card.primary_side do
+            Ash.Changeset.change_attribute(changeset, :active_side_id, card.primary_side.id)
+          else
+            changeset
+          end
+        else
+          changeset
+        end
+      end
+    end
+
+    update :flip do
+      require_atomic? false
+
+      change Sanctum.Games.Changes.FlipGameScheme
+    end
 
     update :update_threat do
       argument :delta, :integer, allow_nil?: false
@@ -35,10 +63,10 @@ defmodule Sanctum.Games.GameScheme do
   attributes do
     uuid_v7_primary_key :id
 
-    attribute :threat, :integer, public?: true
+    attribute :threat, :integer, public?: true, default: 0, allow_nil?: false
     attribute :max_threat, :integer, public?: true
     attribute :escalation_threat, :integer, public?: true
-    attribute :counter, :integer, default: 0, public?: true
+    attribute :counter, :integer, default: 0, public?: true, allow_nil?: false
     attribute :is_main_scheme, :boolean, public?: true
 
     timestamps()
@@ -47,5 +75,10 @@ defmodule Sanctum.Games.GameScheme do
   relationships do
     belongs_to :game, Sanctum.Games.Game
     belongs_to :card, Sanctum.Games.Card, public?: true
+
+    belongs_to :active_side, Sanctum.Games.CardSide do
+      public? true
+      allow_nil? true
+    end
   end
 end

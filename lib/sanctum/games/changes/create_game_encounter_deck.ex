@@ -58,8 +58,8 @@ defmodule Sanctum.Games.Changes.CreateGameEncounterDeck do
     else
       Sanctum.Games.Card
       |> Ash.Query.filter(set in ^modular_sets)
-      |> Ash.Query.filter(type != :villain)
-      |> Ash.Query.filter(type != :main_scheme)
+      |> Ash.Query.filter(primary_side.type not in [:villain, :main_scheme])
+      |> Ash.Query.load(:primary_side)
       |> Ash.read!(domain: Sanctum.Games)
     end
   end

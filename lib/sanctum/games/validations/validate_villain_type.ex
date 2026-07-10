@@ -16,9 +16,20 @@ defmodule Sanctum.Games.Validations.ValidateVillainType do
     value = Ash.Changeset.get_attribute(subject, :villain_id)
 
     if value do
-      case Sanctum.Games.get_card!(value) do
-        %Sanctum.Games.Card{type: :villain} -> :ok
-        _ -> {:error, field: :villain_id, message: "villain must have type_code villain"}
+      case Sanctum.Games.get_card!(value, load: [:primary_side]) do
+        %Sanctum.Games.Card{
+          primary_side: %{type: :villain}
+        } ->
+          :ok
+
+        %Sanctum.Games.Card{primary_side: nil} ->
+          {:error, field: :villain_id, message: "villain card must have a primary side"}
+
+        %Sanctum.Games.Card{primary_side: %{type: type}} ->
+          {:error, field: :villain_id, message: "villain must have type villain, got #{type}"}
+
+        _ ->
+          {:error, field: :villain_id, message: "villain must have type villain"}
       end
     else
       {:error, field: :villain_id, message: "must have a valid villain"}

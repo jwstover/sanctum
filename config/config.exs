@@ -7,8 +7,6 @@
 # General application configuration
 import Config
 
-config :sanctum, env: config_env()
-
 config :ash_oban, pro?: false
 
 config :sanctum, Oban,
@@ -63,7 +61,7 @@ config :sanctum,
   env: config_env(),
   ecto_repos: [Sanctum.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games]
+  ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games, Sanctum.Heroes, Sanctum.Villains]
 
 # Configures the endpoint
 config :sanctum, SanctumWeb.Endpoint,
@@ -109,7 +107,7 @@ config :tailwind,
 # Configures Elixir's Logger
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:request_id, :error, :game_id, :user_id]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason

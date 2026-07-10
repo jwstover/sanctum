@@ -16,9 +16,20 @@ defmodule Sanctum.Decks.Validations.ValidateHeroType do
     value = Ash.Changeset.get_attribute(subject, :hero_code)
 
     if value do
-      case Sanctum.Games.get_card_by_code!(value) do
-        %Sanctum.Games.Card{type: :hero} -> :ok
-        _ -> {:error, field: :hero_code, message: "hero must have type_code hero"}
+      case Sanctum.Games.get_card_by_code!(value, load: [:primary_side]) do
+        %Sanctum.Games.Card{
+          primary_side: %{type: :hero}
+        } ->
+          :ok
+
+        %Sanctum.Games.Card{primary_side: nil} ->
+          {:error, field: :hero_code, message: "hero card must have a primary side"}
+
+        %Sanctum.Games.Card{primary_side: %{type: type}} ->
+          {:error, field: :hero_code, message: "hero must have type hero, got #{type}"}
+
+        _ ->
+          {:error, field: :hero_code, message: "hero must have type hero"}
       end
     else
       {:error, field: :hero_code, message: "must have a valid hero"}

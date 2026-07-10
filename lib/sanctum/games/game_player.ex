@@ -5,7 +5,6 @@ defmodule Sanctum.Games.GamePlayer do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
-  alias Sanctum.ManualRelationships.HasOneThrough
   alias Sanctum.Games.Changes.SetGameCards
   alias Sanctum.Games.Changes.SetHealth
 
@@ -26,11 +25,11 @@ defmodule Sanctum.Games.GamePlayer do
 
     update :update do
       primary? true
-      accept [:health, :max_health, :hand_size_mod, :form]
+      accept [:health, :max_health, :hand_size_mod, :form, :hero_hand_size, :alter_ego_hand_size]
     end
 
     update :select_deck do
-      accept [:deck_id]
+      accept [:deck_id, :hero_hand_size, :alter_ego_hand_size]
       require_atomic? false
 
       change SetGameCards
@@ -77,6 +76,8 @@ defmodule Sanctum.Games.GamePlayer do
     attribute :max_health, :integer, public?: true
 
     attribute :hand_size_mod, :integer, public?: true, default: 0
+    attribute :hero_hand_size, :integer, public?: true
+    attribute :alter_ego_hand_size, :integer, public?: true
 
     timestamps()
   end
@@ -85,10 +86,6 @@ defmodule Sanctum.Games.GamePlayer do
     belongs_to :user, Sanctum.Accounts.User, public?: true, allow_nil?: false
     belongs_to :game, Sanctum.Games.Game, public?: true, allow_nil?: false
     belongs_to :deck, Sanctum.Decks.Deck, public?: true
-
-    has_one :hero_card, Sanctum.Games.Card do
-      manual {HasOneThrough, [through: [:deck, :hero]]}
-    end
 
     has_many :game_cards, Sanctum.Games.GameCard, public?: true
 
@@ -124,8 +121,11 @@ defmodule Sanctum.Games.GamePlayer do
   calculations do
     calculate :hand_size,
               :integer,
-              expr(if form == :hero, do: deck.hero.hand_size, else: deck.alter_ego.hand_size),
-              load: [deck: [:hero, :alter_ego]]
+              expr(
+                if form == :hero,
+                  do: hero_hand_size,
+                  else: alter_ego_hand_size
+              )
 
     calculate :current_hand_size, :integer, expr(count(hand_cards)), load: [:hand_cards]
     calculate :max_hand_size, :integer, expr(hand_size + hand_size_mod), load: [:hand_size]

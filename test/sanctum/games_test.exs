@@ -4,6 +4,26 @@ defmodule Sanctum.GamesTest do
   alias Sanctum.Games
   alias Sanctum.Games.Card
 
+  # Helper function to create a card with its primary side
+  defp create_card_with_side(card_attrs, side_attrs) do
+    {:ok, card} = Card |> Ash.Changeset.for_create(:create, card_attrs) |> Ash.create()
+
+    side_attrs_with_card_id =
+      Map.merge(side_attrs, %{
+        card_id: card.id,
+        code: card_attrs.code,
+        side_identifier: "A",
+        is_primary_side: true
+      })
+
+    {:ok, _side} =
+      Sanctum.Games.CardSide
+      |> Ash.Changeset.for_create(:create, side_attrs_with_card_id)
+      |> Ash.create()
+
+    {:ok, card}
+  end
+
   describe "create_scenario" do
     test "creates a scenario with valid input" do
       attrs = %{
@@ -28,59 +48,79 @@ defmodule Sanctum.GamesTest do
 
       # Create a villain card for the scenario
       {:ok, _villain_card} =
-        Card
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Test Villain",
-          type: :villain,
-          set: "test_scenario",
-          code: "testv01",
-          health: 10,
-          attack: 2,
-          scheme: 1
-        })
-        |> Ash.create()
+        create_card_with_side(
+          %{
+            base_code: "testv01",
+            code: "testv01",
+            set: "test_scenario",
+            pack: "test_scenario"
+          },
+          %{
+            name: "Test Villain",
+            type: :villain,
+            health: 10,
+            attack: 2,
+            scheme: 1
+          }
+        )
 
       # Create some encounter cards for the scenario
       {:ok, encounter_card1} =
-        Card
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Test Encounter 1",
-          type: :minion,
-          set: "test_scenario",
-          code: "test001"
-        })
-        |> Ash.create()
+        create_card_with_side(
+          %{
+            base_code: "test001",
+            code: "test001",
+            set: "test_scenario",
+            pack: "test_scenario"
+          },
+          %{
+            name: "Test Encounter 1",
+            type: :minion
+          }
+        )
 
       {:ok, encounter_card2} =
-        Card
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Test Encounter 2",
-          type: :treachery,
-          set: "test_scenario",
-          code: "test002"
-        })
-        |> Ash.create()
+        create_card_with_side(
+          %{
+            base_code: "test002",
+            code: "test002",
+            set: "test_scenario",
+            pack: "test_scenario"
+          },
+          %{
+            name: "Test Encounter 2",
+            type: :treachery
+          }
+        )
 
       # Create modular set cards
       {:ok, modular_card1} =
-        Card
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Modular Card 1",
-          type: :attachment,
-          set: "test_modular",
-          code: "mod001"
-        })
-        |> Ash.create()
+        create_card_with_side(
+          %{
+            base_code: "mod001",
+            code: "mod001",
+            set: "test_modular",
+            pack: "test_modular"
+          },
+          %{
+            name: "Modular Card 1",
+            type: :attachment
+          }
+        )
 
       {:ok, modular_card2} =
-        Card
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Modular Card 2",
-          type: :side_scheme,
-          set: "test_modular",
-          code: "mod002"
-        })
-        |> Ash.create()
+        create_card_with_side(
+          %{
+            base_code: "mod002",
+            code: "mod002",
+            set: "test_modular",
+            pack: "test_modular"
+          },
+          %{
+            name: "Modular Card 2",
+            type: :side_scheme
+          }
+        )
 
       # Create a test user
       {:ok, user} =
@@ -124,6 +164,7 @@ defmodule Sanctum.GamesTest do
 
       # Verify encounter cards were created and placed in encounter deck
       encounter_deck_cards = game.encounter_deck.deck_cards
+      # Only includes encounter cards, villains are properly excluded
       assert length(encounter_deck_cards) == 2
 
       # Verify all cards are in encounter_deck zone
@@ -175,7 +216,7 @@ defmodule Sanctum.GamesTest do
 
       # Verify encounter cards were created (scenario + modular)
       encounter_deck_cards = game.encounter_deck.deck_cards
-      # 2 scenario + 2 modular
+      # 2 scenario encounter cards + 2 modular cards = 4 (villains excluded)
       assert length(encounter_deck_cards) == 4
 
       # Verify all cards are properly configured
@@ -208,17 +249,21 @@ defmodule Sanctum.GamesTest do
 
       # Create a villain for the empty scenario
       {:ok, _empty_villain} =
-        Card
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Empty Villain",
-          type: :villain,
-          set: "empty_scenario",
-          code: "emptyv01",
-          health: 8,
-          attack: 1,
-          scheme: 1
-        })
-        |> Ash.create()
+        create_card_with_side(
+          %{
+            base_code: "emptyv01",
+            code: "emptyv01",
+            set: "empty_scenario",
+            pack: "empty_scenario"
+          },
+          %{
+            name: "Empty Villain",
+            type: :villain,
+            health: 8,
+            attack: 1,
+            scheme: 1
+          }
+        )
 
       game_attrs = %{
         scenario_id: empty_scenario.id,
@@ -237,6 +282,7 @@ defmodule Sanctum.GamesTest do
 
       # Verify encounter deck exists but is empty
       assert game.encounter_deck
+      # Villains are properly excluded, so encounter deck is empty
       assert game.encounter_deck.deck_cards == []
     end
 
@@ -247,14 +293,18 @@ defmodule Sanctum.GamesTest do
       # Create more cards to make shuffling more apparent
       for i <- 3..10 do
         {:ok, _card} =
-          Card
-          |> Ash.Changeset.for_create(:create, %{
-            name: "Test Encounter #{i}",
-            type: :minion,
-            set: "test_scenario",
-            code: "test00#{i}"
-          })
-          |> Ash.create()
+          create_card_with_side(
+            %{
+              base_code: "test00#{i}",
+              code: "test00#{i}",
+              set: "test_scenario",
+              pack: "test_scenario"
+            },
+            %{
+              name: "Test Encounter #{i}",
+              type: :minion
+            }
+          )
       end
 
       game_attrs = %{

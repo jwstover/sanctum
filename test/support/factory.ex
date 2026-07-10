@@ -17,7 +17,7 @@ defmodule Sanctum.Factory do
       Enum.map(attrs_list, fn attrs ->
         unquote(resource)
         |> Ash.Changeset.for_create(action, attrs)
-        |> Ash.create!()
+        |> Ash.create!(authorize?: false)
       end)
       |> case do
         [one] -> one
@@ -27,13 +27,29 @@ defmodule Sanctum.Factory do
   end
 
   def card_factory do
+    code = Faker.Util.format("%5d")
+
+    %{
+      base_code: code,
+      code: code,
+      set: "core",
+      pack: "core",
+      deck_limit: 3,
+      unique: false,
+      permanent: false,
+      is_multi_sided: false
+    }
+  end
+
+  def card_side_factory do
     %{
       name: Faker.Superhero.name(),
+      code: Faker.Util.format("%5da"),
+      side_identifier: "A",
+      is_primary_side: true,
       type: :hero,
       cost: 0,
       text: Faker.Superhero.descriptor(),
-      set: "core",
-      code: Faker.Util.format("%5d"),
       aspect: :justice,
       attack: 2,
       thwart: 3,
@@ -42,6 +58,38 @@ defmodule Sanctum.Factory do
       recover: 3,
       hand_size: 5,
       traits: ["Avenger", "Spider"]
+    }
+  end
+
+  def user_factory do
+    %{
+      email: Faker.Internet.email(),
+      confirmed_at: DateTime.utc_now()
+    }
+  end
+
+  def game_player_factory do
+    %{
+      form: :alter_ego,
+      health: 25,
+      max_health: 30,
+      hand_size_mod: 0
+    }
+  end
+
+  def scenario_factory do
+    unique_id = :rand.uniform(100_000)
+
+    %{
+      name: "Test Scenario #{unique_id}",
+      set: "test_scenario_#{unique_id}",
+      recommended_modular_sets: []
+    }
+  end
+
+  def game_factory do
+    %{
+      modular_sets: []
     }
   end
 end

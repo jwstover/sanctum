@@ -4,7 +4,7 @@ defmodule Sanctum.Games.Game do
   alias Sanctum.Games.Changes.SetRecommendedModularSets
   alias Sanctum.Games.Changes.CreateGamePlayer
   alias Sanctum.Games.Changes.CreateGameScheme
-  alias Sanctum.Games.Changes.CreateGameVillian
+  alias Sanctum.Games.Changes.CreateGameVillain
   alias Sanctum.Games.Changes.CreateGameEncounterDeck
 
   use Ash.Resource,
@@ -28,7 +28,7 @@ defmodule Sanctum.Games.Game do
       change SetRecommendedModularSets, only_when_valid?: true
       change CreateGamePlayer, only_when_valid?: true
       change CreateGameScheme, only_when_valid?: true
-      change CreateGameVillian, only_when_valid?: true
+      change CreateGameVillain, only_when_valid?: true
       change CreateGameEncounterDeck, only_when_valid?: true
     end
 
@@ -63,7 +63,7 @@ defmodule Sanctum.Games.Game do
   relationships do
     belongs_to :scenario, Sanctum.Games.Scenario, public?: true, allow_nil?: false
 
-    has_one :game_villian, Sanctum.Games.GameVillian
+    has_one :game_villain, Sanctum.Games.GameVillain
     has_one :encounter_deck, Sanctum.Games.GameEncounterDeck
     has_many :game_players, Sanctum.Games.GamePlayer
     has_many :game_schemes, Sanctum.Games.GameScheme

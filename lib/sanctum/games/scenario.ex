@@ -39,23 +39,19 @@ defmodule Sanctum.Games.Scenario do
     has_many :villains, Sanctum.Games.Card do
       source_attribute :set
       destination_attribute :set
-
-      filter expr(type == :villain)
+      filter expr(primary_side.type == :villain)
     end
 
     has_many :main_schemes, Sanctum.Games.Card do
       source_attribute :set
       destination_attribute :set
-
-      filter expr(type == :main_scheme)
+      filter expr(primary_side.type == :main_scheme)
     end
 
     has_many :encounter_cards, Sanctum.Games.Card do
       source_attribute :set
       destination_attribute :set
-
-      filter expr(type != :villain)
-      filter expr(type != :main_scheme)
+      filter expr(primary_side.type not in [:villain, :main_scheme])
     end
   end
 

@@ -25,13 +25,28 @@ defmodule Sanctum.Games.GamePlayerTest do
         recommended_modular_sets: []
       })
 
-    {:ok, _villain_card} =
+    villain_code = "testv#{:rand.uniform(100_000)}"
+
+    {:ok, villain_card} =
       Sanctum.Games.Card
       |> Ash.Changeset.for_create(:create, %{
-        name: "Test Villain",
-        type: :villain,
+        base_code: villain_code,
+        code: villain_code,
         set: set_name,
-        code: "testv#{:rand.uniform(100_000)}",
+        pack: set_name
+      })
+      |> Ash.create()
+
+    # Create the villain card side
+    {:ok, _villain_side} =
+      Sanctum.Games.CardSide
+      |> Ash.Changeset.for_create(:create, %{
+        card_id: villain_card.id,
+        name: "Test Villain",
+        code: villain_code,
+        side_identifier: "A",
+        is_primary_side: true,
+        type: :villain,
         health: 10,
         attack: 2,
         scheme: 1
@@ -109,6 +124,190 @@ defmodule Sanctum.Games.GamePlayerTest do
 
       assert {:error, %Ash.Error.Invalid{}} =
                Games.change_health(game_player, %{amount: "not_a_number"}, actor: user)
+    end
+  end
+
+  describe "hand size calculations with new attributes" do
+    test "hand_size calculation uses hero_hand_size when in hero form" do
+      {user, _game, game_player} = create_test_game_player()
+
+      # Update game player with hand size attributes
+      game_player =
+        game_player
+        |> Ash.Changeset.for_update(:update, %{
+          form: :hero,
+          hero_hand_size: 5,
+          alter_ego_hand_size: 6,
+          hand_size_mod: 0
+        })
+        |> Ash.update!(actor: user)
+
+      # Load with hand_size calculation
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+
+      # Should use hero_hand_size when form is :hero
+      assert game_player.form == :hero
+      assert game_player.hero_hand_size == 5
+      assert game_player.alter_ego_hand_size == 6
+      # Uses hero_hand_size
+      assert game_player.hand_size == 5
+      # 5 + 0 modifier
+      assert game_player.max_hand_size == 5
+    end
+
+    test "hand_size calculation uses alter_ego_hand_size when in alter_ego form" do
+      {user, _game, game_player} = create_test_game_player()
+
+      # Update game player with hand size attributes in alter_ego form
+      game_player =
+        game_player
+        |> Ash.Changeset.for_update(:update, %{
+          form: :alter_ego,
+          hero_hand_size: 5,
+          alter_ego_hand_size: 6,
+          hand_size_mod: 0
+        })
+        |> Ash.update!(actor: user)
+
+      # Load with hand_size calculation
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+
+      # Should use alter_ego_hand_size when form is :alter_ego
+      assert game_player.form == :alter_ego
+      assert game_player.hero_hand_size == 5
+      assert game_player.alter_ego_hand_size == 6
+      # Uses alter_ego_hand_size
+      assert game_player.hand_size == 6
+      # 6 + 0 modifier
+      assert game_player.max_hand_size == 6
+    end
+
+    test "max_hand_size calculation includes hand_size_mod" do
+      {user, _game, game_player} = create_test_game_player()
+
+      # Update with hand size modifier
+      game_player =
+        game_player
+        |> Ash.Changeset.for_update(:update, %{
+          form: :hero,
+          hero_hand_size: 4,
+          alter_ego_hand_size: 5,
+          hand_size_mod: 2
+        })
+        |> Ash.update!(actor: user)
+
+      # Load with calculations
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+
+      # Max hand size should include the modifier
+      # Base hero hand size
+      assert game_player.hand_size == 4
+      # 4 + 2 modifier
+      assert game_player.max_hand_size == 6
+    end
+
+    test "hand_size calculation handles nil values gracefully" do
+      {user, _game, game_player} = create_test_game_player()
+
+      # Leave hand sizes as nil (simulating before deck selection)
+      # Just update the form to ensure we're testing the right state
+      game_player =
+        game_player
+        |> Ash.Changeset.for_update(:update, %{form: :hero})
+        |> Ash.update!(actor: user)
+
+      # Load with calculations
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+
+      # Should handle nil gracefully
+      assert is_nil(game_player.hero_hand_size)
+      assert is_nil(game_player.alter_ego_hand_size)
+      assert is_nil(game_player.hand_size)
+      assert is_nil(game_player.max_hand_size)
+    end
+
+    test "flip action changes form and affects hand_size calculation" do
+      {user, _game, game_player} = create_test_game_player()
+
+      # Setup with hand sizes in alter_ego form
+      game_player =
+        game_player
+        |> Ash.Changeset.for_update(:update, %{
+          form: :alter_ego,
+          hero_hand_size: 4,
+          alter_ego_hand_size: 7,
+          hand_size_mod: 0
+        })
+        |> Ash.update!(actor: user)
+
+      # Initially should use alter_ego_hand_size
+      game_player =
+        Sanctum.Games.GamePlayer |> Ash.get!(game_player.id, load: [:hand_size], actor: user)
+
+      assert game_player.form == :alter_ego
+      assert game_player.hand_size == 7
+
+      # Flip to hero form
+      {:ok, flipped_player} =
+        game_player
+        |> Ash.Changeset.for_update(:flip)
+        |> Ash.update(actor: user)
+
+      # Should now use hero_hand_size
+      flipped_player =
+        Sanctum.Games.GamePlayer |> Ash.get!(flipped_player.id, load: [:hand_size], actor: user)
+
+      assert flipped_player.form == :hero
+      assert flipped_player.hand_size == 4
+    end
+
+    test "different hand sizes for hero vs alter ego result in different calculations" do
+      {user, _game, game_player} = create_test_game_player()
+
+      # Setup with significantly different hand sizes
+      game_player =
+        game_player
+        |> Ash.Changeset.for_update(:update, %{
+          form: :hero,
+          hero_hand_size: 3,
+          alter_ego_hand_size: 8,
+          hand_size_mod: 1
+        })
+        |> Ash.update!(actor: user)
+
+      # In hero form
+      game_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(game_player.id, load: [:hand_size, :max_hand_size], actor: user)
+
+      assert game_player.form == :hero
+      assert game_player.hand_size == 3
+      # 3 + 1 modifier
+      assert game_player.max_hand_size == 4
+
+      # Flip to alter_ego form
+      {:ok, flipped_player} =
+        game_player
+        |> Ash.Changeset.for_update(:flip)
+        |> Ash.update(actor: user)
+
+      # In alter_ego form
+      flipped_player =
+        Sanctum.Games.GamePlayer
+        |> Ash.get!(flipped_player.id, load: [:hand_size, :max_hand_size], actor: user)
+
+      assert flipped_player.form == :alter_ego
+      assert flipped_player.hand_size == 8
+      # 8 + 1 modifier
+      assert flipped_player.max_hand_size == 9
     end
   end
 end
