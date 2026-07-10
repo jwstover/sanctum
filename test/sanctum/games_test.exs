@@ -34,6 +34,18 @@ defmodule Sanctum.GamesTest do
 
       assert {:ok, _} = Games.create_scenario(attrs)
     end
+
+    test "sets timestamps on creation" do
+      attrs = %{
+        name: "Klaw",
+        set: "klaw",
+        recommended_modular_sets: []
+      }
+
+      assert {:ok, scenario} = Games.create_scenario(attrs)
+      assert %DateTime{} = scenario.inserted_at
+      assert %DateTime{} = scenario.updated_at
+    end
   end
 
   describe "create_game" do

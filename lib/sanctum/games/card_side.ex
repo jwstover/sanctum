@@ -76,10 +76,6 @@ defmodule Sanctum.Games.CardSide do
 
     attribute :cost, :integer, public?: true
 
-    attribute :deck_limit, :integer, public?: true
-    attribute :unique, :boolean, public?: true, default: false
-    attribute :permanent, :boolean, public?: true, default: false
-
     # Icons
     attribute :acceleration_icon, :boolean, public?: true, default: false
     attribute :amplify_icon, :boolean, public?: true, default: false

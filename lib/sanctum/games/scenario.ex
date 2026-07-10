@@ -33,6 +33,8 @@ defmodule Sanctum.Games.Scenario do
     attribute :name, :string, public?: true, allow_nil?: false
     attribute :set, :string, public?: true, allow_nil?: false
     attribute :recommended_modular_sets, {:array, :string}, public?: true, allow_nil?: false
+
+    timestamps()
   end
 
   relationships do
