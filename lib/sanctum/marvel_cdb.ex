@@ -429,6 +429,7 @@ defmodule Sanctum.MarvelCdb do
       {:ok, %Req.Response{status: 200, body: body}} -> {:ok, body}
       {:ok, %Req.Response{status: 404}} -> {:error, :not_found}
       {:ok, %Req.Response{status: status}} -> {:error, "Unexpected status code: #{status}"}
+      {:error, exception} -> {:error, exception}
     end
   end
 end
