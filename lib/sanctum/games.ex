@@ -75,35 +75,60 @@ defmodule Sanctum.Games do
   end
 
   def draw_cards(game_player_id, count, opts \\ []) do
-    {:ok, cards} = peek_cards(game_player_id, count, :hero_deck, opts)
+    # `return_notifications?: true` keeps Ash from emitting PubSub notifications
+    # while inside our transaction; we collect and send them after it commits.
+    move_opts = Keyword.put(opts, :return_notifications?, true)
 
-    cards
-    |> Enum.map(fn card ->
-      card
-      |> move_game_card!(
-        %{
-          game_player_id: game_player_id,
-          zone: :hero_hand
-        },
-        opts
-      )
-    end)
+    {:ok, {moved, notifications}} =
+      Sanctum.Repo.transaction(fn ->
+        {:ok, cards} = peek_cards(game_player_id, count, :hero_deck, opts)
+
+        Enum.map_reduce(cards, [], fn card, acc ->
+          {card, notifications} =
+            move_game_card!(
+              card,
+              %{
+                game_player_id: game_player_id,
+                zone: :hero_hand
+              },
+              move_opts
+            )
+
+          {card, acc ++ notifications}
+        end)
+      end)
+
+    Ash.Notifier.notify(notifications)
+
+    moved
   end
 
   def deal_facedown_encounter_cards(game_encounter_deck_id, count, game_player_id, opts \\ []) do
-    {:ok, cards} = peek_encounter_cards(game_encounter_deck_id, count)
+    move_opts = Keyword.put(opts, :return_notifications?, true)
 
-    cards
-    |> Enum.with_index()
-    |> Enum.map(fn {card, _index} ->
-      card
-      |> move_game_card!(
-        %{
-          game_player_id: game_player_id,
-          zone: :facedown_encounter
-        },
-        opts
-      )
-    end)
+    {:ok, {moved, notifications}} =
+      Sanctum.Repo.transaction(fn ->
+        {:ok, cards} = peek_encounter_cards(game_encounter_deck_id, count)
+
+        cards
+        |> Enum.with_index()
+        |> Enum.map_reduce([], fn {card, _index}, acc ->
+          {card, notifications} =
+            move_game_card!(
+              card,
+              %{
+                game_player_id: game_player_id,
+                zone: :facedown_encounter
+              },
+              move_opts
+            )
+
+          {card, acc ++ notifications}
+        end)
+      end)
+
+    Ash.Notifier.notify(notifications)
+
+    moved
   end
 end
