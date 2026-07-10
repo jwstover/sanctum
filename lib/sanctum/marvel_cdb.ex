@@ -16,7 +16,7 @@ defmodule Sanctum.MarvelCdb do
 
   def load_deck(mcdb_deck_id) when is_binary(mcdb_deck_id) do
     "#{@base_url}/decklist/#{mcdb_deck_id}"
-    |> Req.get()
+    |> Req.get(max_retries: 1)
     |> handle_response()
     |> case do
       {:ok, decklist} ->
@@ -120,7 +120,7 @@ defmodule Sanctum.MarvelCdb do
 
       _ ->
         "#{@base_url}/card/#{card_id}"
-        |> Req.get()
+        |> Req.get(max_retries: 1)
         |> handle_response()
         |> case do
           {:ok, resp} ->
@@ -145,7 +145,7 @@ defmodule Sanctum.MarvelCdb do
   @spec get_cards_by_pack(String.t()) :: {:ok, list(map())}
   def get_cards_by_pack(pack_code) when is_binary(pack_code) do
     "#{@base_url}/cards/#{pack_code}"
-    |> Req.get()
+    |> Req.get(max_retries: 1)
     |> handle_response()
     |> case do
       {:ok, cards} ->
@@ -246,7 +246,7 @@ defmodule Sanctum.MarvelCdb do
 
   defp fetch_card_side(side_code) do
     "#{@base_url}/card/#{side_code}"
-    |> Req.get()
+    |> Req.get(max_retries: 1)
     |> handle_response()
   end
 

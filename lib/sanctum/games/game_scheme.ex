@@ -38,7 +38,7 @@ defmodule Sanctum.Games.GameScheme do
     update :flip do
       require_atomic? false
 
-      change Sanctum.Games.Changes.FlipToNextSide
+      change Sanctum.Games.Changes.FlipGameScheme
     end
 
     update :update_threat do
@@ -63,10 +63,10 @@ defmodule Sanctum.Games.GameScheme do
   attributes do
     uuid_v7_primary_key :id
 
-    attribute :threat, :integer, public?: true, default: 0
+    attribute :threat, :integer, public?: true, default: 0, allow_nil?: false
     attribute :max_threat, :integer, public?: true
     attribute :escalation_threat, :integer, public?: true
-    attribute :counter, :integer, default: 0, public?: true
+    attribute :counter, :integer, default: 0, public?: true, allow_nil?: false
     attribute :is_main_scheme, :boolean, public?: true
 
     timestamps()

@@ -68,7 +68,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
         imgsrc={@game_scheme.active_side && @game_scheme.active_side.image_url}
       />
       <div class="absolute bottom-2 right-2 flex flex-col flex-reverse gap-1 pointer-events-none">
-        <.threat_token :if={@game_scheme.threat > 0} value={@game_scheme.threat} />
+        <.threat_token :if={@game_scheme.threat |> IO.inspect(label: "================== \n") > 0} value={@game_scheme.threat} />
         <.counter_token :if={@game_scheme.counter > 0} value={@game_scheme.counter} />
       </div>
     </div>
@@ -144,15 +144,17 @@ defmodule SanctumWeb.GameLive.GameComponents do
   attr :card, Sanctum.Games.Card, default: nil
   attr :class, :string, default: ""
   attr :imgsrc, :string, default: nil
+  attr :active_side, :any, default: nil
 
   def plain_card(assigns) do
-    primary_side = assigns.card && assigns.card.primary_side
+    # Use provided active_side or fall back to card's primary_side if available
+    active_side = assigns.active_side || (assigns.card && Map.get(assigns.card, :primary_side))
 
     assigns =
-      assign(assigns, :src, assigns.imgsrc || (primary_side && primary_side.image_url))
+      assign(assigns, :src, assigns.imgsrc || (active_side && active_side.image_url))
       |> assign(
         :aspect,
-        if primary_side && primary_side.type in @landscape_types do
+        if active_side && active_side.type in @landscape_types do
           "max-h-[71px] lg:max-h-[110px]"
         else
           "max-h-[100px] lg:max-h-[153px]"

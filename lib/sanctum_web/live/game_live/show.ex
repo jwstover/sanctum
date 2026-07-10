@@ -303,6 +303,7 @@ defmodule SanctumWeb.GameLive.Show do
         %{"delta" => delta, "game_scheme_id" => game_scheme_id},
         socket
       ) do
+    delta = String.to_integer(delta)
     game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
 
     case Games.update_scheme_threat(game_scheme, delta,
@@ -323,10 +324,9 @@ defmodule SanctumWeb.GameLive.Show do
   def handle_event("flip-scheme", %{"game_scheme_id" => game_scheme_id}, socket) do
     {:ok, scheme} =
       Games.get_game_scheme!(game_scheme_id,
-        load: [:active_side, :card],
         actor: socket.assigns.current_user
       )
-      |> Games.flip_scheme()
+      |> Games.flip_scheme(load: [:active_side])
 
     socket = stream_insert(socket, :main_schemes, scheme)
     socket = maybe_update_selected_card(socket, scheme)
@@ -339,6 +339,7 @@ defmodule SanctumWeb.GameLive.Show do
         %{"delta" => delta, "game_scheme_id" => game_scheme_id},
         socket
       ) do
+    delta = String.to_integer(delta)
     game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
 
     case Games.update_scheme_counter(game_scheme, delta,
@@ -503,11 +504,7 @@ defmodule SanctumWeb.GameLive.Show do
       <dialog :if={@selected_card} id="selected-card-modal" class="modal modal-open">
         <div phx-key="escape" phx-window-keyup="deselect-card" phx-click-away="deselect-card">
           <div class="p-3 bg-black mx-4">
-            <% display_side =
-              case @selected_card do
-                %Sanctum.Games.GameCard{} -> @selected_card.active_side
-                %Sanctum.Games.GameScheme{} -> @selected_card.card.primary_side
-              end %>
+            <% display_side = @selected_card.active_side %>
             <figure class={[
               "relative rounded-[4.5%] overflow-hidden",
               display_side && display_side.type in @landscape_types && "h-[30dvh]",
@@ -671,9 +668,7 @@ defmodule SanctumWeb.GameLive.Show do
         <.plain_card
           id={@game.game_villain.active_stage_card.id}
           card={@game.game_villain.active_stage_card}
-          imgsrc={
-            @game.game_villain.active_stage_side && @game.game_villain.active_stage_side.image_url
-          }
+          active_side={@game.game_villain.active_stage_side}
         />
       </div>
       <div
@@ -893,7 +888,7 @@ defmodule SanctumWeb.GameLive.Show do
       <% current_side =
         card.card_sides
         |> Enum.find(&(&1.type == @game_player.form)) %>
-      <.plain_card id={card.id} card={card} imgsrc={current_side && current_side.image_url} />
+      <.plain_card id={card.id} card={card} active_side={current_side} />
       <div class="absolute hidden group-hover:flex group-focus:flex flex-col gap-1 left-full top-0 px-2">
         <.button variant="icon" phx-click="flip-hero"><.icon name="hero-arrow-uturn-left" /></.button>
       </div>
