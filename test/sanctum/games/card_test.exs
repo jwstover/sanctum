@@ -89,6 +89,58 @@ defmodule Sanctum.Games.CardTest do
     end
   end
 
+  describe "card-level property ownership" do
+    test "Card carries deck_limit, unique, and permanent" do
+      attrs = %{
+        base_code: "01010",
+        code: "01010",
+        set: "core",
+        deck_limit: 2,
+        unique: true,
+        permanent: true
+      }
+
+      assert {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
+      assert card.deck_limit == 2
+      assert card.unique == true
+      assert card.permanent == true
+    end
+
+    test "CardSide rejects card-level deck_limit/unique/permanent inputs" do
+      {:ok, card} =
+        Card
+        |> Ash.Changeset.for_create(:create, %{base_code: "01011", code: "01011a", set: "core"})
+        |> Ash.create()
+
+      side_attrs = %{
+        card_id: card.id,
+        name: "Test Side",
+        code: "01011a",
+        side_identifier: "A",
+        is_primary_side: true,
+        type: :hero,
+        deck_limit: 1,
+        unique: true,
+        permanent: false
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Sanctum.Games.CardSide
+               |> Ash.Changeset.for_create(:create, side_attrs)
+               |> Ash.create()
+
+      rejected_inputs =
+        error.errors
+        |> Enum.map(fn err -> Map.get(err, :input) || Map.get(err, :field) end)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.map(&to_string/1)
+
+      assert "deck_limit" in rejected_inputs
+      assert "unique" in rejected_inputs
+      assert "permanent" in rejected_inputs
+    end
+  end
+
   describe "read actions" do
     setup do
       # Use random codes to avoid conflicts with other tests

@@ -44,7 +44,7 @@ defmodule Sanctum.Games.Changes.CreateGameEncounterDeck do
 
         # Create the encounter game cards
         if game.encounter_deck do
-          create_encounter_game_cards(game.encounter_deck.id, all_encounter_cards)
+          create_encounter_game_cards(game.id, game.encounter_deck.id, all_encounter_cards)
         end
 
       _ ->
@@ -64,7 +64,7 @@ defmodule Sanctum.Games.Changes.CreateGameEncounterDeck do
     end
   end
 
-  defp create_encounter_game_cards(encounter_deck_id, encounter_cards) do
+  defp create_encounter_game_cards(game_id, encounter_deck_id, encounter_cards) do
     cards =
       encounter_cards
       |> Enum.shuffle()
@@ -73,6 +73,7 @@ defmodule Sanctum.Games.Changes.CreateGameEncounterDeck do
         %{
           order: index,
           card_id: card.id,
+          game_id: game_id,
           game_encounter_deck_id: encounter_deck_id,
           zone: :encounter_deck,
           face_up: false

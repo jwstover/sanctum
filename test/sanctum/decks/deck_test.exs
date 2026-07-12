@@ -41,7 +41,8 @@ defmodule Sanctum.Decks.DeckTest do
           hero_name: "Spider-Man",
           alter_ego_name: "Peter Parker",
           set: "spider_man",
-          base_code: hero_card.base_code
+          base_code: hero_card.base_code,
+          card_id: hero_card.id
         })
 
       attrs = %{
@@ -69,13 +70,14 @@ defmodule Sanctum.Decks.DeckTest do
           }
         )
 
-      # Create Hero record with valid hero card but invalid base code
+      # Create Hero record pointing at a card that is missing its alter ego side
       {:ok, hero} =
         Sanctum.Heroes.find_or_create_hero(%{
           hero_name: "Spider-Man",
           alter_ego_name: "Peter Parker",
           set: "spider_man",
-          base_code: "nonexistent"
+          base_code: hero_card.base_code,
+          card_id: hero_card.id
         })
 
       attrs = %{
@@ -124,7 +126,8 @@ defmodule Sanctum.Decks.DeckTest do
         hero_name: "Captain Marvel",
         alter_ego_name: "Carol Danvers",
         set: "captain_marvel",
-        base_code: hero_card.base_code
+        base_code: hero_card.base_code,
+        card_id: hero_card.id
       })
 
     cards = create(Sanctum.Games.Card, count: 3)
@@ -178,7 +181,8 @@ defmodule Sanctum.Decks.DeckTest do
         hero_name: "She-Hulk",
         alter_ego_name: "Jennifer Walters",
         set: "she_hulk",
-        base_code: hero_card.base_code
+        base_code: hero_card.base_code,
+        card_id: hero_card.id
       })
 
     cards = create(Sanctum.Games.Card, count: 3)

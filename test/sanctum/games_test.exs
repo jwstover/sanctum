@@ -4,6 +4,8 @@ defmodule Sanctum.GamesTest do
   alias Sanctum.Games
   alias Sanctum.Games.Card
 
+  require Ash.Query
+
   # Helper function to create a card with its primary side
   defp create_card_with_side(card_attrs, side_attrs) do
     {:ok, card} = Card |> Ash.Changeset.for_create(:create, card_attrs) |> Ash.create()
@@ -61,11 +63,18 @@ defmodule Sanctum.GamesTest do
       %{card: card, scenario: scenario, user: user}
     end
 
-    test "game card can be created in the :villain_play zone", %{card: card} do
+    test "game card can be created in the :villain_play zone", %{
+      card: card,
+      scenario: scenario,
+      user: user
+    } do
+      {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+
       assert {:ok, game_card} =
                Sanctum.Games.GameCard
                |> Ash.Changeset.for_create(:create, %{
                  card_id: card.id,
+                 game_id: game.id,
                  zone: :villain_play,
                  order: 0
                })
@@ -87,6 +96,7 @@ defmodule Sanctum.GamesTest do
         Sanctum.Games.GameCard
         |> Ash.Changeset.for_create(:create, %{
           card_id: card.id,
+          game_id: game.id,
           game_player_id: game_player.id,
           zone: :hero_hand,
           order: 0
@@ -101,13 +111,22 @@ defmodule Sanctum.GamesTest do
                )
 
       assert moved.zone == :villain_play
+      # A move must not drop the card's game_id.
+      assert moved.game_id == game.id
     end
 
-    test "the misspelled :villian_play zone is rejected", %{card: card} do
+    test "the misspelled :villian_play zone is rejected", %{
+      card: card,
+      scenario: scenario,
+      user: user
+    } do
+      {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+
       assert {:error, _} =
                Sanctum.Games.GameCard
                |> Ash.Changeset.for_create(:create, %{
                  card_id: card.id,
+                 game_id: game.id,
                  zone: :villian_play,
                  order: 0
                })
@@ -124,6 +143,18 @@ defmodule Sanctum.GamesTest do
       }
 
       assert {:ok, _} = Games.create_scenario(attrs)
+    end
+
+    test "sets timestamps on creation" do
+      attrs = %{
+        name: "Klaw",
+        set: "klaw",
+        recommended_modular_sets: []
+      }
+
+      assert {:ok, scenario} = Games.create_scenario(attrs)
+      assert %DateTime{} = scenario.inserted_at
+      assert %DateTime{} = scenario.updated_at
     end
   end
 
@@ -263,6 +294,7 @@ defmodule Sanctum.GamesTest do
         assert card.zone == :encounter_deck
         assert card.face_up == false
         assert is_integer(card.order)
+        assert card.game_id == game.id
       end
 
       # Verify the cards are from the scenario
@@ -272,6 +304,20 @@ defmodule Sanctum.GamesTest do
       for scenario_card_id <- scenario_card_ids do
         assert scenario_card_id in card_ids
       end
+    end
+
+    test "creates game_villain with card_id and active_side_id set", %{
+      scenario: scenario,
+      user: user
+    } do
+      assert {:ok, game} =
+               Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+
+      game = Games.get_game!(game.id, load: [:game_villain])
+
+      assert game.game_villain
+      assert game.game_villain.card_id
+      assert game.game_villain.active_side_id
     end
 
     test "creates game with encounter deck including modular set cards", %{
@@ -316,6 +362,7 @@ defmodule Sanctum.GamesTest do
         assert card.face_up == false
         assert is_integer(card.order)
         assert card.game_encounter_deck_id == game.encounter_deck.id
+        assert card.game_id == game.id
       end
 
       # Verify the cards include both scenario and modular cards
@@ -417,10 +464,103 @@ defmodule Sanctum.GamesTest do
       # Should have at least 8 cards
       assert length(encounter_deck_cards) >= 8
 
-      # Verify orders are sequential (0, 1, 2, ...) 
+      # Verify orders are sequential (0, 1, 2, ...)
       orders = encounter_deck_cards |> Enum.map(& &1.order) |> Enum.sort()
       expected_orders = 0..(length(encounter_deck_cards) - 1) |> Enum.to_list()
       assert orders == expected_orders
+    end
+
+    test "all of a game's game cards can be fetched by game_id", %{
+      scenario: scenario,
+      user: user
+    } do
+      assert {:ok, game} =
+               Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+
+      game_cards =
+        Sanctum.Games.GameCard
+        |> Ash.Query.filter(game_id == ^game.id)
+        |> Ash.read!(authorize?: false)
+
+      refute Enum.empty?(game_cards)
+      assert Enum.all?(game_cards, &(&1.game_id == game.id))
+    end
+
+    test "player deck cards created by select_deck get the game_id", %{
+      scenario: scenario,
+      user: user
+    } do
+      # Build a valid hero deck.
+      {:ok, hero_card} =
+        create_card_with_side(
+          %{base_code: "hero01", code: "hero01", set: "test_hero", pack: "test_hero"},
+          %{name: "Test Hero", type: :hero, hand_size: 5}
+        )
+
+      {:ok, alter_ego_card} =
+        Sanctum.Games.Card
+        |> Ash.Changeset.for_create(:create, %{
+          base_code: "hero01",
+          code: "hero01b",
+          set: "test_hero",
+          pack: "test_hero"
+        })
+        |> Ash.create()
+
+      {:ok, _side} =
+        Sanctum.Games.CardSide
+        |> Ash.Changeset.for_create(:create, %{
+          card_id: alter_ego_card.id,
+          code: "hero01b",
+          side_identifier: "B",
+          is_primary_side: true,
+          name: "Test Alter Ego",
+          type: :alter_ego,
+          hand_size: 6
+        })
+        |> Ash.create()
+
+      {:ok, hero} =
+        Sanctum.Heroes.find_or_create_hero(%{
+          hero_name: "Test Hero",
+          alter_ego_name: "Test Alter Ego",
+          set: "test_hero",
+          base_code: hero_card.base_code,
+          card_id: hero_card.id
+        })
+
+      # A couple of playable cards for the deck.
+      {:ok, ally} =
+        create_card_with_side(
+          %{base_code: "ally01", code: "ally01", set: "test_hero", pack: "test_hero"},
+          %{name: "Test Ally", type: :ally}
+        )
+
+      {:ok, deck} =
+        Sanctum.Decks.Deck
+        |> Ash.Changeset.for_create(:create_with_cards, %{
+          card_ids: [ally.id],
+          title: "Test Deck",
+          hero_id: hero.id
+        })
+        |> Ash.create()
+
+      {:ok, game} =
+        Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+
+      game = Games.get_game!(game.id, load: [:game_players])
+      game_player = hd(game.game_players)
+
+      {:ok, _updated} =
+        Games.select_deck(game_player, %{deck_id: deck.id}, authorize?: false)
+
+      player_cards =
+        Sanctum.Games.GameCard
+        |> Ash.Query.filter(game_player_id == ^game_player.id)
+        |> Ash.read!(authorize?: false)
+
+      refute Enum.empty?(player_cards)
+      assert Enum.all?(player_cards, &(&1.game_id == game.id))
     end
   end
 end

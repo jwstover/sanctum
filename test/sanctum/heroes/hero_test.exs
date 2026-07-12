@@ -56,7 +56,8 @@ defmodule Sanctum.Heroes.HeroTest do
           hero_name: "Test Hero",
           alter_ego_name: "Test Alter Ego",
           set: set_name,
-          base_code: base_code
+          base_code: base_code,
+          card_id: card.id
         })
 
       %{
@@ -65,6 +66,14 @@ defmodule Sanctum.Heroes.HeroTest do
         hero_side: hero_side,
         alter_ego_side: alter_ego_side
       }
+    end
+
+    test "card loads the backing Card via the card_id foreign key", %{hero: hero, card: card} do
+      loaded = Ash.load!(hero, [:card])
+
+      assert hero.card_id == card.id
+      assert %Sanctum.Games.Card{} = loaded.card
+      assert loaded.card.id == card.id
     end
 
     test "hero_side loads the single hero card side", %{hero: hero, hero_side: hero_side} do
