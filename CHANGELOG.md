@@ -1,9 +1,14 @@
-## [0.10.3](https://github.com/jwstover/sanctum/compare/v0.10.2...v0.10.3) (2026-07-10)
+# [0.11.0](https://github.com/jwstover/sanctum/compare/v0.10.2...v0.11.0) (2026-07-10)
 
 
 ### Bug Fixes
 
 * transactional card draws and race-safe order assignment ([e2ecc24](https://github.com/jwstover/sanctum/commit/e2ecc243b647448df364f0d7ca353cbbf2990805))
+
+
+### Features
+
+* add cascade deletes, game_cards indexes, and game destroy ([9dc55d5](https://github.com/jwstover/sanctum/commit/9dc55d5fcd3072d41091a89a498d1a1d22597bbc))
 
 
 
