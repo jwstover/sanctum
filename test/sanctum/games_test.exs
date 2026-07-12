@@ -563,4 +563,134 @@ defmodule Sanctum.GamesTest do
       assert Enum.all?(player_cards, &(&1.game_id == game.id))
     end
   end
+
+  describe "main scheme game cards" do
+    setup do
+      {:ok, scenario} =
+        Games.create_scenario(%{
+          name: "Scheme Scenario",
+          set: "scheme_scenario",
+          recommended_modular_sets: []
+        })
+
+      # Villain card drives game_villain creation (required for a valid game).
+      {:ok, _villain_card} =
+        create_card_with_side(
+          %{
+            base_code: "schemev01",
+            code: "schemev01",
+            set: "scheme_scenario",
+            pack: "scheme_scenario"
+          },
+          %{name: "Scheme Villain", type: :villain, health: 10, attack: 2, scheme: 1}
+        )
+
+      # Main scheme card with two sides (A -> B) that reset threat differently.
+      {:ok, scheme_card} =
+        Card
+        |> Ash.Changeset.for_create(:create, %{
+          base_code: "schemes01",
+          code: "schemes01",
+          set: "scheme_scenario",
+          pack: "scheme_scenario"
+        })
+        |> Ash.create()
+
+      {:ok, _side_a} =
+        Sanctum.Games.CardSide
+        |> Ash.Changeset.for_create(:create, %{
+          card_id: scheme_card.id,
+          code: "schemes01",
+          side_identifier: "A",
+          is_primary_side: true,
+          name: "Scheme Side A",
+          type: :main_scheme,
+          base_threat: 5,
+          max_threat: 10
+        })
+        |> Ash.create()
+
+      {:ok, _side_b} =
+        Sanctum.Games.CardSide
+        |> Ash.Changeset.for_create(:create, %{
+          card_id: scheme_card.id,
+          code: "schemes01b",
+          side_identifier: "B",
+          is_primary_side: false,
+          name: "Scheme Side B",
+          type: :main_scheme,
+          base_threat: 12,
+          max_threat: 20
+        })
+        |> Ash.create()
+
+      {:ok, user} =
+        Sanctum.Accounts.User
+        |> Ash.Changeset.for_create(:create, %{
+          email: "scheme@example.com",
+          confirmed_at: DateTime.utc_now()
+        })
+        |> Ash.create(authorize?: false)
+
+      %{scenario: scenario, scheme_card: scheme_card, user: user}
+    end
+
+    test "creating a game creates a main scheme game card seeded from the primary side", %{
+      scenario: scenario,
+      scheme_card: scheme_card,
+      user: user
+    } do
+      {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+
+      game = Games.get_game!(game.id, load: [main_scheme_cards: [:active_side]])
+
+      assert [scheme] = game.main_scheme_cards
+      assert scheme.zone == :main_scheme
+      assert scheme.game_id == game.id
+      assert scheme.card_id == scheme_card.id
+      assert scheme.threat == 5
+      assert scheme.active_side.side_identifier == "A"
+      assert scheme.active_side.base_threat == 5
+      assert scheme.active_side.max_threat == 10
+    end
+
+    test "threat can be incremented and decremented via update_counters", %{
+      scenario: scenario,
+      user: user
+    } do
+      {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+      game = Games.get_game!(game.id, load: [:main_scheme_cards])
+      scheme = hd(game.main_scheme_cards)
+
+      {:ok, scheme} =
+        Games.update_game_card_counters(scheme, %{threat_delta: 3}, authorize?: false)
+
+      assert scheme.threat == 8
+
+      {:ok, scheme} =
+        Games.update_game_card_counters(scheme, %{threat_delta: -2}, authorize?: false)
+
+      assert scheme.threat == 6
+    end
+
+    test "flipping a main scheme advances to side B and resets threat from the new side", %{
+      scenario: scenario,
+      user: user
+    } do
+      {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+      game = Games.get_game!(game.id, load: [:main_scheme_cards])
+      scheme = hd(game.main_scheme_cards)
+
+      # Bump threat so we can prove the flip resets it from the new side's base_threat.
+      {:ok, scheme} =
+        Games.update_game_card_counters(scheme, %{threat_delta: 4}, authorize?: false)
+
+      assert scheme.threat == 9
+
+      {:ok, flipped} = Games.flip_scheme_card(scheme, load: [:active_side], authorize?: false)
+
+      assert flipped.active_side.side_identifier == "B"
+      assert flipped.threat == 12
+    end
+  end
 end

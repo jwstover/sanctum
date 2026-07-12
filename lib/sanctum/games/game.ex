@@ -3,7 +3,7 @@ defmodule Sanctum.Games.Game do
 
   alias Sanctum.Games.Changes.SetRecommendedModularSets
   alias Sanctum.Games.Changes.CreateGamePlayer
-  alias Sanctum.Games.Changes.CreateGameScheme
+  alias Sanctum.Games.Changes.CreateGameSchemeCards
   alias Sanctum.Games.Changes.CreateGameVillain
   alias Sanctum.Games.Changes.CreateGameEncounterDeck
 
@@ -27,7 +27,7 @@ defmodule Sanctum.Games.Game do
       change set_attribute(:state, :setup)
       change SetRecommendedModularSets, only_when_valid?: true
       change CreateGamePlayer, only_when_valid?: true
-      change CreateGameScheme, only_when_valid?: true
+      change CreateGameSchemeCards, only_when_valid?: true
       change CreateGameVillain, only_when_valid?: true
       change CreateGameEncounterDeck, only_when_valid?: true
     end
@@ -66,7 +66,10 @@ defmodule Sanctum.Games.Game do
     has_one :game_villain, Sanctum.Games.GameVillain
     has_one :encounter_deck, Sanctum.Games.GameEncounterDeck
     has_many :game_players, Sanctum.Games.GamePlayer
-    has_many :game_schemes, Sanctum.Games.GameScheme
     has_many :game_cards, Sanctum.Games.GameCard
+
+    has_many :main_scheme_cards, Sanctum.Games.GameCard do
+      filter expr(zone == :main_scheme)
+    end
   end
 end

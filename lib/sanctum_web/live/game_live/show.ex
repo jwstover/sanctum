@@ -83,7 +83,7 @@ defmodule SanctumWeb.GameLive.Show do
     game = socket.assigns.game
 
     if game do
-      main_schemes = game.game_schemes
+      main_schemes = game.main_scheme_cards
       stream(socket, :main_schemes, main_schemes, reset: true)
     else
       stream(socket, :main_schemes, [], reset: true)
@@ -300,61 +300,31 @@ defmodule SanctumWeb.GameLive.Show do
 
   def handle_event(
         "update-scheme-threat",
-        %{"delta" => delta, "game_scheme_id" => game_scheme_id},
+        %{"delta" => delta, "game_card_id" => game_card_id},
         socket
       ) do
-    delta = String.to_integer(delta)
-    game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
-
-    case Games.update_scheme_threat(game_scheme, delta,
-           load: [:active_side],
-           actor: socket.assigns.current_user
-         ) do
-      {:ok, scheme} ->
-        socket
-        |> stream_insert(:main_schemes, scheme)
-        |> maybe_update_selected_card(scheme)
-
-      _ ->
-        socket
-    end
-    |> then(&{:noreply, &1})
-  end
-
-  def handle_event("flip-scheme", %{"game_scheme_id" => game_scheme_id}, socket) do
-    {:ok, scheme} =
-      Games.get_game_scheme!(game_scheme_id,
-        actor: socket.assigns.current_user
-      )
-      |> Games.flip_scheme(load: [:active_side])
-
-    socket = stream_insert(socket, :main_schemes, scheme)
-    socket = maybe_update_selected_card(socket, scheme)
-
-    {:noreply, socket}
+    {:noreply, update_scheme_counters(socket, game_card_id, %{threat_delta: delta})}
   end
 
   def handle_event(
         "update-scheme-counter",
-        %{"delta" => delta, "game_scheme_id" => game_scheme_id},
+        %{"delta" => delta, "game_card_id" => game_card_id},
         socket
       ) do
-    delta = String.to_integer(delta)
-    game_scheme = Games.get_game_scheme!(game_scheme_id, actor: socket.assigns.current_user)
+    {:noreply, update_scheme_counters(socket, game_card_id, %{counter_delta: delta})}
+  end
 
-    case Games.update_scheme_counter(game_scheme, delta,
-           load: [:active_side],
-           actor: socket.assigns.current_user
-         ) do
-      {:ok, scheme} ->
-        socket
-        |> stream_insert(:main_schemes, scheme)
-        |> maybe_update_selected_card(scheme)
+  def handle_event("flip-scheme", %{"game_card_id" => game_card_id}, socket) do
+    {:ok, scheme} =
+      Games.get_game_card!(game_card_id, actor: socket.assigns.current_user)
+      |> Games.flip_scheme_card(load: [:active_side], actor: socket.assigns.current_user)
 
-      _ ->
-        socket
-    end
-    |> then(&{:noreply, &1})
+    socket =
+      socket
+      |> stream_insert(:main_schemes, scheme)
+      |> maybe_update_selected_card(scheme)
+
+    {:noreply, socket}
   end
 
   def handle_event("select-card", %{"card_id" => game_card_id}, socket) do
@@ -369,7 +339,7 @@ defmodule SanctumWeb.GameLive.Show do
 
   def handle_event("select-scheme", %{"card_id" => game_card_id}, socket) do
     game_card =
-      Games.get_game_scheme!(game_card_id,
+      Games.get_game_card!(game_card_id,
         load: [:active_side],
         actor: socket.assigns.current_user
       )
@@ -387,7 +357,7 @@ defmodule SanctumWeb.GameLive.Show do
     case Games.get_game(game_id,
            load: [
              game_villain: [:active_side, card: [:primary_side]],
-             game_schemes: [active_side: [], card: [:primary_side]],
+             main_scheme_cards: [active_side: [], card: [:primary_side]],
              encounter_deck: [
                deck_cards: [:active_side],
                facedown_encounter_cards: [:active_side],
@@ -476,6 +446,25 @@ defmodule SanctumWeb.GameLive.Show do
     end
   end
 
+  defp update_scheme_counters(socket, game_card_id, deltas) do
+    deltas = Map.new(deltas, fn {key, value} -> {key, String.to_integer(value)} end)
+
+    game_card = Games.get_game_card!(game_card_id, actor: socket.assigns.current_user)
+
+    case Games.update_game_card_counters(game_card, deltas,
+           load: [:active_side],
+           actor: socket.assigns.current_user
+         ) do
+      {:ok, scheme} ->
+        socket
+        |> stream_insert(:main_schemes, scheme)
+        |> maybe_update_selected_card(scheme)
+
+      _ ->
+        socket
+    end
+  end
+
   defp maybe_update_selected_card(socket, updated_item) do
     if socket.assigns.selected_card && updated_item.id == socket.assigns.selected_card.id do
       assign(socket, :selected_card, updated_item)
@@ -544,15 +533,13 @@ defmodule SanctumWeb.GameLive.Show do
               :victory_display
             ]
           }>
-            <%= case @selected_card do %>
-              <% %Sanctum.Games.GameCard{} -> %>
-                <.token_buttons game_card_id={@selected_card.id} size="size-12" />
-              <% %Sanctum.Games.GameScheme{} -> %>
+            <%= case @selected_card.zone do %>
+              <% :main_scheme -> %>
                 <div class="grid grid-cols-[auto_auto] gap-1 items-center justify-center">
                   <button
                     class="cursor-pointer hover:scale-105 active:scale-95"
                     phx-click="update-scheme-threat"
-                    phx-value-game_scheme_id={@selected_card.id}
+                    phx-value-game_card_id={@selected_card.id}
                     phx-value-delta="-1"
                   >
                     <.threat_token value="-1" size="size-12" />
@@ -560,7 +547,7 @@ defmodule SanctumWeb.GameLive.Show do
                   <button
                     class="cursor-pointer hover:scale-105 active:scale-95"
                     phx-click="update-scheme-threat"
-                    phx-value-game_scheme_id={@selected_card.id}
+                    phx-value-game_card_id={@selected_card.id}
                     phx-value-delta="1"
                   >
                     <.threat_token value="+1" size="size-12" />
@@ -568,7 +555,7 @@ defmodule SanctumWeb.GameLive.Show do
                   <button
                     class="cursor-pointer hover:scale-105 active:scale-95"
                     phx-click="update-scheme-counter"
-                    phx-value-game_scheme_id={@selected_card.id}
+                    phx-value-game_card_id={@selected_card.id}
                     phx-value-delta="-1"
                   >
                     <.counter_token value="-1" size="size-12" />
@@ -576,12 +563,14 @@ defmodule SanctumWeb.GameLive.Show do
                   <button
                     class="cursor-pointer hover:scale-105 active:scale-95"
                     phx-click="update-scheme-counter"
-                    phx-value-game_scheme_id={@selected_card.id}
+                    phx-value-game_card_id={@selected_card.id}
                     phx-value-delta="1"
                   >
                     <.counter_token value="+1" size="size-12" />
                   </button>
                 </div>
+              <% _ -> %>
+                <.token_buttons game_card_id={@selected_card.id} size="size-12" />
             <% end %>
           </div>
           <div class="mt-8 flex items-center justify-center">
@@ -658,7 +647,7 @@ defmodule SanctumWeb.GameLive.Show do
         <.scheme_card
           :for={{dom_id, main_scheme} <- @streams.main_schemes}
           id={dom_id}
-          game_scheme={main_scheme}
+          game_card={main_scheme}
         />
       </div>
       <div

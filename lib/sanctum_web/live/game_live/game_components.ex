@@ -7,13 +7,31 @@ defmodule SanctumWeb.GameLive.GameComponents do
     :main_scheme
   ]
 
+  attr :id, :string, required: true
+  attr :game_card, Sanctum.Games.GameCard, required: true
+
   def scheme_card(assigns) do
+    active_side = assigns.game_card.active_side
+    max_threat = active_side && active_side.max_threat
+
+    assigns =
+      assigns
+      |> assign(:active_side, active_side)
+      |> assign(:max_threat, max_threat)
+      |> assign(
+        :threat_label,
+        if(max_threat,
+          do: "#{assigns.game_card.threat}/#{max_threat}",
+          else: to_string(assigns.game_card.threat)
+        )
+      )
+
     ~H"""
     <div
       id={@id}
       class="relative group"
       tabindex="0"
-      phx-click={JS.push("select-scheme", value: %{card_id: @game_scheme.id})}
+      phx-click={JS.push("select-scheme", value: %{card_id: @game_card.id})}
     >
       <div class="absolute opacity-0 left-1/3 sm:group-hover:not-peer-[.game-card-dragging]:opacity-100 space-y-2 sm:group-focus:not-peer-[.game-card-dragging]:opacity-100 top-0 group-hover:left-[90%] group-focus:left-[90%] transition-all pt-[2px] pb-[4px] pl-[2px] pr-[4px]">
         <div class="h-full w-full p-1 pr-2 pl-7 ">
@@ -22,7 +40,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
               <button
                 class="cursor-pointer hover:scale-105 active:scale-95"
                 phx-click="update-scheme-threat"
-                phx-value-game_scheme_id={@game_scheme.id}
+                phx-value-game_card_id={@game_card.id}
                 phx-value-delta="-1"
               >
                 <.threat_token value="-1" size="size-8" />
@@ -30,7 +48,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
               <button
                 class="cursor-pointer hover:scale-105 active:scale-95"
                 phx-click="update-scheme-threat"
-                phx-value-game_scheme_id={@game_scheme.id}
+                phx-value-game_card_id={@game_card.id}
                 phx-value-delta="1"
               >
                 <.threat_token value="+1" size="size-8" />
@@ -38,7 +56,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
               <button
                 class="cursor-pointer hover:scale-105 active:scale-95"
                 phx-click="update-scheme-counter"
-                phx-value-game_scheme_id={@game_scheme.id}
+                phx-value-game_card_id={@game_card.id}
                 phx-value-delta="-1"
               >
                 <.counter_token value="-1" size="size-8" />
@@ -46,7 +64,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
               <button
                 class="cursor-pointer hover:scale-105 active:scale-95"
                 phx-click="update-scheme-counter"
-                phx-value-game_scheme_id={@game_scheme.id}
+                phx-value-game_card_id={@game_card.id}
                 phx-value-delta="1"
               >
                 <.counter_token value="+1" size="size-8" />
@@ -55,7 +73,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
             <button
               class="btn btn-xs bg-gray-800 text-gray-100 border-none rounded shadow shadow-gray-700 font-elektra"
               phx-click="flip-scheme"
-              phx-value-game_scheme_id={@game_scheme.id}
+              phx-value-game_card_id={@game_card.id}
             >
               Flip
             </button>
@@ -63,16 +81,13 @@ defmodule SanctumWeb.GameLive.GameComponents do
         </div>
       </div>
       <.plain_card
-        id={@game_scheme.id}
-        card={@game_scheme.card}
-        imgsrc={@game_scheme.active_side && @game_scheme.active_side.image_url}
+        id={@game_card.id}
+        card={@game_card.card}
+        imgsrc={@active_side && @active_side.image_url}
       />
       <div class="absolute bottom-2 right-2 flex flex-col flex-reverse gap-1 pointer-events-none">
-        <.threat_token
-          :if={@game_scheme.threat |> IO.inspect(label: "================== \n") > 0}
-          value={@game_scheme.threat}
-        />
-        <.counter_token :if={@game_scheme.counter > 0} value={@game_scheme.counter} />
+        <.threat_token :if={@game_card.threat > 0 || @max_threat} value={@threat_label} />
+        <.counter_token :if={@game_card.counter > 0} value={@game_card.counter} />
       </div>
     </div>
     """

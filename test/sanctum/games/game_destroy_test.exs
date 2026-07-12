@@ -7,7 +7,6 @@ defmodule Sanctum.Games.GameDestroyTest do
   alias Sanctum.Games.GameCard
   alias Sanctum.Games.GameEncounterDeck
   alias Sanctum.Games.GamePlayer
-  alias Sanctum.Games.GameScheme
   alias Sanctum.Games.GameVillain
 
   require Ash.Query
@@ -38,6 +37,12 @@ defmodule Sanctum.Games.GameDestroyTest do
     |> Ash.count!(authorize?: false)
   end
 
+  defp main_scheme_card_count(game_id) do
+    GameCard
+    |> Ash.Query.filter(game_id == ^game_id and zone == :main_scheme)
+    |> Ash.count!(authorize?: false)
+  end
+
   describe "destroy_game cascade" do
     setup do
       {:ok, scenario} =
@@ -65,7 +70,7 @@ defmodule Sanctum.Games.GameDestroyTest do
           }
         )
 
-      # Main scheme card (drives game_scheme creation)
+      # Main scheme card (drives main scheme game_card creation)
       {:ok, _scheme_card} =
         create_card_with_side(
           %{
@@ -117,7 +122,7 @@ defmodule Sanctum.Games.GameDestroyTest do
       # Sanity: the game created players, villain, schemes, encounter deck, and cards.
       assert count_for_game(GamePlayer, game.id) > 0
       assert count_for_game(GameVillain, game.id) > 0
-      assert count_for_game(GameScheme, game.id) > 0
+      assert main_scheme_card_count(game.id) > 0
       assert count_for_game(GameEncounterDeck, game.id) > 0
 
       total_game_cards = Ash.count!(GameCard, authorize?: false)
@@ -134,7 +139,7 @@ defmodule Sanctum.Games.GameDestroyTest do
       # All game-scoped children are gone.
       assert count_for_game(GamePlayer, game.id) == 0
       assert count_for_game(GameVillain, game.id) == 0
-      assert count_for_game(GameScheme, game.id) == 0
+      assert main_scheme_card_count(game.id) == 0
       assert count_for_game(GameEncounterDeck, game.id) == 0
       assert Ash.count!(GameCard, authorize?: false) == 0
 

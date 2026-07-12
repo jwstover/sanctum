@@ -85,6 +85,12 @@ defmodule Sanctum.Games.GameCard do
       change {Sanctum.Games.Changes.FlipToNextSide, set_face_up: true}
     end
 
+    update :flip_scheme do
+      require_atomic? false
+
+      change Sanctum.Games.Changes.FlipSchemeCard
+    end
+
     update :update_counters do
       argument :threat_delta, :integer, default: 0
       argument :damage_delta, :integer, default: 0
