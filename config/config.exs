@@ -14,7 +14,12 @@ config :sanctum, Oban,
   notifier: Oban.Notifiers.Postgres,
   queues: [default: 10],
   repo: Sanctum.Repo,
-  plugins: [{Oban.Plugins.Cron, []}]
+  plugins: [
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 * * * *", Sanctum.Decks.DecklistSyncWorker}
+     ]}
+  ]
 
 config :ash,
   allow_forbidden_field_for_relationships_by_default?: true,

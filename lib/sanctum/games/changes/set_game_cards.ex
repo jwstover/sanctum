@@ -13,7 +13,7 @@ defmodule Sanctum.Games.Changes.SetGameCards do
       {:ok, deck_id} when is_binary(deck_id) ->
         deck =
           Sanctum.Decks.get_deck!(deck_id,
-            load: [cards: [:primary_side], hero: [card: [:card_sides]]]
+            load: [deck_cards: [card: [:primary_side]], hero: [card: [:card_sides]]]
           )
 
         changeset = Changeset.put_context(changeset, :loaded_deck, deck)
@@ -32,7 +32,8 @@ defmodule Sanctum.Games.Changes.SetGameCards do
           )
 
         cards =
-          deck.cards
+          deck.deck_cards
+          |> Enum.flat_map(fn dc -> List.duplicate(dc.card, dc.quantity) end)
           |> Enum.shuffle()
           |> Enum.reject(
             &(&1.primary_side &&
