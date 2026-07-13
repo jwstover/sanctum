@@ -1,3 +1,35 @@
+# [1.0.0](https://github.com/jwstover/sanctum/compare/v0.12.0...v1.0.0) (2026-07-13)
+
+
+### Bug Fixes
+
+* **oban:** migrate Oban schema to v14 for 2.23 ([3485554](https://github.com/jwstover/sanctum/commit/3485554248b968f5eb43ec2b68be6e4e2faf9319))
+
+
+### chore
+
+* **deps:** upgrade constraint-blocked majors ([7c9b2c0](https://github.com/jwstover/sanctum/commit/7c9b2c0c35c6ea869f3112e8605a161ff2f91622))
+
+
+### Features
+
+* **auth:** add UserIdentity for OAuth (ash_authentication 4.14) ([1fb7550](https://github.com/jwstover/sanctum/commit/1fb75502020a3376c694aaf01d66a413f81a1a91))
+
+
+### BREAKING CHANGES
+
+* **deps:** handled: phoenix_live_view 1.2 validates component
+global attributes, so `<.button type=...>` required adding `type` to the
+button component's :global include list. Its updated HEEx formatter also
+reflowed whitespace in a few templates (cosmetic).
+
+Green under Elixir 1.18.4/OTP28: compile --warnings-as-errors, format,
+credo, sobelow, deps.unlock --check-unused, 107 tests.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+
+
 # [0.12.0](https://github.com/jwstover/sanctum/compare/v0.11.0...v0.12.0) (2026-07-12)
 
 
@@ -36,15 +68,6 @@
 
 * deck re-import duplicating deck cards ([4b151a0](https://github.com/jwstover/sanctum/commit/4b151a00a0694e9c9167223d5a71fed4f4083f65))
 * scope villain stage sides by set; pin hero side loading with tests ([79caa71](https://github.com/jwstover/sanctum/commit/79caa71eb01194920fdb0d9c49def74a8a79a141))
-
-
-
-## [0.10.1](https://github.com/jwstover/sanctum/compare/v0.10.0...v0.10.1) (2026-07-10)
-
-
-### Bug Fixes
-
-* correct 'villian' misspelling in stored enums ([7b674b5](https://github.com/jwstover/sanctum/commit/7b674b57b3adf9ca26967f508e7c92218566a5ad))
 
 
 
