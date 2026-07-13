@@ -22,6 +22,7 @@ defmodule SanctumWeb.CardLive.Index do
           id="cards"
           rows={@streams.cards}
           row_click={fn {_id, card} -> JS.navigate(~p"/cards/#{card}") end}
+          phx-viewport-bottom={!@end_of_timeline? && "next-page"}
         >
           <:col :let={{_id, card}} label="Image">
             <img
@@ -87,26 +88,46 @@ defmodule SanctumWeb.CardLive.Index do
     """
   end
 
+  @page_size 50
+
   @impl true
   def mount(_params, _session, socket) do
-    cards =
-      Sanctum.Games.list_cards!(
-        actor: socket.assigns[:current_user],
-        load: [:primary_side, :card_sides],
-        query: [sort: [base_code: :asc]]
-      )
-
     {:ok,
      socket
      |> assign(:page_title, "Listing Cards")
-     |> stream(:cards, cards)}
+     |> assign(:offset, 0)
+     |> assign(:end_of_timeline?, false)
+     |> paginate_cards(0)}
   end
 
   @impl true
+  def handle_event("next-page", _params, socket) do
+    if socket.assigns.end_of_timeline? do
+      {:noreply, socket}
+    else
+      {:noreply, paginate_cards(socket, socket.assigns.offset + @page_size)}
+    end
+  end
+
   def handle_event("delete", %{"id" => id}, socket) do
     card = Ash.get!(Sanctum.Games.Card, id, actor: socket.assigns.current_user)
     Ash.destroy!(card, actor: socket.assigns.current_user)
 
     {:noreply, stream_delete(socket, :cards, card)}
+  end
+
+  defp paginate_cards(socket, offset) do
+    page =
+      Sanctum.Games.list_cards!(
+        actor: socket.assigns[:current_user],
+        load: [:primary_side, :card_sides],
+        query: [sort: [base_code: :asc]],
+        page: [limit: @page_size, offset: offset]
+      )
+
+    socket
+    |> assign(:offset, offset)
+    |> assign(:end_of_timeline?, !page.more?)
+    |> stream(:cards, page.results, at: -1)
   end
 end
