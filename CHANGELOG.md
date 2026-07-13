@@ -1,3 +1,18 @@
+# [1.2.0](https://github.com/jwstover/sanctum/compare/v1.1.0...v1.2.0) (2026-07-13)
+
+
+### Bug Fixes
+
+* **ci:** build changelog off tip of main to stop version tag races ([8373623](https://github.com/jwstover/sanctum/commit/8373623c9c1394a358b65bec392909951528bf6d))
+
+
+### Features
+
+* **decks:** add basic deck list and view pages ([1398dbd](https://github.com/jwstover/sanctum/commit/1398dbd5c42676fac262cd02aba461540cfe7e3c))
+* **ui:** comic-dossier design-system foundation ([8ff2872](https://github.com/jwstover/sanctum/commit/8ff2872fec0fcfff88e40e866640dec8411124dd)), closes [#0b0b0](https://github.com/jwstover/sanctum/issues/0b0b0) [#15151](https://github.com/jwstover/sanctum/issues/15151) [#dbcb36](https://github.com/jwstover/sanctum/issues/dbcb36)
+
+
+
 # [1.1.0](https://github.com/jwstover/sanctum/compare/v1.0.0...v1.1.0) (2026-07-13)
 
 
@@ -63,15 +78,6 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 ### Features
 
 * add required game_id to GameCard ([f0f6078](https://github.com/jwstover/sanctum/commit/f0f60785e5a9ab3ac9f7f66366afbee6ed9a225f))
-
-
-
-# [0.11.0](https://github.com/jwstover/sanctum/compare/v0.10.3...v0.11.0) (2026-07-10)
-
-
-### Features
-
-* add cascade deletes, game_cards indexes, and game destroy ([9dc55d5](https://github.com/jwstover/sanctum/commit/9dc55d5fcd3072d41091a89a498d1a1d22597bbc))
 
 
 
