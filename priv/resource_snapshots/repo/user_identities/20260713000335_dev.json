@@ -1,8 +1,68 @@
 {
   "attributes": [
     {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "refresh_token",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "access_token_expires_at",
+      "type": "utc_datetime_usec"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "access_token",
+      "type": "text"
+    },
+    {
       "allow_nil?": false,
-      "default": "fragment(\"uuid_generate_v7()\")",
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "uid",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "strategy",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"gen_random_uuid()\")",
       "generated?": false,
       "precision": null,
       "primary_key?": true,
@@ -14,78 +74,6 @@
     },
     {
       "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "health",
-      "type": "bigint"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "max_health",
-      "type": "bigint"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "attack",
-      "type": "bigint"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "scheme",
-      "type": "bigint"
-    },
-    {
-      "allow_nil?": false,
-      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "inserted_at",
-      "type": "utc_datetime_usec"
-    },
-    {
-      "allow_nil?": false,
-      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "updated_at",
-      "type": "utc_datetime_usec"
-    },
-    {
-      "allow_nil?": false,
       "default": "nil",
       "generated?": false,
       "precision": null,
@@ -103,26 +91,46 @@
           "global": null,
           "strategy": null
         },
-        "name": "game_villians_game_id_fkey",
+        "name": "user_identities_user_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
         "schema": "public",
-        "table": "games"
+        "table": "users"
       },
       "scale": null,
       "size": null,
-      "source": "game_id",
+      "source": "user_id",
       "type": "uuid"
     }
   ],
   "base_filter": null,
   "check_constraints": [],
+  "create_table_options": null,
   "custom_indexes": [],
   "custom_statements": [],
-  "has_create_action": false,
-  "hash": "E2E0C1EF9621281F87F5717EEA9D402663095BE07ABA0D78EE2448B3DCA3ACB6",
-  "identities": [],
+  "has_create_action": true,
+  "hash": "B16CC6EA34992553EF92C193541CDD627365A4B397823EA75713BD7ED4D9789A",
+  "identities": [
+    {
+      "all_tenants?": false,
+      "base_filter": null,
+      "index_name": "user_identities_unique_on_strategy_and_uid_index",
+      "keys": [
+        {
+          "type": "atom",
+          "value": "strategy"
+        },
+        {
+          "type": "atom",
+          "value": "uid"
+        }
+      ],
+      "name": "unique_on_strategy_and_uid",
+      "nils_distinct?": true,
+      "where": null
+    }
+  ],
   "multitenancy": {
     "attribute": null,
     "global": null,
@@ -130,5 +138,5 @@
   },
   "repo": "Elixir.Sanctum.Repo",
   "schema": null,
-  "table": "game_villians"
+  "table": "user_identities"
 }

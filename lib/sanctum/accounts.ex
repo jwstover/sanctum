@@ -8,6 +8,8 @@ defmodule Sanctum.Accounts do
   resources do
     resource Sanctum.Accounts.Token
 
+    resource Sanctum.Accounts.UserIdentity
+
     resource Sanctum.Accounts.User do
       define :get_user, get_by: :id, action: :read
     end
