@@ -33,36 +33,67 @@ defmodule SanctumWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :active_tab, :atom,
+    default: nil,
+    values: [nil, :cards, :decks],
+    doc: "which top-nav tab to highlight"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-baseline gap-2">
-          <span class="font-komika text-2xl">Sanctum</span>
-          <span class="text-xs">v{Application.spec(:sanctum, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none mr-2">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <.theme_toggle />
-          </li>
-        </ul>
-      </div>
-      <div>
-        <.button :if={!@current_user} variant="primary" navigate={~p"/sign-in"}>Sign In</.button>
-      </div>
-    </header>
+    <div class="relative min-h-screen bg-base-100 text-base-content font-barlow-condensed">
+      <div class="pointer-events-none fixed inset-0 z-0 bg-halftone"></div>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-5xl space-y-4">
+      <!-- sticky top bar -->
+      <header class="sticky top-0 z-30 border-b-[3px] border-neutral bg-base-100/90 backdrop-blur">
+        <div class="mx-auto flex max-w-[1480px] items-center gap-6 px-6 py-3.5">
+          <a href="/" class="font-bangers text-[34px] leading-none tracking-wide text-primary">
+            SANCTUM
+          </a>
+          <nav class="flex h-[34px] items-end gap-5">
+            <.nav_tab navigate={~p"/cards"} active={@active_tab == :cards}>Card Pool</.nav_tab>
+            <span
+              class="cursor-default pb-[3px] text-[13px] font-bold uppercase tracking-[0.13em] text-base-content/25"
+              title="Coming soon"
+            >
+              Decks
+            </span>
+          </nav>
+          <div class="ml-auto flex items-center gap-4">
+            <span class="font-ibm-mono text-xs text-base-content/40">
+              v{Application.spec(:sanctum, :vsn)}
+            </span>
+            <.button :if={!@current_user} variant="primary" navigate={~p"/sign-in"}>Sign In</.button>
+          </div>
+        </div>
+      </header>
+
+      <main class="relative z-10 mx-auto max-w-[1480px] px-6 pb-24 pt-7">
         {render_slot(@inner_block)}
-      </div>
-    </main>
+      </main>
+    </div>
 
     <.flash_group flash={@flash} />
+    """
+  end
+
+  attr :active, :boolean, default: false
+  attr :rest, :global, include: ~w(href navigate patch)
+  slot :inner_block, required: true
+
+  defp nav_tab(assigns) do
+    ~H"""
+    <.link
+      class={[
+        "pb-[3px] text-[13px] font-bold uppercase tracking-[0.13em] transition-colors",
+        (@active && "border-b-[3px] border-primary text-primary") ||
+          "text-base-content/55 hover:text-white"
+      ]}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </.link>
     """
   end
 
@@ -141,40 +172,6 @@ defmodule SanctumWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
-    </div>
-    """
-  end
-
-  @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
-
-  See <head> in root.html.heex which applies the theme before page load.
-  """
-  def theme_toggle(assigns) do
-    ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
-
-      <button
-        phx-click={JS.dispatch("phx:set-theme", detail: %{theme: "system"})}
-        class="flex p-2 cursor-pointer w-1/3"
-      >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        phx-click={JS.dispatch("phx:set-theme", detail: %{theme: "light"})}
-        class="flex p-2 cursor-pointer w-1/3"
-      >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        phx-click={JS.dispatch("phx:set-theme", detail: %{theme: "dark"})}
-        class="flex p-2 cursor-pointer w-1/3"
-      >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
     </div>
     """
   end

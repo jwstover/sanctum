@@ -86,6 +86,7 @@ defmodule SanctumWeb do
       import Phoenix.HTML
       # Core UI components
       import SanctumWeb.CoreComponents
+      import SanctumWeb.Components.Card
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS
