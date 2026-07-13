@@ -120,6 +120,11 @@ defmodule Sanctum.Decks.Deck do
     end
   end
 
+  aggregates do
+    count :card_row_count, :deck_cards
+    sum :total_card_count, :deck_cards, :quantity
+  end
+
   identities do
     identity :unique_mcdb_deck, [:mcdb_type, :mcdb_id]
   end
