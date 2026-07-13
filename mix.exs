@@ -5,7 +5,7 @@ defmodule Sanctum.MixProject do
     [
       app: :sanctum,
       version: "0.12.0",
-      elixir: "~> 1.15",
+      elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
