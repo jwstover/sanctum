@@ -9,8 +9,30 @@ defmodule Sanctum.Release do
     load_app()
 
     for repo <- repos() do
-      {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
+      migrate_repo(repo)
     end
+  end
+
+  # Neon scales its compute to zero when the app is idle. On deploy this release
+  # command runs on a fresh machine, and its first connection often lands before
+  # the Neon endpoint has finished waking, so the initial migration attempt fails
+  # with a connection/timeout error. Retry with a short backoff to give the
+  # compute time to come online before aborting the deploy.
+  defp migrate_repo(repo, attempts \\ 5) do
+    {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
+  rescue
+    error ->
+      if attempts > 1 do
+        IO.puts(
+          "Migration attempt failed (#{Exception.message(error)}); " <>
+            "the database may still be waking. Retrying in 3s (#{attempts - 1} left)..."
+        )
+
+        Process.sleep(3_000)
+        migrate_repo(repo, attempts - 1)
+      else
+        reraise error, __STACKTRACE__
+      end
   end
 
   def rollback(repo, version) do

@@ -182,10 +182,16 @@ jobs:
 
       - name: Create Changelog PR
         if: steps.changelog.outputs.skipped == 'false'
+        # Pass the title/body through env vars rather than inlining them into the
+        # command. The changelog body can contain quotes and other shell
+        # metacharacters (an apostrophe once broke `--body '...'` quoting), which
+        # is both a correctness bug and a command-injection risk.
         run: |
-          gh pr create --base main --head ${{ env.PR_BRANCH }} --title 'chore(release): ${{ steps.changelog.outputs.tag }} [skip-ci]' --body '${{ steps.changelog.outputs.clean_changelog }}'
+          gh pr create --base main --head "$PR_BRANCH" --title "$PR_TITLE" --body "$PR_BODY"
         env:
           GH_TOKEN: ${{ secrets.github_token }}
+          PR_TITLE: "chore(release): ${{ steps.changelog.outputs.tag }} [skip-ci]"
+          PR_BODY: ${{ steps.changelog.outputs.clean_changelog }}
 
       - name: Merge Changelog PR
         if: steps.changelog.outputs.skipped == 'false'
