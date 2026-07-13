@@ -15,7 +15,12 @@ defmodule Sanctum.Games.Card do
   end
 
   actions do
-    defaults [:read, :destroy]
+    defaults [:destroy]
+
+    read :read do
+      primary? true
+      pagination offset?: true, default_limit: 50, required?: false
+    end
 
     create :create do
       primary? true

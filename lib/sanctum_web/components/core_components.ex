@@ -333,6 +333,8 @@ defmodule SanctumWeb.CoreComponents do
 
   slot :action, doc: "the slot for showing user actions in the last table column"
 
+  attr :rest, :global, include: ~w(phx-viewport-top phx-viewport-bottom)
+
   def table(assigns) do
     assigns =
       with %{rows: %Phoenix.LiveView.LiveStream{}} <- assigns do
@@ -349,7 +351,7 @@ defmodule SanctumWeb.CoreComponents do
           </th>
         </tr>
       </thead>
-      <tbody id={@id} phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"}>
+      <tbody id={@id} phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"} {@rest}>
         <tr :for={row <- @rows} id={@row_id && @row_id.(row)}>
           <td
             :for={col <- @col}
