@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/jwstover/sanctum/compare/v1.0.0...v1.1.0) (2026-07-13)
+
+
+### Features
+
+* **decks:** sync decks from MarvelCDB and make decks first-class ([9c7de0b](https://github.com/jwstover/sanctum/commit/9c7de0b1dc8d7087bb62a2dac414ec0f5ae98d2d))
+
+
+
 # [1.0.0](https://github.com/jwstover/sanctum/compare/v0.13.0...v1.0.0) (2026-07-13)
 
 
@@ -63,15 +72,6 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 ### Features
 
 * add cascade deletes, game_cards indexes, and game destroy ([9dc55d5](https://github.com/jwstover/sanctum/commit/9dc55d5fcd3072d41091a89a498d1a1d22597bbc))
-
-
-
-## [0.10.3](https://github.com/jwstover/sanctum/compare/v0.10.2...v0.10.3) (2026-07-10)
-
-
-### Bug Fixes
-
-* transactional card draws and race-safe order assignment ([e2ecc24](https://github.com/jwstover/sanctum/commit/e2ecc243b647448df364f0d7ca353cbbf2990805))
 
 
 
