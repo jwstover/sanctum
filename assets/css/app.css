@@ -20,39 +20,42 @@
 
 /* daisyUI theme plugin. You can update this file by fetching the latest version with:
   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
-  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
-  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
+
+  Sanctum ships a single dark "comic-dossier" theme keyed to the design system:
+  near-black canvas, warm off-white ink, gold brand accent, hard black borders,
+  zero radius. Build your own at: https://daisyui.com/theme-generator/ */
 @plugin "../vendor/daisyui-theme" {
-  name: "light";
+  name: "dark";
   default: true;
-  color-scheme: "light";
-  --color-base-100: oklch(97% 0.005 60);
-  --color-base-200: oklch(94% 0.008 55);
-  --color-base-300: oklch(89% 0.012 50);
-  --color-base-content: 'black';
-  --color-primary: oklch(55% 0.22 25);
-  --color-primary-content: oklch(98% 0.01 25);
-  --color-secondary: oklch(58% 0.18 265);
-  --color-secondary-content: oklch(98% 0.005 265);
-  --color-accent: oklch(72% 0.15 85);
-  --color-accent-content: oklch(15% 0.02 85);
-  --color-neutral: oklch(38% 0.02 220);
-  --color-neutral-content: oklch(96% 0.005 220);
-  --color-info: oklch(65% 0.16 245);
-  --color-info-content: oklch(96% 0.008 245);
-  --color-success: oklch(68% 0.14 145);
-  --color-success-content: oklch(96% 0.01 145);
-  --color-warning: oklch(75% 0.16 65);
-  --color-warning-content: oklch(15% 0.02 65);
-  --color-error: oklch(58% 0.24 15);
-  --color-error-content: oklch(96% 0.01 15);
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: #0b0b0d; /* app canvas */
+  --color-base-200: #15151a; /* panels / surfaces */
+  --color-base-300: #1a1a1f; /* raised chips / pills */
+  --color-base-content: #f4f1ea; /* ink */
+  --color-primary: #dbcb36; /* gold brand / CTA */
+  --color-primary-content: #161009;
+  --color-secondary: #2ea7b8; /* leadership teal */
+  --color-secondary-content: #08120b;
+  --color-accent: #dbcb36;
+  --color-accent-content: #161009;
+  --color-neutral: #08080a; /* pure-black borders / rules */
+  --color-neutral-content: #f4f1ea;
+  --color-info: #2ea7b8;
+  --color-info-content: #08120b;
+  --color-success: #46991b;
+  --color-success-content: #08120b;
+  --color-warning: #dbcb36;
+  --color-warning-content: #161009;
+  --color-error: #ce1b2e;
+  --color-error-content: #f4f1ea;
   --radius-selector: 0rem;
   --radius-field: 0rem;
   --radius-box: 0rem;
   --size-selector: 0.21875rem;
   --size-field: 0.21875rem;
   --border: 2px;
-  --depth: 2;
+  --depth: 1;
   --noise: 0;
 }
 
@@ -277,22 +280,252 @@ main, #game-board {
   font-display: swap;
 }
 
+/* ── Design-system fonts (self-hosted) ────────────────────────────────
+   Comic-dossier type: Bangers (wordmark), Anton (display headings),
+   Barlow (body), Barlow Condensed (UI/labels), IBM Plex Mono (kickers),
+   ChampionsIcons (resource glyphs). */
+@font-face {
+  font-family: 'Anton';
+  src: url('/fonts/design/anton-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bangers';
+  src: url('/fonts/design/bangers-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/design/barlow-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/design/barlow-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/design/barlow-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/design/barlow-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/design/barlow-800.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/design/barlow-400-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/design/barlow-500-italic.woff2') format('woff2');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/design/barlow-condensed-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/design/barlow-condensed-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/design/barlow-condensed-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/design/barlow-condensed-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/design/barlow-condensed-800.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/fonts/design/ibm-plex-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/fonts/design/ibm-plex-mono-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ChampionsIcons';
+  src: url('/fonts/design/ChampionsIcons.ttf') format('truetype');
+  font-display: swap;
+}
+
 /* Custom Font Utilities */
 @layer utilities {
   .font-elektra {
     font-family: 'Elektra Medium Pro', sans-serif;
   }
-  
+
   .font-exo2 {
     font-family: 'Exo2', sans-serif;
   }
-  
+
   .font-komika {
     font-family: 'Komika', sans-serif;
   }
-  
+
   .font-metropolis {
     font-family: 'Metropolis', sans-serif;
+  }
+
+  /* Design-system type utilities */
+  .font-anton {
+    font-family: 'Anton', system-ui, sans-serif;
+  }
+
+  .font-bangers {
+    font-family: 'Bangers', system-ui, cursive;
+  }
+
+  .font-barlow {
+    font-family: 'Barlow', system-ui, sans-serif;
+  }
+
+  .font-barlow-condensed {
+    font-family: 'Barlow Condensed', system-ui, sans-serif;
+  }
+
+  .font-ibm-mono {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+
+  .font-champions {
+    font-family: 'ChampionsIcons', sans-serif;
+  }
+}
+
+/* ── Comic-dossier design tokens & primitives ─────────────────────────
+   Semantic aspect colors, resource-pip colors, the halftone canvas
+   texture, and the signature hard offset-shadow — the pieces daisyUI's
+   theme variables can't express. */
+:root {
+  --sanctum-canvas: #0b0b0d;
+  --sanctum-ink: #f4f1ea;
+  --sanctum-gold: #dbcb36;
+  --sanctum-panel: #15151a;
+  --sanctum-border: #08080a;
+
+  /* Aspect accents */
+  --aspect-hero: #ce1b2e;
+  --aspect-aggression: #b12020;
+  --aspect-justice: #dbcb36;
+  --aspect-leadership: #2ea7b8;
+  --aspect-protection: #46991b;
+  --aspect-pool: #d074ac;
+  --aspect-basic: #87868f;
+
+  /* Resource-pip colors (ChampionsIcons glyphs) */
+  --res-energy: oklch(0.8 0.16 65);
+  --res-mental: oklch(0.72 0.15 255);
+  --res-physical: oklch(0.67 0.22 25);
+  --res-wild: oklch(0.68 0.13 165);
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--sanctum-canvas);
+    color: var(--sanctum-ink);
+    font-family: 'Barlow Condensed', system-ui, sans-serif;
+  }
+}
+
+/* Global comic-dossier chrome (kept outside @layer so it wins over
+   third-party component defaults, mirroring the design source). */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+::-webkit-scrollbar-thumb {
+  background: #33333c;
+}
+input::placeholder,
+textarea::placeholder {
+  color: rgba(244, 241, 234, 0.32);
+}
+
+/* Card tile hover-lift used across pool / feed grids */
+.mc-tile {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.mc-tile:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.85) !important;
+}
+
+@layer utilities {
+  /* Hard offset drop-shadow — the signature "printed cardstock" look */
+  .shadow-comic-sm {
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.85);
+  }
+  .shadow-comic {
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.85);
+  }
+  .shadow-comic-lg {
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.85);
+  }
+
+  /* Halftone dot texture overlay for page canvases */
+  .bg-halftone {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1.1px, transparent 1.5px);
+    background-size: 15px 15px;
   }
 }
 
