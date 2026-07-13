@@ -160,9 +160,18 @@ jobs:
       PR_BRANCH: release-ci-${{ github.sha }}
 
     steps:
+      # Check out the tip of main, NOT the triggering commit. The changelog
+      # action derives the next version by bumping the version in mix.exs, so it
+      # must read the latest mix.exs — the one that already includes the version
+      # bump merged by the previous release run. Building off the (stale)
+      # triggering SHA makes every push that predates the last release-bump
+      # recompute the same version and collide on the tag
+      # (`fatal: tag 'vX.Y.Z' already exists`). The concurrency group above
+      # guarantees the previous run's bump has landed on main before this runs.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: main
 
       - name: Create Branch
         run: |
