@@ -17,6 +17,8 @@ defmodule Sanctum.Application do
          Application.fetch_env!(:sanctum, Oban)
        )},
       {Phoenix.PubSub, name: Sanctum.PubSub},
+      {Task.Supervisor, name: Sanctum.TaskSupervisor},
+      Sanctum.CardSync.Server,
       # Start a worker by calling: Sanctum.Worker.start_link(arg)
       # {Sanctum.Worker, arg},
       # Start to serve requests, typically the last entry

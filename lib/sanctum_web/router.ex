@@ -44,6 +44,7 @@ defmodule SanctumWeb.Router do
 
       live "/cards", CardLive.Index, :index
       live "/cards/new", CardLive.Form, :new
+      live "/cards/sync", CardLive.Sync, :index
       live "/cards/:id/edit", CardLive.Form, :edit
 
       live "/cards/:id", CardLive.Show, :show
