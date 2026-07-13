@@ -1,5 +1,24 @@
 defmodule Sanctum.MarvelCdb do
-  @moduledoc false
+  @moduledoc """
+  Client for the MarvelCDB public API.
+
+  Cards are processed as *groups*: all payload entries sharing a base code
+  (e.g. `01097`, `01097a`, `01097b`) resolve to one `Card` with one `CardSide`
+  per face. Grouping is required because MarvelCDB's representation varies by
+  card type:
+
+    * heroes are suffixed sibling entries only (`01001a`/`01001b`, up to `c`
+      for 3-form heroes like Angel — nothing links `c`, so link-chains can't
+      be trusted)
+    * main schemes add a `double_sided` parent entry that alone carries the
+      front image (`imagesrc`) and back image (`backimagesrc`); the `a` entry
+      has no image of its own
+    * a few double-sided cards (Intangible, `26002`) have *only* the parent —
+      both faces must be synthesized from it
+
+  Unknown card codes answer with HTTP 500 (not 404), so single-card fetches
+  never retry.
+  """
 
   require Logger
 
@@ -16,7 +35,7 @@ defmodule Sanctum.MarvelCdb do
 
   def load_deck(mcdb_deck_id) when is_binary(mcdb_deck_id) do
     "#{@base_url}/decklist/#{mcdb_deck_id}"
-    |> Req.get(max_retries: 1)
+    |> Req.get([max_retries: 1] ++ req_options())
     |> handle_response()
     |> case do
       {:ok, decklist} ->
@@ -94,13 +113,40 @@ defmodule Sanctum.MarvelCdb do
 
   defp create_or_find_villain(_card, _side), do: {:ok, nil}
 
-  def load_pack(pack_code) when is_binary(pack_code) do
-    get_cards_by_pack(pack_code)
-    |> case do
-      {:ok, cards} ->
-        cards
-        |> Enum.each(&create_card_with_sides/1)
+  def load_pack(pack_code, opts \\ []) when is_binary(pack_code) do
+    with {:ok, cards} <- get_cards_by_pack(pack_code) do
+      case sync_entries(cards, opts) do
+        {_synced, []} -> :ok
+        {_synced, failures} -> {:error, failures}
+      end
     end
+  end
+
+  @doc """
+  Upserts cards and their sides from a list of raw MarvelCDB payload entries.
+
+  Entries are grouped by base code and each group is processed as one card.
+  Returns `{synced_count, failures}` where failures are `{base_code, error}`
+  tuples; a failing group never aborts the rest.
+
+  Options:
+
+    * `:image_url_fun` — maps a resolved `imagesrc` path (or nil) to the URL
+      stored on the side. Defaults to an absolute marvelcdb.com URL;
+      `Sanctum.CardSync` passes `Sanctum.CardImages.public_url/1` to point at
+      the mirrored bucket instead.
+  """
+  def sync_entries(entries, opts \\ []) do
+    entries
+    |> Enum.uniq_by(& &1["code"])
+    |> Enum.group_by(&extract_base_code(&1["code"]))
+    |> Enum.reduce({0, []}, fn {base_code, group}, {synced, failures} ->
+      case create_card_from_entries(group, opts) do
+        {:ok, _card} -> {synced + 1, failures}
+        {:error, error} -> {synced, [{base_code, error} | failures]}
+      end
+    end)
+    |> then(fn {synced, failures} -> {synced, Enum.reverse(failures)} end)
   end
 
   def load_card(card_id) when is_integer(card_id) do
@@ -118,16 +164,24 @@ defmodule Sanctum.MarvelCdb do
         {:ok, card}
 
       _ ->
-        "#{@base_url}/card/#{card_id}"
-        |> Req.get(max_retries: 1)
-        |> handle_response()
-        |> case do
-          {:ok, resp} ->
-            create_card_with_sides(resp)
+        fetch_and_create_card(card_id)
+    end
+  end
 
-          err ->
-            err
-        end
+  # Fetches the card, then its pack listing, and processes every entry sharing
+  # the card's base code — the only reliable way to find all sides (parents,
+  # orphaned `c`/`d` sides) without probing guessed codes.
+  defp fetch_and_create_card(card_id) do
+    with {:ok, mcdb_card} <- fetch_card(card_id),
+         {:ok, pack_entries} <- get_cards_by_pack(mcdb_card["pack_code"]) do
+      base_code = extract_base_code(mcdb_card["code"])
+
+      pack_entries
+      |> Enum.filter(&(extract_base_code(&1["code"]) == base_code))
+      |> case do
+        [] -> create_card_from_entries([mcdb_card])
+        group -> create_card_from_entries(group)
+      end
     end
   end
 
@@ -141,70 +195,93 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
-  @spec get_cards_by_pack(String.t()) :: {:ok, list(map())}
+  @spec get_cards_by_pack(String.t()) :: {:ok, list(map())} | {:error, term()}
   def get_cards_by_pack(pack_code) when is_binary(pack_code) do
     "#{@base_url}/cards/#{pack_code}"
-    |> Req.get(max_retries: 1)
+    |> Req.get([max_retries: 1] ++ req_options())
     |> handle_response()
-    |> case do
-      {:ok, cards} ->
-        {:ok, cards}
-
-      err ->
-        err
-    end
   end
 
-  defp create_card_with_sides(mcdb_card) do
-    code = mcdb_card["code"]
-    base_code = extract_base_code(code)
-    side_identifier = extract_side_identifier(code)
+  @doc "Fetches every card (player + encounter) as a single payload."
+  @spec get_all_cards() :: {:ok, list(map())} | {:error, term()}
+  def get_all_cards do
+    "#{@base_url}/cards/?encounter=1"
+    |> Req.get([max_retries: 1] ++ req_options())
+    |> handle_response()
+  end
 
-    # Determine if card is multi-sided based on multiple indicators
-    is_multi_sided = detect_multi_sided_card(mcdb_card, code, side_identifier)
+  # MarvelCDB answers unknown card codes with HTTP 500, which Req's default
+  # retry treats as transient — never retry single-card fetches.
+  defp fetch_card(card_id) do
+    "#{@base_url}/card/#{card_id}"
+    |> Req.get([retry: false] ++ req_options())
+    |> handle_response()
+  end
 
-    # Don't create a side for base codes without side identifiers when double_sided is true
-    # This represents the card metadata, not a specific side
-    should_create_side = should_create_card_side?(mcdb_card, code, side_identifier)
+  @doc """
+  Creates/updates one card and all its sides from the payload entries sharing
+  a base code. See `sync_entries/2` for options.
+  """
+  def create_card_from_entries(entries, opts \\ []) do
+    image_url_fun = Keyword.get(opts, :image_url_fun, &build_image_url/1)
 
-    card_attrs = prepare_card_attrs(mcdb_card, is_multi_sided)
+    parent = Enum.find(entries, &(!suffixed?(&1["code"])))
+    side_entries = side_entries(entries, parent)
 
-    with {:ok, card} <- Sanctum.Games.create_card(card_attrs),
-         :ok <- maybe_create_primary_side(card, mcdb_card, code, should_create_side) do
-      if is_multi_sided, do: load_additional_sides(card, base_code)
+    card_entry = parent || hd(side_entries)
+    primary_code = side_entries |> hd() |> Map.fetch!("code")
+    card_attrs = prepare_card_attrs(card_entry, primary_code, length(side_entries) > 1)
+
+    with {:ok, card} <- Games.create_card(card_attrs),
+         :ok <- upsert_sides(card, side_entries, parent, image_url_fun) do
       {:ok, card}
     end
   end
 
-  # Creates the card's primary side if needed, reusing an existing side when one
-  # already exists for this code. Returns :ok or an error tuple.
-  defp maybe_create_primary_side(_card, _mcdb_card, _code, false), do: :ok
+  defp side_entries(entries, parent) do
+    sides = entries |> Enum.filter(&suffixed?(&1["code"])) |> Enum.sort_by(& &1["code"])
 
-  defp maybe_create_primary_side(card, mcdb_card, code, true) do
-    case Sanctum.Games.get_card_side_by_code(code) do
-      {:ok, existing_side} ->
-        create_or_find_villain(card, existing_side)
-        :ok
-
-      {:error, _} ->
-        create_side(card, prepare_card_side_attrs(mcdb_card))
+    if parent && parent["double_sided"] do
+      fill_missing_sides(sides, parent)
+    else
+      if sides == [], do: [parent], else: sides
     end
   end
 
-  defp load_additional_sides(card, base_code) do
-    # For multi-sided cards, try to load sides b, c, etc.
-    Enum.each(["b", "c", "d"], fn suffix ->
-      case fetch_card_side(base_code <> suffix) do
-        {:ok, side_data} -> create_side(card, prepare_card_side_attrs(side_data))
-        # Side doesn't exist, continue
-        _ -> :ok
+  # Pack payloads omit hidden side entries (main-scheme B sides only appear in
+  # the all-cards payload), and a few cards have no side entries at all
+  # (Intangible) — fill whatever is missing from the parent, which alone
+  # carries both faces.
+  defp fill_missing_sides(sides, parent) do
+    identifiers = MapSet.new(sides, &extract_side_identifier(&1["code"]))
+    [front, back] = synthesize_side_entries(parent)
+
+    sides
+    |> then(&if MapSet.member?(identifiers, "a"), do: &1, else: [front | &1])
+    |> then(&if MapSet.member?(identifiers, "b"), do: &1, else: &1 ++ [back])
+    |> Enum.sort_by(& &1["code"])
+  end
+
+  defp upsert_sides(card, side_entries, parent, image_url_fun) do
+    Enum.reduce_while(side_entries, :ok, fn entry, :ok ->
+      image_url = entry |> resolve_imagesrc(parent) |> image_url_fun.()
+
+      case upsert_side(card, prepare_card_side_attrs(entry, image_url)) do
+        :ok -> {:cont, :ok}
+        err -> {:halt, err}
       end
     end)
   end
 
-  # Creates a card side and, when it is a villain side, the backing Villain.
-  defp create_side(card, side_attrs) do
-    case Sanctum.Games.create_card_side(Map.put(side_attrs, :card_id, card.id)) do
+  defp upsert_side(card, side_attrs) do
+    attrs = Map.put(side_attrs, :card_id, card.id)
+
+    find_existing_side(card, attrs)
+    |> case do
+      {:ok, existing} -> Games.update_card_side(existing, attrs)
+      {:error, _not_found} -> Games.create_card_side(attrs)
+    end
+    |> case do
       {:ok, side} ->
         create_or_find_villain(card, side)
         :ok
@@ -214,11 +291,54 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
-  defp fetch_card_side(side_code) do
-    "#{@base_url}/card/#{side_code}"
-    |> Req.get(max_retries: 1)
-    |> handle_response()
+  # The card+identifier fallback catches rows written by older sync logic
+  # under a differently-suffixed code (e.g. "01144" where the payload now says
+  # "01144a"); updating them corrects the code in place.
+  defp find_existing_side(card, attrs) do
+    case Games.get_card_side_by_code(attrs.code) do
+      {:ok, existing} -> {:ok, existing}
+      {:error, _} -> Games.get_card_side_by_card_and_side(card.id, attrs.side_identifier)
+    end
   end
+
+  # The side's image with fallback to the double-sided parent entry, which
+  # alone carries the front (`imagesrc`) and back (`backimagesrc`) scans for
+  # main schemes and friends.
+  defp resolve_imagesrc(entry, parent) do
+    cond do
+      src = presence(entry["imagesrc"]) -> src
+      is_nil(parent) -> nil
+      extract_side_identifier(entry["code"]) == "a" -> presence(parent["imagesrc"])
+      extract_side_identifier(entry["code"]) == "b" -> presence(parent["backimagesrc"])
+      true -> nil
+    end
+  end
+
+  # Double-sided cards without their own side entries (Intangible, 26002)
+  # carry both faces on the parent: front as the entry itself, back via
+  # back_name/back_text/backimagesrc.
+  defp synthesize_side_entries(parent) do
+    code = parent["code"]
+
+    front = Map.put(parent, "code", code <> "a")
+
+    back =
+      Map.merge(parent, %{
+        "code" => code <> "b",
+        "name" => parent["back_name"] || parent["name"],
+        "real_name" => nil,
+        "text" => parent["back_text"],
+        "real_text" => nil,
+        "imagesrc" => presence(parent["backimagesrc"])
+      })
+
+    [front, back]
+  end
+
+  defp suffixed?(code), do: String.match?(code, ~r/[a-z]$/)
+
+  defp presence(value) when value in [nil, ""], do: nil
+  defp presence(value), do: value
 
   def extract_base_code(code) do
     # Remove trailing letter (e.g., "01001a" -> "01001")
@@ -233,34 +353,14 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
-  def detect_multi_sided_card(mcdb_card, code, _side_identifier) do
-    explicit_double_sided = mcdb_card["double_sided"] || false
-    has_side_suffix = String.match?(code, ~r/[a-z]$/)
-
-    # A card is multi-sided if:
-    # 1. MarvelCDB explicitly says it's double_sided, OR
-    # 2. The code has a side suffix (a, b, c), which implies multiple sides exist
-    explicit_double_sided || has_side_suffix
-  end
-
-  def should_create_card_side?(mcdb_card, code, _side_identifier) do
-    has_side_suffix = String.match?(code, ~r/[a-z]$/)
-    explicit_double_sided = mcdb_card["double_sided"] || false
-
-    # Create a side if:
-    # 1. Code has a side suffix (represents a specific side), OR
-    # 2. Code has no suffix AND double_sided is false (single-sided card, treat as side 'a')
-    has_side_suffix || (!has_side_suffix && !explicit_double_sided)
-  end
-
-  defp prepare_card_attrs(%{} = mcdb_card, is_multi_sided) do
+  defp prepare_card_attrs(%{} = mcdb_card, primary_code, is_multi_sided) do
     %{
       # Multi-sided card support
       is_multi_sided: is_multi_sided,
       base_code: extract_base_code(mcdb_card["code"]),
 
       # Primary side code (for compatibility)
-      code: mcdb_card["code"],
+      code: primary_code,
 
       # Card-level properties
       deck_limit: mcdb_card["quantity"] || 1,
@@ -275,7 +375,7 @@ defmodule Sanctum.MarvelCdb do
     |> Map.new()
   end
 
-  defp prepare_card_side_attrs(%{} = mcdb_card) do
+  defp prepare_card_side_attrs(%{} = mcdb_card, image_url) do
     side_identifier = extract_side_identifier(mcdb_card["code"])
 
     %{
@@ -332,7 +432,7 @@ defmodule Sanctum.MarvelCdb do
       boost_star: mcdb_card["boost_star"] || false,
 
       # Image
-      image_url: build_image_url(mcdb_card["imagesrc"])
+      image_url: image_url
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
@@ -345,6 +445,9 @@ defmodule Sanctum.MarvelCdb do
       "I" -> 1
       "II" -> 2
       "III" -> 3
+      "1" -> 1
+      "2" -> 2
+      "3" -> 3
       "1A" -> 1
       "1B" -> 1
       "1C" -> 1
@@ -354,6 +457,7 @@ defmodule Sanctum.MarvelCdb do
       "3A" -> 3
       "3B" -> 3
       "3C" -> 3
+      _ -> nil
     end
   end
 
@@ -392,7 +496,6 @@ defmodule Sanctum.MarvelCdb do
   end
 
   defp build_image_url(nil), do: nil
-  defp build_image_url(""), do: nil
 
   defp build_image_url(imagesrc) when is_binary(imagesrc) do
     case String.starts_with?(imagesrc, "http") do
@@ -433,4 +536,6 @@ defmodule Sanctum.MarvelCdb do
       {:error, exception} -> {:error, exception}
     end
   end
+
+  defp req_options, do: Application.get_env(:sanctum, :marvel_cdb_req_options, [])
 end

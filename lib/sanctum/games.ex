@@ -16,8 +16,14 @@ defmodule Sanctum.Games do
 
     resource Sanctum.Games.CardSide do
       define :create_card_side, action: :create
+      define :update_card_side, action: :update
       define :get_card_side, get_by: :id, action: :read
       define :get_card_side_by_code, args: [:code], get?: true, action: :by_code
+
+      define :get_card_side_by_card_and_side,
+        args: [:card_id, :side_identifier],
+        get?: true,
+        action: :by_card_and_side
     end
 
     resource Sanctum.Games.Game do

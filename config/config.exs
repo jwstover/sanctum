@@ -63,6 +63,14 @@ config :sanctum,
   generators: [timestamp_type: :utc_datetime],
   ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games, Sanctum.Heroes, Sanctum.Villains]
 
+# Public base URL of the bucket that mirrors MarvelCDB card scans (see
+# `mix sanctum.sync_cards`). Dev and prod share the same public bucket.
+config :sanctum, :card_image_base_url, "https://sanctum-cards.fly.storage.tigris.dev"
+
+# Extra Req options merged into every MarvelCDB request; test.exs uses this
+# to route requests to a Req.Test stub.
+config :sanctum, :marvel_cdb_req_options, []
+
 # Configures the endpoint
 config :sanctum, SanctumWeb.Endpoint,
   url: [host: "localhost"],
