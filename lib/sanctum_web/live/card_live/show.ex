@@ -1,8 +1,6 @@
 defmodule SanctumWeb.CardLive.Show do
   use SanctumWeb, :live_view
 
-  on_mount {SanctumWeb.LiveUserAuth, :live_user_optional}
-
   @impl true
   def render(assigns) do
     ~H"""

@@ -36,7 +36,7 @@ defmodule Sanctum.Games.GameVillainTest do
         set: set_name,
         pack: set_name
       })
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     # Create the villain card side
     {:ok, villain_side} =
@@ -53,7 +53,7 @@ defmodule Sanctum.Games.GameVillainTest do
         attack: 2,
         scheme: 1
       })
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     # Create the Villain resource
     {:ok, villain} =
@@ -190,7 +190,7 @@ defmodule Sanctum.Games.GameVillainTest do
           set: set_name,
           pack: set_name
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, stage1_side} =
         Sanctum.Games.CardSide
@@ -206,7 +206,7 @@ defmodule Sanctum.Games.GameVillainTest do
           attack: 1,
           scheme: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Create stage 2 card and side
       {:ok, stage2_card} =
@@ -217,7 +217,7 @@ defmodule Sanctum.Games.GameVillainTest do
           set: set_name,
           pack: set_name
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, stage2_side} =
         Sanctum.Games.CardSide
@@ -233,7 +233,7 @@ defmodule Sanctum.Games.GameVillainTest do
           attack: 2,
           scheme: 2
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Create stage 3 card and side
       {:ok, stage3_card} =
@@ -244,7 +244,7 @@ defmodule Sanctum.Games.GameVillainTest do
           set: set_name,
           pack: set_name
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, stage3_side} =
         Sanctum.Games.CardSide
@@ -260,7 +260,7 @@ defmodule Sanctum.Games.GameVillainTest do
           attack: 3,
           scheme: 3
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Create the Villain resource
       {:ok, villain} =
@@ -361,7 +361,7 @@ defmodule Sanctum.Games.GameVillainTest do
           attack: 2,
           scheme: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Now flip the stage
       {:ok, flipped_villain} = Games.flip_villain_stage(game_villain, actor: user)

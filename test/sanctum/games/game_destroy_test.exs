@@ -13,7 +13,8 @@ defmodule Sanctum.Games.GameDestroyTest do
 
   # Helper function to create a card with its primary side
   defp create_card_with_side(card_attrs, side_attrs) do
-    {:ok, card} = Card |> Ash.Changeset.for_create(:create, card_attrs) |> Ash.create()
+    {:ok, card} =
+      Card |> Ash.Changeset.for_create(:create, card_attrs) |> Ash.create(authorize?: false)
 
     side_attrs_with_card_id =
       Map.merge(side_attrs, %{
@@ -26,7 +27,7 @@ defmodule Sanctum.Games.GameDestroyTest do
     {:ok, _side} =
       CardSide
       |> Ash.Changeset.for_create(:create, side_attrs_with_card_id)
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     {:ok, card}
   end

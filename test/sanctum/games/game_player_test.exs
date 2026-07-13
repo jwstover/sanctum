@@ -35,7 +35,7 @@ defmodule Sanctum.Games.GamePlayerTest do
         set: set_name,
         pack: set_name
       })
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     # Create the villain card side
     {:ok, _villain_side} =
@@ -51,7 +51,7 @@ defmodule Sanctum.Games.GamePlayerTest do
         attack: 2,
         scheme: 1
       })
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     # Create a test game - this automatically creates a GamePlayer
     {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)

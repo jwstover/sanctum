@@ -29,6 +29,22 @@ defmodule SanctumWeb.LiveUserAuth do
     end
   end
 
+  def on_mount(:live_admin_required, _params, _session, socket) do
+    case socket.assigns[:current_user] do
+      nil ->
+        {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/sign-in")}
+
+      %{admin: true} ->
+        {:cont, socket}
+
+      _non_admin ->
+        {:halt,
+         socket
+         |> Phoenix.LiveView.put_flash(:error, "You do not have permission to access that page.")
+         |> Phoenix.LiveView.redirect(to: ~p"/")}
+    end
+  end
+
   def on_mount(:live_no_user, _params, _session, socket) do
     if socket.assigns[:current_user] do
       {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/")}

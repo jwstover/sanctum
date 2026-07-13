@@ -17,4 +17,11 @@ defmodule Sanctum.AccountsFixtures do
     |> Ash.Changeset.for_create(:create, attrs)
     |> Ash.create!(authorize?: false)
   end
+
+  def admin_user_fixture(attrs \\ %{}) do
+    attrs
+    |> user_fixture()
+    |> Ash.Changeset.for_update(:set_admin, %{admin: true})
+    |> Ash.update!(authorize?: false)
+  end
 end

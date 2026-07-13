@@ -119,7 +119,6 @@ defmodule SanctumWeb.CardLive.Sync do
     {:ok,
      socket
      |> assign(:page_title, "Card Sync")
-     |> assign_new(:current_user, fn -> nil end)
      |> assign(:sync, Server.status())}
   end
 

@@ -18,7 +18,9 @@ defmodule Sanctum.Games.CardTest do
         is_multi_sided: false
       }
 
-      assert {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
+      assert {:ok, card} =
+               Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create(authorize?: false)
+
       assert card.base_code == "01001"
       assert card.code == "01001a"
       assert card.set == "core"
@@ -37,7 +39,9 @@ defmodule Sanctum.Games.CardTest do
         code: "test#{unique_id}"
       }
 
-      assert {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
+      assert {:ok, card} =
+               Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create(authorize?: false)
+
       assert card.base_code == "test#{unique_id}"
       assert card.code == "test#{unique_id}"
       assert card.unique == false
@@ -50,7 +54,9 @@ defmodule Sanctum.Games.CardTest do
         set: "core"
       }
 
-      assert {:error, error} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
+      assert {:error, error} =
+               Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create(authorize?: false)
+
       assert %Ash.Error.Invalid{} = error
       assert Enum.any?(error.errors, &(&1.field == :base_code))
       assert Enum.any?(error.errors, &(&1.field == :code))
@@ -63,10 +69,12 @@ defmodule Sanctum.Games.CardTest do
         set: "core"
       }
 
-      assert {:ok, _card1} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
+      assert {:ok, _card1} =
+               Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create(authorize?: false)
 
       # Second creation should succeed due to upsert
-      assert {:ok, _card2} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
+      assert {:ok, _card2} =
+               Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create(authorize?: false)
     end
 
     test "enforces unique base_code identity" do
@@ -82,10 +90,12 @@ defmodule Sanctum.Games.CardTest do
         set: "core"
       }
 
-      assert {:ok, _card1} = Card |> Ash.Changeset.for_create(:create, attrs1) |> Ash.create()
+      assert {:ok, _card1} =
+               Card |> Ash.Changeset.for_create(:create, attrs1) |> Ash.create(authorize?: false)
 
       # Second creation with same base_code should upsert
-      assert {:ok, _card2} = Card |> Ash.Changeset.for_create(:create, attrs2) |> Ash.create()
+      assert {:ok, _card2} =
+               Card |> Ash.Changeset.for_create(:create, attrs2) |> Ash.create(authorize?: false)
     end
   end
 
@@ -100,7 +110,9 @@ defmodule Sanctum.Games.CardTest do
         permanent: true
       }
 
-      assert {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
+      assert {:ok, card} =
+               Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create(authorize?: false)
+
       assert card.deck_limit == 2
       assert card.unique == true
       assert card.permanent == true
@@ -110,7 +122,7 @@ defmodule Sanctum.Games.CardTest do
       {:ok, card} =
         Card
         |> Ash.Changeset.for_create(:create, %{base_code: "01011", code: "01011a", set: "core"})
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       side_attrs = %{
         card_id: card.id,
@@ -127,7 +139,7 @@ defmodule Sanctum.Games.CardTest do
       assert {:error, %Ash.Error.Invalid{} = error} =
                Sanctum.Games.CardSide
                |> Ash.Changeset.for_create(:create, side_attrs)
-               |> Ash.create()
+               |> Ash.create(authorize?: false)
 
       rejected_inputs =
         error.errors
@@ -171,13 +183,19 @@ defmodule Sanctum.Games.CardTest do
       }
 
       {:ok, hero_card} =
-        Card |> Ash.Changeset.for_create(:create, hero_card_attrs) |> Ash.create()
+        Card
+        |> Ash.Changeset.for_create(:create, hero_card_attrs)
+        |> Ash.create(authorize?: false)
 
       {:ok, ally_card} =
-        Card |> Ash.Changeset.for_create(:create, ally_card_attrs) |> Ash.create()
+        Card
+        |> Ash.Changeset.for_create(:create, ally_card_attrs)
+        |> Ash.create(authorize?: false)
 
       {:ok, villain_card} =
-        Card |> Ash.Changeset.for_create(:create, villain_card_attrs) |> Ash.create()
+        Card
+        |> Ash.Changeset.for_create(:create, villain_card_attrs)
+        |> Ash.create(authorize?: false)
 
       %{
         hero_card: hero_card,
@@ -249,7 +267,7 @@ defmodule Sanctum.Games.CardTest do
       {:ok, _card_side} =
         Sanctum.Games.CardSide
         |> Ash.Changeset.for_create(:create, card_side_attrs)
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       card_with_sides =
         Card
@@ -274,7 +292,9 @@ defmodule Sanctum.Games.CardTest do
         deck_limit: 3
       }
 
-      {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
+      {:ok, card} =
+        Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create(authorize?: false)
+
       %{card: card}
     end
 
@@ -286,7 +306,9 @@ defmodule Sanctum.Games.CardTest do
       }
 
       assert {:ok, updated_card} =
-               card |> Ash.Changeset.for_update(:update, update_attrs) |> Ash.update()
+               card
+               |> Ash.Changeset.for_update(:update, update_attrs)
+               |> Ash.update(authorize?: false)
 
       assert updated_card.set == "updated_set"
       assert updated_card.pack == "updated_pack"
@@ -303,8 +325,10 @@ defmodule Sanctum.Games.CardTest do
         pack: "temp"
       }
 
-      {:ok, card} = Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create()
-      assert :ok = card |> Ash.destroy()
+      {:ok, card} =
+        Card |> Ash.Changeset.for_create(:create, attrs) |> Ash.create(authorize?: false)
+
+      assert :ok = card |> Ash.destroy(authorize?: false)
 
       # Verify card is gone
       assert_raise Ash.Error.Invalid, fn ->

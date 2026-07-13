@@ -257,7 +257,9 @@ defmodule Sanctum.MarvelCdb do
     primary_code = side_entries |> hd() |> Map.fetch!("code")
     card_attrs = prepare_card_attrs(card_entry, primary_code, length(side_entries) > 1)
 
-    with {:ok, card} <- Games.create_card(card_attrs),
+    # Catalog writes are system-level (sync, seeds, player deck import) and
+    # bypass the admin-only Card/CardSide policies.
+    with {:ok, card} <- Games.create_card(card_attrs, authorize?: false),
          :ok <- upsert_sides(card, side_entries, parent, image_url_fun) do
       {:ok, card}
     end
@@ -303,8 +305,8 @@ defmodule Sanctum.MarvelCdb do
 
     find_existing_side(card, attrs)
     |> case do
-      {:ok, existing} -> Games.update_card_side(existing, attrs)
-      {:error, _not_found} -> Games.create_card_side(attrs)
+      {:ok, existing} -> Games.update_card_side(existing, attrs, authorize?: false)
+      {:error, _not_found} -> Games.create_card_side(attrs, authorize?: false)
     end
     |> case do
       {:ok, side} ->
