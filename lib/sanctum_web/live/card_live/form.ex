@@ -207,12 +207,12 @@ defmodule SanctumWeb.CardLive.Form do
           }
         />
       </div>
-      
-    <!-- Stats and Details -->
+
+      <!-- Stats and Details -->
       <div class="space-y-4">
         <h4 class="font-medium text-gray-900">Stats & Details</h4>
-        
-    <!-- Combat Stats -->
+
+        <!-- Combat Stats -->
         <div class="grid grid-cols-2 gap-2">
           <.input field={@form[:attack]} type="number" label="Attack" />
           <.input field={@form[:attack_cost]} type="number" label="Attack Cost" />
@@ -226,14 +226,14 @@ defmodule SanctumWeb.CardLive.Form do
           <.input field={@form[:defense_cost]} type="number" label="Defense Cost" />
         </div>
         <.input field={@form[:health]} type="number" label="Health" />
-        
-    <!-- Hero Fields -->
+
+        <!-- Hero Fields -->
         <div class="grid grid-cols-2 gap-2">
           <.input field={@form[:hand_size]} type="number" label="Hand Size" />
           <.input field={@form[:recover]} type="number" label="Recover" />
         </div>
-        
-    <!-- Villain/Scheme Fields -->
+
+        <!-- Villain/Scheme Fields -->
         <.input field={@form[:health_per_hero]} type="checkbox" label="Health Per Hero" />
         <.input field={@form[:stage]} type="number" label="Stage" />
         <div class="grid grid-cols-2 gap-2">
@@ -241,8 +241,8 @@ defmodule SanctumWeb.CardLive.Form do
           <.input field={@form[:escalation_threat]} type="number" label="Escalation Threat" />
           <.input field={@form[:max_threat]} type="number" label="Max Threat" />
         </div>
-        
-    <!-- Icons -->
+
+        <!-- Icons -->
         <div class="space-y-2">
           <label class="text-sm font-medium">Icons</label>
           <div class="grid grid-cols-2 gap-2">
@@ -253,8 +253,8 @@ defmodule SanctumWeb.CardLive.Form do
             <.input field={@form[:boost_star]} type="checkbox" label="Boost Star" />
           </div>
         </div>
-        
-    <!-- Resources -->
+
+        <!-- Resources -->
         <div class="space-y-2">
           <label class="text-sm font-medium">Resource Icons</label>
           <div class="grid grid-cols-2 gap-2">
@@ -264,8 +264,8 @@ defmodule SanctumWeb.CardLive.Form do
             <.input field={@form[:resource_wild_count]} type="number" label="Wild" />
           </div>
         </div>
-        
-    <!-- Other Fields -->
+
+        <!-- Other Fields -->
         <.input field={@form[:boost]} type="number" label="Boost" />
         <.input field={@form[:image_url]} type="text" label="Image URL" />
       </div>
