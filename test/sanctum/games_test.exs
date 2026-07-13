@@ -8,7 +8,8 @@ defmodule Sanctum.GamesTest do
 
   # Helper function to create a card with its primary side
   defp create_card_with_side(card_attrs, side_attrs) do
-    {:ok, card} = Card |> Ash.Changeset.for_create(:create, card_attrs) |> Ash.create()
+    {:ok, card} =
+      Card |> Ash.Changeset.for_create(:create, card_attrs) |> Ash.create(authorize?: false)
 
     side_attrs_with_card_id =
       Map.merge(side_attrs, %{
@@ -21,7 +22,7 @@ defmodule Sanctum.GamesTest do
     {:ok, _side} =
       Sanctum.Games.CardSide
       |> Ash.Changeset.for_create(:create, side_attrs_with_card_id)
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     {:ok, card}
   end
@@ -505,7 +506,7 @@ defmodule Sanctum.GamesTest do
           set: "test_hero",
           pack: "test_hero"
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, _side} =
         Sanctum.Games.CardSide
@@ -518,7 +519,7 @@ defmodule Sanctum.GamesTest do
           type: :alter_ego,
           hand_size: 6
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, hero} =
         Sanctum.Heroes.find_or_create_hero(%{
@@ -594,7 +595,7 @@ defmodule Sanctum.GamesTest do
           set: "scheme_scenario",
           pack: "scheme_scenario"
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, _side_a} =
         Sanctum.Games.CardSide
@@ -608,7 +609,7 @@ defmodule Sanctum.GamesTest do
           base_threat: 5,
           max_threat: 10
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, _side_b} =
         Sanctum.Games.CardSide
@@ -622,7 +623,7 @@ defmodule Sanctum.GamesTest do
           base_threat: 12,
           max_threat: 20
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, user} =
         Sanctum.Accounts.User

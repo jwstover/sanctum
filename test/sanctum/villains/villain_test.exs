@@ -121,7 +121,7 @@ defmodule Sanctum.Villains.VillainTest do
           set: set_name,
           pack: set_name
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, stage1_side} =
         Sanctum.Games.CardSide
@@ -134,7 +134,7 @@ defmodule Sanctum.Villains.VillainTest do
           type: :villain,
           stage: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, stage2_card} =
         Sanctum.Games.Card
@@ -144,7 +144,7 @@ defmodule Sanctum.Villains.VillainTest do
           set: set_name,
           pack: set_name
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, stage2_side} =
         Sanctum.Games.CardSide
@@ -157,7 +157,7 @@ defmodule Sanctum.Villains.VillainTest do
           type: :villain,
           stage: 2
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Create a non-villain side that shouldn't be included
       {:ok, non_villain_side} =
@@ -171,7 +171,7 @@ defmodule Sanctum.Villains.VillainTest do
           type: :hero,
           stage: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Load villain with stage sides
       loaded_villain = Ash.load!(villain, [:stage_sides])
@@ -210,7 +210,7 @@ defmodule Sanctum.Villains.VillainTest do
           set: set_name,
           pack: set_name
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Create matching side
       {:ok, matching_side} =
@@ -224,7 +224,7 @@ defmodule Sanctum.Villains.VillainTest do
           type: :villain,
           stage: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Create non-matching side (different name)
       {:ok, _non_matching_side} =
@@ -238,7 +238,7 @@ defmodule Sanctum.Villains.VillainTest do
           type: :villain,
           stage: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Load villain with stage sides
       loaded_villain = Ash.load!(villain, [:stage_sides])
@@ -269,7 +269,7 @@ defmodule Sanctum.Villains.VillainTest do
           set: set1,
           pack: set1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, side1} =
         Sanctum.Games.CardSide
@@ -282,7 +282,7 @@ defmodule Sanctum.Villains.VillainTest do
           type: :villain,
           stage: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       # Stage side belonging to set2
       {:ok, card2} =
@@ -293,7 +293,7 @@ defmodule Sanctum.Villains.VillainTest do
           set: set2,
           pack: set2
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, side2} =
         Sanctum.Games.CardSide
@@ -306,7 +306,7 @@ defmodule Sanctum.Villains.VillainTest do
           type: :villain,
           stage: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       loaded_villain1 = Ash.load!(villain1, [:stage_sides])
       loaded_villain2 = Ash.load!(villain2, [:stage_sides])

@@ -19,6 +19,19 @@ defmodule Sanctum.Release do
   end
 
   @doc """
+  Promotes a user to admin by email. The user must have signed in once.
+
+      /app/bin/sanctum eval 'Sanctum.Release.promote_admin("me@example.com")'
+  """
+  def promote_admin(email) do
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    email
+    |> Sanctum.Accounts.get_user_by_email!(authorize?: false)
+    |> Sanctum.Accounts.set_admin!(true, authorize?: false)
+  end
+
+  @doc """
   Syncs the card catalog from MarvelCDB. Defaults to card data only — images
   live in the shared public bucket and are mirrored from a dev machine with
   `mix sanctum.sync_cards`.

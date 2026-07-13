@@ -72,8 +72,14 @@ defmodule Sanctum.Games.Card do
   end
 
   policies do
-    policy always() do
+    policy action_type(:read) do
       authorize_if always()
+    end
+
+    # Catalog mutations are admin-only; system writes (sync, deck import)
+    # go through Sanctum.MarvelCdb with authorize?: false.
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if actor_attribute_equals(:admin, true)
     end
   end
 

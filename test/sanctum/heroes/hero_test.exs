@@ -17,7 +17,7 @@ defmodule Sanctum.Heroes.HeroTest do
           pack: set_name,
           is_multi_sided: true
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, hero_side} =
         Sanctum.Games.CardSide
@@ -34,7 +34,7 @@ defmodule Sanctum.Heroes.HeroTest do
           thwart: 2,
           defense: 1
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, alter_ego_side} =
         Sanctum.Games.CardSide
@@ -49,7 +49,7 @@ defmodule Sanctum.Heroes.HeroTest do
           hand_size: 6,
           recover: 3
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, hero} =
         Heroes.find_or_create_hero(%{

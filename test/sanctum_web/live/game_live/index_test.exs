@@ -25,7 +25,7 @@ defmodule SanctumWeb.GameLive.IndexTest do
         set: set_name,
         pack: set_name
       })
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     # Create the villain card side
     {:ok, _villain_side} =
@@ -41,7 +41,7 @@ defmodule SanctumWeb.GameLive.IndexTest do
         attack: 2,
         scheme: 1
       })
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     # Create a main scheme card and side
     scheme_code = "tests#{:rand.uniform(100_000)}"
@@ -54,7 +54,7 @@ defmodule SanctumWeb.GameLive.IndexTest do
         set: set_name,
         pack: set_name
       })
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     {:ok, _scheme_side} =
       Sanctum.Games.CardSide
@@ -68,7 +68,7 @@ defmodule SanctumWeb.GameLive.IndexTest do
         base_threat: 5,
         escalation_threat: 1
       })
-      |> Ash.create()
+      |> Ash.create(authorize?: false)
 
     # Create a test game using Games.create_game
     {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)

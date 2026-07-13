@@ -193,7 +193,11 @@ defmodule Sanctum.CardSyncTest do
 
     # Simulate a pre-mirror row still pointing at marvelcdb.com
     {:ok, side} = Games.get_card_side_by_code("01001a")
-    {:ok, _} = Games.update_card_side(side, %{image_url: "https://marvelcdb.com/old.png"})
+
+    {:ok, _} =
+      Games.update_card_side(side, %{image_url: "https://marvelcdb.com/old.png"},
+        authorize?: false
+      )
 
     assert {:ok, %{data: %{synced: 7, failures: []}}} =
              CardSync.run(packs: :all, images?: false)
@@ -206,16 +210,21 @@ defmodule Sanctum.CardSyncTest do
     # Older sync logic keyed sides by the raw entry code ("01001"); the new
     # payload uses suffixed codes ("01001a") for the same physical side.
     {:ok, card} =
-      Games.create_card(%{base_code: "01001", code: "01001", is_multi_sided: true})
+      Games.create_card(%{base_code: "01001", code: "01001", is_multi_sided: true},
+        authorize?: false
+      )
 
     {:ok, _} =
-      Games.create_card_side(%{
-        card_id: card.id,
-        code: "01001",
-        side_identifier: "a",
-        is_primary_side: true,
-        name: "Spider-Man (legacy row)"
-      })
+      Games.create_card_side(
+        %{
+          card_id: card.id,
+          code: "01001",
+          side_identifier: "a",
+          is_primary_side: true,
+          name: "Spider-Man (legacy row)"
+        },
+        authorize?: false
+      )
 
     assert {:ok, %{data: %{failures: []}}} = CardSync.run(packs: :all, images?: false)
 

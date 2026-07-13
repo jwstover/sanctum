@@ -5,6 +5,11 @@ defmodule SanctumWeb.CardLive.SyncTest do
 
   import Phoenix.LiveViewTest
 
+  setup %{conn: conn} do
+    conn = log_in_user(conn, Sanctum.AccountsFixtures.admin_user_fixture())
+    {:ok, conn: conn}
+  end
+
   test "renders the sync page with a start button when no sync is running", %{conn: conn} do
     # The singleton server may hold :idle or a previous test's :done state —
     # either way, no sync is running and the form must be startable.

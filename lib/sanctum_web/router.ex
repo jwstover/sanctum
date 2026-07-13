@@ -41,7 +41,10 @@ defmodule SanctumWeb.Router do
       live "/", GameLive.Index, :index
       live "/games/new", GameLive.New, :new
       live "/games/:id", GameLive.Show, :show
+    end
 
+    ash_authentication_live_session :admin_routes,
+      on_mount: [{SanctumWeb.LiveUserAuth, :live_admin_required}] do
       live "/cards", CardLive.Index, :index
       live "/cards/new", CardLive.Form, :new
       live "/cards/sync", CardLive.Sync, :index

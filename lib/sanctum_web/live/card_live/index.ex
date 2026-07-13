@@ -99,7 +99,6 @@ defmodule SanctumWeb.CardLive.Index do
     {:ok,
      socket
      |> assign(:page_title, "Listing Cards")
-     |> assign_new(:current_user, fn -> nil end)
      |> stream(:cards, cards)}
   end
 

@@ -52,6 +52,11 @@ defmodule Sanctum.Accounts.User do
       accept [:email, :confirmed_at]
     end
 
+    update :set_admin do
+      description "Grant or revoke admin. System-only; callers use authorize?: false."
+      accept [:admin]
+    end
+
     read :get_by_subject do
       description "Get a user by the subject claim in a JWT"
       argument :subject, :string, allow_nil?: false
@@ -140,6 +145,14 @@ defmodule Sanctum.Accounts.User do
     end
 
     attribute :confirmed_at, :utc_datetime, public?: true, allow_nil?: true
+
+    # Gates the /cards/* admin pages and Card/CardSide mutations. Not public:
+    # never accepted from forms/params, only via the :set_admin action.
+    attribute :admin, :boolean do
+      allow_nil? false
+      default false
+      public? false
+    end
   end
 
   identities do

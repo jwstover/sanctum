@@ -7,7 +7,7 @@ defmodule SanctumWeb.CardLive.FormTest do
 
   describe "new card form" do
     setup %{conn: conn} do
-      user = Sanctum.AccountsFixtures.user_fixture()
+      user = Sanctum.AccountsFixtures.admin_user_fixture()
       conn = log_in_user(conn, user)
       {:ok, conn: conn, user: user}
     end
@@ -81,7 +81,7 @@ defmodule SanctumWeb.CardLive.FormTest do
 
   describe "edit card form" do
     setup %{conn: conn} do
-      user = Sanctum.AccountsFixtures.user_fixture()
+      user = Sanctum.AccountsFixtures.admin_user_fixture()
       conn = log_in_user(conn, user)
 
       # Create a test card with card side
@@ -95,7 +95,7 @@ defmodule SanctumWeb.CardLive.FormTest do
           set: "test",
           pack: "test"
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, card_side} =
         CardSide
@@ -108,7 +108,7 @@ defmodule SanctumWeb.CardLive.FormTest do
           type: :ally,
           traits: ["Test", "Trait"]
         })
-        |> Ash.create()
+        |> Ash.create(authorize?: false)
 
       {:ok, conn: conn, user: user, card: card, card_side: card_side}
     end
@@ -202,7 +202,7 @@ defmodule SanctumWeb.CardLive.FormTest do
 
   describe "form navigation" do
     setup %{conn: conn} do
-      user = Sanctum.AccountsFixtures.user_fixture()
+      user = Sanctum.AccountsFixtures.admin_user_fixture()
       conn = log_in_user(conn, user)
       {:ok, conn: conn, user: user}
     end
