@@ -1,3 +1,12 @@
+# [0.13.0](https://github.com/jwstover/sanctum/compare/v0.12.0...v0.13.0) (2026-07-13)
+
+
+### Features
+
+* **auth:** add UserIdentity for OAuth (ash_authentication 4.14) ([1fb7550](https://github.com/jwstover/sanctum/commit/1fb75502020a3376c694aaf01d66a413f81a1a91))
+
+
+
 # [0.12.0](https://github.com/jwstover/sanctum/compare/v0.11.0...v0.12.0) (2026-07-12)
 
 
@@ -36,15 +45,6 @@
 
 * deck re-import duplicating deck cards ([4b151a0](https://github.com/jwstover/sanctum/commit/4b151a00a0694e9c9167223d5a71fed4f4083f65))
 * scope villain stage sides by set; pin hero side loading with tests ([79caa71](https://github.com/jwstover/sanctum/commit/79caa71eb01194920fdb0d9c49def74a8a79a141))
-
-
-
-## [0.10.1](https://github.com/jwstover/sanctum/compare/v0.10.0...v0.10.1) (2026-07-10)
-
-
-### Bug Fixes
-
-* correct 'villian' misspelling in stored enums ([7b674b5](https://github.com/jwstover/sanctum/commit/7b674b57b3adf9ca26967f508e7c92218566a5ad))
 
 
 
