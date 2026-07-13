@@ -34,6 +34,7 @@ defmodule Sanctum.Accounts.User do
         client_id Sanctum.Secrets
         redirect_uri Sanctum.Secrets
         client_secret Sanctum.Secrets
+        identity_resource Sanctum.Accounts.UserIdentity
       end
     end
   end
