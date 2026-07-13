@@ -28,8 +28,8 @@ defmodule SanctumWeb.CardLive.Show do
           </.button>
         </:actions>
       </.header>
-      
-    <!-- Card-level information -->
+
+      <!-- Card-level information -->
       <div class="mb-8 p-6 bg-gray-50 rounded-lg">
         <h3 class="text-lg font-semibold mb-4">Card Information</h3>
         <.list>
@@ -43,8 +43,8 @@ defmodule SanctumWeb.CardLive.Show do
           <:item title="Pack">{@card.pack}</:item>
         </.list>
       </div>
-      
-    <!-- Card sides -->
+
+      <!-- Card sides -->
       <div class="space-y-8">
         <div :for={side <- @card.card_sides} class="border rounded-lg p-6 bg-white shadow-sm">
           <div class="flex items-start gap-6">
@@ -78,8 +78,8 @@ defmodule SanctumWeb.CardLive.Show do
                 <:item :if={side.traits && side.traits != []} title="Traits">
                   {Enum.join(side.traits, ", ")}
                 </:item>
-                
-    <!-- Combat Stats -->
+
+                <!-- Combat Stats -->
                 <div :if={side.attack || side.thwart || side.defense || side.health} class="mt-4">
                   <h4 class="text-sm font-semibold text-gray-700 mb-2">Combat Stats</h4>
                   <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -101,28 +101,28 @@ defmodule SanctumWeb.CardLive.Show do
                     </div>
                   </div>
                 </div>
-                
-    <!-- Hero/Identity Stats -->
+
+                <!-- Hero/Identity Stats -->
                 <:item :if={side.hand_size} title="Hand Size">{side.hand_size}</:item>
                 <:item :if={side.recover} title="Recover">{side.recover}</:item>
-                
-    <!-- Villain Stats -->
+
+                <!-- Villain Stats -->
                 <:item :if={side.health_per_hero} title="Health Per Hero">Yes</:item>
                 <:item :if={side.stage} title="Stage">{side.stage}</:item>
                 <:item :if={side.scheme} title="Scheme">{side.scheme}</:item>
-                
-    <!-- Scheme Stats -->
+
+                <!-- Scheme Stats -->
                 <:item :if={side.base_threat} title="Base Threat">{side.base_threat}</:item>
                 <:item :if={side.escalation_threat} title="Escalation Threat">
                   {side.escalation_threat}
                 </:item>
                 <:item :if={side.max_threat} title="Max Threat">{side.max_threat}</:item>
-                
-    <!-- Encounter Stats -->
+
+                <!-- Encounter Stats -->
                 <:item :if={side.boost} title="Boost">{side.boost}</:item>
                 <:item :if={side.boost_star} title="Boost Star">Yes</:item>
-                
-    <!-- Icons -->
+
+                <!-- Icons -->
                 <div
                   :if={
                     side.acceleration_icon || side.amplify_icon || side.crisis_icon ||
@@ -158,8 +158,8 @@ defmodule SanctumWeb.CardLive.Show do
                     </span>
                   </div>
                 </div>
-                
-    <!-- Resources -->
+
+                <!-- Resources -->
                 <div
                   :if={
                     side.resource_energy_count || side.resource_physical_count ||
