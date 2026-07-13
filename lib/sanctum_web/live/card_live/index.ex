@@ -8,6 +8,9 @@ defmodule SanctumWeb.CardLive.Index do
       <.header>
         Listing Cards
         <:actions>
+          <.button navigate={~p"/cards/sync"}>
+            <.icon name="hero-arrow-path" /> Sync
+          </.button>
           <.button variant="primary" navigate={~p"/cards/new"}>
             <.icon name="hero-plus" /> New Card
           </.button>

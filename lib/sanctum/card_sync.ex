@@ -8,8 +8,9 @@ defmodule Sanctum.CardSync do
   re-running updates card data and skips images already in the bucket, so an
   interrupted run resumes by re-running.
 
-  Entry points: `mix sanctum.sync_cards` (dev) and
-  `Sanctum.Release.sync_cards/1` (prod, data only — the bucket is shared).
+  Entry points: `mix sanctum.sync_cards` (dev), `Sanctum.Release.sync_cards/1`
+  (prod, data only — the bucket is shared), and `Sanctum.CardSync.Server` for
+  the admin UI at `/cards/sync`.
   """
 
   alias Sanctum.CardImages
@@ -18,7 +19,6 @@ defmodule Sanctum.CardSync do
   # Pause between actual downloads from marvelcdb.com — the API asks
   # consumers to be polite. Skipped objects don't sleep.
   @download_pause_ms 200
-  @progress_every 25
 
   @doc """
   Runs the sync. Options:
@@ -28,6 +28,14 @@ defmodule Sanctum.CardSync do
     * `:images?` — mirror scans to the bucket (default true; needs AWS env vars)
     * `:dry_run?` — report counts without writing (default false)
     * `:force?` — re-upload images that already exist (default false)
+    * `:progress_fun` — receives progress events (see below); defaults to
+      printing CLI-style progress to stdout
+
+  Progress events: `{:data_started, %{entries, cards}}`,
+  `{:card, %{index, total, base_code, name, ok?}}`, `{:data_done, %{synced,
+  failures}}`, `{:images_started, %{total}}`, `{:image, %{index, total, file,
+  result}}`, `{:images_done, %{uploaded, skipped, failures}}`, and
+  `{:dry_run, %{entries, cards, images}}`.
 
   Returns `{:ok, summary}`, `{:error, summary}` when any card or image failed
   (the run still processes everything), or `{:error, reason}` when the payload
@@ -35,24 +43,25 @@ defmodule Sanctum.CardSync do
   """
   def run(opts \\ []) do
     packs = Keyword.get(opts, :packs, :all)
+    progress = Keyword.get(opts, :progress_fun, &log_progress/1)
 
     with {:ok, entries} <- fetch_entries(packs) do
       entries = Enum.uniq_by(entries, & &1["code"])
 
       if Keyword.get(opts, :dry_run?, false) do
-        report_dry_run(entries)
+        report_dry_run(entries, progress)
       else
-        run_sync(entries, opts)
+        run_sync(entries, opts, progress)
       end
     end
   end
 
-  defp run_sync(entries, opts) do
-    data = if Keyword.get(opts, :data?, true), do: sync_data(entries)
+  defp run_sync(entries, opts, progress) do
+    data = if Keyword.get(opts, :data?, true), do: sync_data(entries, progress)
 
     images =
       if Keyword.get(opts, :images?, true),
-        do: sync_images(entries, Keyword.get(opts, :force?, false))
+        do: sync_images(entries, Keyword.get(opts, :force?, false), progress)
 
     summary = %{data: data, images: images}
 
@@ -70,24 +79,23 @@ defmodule Sanctum.CardSync do
     end)
   end
 
-  defp sync_data(entries) do
-    log("Syncing card data for #{length(entries)} entries...")
+  defp sync_data(entries, progress) do
+    progress.({:data_started, %{entries: length(entries), cards: card_count(entries)}})
 
     {synced, failures} =
-      MarvelCdb.sync_entries(entries, image_url_fun: &CardImages.public_url/1)
+      MarvelCdb.sync_entries(entries,
+        image_url_fun: &CardImages.public_url/1,
+        on_progress: &progress.({:card, &1})
+      )
 
-    Enum.each(failures, fn {base_code, error} ->
-      log("  FAILED card #{base_code}: #{inspect(error)}")
-    end)
-
-    log("Card data: #{synced} cards synced, #{length(failures)} failed")
+    progress.({:data_done, %{synced: synced, failures: failures}})
     %{synced: synced, failures: failures}
   end
 
-  defp sync_images(entries, force?) do
+  defp sync_images(entries, force?, progress) do
     paths = image_paths(entries)
     total = length(paths)
-    log("Mirroring #{total} images into #{CardImages.base_url()}...")
+    progress.({:images_started, %{total: total}})
 
     {counts, failures} =
       paths
@@ -95,9 +103,10 @@ defmodule Sanctum.CardSync do
       |> Enum.reduce({%{uploaded: 0, skipped: 0}, []}, fn {path, index}, {counts, failures} ->
         result = CardImages.mirror(path, force: force?)
 
-        if rem(index, @progress_every) == 0 or index == total do
-          log("  #{index}/#{total} images processed")
-        end
+        progress.(
+          {:image,
+           %{index: index, total: total, file: Path.basename(path), result: image_outcome(result)}}
+        )
 
         case result do
           {:ok, :uploaded} ->
@@ -113,14 +122,16 @@ defmodule Sanctum.CardSync do
       end)
 
     failures = Enum.reverse(failures)
-    Enum.each(failures, &log("  FAILED image: #{inspect(&1)}"))
 
-    log(
-      "Images: #{counts.uploaded} uploaded, #{counts.skipped} skipped, #{length(failures)} failed"
+    progress.(
+      {:images_done, %{uploaded: counts.uploaded, skipped: counts.skipped, failures: failures}}
     )
 
     Map.put(counts, :failures, failures)
   end
+
+  defp image_outcome({:ok, outcome}), do: outcome
+  defp image_outcome({:error, _reason}), do: :error
 
   # Every scan referenced by the payload: side images plus the parent-only
   # front/back files (e.g. 01097.png) that no side entry mentions directly.
@@ -131,17 +142,21 @@ defmodule Sanctum.CardSync do
     |> Enum.uniq_by(&CardImages.object_key/1)
   end
 
-  defp report_dry_run(entries) do
-    cards =
-      entries
-      |> Enum.map(&MarvelCdb.extract_base_code(&1["code"]))
-      |> Enum.uniq()
-      |> length()
+  defp card_count(entries) do
+    entries
+    |> Enum.map(&MarvelCdb.extract_base_code(&1["code"]))
+    |> Enum.uniq()
+    |> length()
+  end
 
-    images = entries |> image_paths() |> length()
-
-    log(
-      "Dry run: #{length(entries)} entries -> #{cards} cards, #{images} images. Nothing written."
+  defp report_dry_run(entries, progress) do
+    progress.(
+      {:dry_run,
+       %{
+         entries: length(entries),
+         cards: card_count(entries),
+         images: entries |> image_paths() |> length()
+       }}
     )
 
     {:ok, :dry_run}
@@ -151,6 +166,34 @@ defmodule Sanctum.CardSync do
     (data != nil and data.failures != []) or (images != nil and images.failures != [])
   end
 
-  # Plain IO so progress shows for both `mix sanctum.sync_cards` and release eval.
-  defp log(message), do: IO.puts(message)
+  # Default progress handler: CLI-style output for the mix task and release
+  # eval. Plain IO so it shows in both contexts.
+  defp log_progress({:data_started, %{entries: entries}}),
+    do: IO.puts("Syncing card data for #{entries} entries...")
+
+  defp log_progress({:data_done, %{synced: synced, failures: failures}}) do
+    Enum.each(failures, fn {base_code, error} ->
+      IO.puts("  FAILED card #{base_code}: #{inspect(error)}")
+    end)
+
+    IO.puts("Card data: #{synced} cards synced, #{length(failures)} failed")
+  end
+
+  defp log_progress({:images_started, %{total: total}}),
+    do: IO.puts("Mirroring #{total} images into #{CardImages.base_url()}...")
+
+  defp log_progress({:image, %{index: index, total: total}})
+       when rem(index, 25) == 0 or index == total,
+       do: IO.puts("  #{index}/#{total} images processed")
+
+  defp log_progress({:images_done, %{uploaded: uploaded, skipped: skipped, failures: failures}}) do
+    Enum.each(failures, &IO.puts("  FAILED image: #{inspect(&1)}"))
+    IO.puts("Images: #{uploaded} uploaded, #{skipped} skipped, #{length(failures)} failed")
+  end
+
+  defp log_progress({:dry_run, %{entries: entries, cards: cards, images: images}}) do
+    IO.puts("Dry run: #{entries} entries -> #{cards} cards, #{images} images. Nothing written.")
+  end
+
+  defp log_progress(_event), do: :ok
 end

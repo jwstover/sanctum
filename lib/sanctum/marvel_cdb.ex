@@ -135,19 +135,44 @@ defmodule Sanctum.MarvelCdb do
       stored on the side. Defaults to an absolute marvelcdb.com URL;
       `Sanctum.CardSync` passes `Sanctum.CardImages.public_url/1` to point at
       the mirrored bucket instead.
+    * `:on_progress` — called after each card group with
+      `%{index, total, base_code, name, ok?}`.
   """
   def sync_entries(entries, opts \\ []) do
-    entries
-    |> Enum.uniq_by(& &1["code"])
-    |> Enum.group_by(&extract_base_code(&1["code"]))
-    |> Enum.reduce({0, []}, fn {base_code, group}, {synced, failures} ->
-      case create_card_from_entries(group, opts) do
+    on_progress = Keyword.get(opts, :on_progress)
+
+    groups =
+      entries
+      |> Enum.uniq_by(& &1["code"])
+      |> Enum.group_by(&extract_base_code(&1["code"]))
+      |> Enum.sort_by(fn {base_code, _group} -> base_code end)
+
+    total = length(groups)
+
+    groups
+    |> Enum.with_index(1)
+    |> Enum.reduce({0, []}, fn {{base_code, group}, index}, {synced, failures} ->
+      result = create_card_from_entries(group, opts)
+
+      if on_progress do
+        on_progress.(%{
+          index: index,
+          total: total,
+          base_code: base_code,
+          name: group_name(group),
+          ok?: match?({:ok, _}, result)
+        })
+      end
+
+      case result do
         {:ok, _card} -> {synced + 1, failures}
         {:error, error} -> {synced, [{base_code, error} | failures]}
       end
     end)
     |> then(fn {synced, failures} -> {synced, Enum.reverse(failures)} end)
   end
+
+  defp group_name(group), do: Enum.find_value(group, &presence(&1["name"]))
 
   def load_card(card_id) when is_integer(card_id) do
     card_id
