@@ -18,6 +18,19 @@ defmodule Sanctum.Release do
     {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :down, to: version))
   end
 
+  @doc """
+  Syncs the card catalog from MarvelCDB. Defaults to card data only — images
+  live in the shared public bucket and are mirrored from a dev machine with
+  `mix sanctum.sync_cards`.
+
+      /app/bin/sanctum eval 'Sanctum.Release.sync_cards()'
+  """
+  def sync_cards(opts \\ []) do
+    # Unlike migrations, the sync needs the whole app (Repo, Ash) running.
+    {:ok, _} = Application.ensure_all_started(@app)
+    Sanctum.CardSync.run(Keyword.merge([packs: :all, images?: false], opts))
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end

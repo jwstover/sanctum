@@ -24,14 +24,26 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
       :prod ->
         "default-src 'self';" <>
           "connect-src wss://#{host} https://#{host}:*;" <>
-          "img-src 'self' blob: data: https://marvelcdb.com;" <>
+          "img-src 'self' blob: data: #{img_src_hosts()};" <>
           "font-src 'self' data:;"
 
       _ ->
         "default-src 'self' 'unsafe-eval' 'unsafe-inline' #{host}:4007;" <>
           "connect-src * ws://#{host}:* http://#{host}:*;" <>
-          "img-src 'self' blob: data: https://marvelcdb.com;" <>
+          "img-src 'self' blob: data: #{img_src_hosts()};" <>
           "font-src 'self' data:;"
     end
+  end
+
+  # marvelcdb.com stays allowed: ad-hoc deck/card loads and fresh seeds store
+  # marvelcdb image URLs until `mix sanctum.sync_cards` rewrites them.
+  defp img_src_hosts do
+    bucket_host =
+      :sanctum
+      |> Application.fetch_env!(:card_image_base_url)
+      |> URI.parse()
+      |> Map.fetch!(:host)
+
+    "https://marvelcdb.com https://#{bucket_host}"
   end
 end
