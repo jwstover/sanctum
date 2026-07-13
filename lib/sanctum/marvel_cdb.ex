@@ -28,27 +28,56 @@ defmodule Sanctum.MarvelCdb do
 
   @base_url "https://marvelcdb.com/api/public"
 
+  @doc """
+  Imports a single deck from a MarvelCDB URL or bare id.
+
+  Accepts published decklist URLs (`/decklist/view/{id}`), private-but-public
+  deck URLs (`/deck/view/{id}`), or a bare decklist id. The two MarvelCDB id
+  spaces are distinct objects, so the resolved `mcdb_type` is stored alongside
+  the id.
+  """
   def load_deck("https://marvelcdb.com/decklist/view/" <> rest) when is_binary(rest) do
     [deck_id | _] = String.split(rest, "/")
-    load_deck(deck_id)
+    fetch_and_import(:decklist, deck_id)
+  end
+
+  def load_deck("https://marvelcdb.com/deck/view/" <> rest) when is_binary(rest) do
+    [deck_id | _] = String.split(rest, "/")
+    fetch_and_import(:deck, deck_id)
   end
 
   def load_deck(mcdb_deck_id) when is_binary(mcdb_deck_id) do
-    "#{@base_url}/decklist/#{mcdb_deck_id}"
+    fetch_and_import(:decklist, mcdb_deck_id)
+  end
+
+  defp fetch_and_import(mcdb_type, mcdb_deck_id) do
+    endpoint = if mcdb_type == :deck, do: "deck", else: "decklist"
+
+    "#{@base_url}/#{endpoint}/#{mcdb_deck_id}"
     |> Req.get([max_retries: 1] ++ req_options())
     |> handle_response()
     |> case do
-      {:ok, decklist} ->
-        decklist
-        |> prepare_deck_attrs()
-        |> Decks.create_with_cards(load: [:cards, hero: [:hero_side, :alter_ego_side]])
-
-      err ->
-        err
+      {:ok, decklist} -> import_decklist(decklist, mcdb_type: mcdb_type)
+      err -> err
     end
   end
 
-  defp prepare_deck_attrs(%{"slots" => cards_map} = decklist) do
+  @doc """
+  Upserts one deck (and replaces its card list) from a raw MarvelCDB decklist
+  payload. Shared by single-URL import and the scheduled by-date sync.
+
+  Options:
+
+    * `:mcdb_type` — `:decklist` (default) or `:deck`, stored to disambiguate
+      the id space.
+  """
+  def import_decklist(decklist, opts \\ []) do
+    decklist
+    |> prepare_deck_attrs(Keyword.get(opts, :mcdb_type, :decklist))
+    |> Decks.create_with_cards(load: [:cards, hero: [:hero_side, :alter_ego_side]])
+  end
+
+  defp prepare_deck_attrs(%{"slots" => cards_map} = decklist, mcdb_type) do
     alter_ego_code =
       decklist["hero_code"]
       |> String.trim()
@@ -61,27 +90,84 @@ defmodule Sanctum.MarvelCdb do
     # Create or find the Hero record
     {:ok, hero} = create_or_find_hero(hero_card, alter_ego_card)
 
-    card_codes = Map.keys(cards_map)
+    {:ok, mcdb_user} = create_or_find_mcdb_user(decklist["user_id"])
 
-    cards =
-      Enum.map(card_codes, fn card_code ->
-        card = load_card!(card_code)
-        {card_code, card}
-      end)
-      |> Map.new()
+    meta = parse_meta(decklist["meta"])
 
-    card_ids =
-      Enum.reduce(cards_map, [], fn {code, count}, acc ->
-        card = Map.get(cards, code)
-        acc ++ Enum.map(1..count, fn _ -> card.id end)
-      end)
+    slots = build_slots(cards_map, decklist["ignoreDeckLimitSlots"] || %{})
 
     %{
-      mcdb_id: decklist["id"] |> Integer.to_string(),
+      mcdb_id: decklist["id"] |> to_string(),
+      mcdb_type: mcdb_type,
+      source: :marvelcdb,
       title: decklist["name"],
       hero_id: hero.id,
-      card_ids: card_ids
+      mcdb_user_id: mcdb_user && mcdb_user.id,
+      aspects: parse_aspects(meta),
+      meta: meta,
+      tags: presence(decklist["tags"]),
+      description_md: presence(decklist["description_md"]),
+      version: presence(decklist["version"]),
+      slots: slots
     }
+  end
+
+  # MarvelCDB keys `slots` by side code (e.g. 01043a/b/c/d), but several codes
+  # can resolve to one Sanctum `Card` (grouped by base code) — a card that ships
+  # as multiple physical copies, each with its own code. Aggregate by resolved
+  # `card_id`, summing quantities and OR-ing the deck-limit-ignore flag.
+  defp build_slots(cards_map, ignore_limits) do
+    cards_map
+    |> Enum.reduce(%{}, fn {code, count}, acc ->
+      card_id = load_card!(code).id
+      ignore? = Map.has_key?(ignore_limits, code)
+
+      Map.update(acc, card_id, %{quantity: count, ignore_deck_limit: ignore?}, fn slot ->
+        %{
+          quantity: slot.quantity + count,
+          ignore_deck_limit: slot.ignore_deck_limit or ignore?
+        }
+      end)
+    end)
+    |> Enum.map(fn {card_id, slot} -> Map.put(slot, :card_id, card_id) end)
+  end
+
+  # MarvelCDB stores `meta` as a JSON-encoded string (or nil/empty).
+  defp parse_meta(meta) when is_binary(meta) and meta != "" do
+    case Jason.decode(meta) do
+      {:ok, map} when is_map(map) -> map
+      _ -> %{}
+    end
+  end
+
+  defp parse_meta(_meta), do: %{}
+
+  # Aspects live in meta as flat `aspect`, `aspect2`, ... keys; collect them in
+  # order and map to atoms. Unknown values (or a basic deck with none) drop out,
+  # leaving an empty list.
+  defp parse_aspects(meta) do
+    meta
+    |> Enum.filter(fn {k, _v} -> String.starts_with?(k, "aspect") end)
+    |> Enum.sort_by(fn {k, _v} -> k end)
+    |> Enum.map(fn {_k, v} -> map_deck_aspect(v) end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp map_deck_aspect(value) do
+    case value do
+      "aggression" -> :aggression
+      "justice" -> :justice
+      "leadership" -> :leadership
+      "protection" -> :protection
+      "pool" -> :pool
+      _ -> nil
+    end
+  end
+
+  defp create_or_find_mcdb_user(nil), do: {:ok, nil}
+
+  defp create_or_find_mcdb_user(mcdb_user_id) when is_integer(mcdb_user_id) do
+    Decks.find_or_create_mcdb_user(%{mcdb_user_id: mcdb_user_id})
   end
 
   defp create_or_find_hero(hero_card, _alter_ego_card) do
@@ -223,6 +309,17 @@ defmodule Sanctum.MarvelCdb do
   @spec get_cards_by_pack(String.t()) :: {:ok, list(map())} | {:error, term()}
   def get_cards_by_pack(pack_code) when is_binary(pack_code) do
     "#{@base_url}/cards/#{pack_code}"
+    |> Req.get([max_retries: 1] ++ req_options())
+    |> handle_response()
+  end
+
+  @doc """
+  Fetches every published decklist created on `date` (a `Date`), as full
+  decklist payloads. This is the source for incremental deck sync.
+  """
+  @spec get_decklists_by_date(Date.t()) :: {:ok, list(map())} | {:error, term()}
+  def get_decklists_by_date(%Date{} = date) do
+    "#{@base_url}/decklists/by_date/#{Date.to_iso8601(date)}"
     |> Req.get([max_retries: 1] ++ req_options())
     |> handle_response()
   end

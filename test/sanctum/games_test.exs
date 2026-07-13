@@ -540,7 +540,7 @@ defmodule Sanctum.GamesTest do
       {:ok, deck} =
         Sanctum.Decks.Deck
         |> Ash.Changeset.for_create(:create_with_cards, %{
-          card_ids: [ally.id],
+          slots: [%{card_id: ally.id, quantity: 1}],
           title: "Test Deck",
           hero_id: hero.id
         })

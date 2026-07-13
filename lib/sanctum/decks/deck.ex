@@ -15,14 +15,21 @@ defmodule Sanctum.Decks.Deck do
   end
 
   actions do
-    defaults [:read, create: :*]
+    defaults [:read, :destroy, create: :*]
+
+    update :update do
+      primary? true
+      accept [:*]
+      require_atomic? false
+    end
 
     create :create_with_cards do
+      description "Upserts an imported deck and replaces its card list. Each slot is %{card_id, quantity, ignore_deck_limit}."
       accept [:*]
-      argument :card_ids, {:array, :uuid}
+      argument :slots, {:array, :map}
 
       change fn changeset, _context ->
-        card_ids = Ash.Changeset.get_argument(changeset, :card_ids) || []
+        slots = Ash.Changeset.get_argument(changeset, :slots) || []
 
         changeset
         |> Ash.Changeset.after_action(fn _changeset, deck ->
@@ -33,8 +40,13 @@ defmodule Sanctum.Decks.Deck do
           |> Ash.bulk_destroy!(:destroy, %{})
 
           deck_card_attrs =
-            Enum.map(card_ids, fn card_id ->
-              %{card_id: card_id, deck_id: deck.id}
+            Enum.map(slots, fn slot ->
+              %{
+                card_id: slot.card_id,
+                deck_id: deck.id,
+                quantity: Map.get(slot, :quantity, 1),
+                ignore_deck_limit: Map.get(slot, :ignore_deck_limit, false)
+              }
             end)
 
           Ash.bulk_create(deck_card_attrs, Sanctum.Decks.DeckCard, :create)
@@ -44,7 +56,7 @@ defmodule Sanctum.Decks.Deck do
       end
 
       upsert? true
-      upsert_identity :unique_mcdb_id
+      upsert_identity :unique_mcdb_deck
     end
   end
 
@@ -64,7 +76,27 @@ defmodule Sanctum.Decks.Deck do
     uuid_v7_primary_key :id
 
     attribute :title, :string, public?: true
+
+    attribute :source, Sanctum.Decks.DeckSource,
+      public?: true,
+      allow_nil?: false,
+      default: :native
+
+    # MarvelCDB provenance. `mcdb_type` disambiguates the id space (a deck #1
+    # and a decklist #1 are different objects), so the two together identify
+    # the source object.
     attribute :mcdb_id, :string, public?: true
+    attribute :mcdb_type, Sanctum.Decks.McdbDeckType, public?: true
+
+    # Aspect cards the deck draws from. Empty list = a basic deck.
+    attribute :aspects, {:array, Sanctum.Decks.DeckAspect}, public?: true, default: []
+
+    attribute :meta, :map, public?: true
+    attribute :tags, :string, public?: true
+    attribute :description_md, :string, public?: true
+    attribute :version, :string, public?: true
+
+    timestamps()
   end
 
   relationships do
@@ -76,9 +108,19 @@ defmodule Sanctum.Decks.Deck do
       allow_nil? false
       public? true
     end
+
+    # Native decks are owned by a Sanctum user; imported decks are attributed
+    # to their MarvelCDB author instead.
+    belongs_to :owner, Sanctum.Accounts.User do
+      public? true
+    end
+
+    belongs_to :mcdb_user, Sanctum.Decks.McdbUser do
+      public? true
+    end
   end
 
   identities do
-    identity :unique_mcdb_id, [:mcdb_id]
+    identity :unique_mcdb_deck, [:mcdb_type, :mcdb_id]
   end
 end

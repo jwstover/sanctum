@@ -131,20 +131,27 @@ defmodule Sanctum.Decks.DeckTest do
       })
 
     cards = create(Sanctum.Games.Card, count: 3)
-    card_ids = Enum.map(cards, & &1.id)
+    # Give the first card a quantity of 2 to exercise the quantity column.
+    slots =
+      cards
+      |> Enum.with_index()
+      |> Enum.map(fn {card, index} ->
+        %{card_id: card.id, quantity: if(index == 0, do: 2, else: 1)}
+      end)
 
     title = "Test with cards"
 
     assert {:ok, %Deck{title: ^title} = deck} =
              Deck
              |> Ash.Changeset.for_create(:create_with_cards, %{
-               card_ids: card_ids,
+               slots: slots,
                title: title,
                hero_id: hero.id
              })
              |> Ash.create(load: [:deck_cards])
 
     assert length(deck.deck_cards) == 3
+    assert Enum.sum(Enum.map(deck.deck_cards, & &1.quantity)) == 4
   end
 
   test "re-importing a deck with the same mcdb_id does not duplicate deck cards" do
@@ -186,35 +193,38 @@ defmodule Sanctum.Decks.DeckTest do
       })
 
     cards = create(Sanctum.Games.Card, count: 3)
+    slots = Enum.map(cards, &%{card_id: &1.id, quantity: 1})
     card_ids = Enum.map(cards, & &1.id)
     mcdb_id = "12345"
 
-    import_deck = fn card_ids ->
+    import_deck = fn slots ->
       Sanctum.Decks.create_with_cards(
         %{
-          card_ids: card_ids,
+          slots: slots,
           title: "Re-import test",
           mcdb_id: mcdb_id,
+          mcdb_type: :decklist,
           hero_id: hero.id
         },
         load: [:deck_cards]
       )
     end
 
-    assert {:ok, deck} = import_deck.(card_ids)
+    assert {:ok, deck} = import_deck.(slots)
     assert length(deck.deck_cards) == 3
 
     # Re-importing the same deck (same mcdb_id) upserts the deck and should
     # yield exactly the new card list, not doubled.
-    assert {:ok, deck} = import_deck.(card_ids)
+    assert {:ok, deck} = import_deck.(slots)
     assert deck.mcdb_id == mcdb_id
     assert length(deck.deck_cards) == 3
 
     # A changed card list on re-import replaces the old one entirely.
     new_cards = create(Sanctum.Games.Card, count: 2)
     new_card_ids = Enum.map(new_cards, & &1.id)
+    new_slots = Enum.map(new_cards, &%{card_id: &1.id, quantity: 1})
 
-    assert {:ok, deck} = import_deck.(new_card_ids)
+    assert {:ok, deck} = import_deck.(new_slots)
     assert length(deck.deck_cards) == 2
 
     reloaded_ids =
@@ -223,5 +233,7 @@ defmodule Sanctum.Decks.DeckTest do
       |> Enum.sort()
 
     assert reloaded_ids == Enum.sort(new_card_ids)
+    # card_ids from the first import are fully replaced.
+    refute Enum.any?(reloaded_ids, &(&1 in card_ids))
   end
 end

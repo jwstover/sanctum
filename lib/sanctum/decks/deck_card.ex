@@ -24,6 +24,13 @@ defmodule Sanctum.Decks.DeckCard do
 
   attributes do
     uuid_v7_primary_key :id
+
+    # Number of copies of this card in the deck (MarvelCDB `slots` value).
+    attribute :quantity, :integer, public?: true, allow_nil?: false, default: 1
+
+    # MarvelCDB `ignoreDeckLimitSlots` — copies that don't count against the
+    # card's deck limit.
+    attribute :ignore_deck_limit, :boolean, public?: true, allow_nil?: false, default: false
   end
 
   relationships do
@@ -34,5 +41,9 @@ defmodule Sanctum.Decks.DeckCard do
     belongs_to :deck, Sanctum.Decks.Deck do
       public? true
     end
+  end
+
+  identities do
+    identity :unique_deck_card, [:deck_id, :card_id]
   end
 end
