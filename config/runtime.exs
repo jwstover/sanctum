@@ -35,7 +35,14 @@ if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :sanctum, Sanctum.Repo,
-    # ssl: true,
+    ssl: [
+      verify: :verify_peer,
+      cacerts: :public_key.cacerts_get(),
+      server_name_indication: String.to_charlist(URI.parse(database_url).host),
+      customize_hostname_check: [
+        match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+      ]
+    ],
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
