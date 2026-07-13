@@ -52,6 +52,9 @@ defmodule SanctumWeb.Router do
 
       live "/cards/:id", CardLive.Show, :show
       live "/cards/:id/show/edit", CardLive.Show, :edit
+
+      live "/decks", DeckLive.Index, :index
+      live "/decks/:id", DeckLive.Show, :show
     end
   end
 
