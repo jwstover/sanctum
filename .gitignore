@@ -38,4 +38,8 @@ npm-debug.log
 core-set.json
 
 # Claude Code worktrees and local state
-.claude/
+.claude/*
+# ...but track the shared Marvel Champions rules skill
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/marvel-champions-rules/
