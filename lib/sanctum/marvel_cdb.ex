@@ -595,11 +595,13 @@ defmodule Sanctum.MarvelCdb do
       is_primary_side: side_identifier == "a",
       code: mcdb_card["code"],
 
-      # Core card content
+      # Core card content. MarvelCDB carries both localized (`name`/`text`/
+      # `traits`) and unlocalized-English `real_*` variants; for an English-only
+      # app the non-`real_` fields are canonical.
       name: mcdb_card["name"],
-      subname: mcdb_card["real_name"],
-      text: mcdb_card["text"] || mcdb_card["real_text"],
-      traits: parse_traits(mcdb_card["real_traits"] || mcdb_card["traits"]),
+      subname: mcdb_card["subname"],
+      text: mcdb_card["text"],
+      traits: parse_traits(mcdb_card["traits"]),
 
       # Card classification
       type: map_card_type(mcdb_card["type_code"]),
@@ -618,11 +620,12 @@ defmodule Sanctum.MarvelCdb do
       crisis_icon: mcdb_card["crisis_icon"] || false,
       hazard_icon: mcdb_card["hazard_icon"] || false,
 
-      # Resource fields
-      resource_energy_count: mcdb_card["resource_energy_count"],
-      resource_physical_count: mcdb_card["resource_physical_count"],
-      resource_mental_count: mcdb_card["resource_mental_count"],
-      resource_wild_count: mcdb_card["resource_wild_count"],
+      # Resource fields. MarvelCDB names these `resource_energy` (etc.); the
+      # `resource_*_count` API variants are always null.
+      resource_energy_count: mcdb_card["resource_energy"],
+      resource_physical_count: mcdb_card["resource_physical"],
+      resource_mental_count: mcdb_card["resource_mental"],
+      resource_wild_count: mcdb_card["resource_wild"],
 
       # Hero fields
       hand_size: mcdb_card["hand_size"],
