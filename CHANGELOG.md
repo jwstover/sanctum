@@ -1,3 +1,12 @@
+# [1.16.0](https://github.com/jwstover/sanctum/compare/v1.15.0...v1.16.0) (2026-07-14)
+
+
+### Features
+
+* **cards:** support player side schemes as a distinct card type ([0e4210c](https://github.com/jwstover/sanctum/commit/0e4210cf315772583dc427631a62536c4beebd50))
+
+
+
 # [1.15.0](https://github.com/jwstover/sanctum/compare/v1.14.1...v1.15.0) (2026-07-14)
 
 
@@ -31,16 +40,6 @@
 ### Features
 
 * **cards:** show a printed dash on stat badges with no value ([8d36d3f](https://github.com/jwstover/sanctum/commit/8d36d3f0d08989cf4774cc9bcaadc45f98c1ba2f))
-
-
-
-## [1.12.1](https://github.com/jwstover/sanctum/compare/v1.12.0...v1.12.1) (2026-07-14)
-
-
-### Bug Fixes
-
-* **cards:** data migration reclassifying 'Pool ownership to aspect ([310d7dd](https://github.com/jwstover/sanctum/commit/310d7ddc39f4b5868bfd80b924275ca4286c74d8))
-* **cards:** model 'pool' as a player aspect, not an ownership ([b7ae5d8](https://github.com/jwstover/sanctum/commit/b7ae5d8189f487da4daa66e6031a3384045bc8df))
 
 
 
