@@ -96,6 +96,24 @@ main, #game-board {
   font-display: swap;
 }
 
+/* Modified bold-italic Elektra used for stat-badge numbers (matches the card maker). */
+@font-face {
+  font-family: 'ElektraMed';
+  src: url('/fonts/elektra_med_pro_bolditalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Modified Exo 2 used for stat-badge labels (matches the card maker). */
+@font-face {
+  font-family: 'Exo2Mod';
+  src: url('/fonts/exo2mod_bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'Exo2';
   src: url('/fonts/exo2/Exo2-VariableFont_wght.ttf') format('truetype-variations');
