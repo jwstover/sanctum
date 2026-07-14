@@ -1,3 +1,12 @@
+# [1.13.0](https://github.com/jwstover/sanctum/compare/v1.12.1...v1.13.0) (2026-07-14)
+
+
+### Features
+
+* **cards:** show a printed dash on stat badges with no value ([8d36d3f](https://github.com/jwstover/sanctum/commit/8d36d3f0d08989cf4774cc9bcaadc45f98c1ba2f))
+
+
+
 ## [1.12.1](https://github.com/jwstover/sanctum/compare/v1.12.0...v1.12.1) (2026-07-14)
 
 
@@ -35,15 +44,6 @@
 
 * **cards:** show ally consequential damage on stat badges ([195314b](https://github.com/jwstover/sanctum/commit/195314bf7d0818132118fa7f3041bce794eeaf1f))
 * **decks:** comic-dossier deck detail page ([1a400c9](https://github.com/jwstover/sanctum/commit/1a400c9368b1f8999851ad3eaddad2e01c27e5e7))
-
-
-
-# [1.9.0](https://github.com/jwstover/sanctum/compare/v1.8.0...v1.9.0) (2026-07-14)
-
-
-### Features
-
-* **decks:** comic-dossier public Deck Browser ([909c4e2](https://github.com/jwstover/sanctum/commit/909c4e2428b3e7e4b0848b1d0b22544ace5d9e6a))
 
 
 
