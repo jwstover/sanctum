@@ -1,3 +1,12 @@
+# [1.17.0](https://github.com/jwstover/sanctum/compare/v1.16.0...v1.17.0) (2026-07-14)
+
+
+### Features
+
+* **ui:** make card pool, deck browser & deck detail mobile-friendly ([c056861](https://github.com/jwstover/sanctum/commit/c0568611a6e0de5aecf201332533feb540285859))
+
+
+
 # [1.16.0](https://github.com/jwstover/sanctum/compare/v1.15.0...v1.16.0) (2026-07-14)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **cards:** show hero combat stats and hand size in the card pool ([74a906b](https://github.com/jwstover/sanctum/commit/74a906b3e0223f9366ea4542c8e94d94ab8b00bc))
-
-
-
-# [1.13.0](https://github.com/jwstover/sanctum/compare/v1.12.1...v1.13.0) (2026-07-14)
-
-
-### Features
-
-* **cards:** show a printed dash on stat badges with no value ([8d36d3f](https://github.com/jwstover/sanctum/commit/8d36d3f0d08989cf4774cc9bcaadc45f98c1ba2f))
 
 
 
