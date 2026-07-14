@@ -13,7 +13,7 @@ defmodule SanctumWeb.CardLive.Sync do
           Pulls the card catalog from MarvelCDB and mirrors card scans into the public bucket.
         </:subtitle>
         <:actions>
-          <.button navigate={~p"/cards"}>
+          <.button navigate={~p"/cards/manage"}>
             <.icon name="hero-arrow-left" /> Back to cards
           </.button>
         </:actions>

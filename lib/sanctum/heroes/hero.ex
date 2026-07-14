@@ -16,7 +16,17 @@ defmodule Sanctum.Heroes.Hero do
     defaults [:read, create: :*]
 
     create :find_or_create do
-      accept [:hero_name, :alter_ego_name, :set, :base_code, :card_id]
+      accept [
+        :hero_name,
+        :alter_ego_name,
+        :set,
+        :base_code,
+        :card_id,
+        :colors,
+        :primary_color,
+        :secondary_color
+      ]
+
       upsert? true
       upsert_identity :unique_hero_set
     end
@@ -35,6 +45,12 @@ defmodule Sanctum.Heroes.Hero do
     attribute :alter_ego_name, :string, public?: true
     attribute :set, :string, public?: true
     attribute :base_code, :string, public?: true
+
+    # Hero color identity, sourced from MarvelCDB's identity-card `meta.colors`.
+    # `colors` is the raw palette; primary/secondary are the derived gradient pair.
+    attribute :colors, {:array, :string}, public?: true
+    attribute :primary_color, :string, public?: true
+    attribute :secondary_color, :string, public?: true
 
     timestamps()
   end

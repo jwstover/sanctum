@@ -142,7 +142,7 @@ defmodule SanctumWeb.CardLive.Form do
     |> assign(card_form: to_form(card_form))
   end
 
-  defp return_path("index", _card), do: ~p"/cards"
+  defp return_path("index", _card), do: ~p"/cards/manage"
   defp return_path("show", card), do: ~p"/cards/#{card.id}"
 
   defp card_side_form(assigns) do
