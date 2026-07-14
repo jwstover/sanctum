@@ -73,6 +73,9 @@ defmodule SanctumWeb.Components.HealthBadge do
   attr :class, :string, default: nil
   attr :rest, :global
 
+  # Safe raw usage: `value` is escaped via Phoenix.HTML.Safe.to_iodata before
+  # being combined with the constant @player_icon markup.
+  # sobelow_skip ["XSS.Raw"]
   def health_badge(assigns) do
     # Unique per instance so the internal gradient/filter ids never collide,
     # even when the same badge is rendered more than once on a page.
