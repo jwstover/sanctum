@@ -15,7 +15,16 @@ defmodule Sanctum.Games.CardSide do
   # cards are the `:hero` pool; pool cards are ordinary `:player` cards carrying
   # the `:pool` aspect.
   @player_ownerships [:player, :basic, :hero]
-  @player_types [:hero, :alter_ego, :ally, :event, :support, :upgrade, :resource]
+  @player_types [
+    :hero,
+    :alter_ego,
+    :ally,
+    :event,
+    :support,
+    :upgrade,
+    :resource,
+    :player_side_scheme
+  ]
 
   actions do
     defaults [:read, :destroy]

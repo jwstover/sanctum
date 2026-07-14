@@ -3,10 +3,6 @@ defmodule SanctumWeb.GameLive.Show do
 
   use SanctumWeb, :live_view
 
-  @landscape_types [
-    :main_scheme
-  ]
-
   require Logger
 
   import SanctumWeb.GameLive.GameComponents
@@ -14,6 +10,7 @@ defmodule SanctumWeb.GameLive.Show do
   alias Sanctum.Games.GamePlayer
   alias Sanctum.Games
   alias Sanctum.Games.Game
+  alias SanctumWeb.Components.Card
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
@@ -23,8 +20,7 @@ defmodule SanctumWeb.GameLive.Show do
      |> assign(%{
        game_id: game_id,
        selected_card: nil,
-       show_player_form: false,
-       landscape_types: @landscape_types
+       show_player_form: false
      })
      |> stream(:facedown_encounters, [])
      |> stream(:hero_play_cards, [])
@@ -496,8 +492,8 @@ defmodule SanctumWeb.GameLive.Show do
             <% display_side = @selected_card.active_side %>
             <figure class={[
               "relative rounded-[4.5%] overflow-hidden",
-              display_side && display_side.type in @landscape_types && "h-[30dvh]",
-              (!display_side || display_side.type not in @landscape_types) && "h-[50dvh]"
+              display_side && Card.landscape_type?(display_side.type) && "h-[30dvh]",
+              (!display_side || !Card.landscape_type?(display_side.type)) && "h-[50dvh]"
             ]}>
               <img
                 class="h-full object-contain"

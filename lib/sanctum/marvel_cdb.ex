@@ -832,6 +832,7 @@ defmodule Sanctum.MarvelCdb do
       "villain" -> :villain
       "main_scheme" -> :main_scheme
       "side_scheme" -> :side_scheme
+      "player_side_scheme" -> :player_side_scheme
       "ally" -> :ally
       "event" -> :event
       "resource" -> :resource

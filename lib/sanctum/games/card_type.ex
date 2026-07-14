@@ -14,6 +14,7 @@ defmodule Sanctum.Games.CardType do
       :main_scheme,
       :minion,
       :obligation,
+      :player_side_scheme,
       :resource,
       :side_scheme,
       :support,
