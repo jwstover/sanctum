@@ -101,18 +101,18 @@ defmodule SanctumWeb.CardLive.Pool do
         class="grid grid-cols-[repeat(auto-fill,minmax(452px,1fr))] items-start gap-[18px]"
       >
         <div
-          :for={{dom_id, card} <- @streams.cards}
+          :for={{dom_id, side} <- @streams.cards}
           id={dom_id}
           class="mc-tile flex items-start gap-[13px] border-2 border-neutral bg-base-200 p-2 shadow-comic"
         >
           <div class="h-[210px] w-[150px] flex-none border-2 border-neutral shadow-comic-sm">
             <.mc_card
-              name={card.name}
-              cost={card.cost}
-              aspect={card.aspect_key}
-              image_url={card.image_url}
-              gradient_from={card.gradient_from}
-              gradient_to={card.gradient_to}
+              name={side.name}
+              cost={side.cost}
+              aspect={side.aspect_key}
+              image_url={side.image_url}
+              gradient_from={side.gradient_from}
+              gradient_to={side.gradient_to}
               size="md"
               show_cost={false}
             />
@@ -121,88 +121,88 @@ defmodule SanctumWeb.CardLive.Pool do
           <div class="flex min-w-0 flex-1 flex-col">
             <div class="h-12 flex items-start gap-3">
               <div
-                :if={card.show_cost}
+                :if={side.show_cost}
                 class="flex flex-none items-center justify-center rounded-full font-elektra-med text-4xl/normal"
               >
-                {card.cost}
+                {side.cost}
               </div>
               <div class="min-w-0 flex-1">
                 <div class={[
                   "font-ibm-mono text-[9px] uppercase tracking-[0.2em]",
-                  card.aspect_text_class
+                  side.aspect_text_class
                 ]}>
-                  {card.type_name} · {card.aspect_name}
+                  {side.type_name} · {side.aspect_name}
                 </div>
                 <div class="mt-[3px] font-anton text-[22px] uppercase leading-[0.94]">
-                  {card.name}
+                  {side.name}
                 </div>
               </div>
             </div>
 
-            <div :if={card.is_ally} class="flex items-start gap-2 w-full">
+            <div :if={side.is_ally} class="flex items-start gap-2 w-full">
               <div class="flex flex-grow items-start justify-start">
                 <.stat_badge
                   stat={:thw}
-                  value={card.thwart}
-                  consequential={card.thwart_consequential}
+                  value={side.thwart}
+                  consequential={side.thwart_consequential}
                   size={64}
                 />
                 <.stat_badge
                   stat={:atk}
-                  value={card.attack}
-                  consequential={card.attack_consequential}
+                  value={side.attack}
+                  consequential={side.attack_consequential}
                   size={64}
                 />
               </div>
               <div class="flex items-start justify-end">
-                <.health_badge value={card.health} size={52} />
+                <.health_badge value={side.health} size={52} />
               </div>
             </div>
 
-            <div :if={card.is_hero} class="flex items-start gap-2 w-full">
+            <div :if={side.is_hero} class="flex items-start gap-2 w-full">
               <div class="flex flex-grow items-start justify-start">
-                <.stat_badge stat={:thw} value={card.thwart} size={64} hero={true} />
-                <.stat_badge stat={:atk} value={card.attack} size={64} hero={true} />
-                <.stat_badge stat={:def} value={card.defense} size={64} hero={true} />
+                <.stat_badge stat={:thw} value={side.thwart} size={64} hero={true} />
+                <.stat_badge stat={:atk} value={side.attack} size={64} hero={true} />
+                <.stat_badge stat={:def} value={side.defense} size={64} hero={true} />
               </div>
               <div class="flex items-start justify-end">
-                <.health_badge value={card.health} size={52} />
+                <.health_badge value={side.health} size={52} />
               </div>
             </div>
 
             <div class="my-2 h-px bg-neutral"></div>
 
             <div
-              :if={card.traits != ""}
+              :if={side.traits != ""}
               class="flex justify-center mb-1 font-komika text-xs font-semibold uppercase tracking-[0.02em] text-base-content/75"
             >
-              {card.traits}
+              {side.traits}
             </div>
 
             <div class="text-center font-barlow text-[13.5px] leading-[1.5] text-base-content/85">
-              {Sanctum.CardText.to_html(card.text)}
+              {Sanctum.CardText.to_html(side.text)}
             </div>
 
             <div
-              :if={card.flavor}
+              :if={side.flavor}
               class="text-center font-barlow italic text-xs text-base-content/65 my-2"
             >
-              {Sanctum.CardText.to_html(card.flavor)}
+              {Sanctum.CardText.to_html(side.flavor)}
             </div>
 
             <div
-              :if={card.pips != [] or (card.is_hero and card.hand_size)}
+              :if={side.pips != [] or (side.is_hero and side.hand_size)}
               class="mt-2.5 flex items-center gap-1"
             >
               <span
-                :for={{color_class, glyph} <- card.pips}
+                :for={{color_class, glyph} <- side.pips}
                 class={["font-champions text-2xl leading-none", color_class]}
               >
                 {glyph}
               </span>
               <.hand_size_badge
-                :if={card.is_hero and card.hand_size}
-                value={card.hand_size}
+                :if={side.is_hero and side.hand_size}
+                value={side.hand_size}
                 class="ml-auto text-base-content/75"
               />
             </div>
@@ -287,7 +287,7 @@ defmodule SanctumWeb.CardLive.Pool do
     reset? = Keyword.get(opts, :reset, false)
 
     page =
-      Sanctum.Games.Card
+      Sanctum.Games.CardSide
       |> Ash.Query.for_read(:browse, filters(socket.assigns),
         actor: socket.assigns[:current_user]
       )
@@ -297,13 +297,15 @@ defmodule SanctumWeb.CardLive.Pool do
     |> assign(:offset, offset)
     |> assign(:end_of_timeline?, !page.more?)
     |> then(fn s -> if reset?, do: assign(s, :count, page.count), else: s end)
-    |> stream(:cards, Enum.map(page.results, &card_view(&1, socket.assigns.hero_colors)),
+    |> stream(
+      :cards,
+      Enum.map(page.results, &side_view(&1, socket.assigns.hero_colors)),
       reset: reset?
     )
   end
 
   defp count_cards(socket, extra_filters) do
-    Sanctum.Games.Card
+    Sanctum.Games.CardSide
     |> Ash.Query.for_read(:browse, Map.merge(%{aspect: "all", type: "all"}, extra_filters),
       actor: socket.assigns[:current_user]
     )
@@ -315,10 +317,12 @@ defmodule SanctumWeb.CardLive.Pool do
     %{query: assigns.query, aspect: assigns.aspect, type: assigns.type}
   end
 
-  # Builds the display map the tile renders from, derived from the primary side.
-  defp card_view(%{primary_side: side} = card, hero_colors) do
-    aspect_key = display_aspect(side)
+  # Builds the display map for a single card face. Each side is streamed as its
+  # own tile, so multi-sided cards appear as separate cards.
+  defp side_view(side, hero_colors) do
+    card = side.card
     {gradient_from, gradient_to} = hero_gradient(card.set, hero_colors)
+    aspect_key = display_aspect(side)
 
     resources =
       [
@@ -330,7 +334,7 @@ defmodule SanctumWeb.CardLive.Pool do
       |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
 
     %{
-      id: card.id,
+      id: side.id,
       name: side.name,
       type: side.type,
       cost: side.cost,

@@ -14,71 +14,12 @@ defmodule Sanctum.Games.Card do
     end
   end
 
-  # Ownership pools and types that belong in the player card pool (deck-buildable
-  # cards). Encounter/villain/identity/scheme cards are excluded. Hero signature
-  # cards are the `:hero` pool and surface under the "hero" filter. Pool cards are
-  # ordinary `:player` cards carrying the `:pool` aspect.
-  @player_ownerships [:player, :basic, :hero]
-  @player_types [:hero, :alter_ego, :ally, :event, :support, :upgrade, :resource]
-
   actions do
     defaults [:destroy]
 
     read :read do
       primary? true
       pagination offset?: true, default_limit: 50, required?: false
-    end
-
-    # Public card pool browsing: player cards filtered by name/aspect/type,
-    # matched against the primary side. Backs SanctumWeb.CardLive.Pool.
-    read :browse do
-      argument :query, :string, allow_nil?: true
-      argument :aspect, :string, allow_nil?: true
-      argument :type, :string, allow_nil?: true
-
-      pagination offset?: true, default_limit: 24, countable: true, required?: false
-
-      prepare fn query, _context ->
-        require Ash.Query
-
-        search = Ash.Query.get_argument(query, :query)
-        aspect = Ash.Query.get_argument(query, :aspect)
-        type = Ash.Query.get_argument(query, :type)
-
-        query =
-          query
-          |> Ash.Query.load([:primary_side])
-          |> Ash.Query.filter(primary_side.type in ^@player_types)
-          |> Ash.Query.filter(primary_side.ownership in ^@player_ownerships)
-          |> Ash.Query.sort(base_code: :asc)
-
-        query =
-          if is_binary(search) and String.trim(search) != "" do
-            pattern = "%" <> String.trim(search) <> "%"
-            Ash.Query.filter(query, ilike(primary_side.name, ^pattern))
-          else
-            query
-          end
-
-        query =
-          cond do
-            not is_binary(aspect) or aspect in ["", "all"] ->
-              query
-
-            # "hero"/"basic" are ownership pools, not aspects.
-            aspect in ["hero", "basic"] ->
-              Ash.Query.filter(query, primary_side.ownership == ^to_enum(aspect))
-
-            true ->
-              Ash.Query.filter(query, primary_side.aspect == ^to_enum(aspect))
-          end
-
-        if is_binary(type) and type not in ["", "all"] do
-          Ash.Query.filter(query, primary_side.type == ^to_enum(type))
-        else
-          query
-        end
-      end
     end
 
     create :create do
@@ -203,13 +144,5 @@ defmodule Sanctum.Games.Card do
   identities do
     identity :unique_marvelcdb_code, [:code]
     identity :unique_marvelcdb_base_code, [:base_code]
-  end
-
-  # Safely convert an incoming filter string to an existing atom; unknown
-  # values fall back to a sentinel that matches nothing.
-  defp to_enum(value) do
-    String.to_existing_atom(value)
-  rescue
-    ArgumentError -> :__invalid__
   end
 end
