@@ -42,7 +42,11 @@ defmodule SanctumWeb.Components.StatBadge do
       <.stat_badge stat={:def} value="*" bright="#49b52b" dark="#256714" label="DEF" />
   """
   attr :stat, :any, default: :thw, doc: "stat key (:thw :atk :def :sch :hp :rec) or custom string"
-  attr :value, :any, default: nil, doc: "number/marker shown in the star"
+
+  attr :value, :any,
+    default: nil,
+    doc: "number/marker shown in the star; nil renders the printed-dash bar (distinct from 0)"
+
   attr :size, :integer, default: 88, doc: "rendered width in px"
   attr :label, :string, default: nil, doc: "override the plate label"
   attr :bright, :string, default: nil, doc: "override the bright fill color"
@@ -102,7 +106,7 @@ defmodule SanctumWeb.Components.StatBadge do
       height={@height}
       viewBox={"-30 0 260 #{@vb_height}"}
       role="img"
-      aria-label={"#{@label} #{@value}"}
+      aria-label={"#{@label} #{if is_nil(@value), do: "—", else: @value}"}
       style="overflow:visible"
       {@rest}
     >
@@ -141,7 +145,21 @@ defmodule SanctumWeb.Components.StatBadge do
       </g>
 
       <path d={@plate} fill="#141418" stroke="#fbfbfb" stroke-width="4" stroke-linejoin="round" />
+      <rect
+        :if={is_nil(@value)}
+        x="64"
+        y="100"
+        width="72"
+        height="22"
+        rx="8"
+        fill="#fff"
+        stroke="#101014"
+        stroke-width="7.2"
+        style="paint-order:stroke"
+        filter={"url(#shadow-#{@uid})"}
+      />
       <text
+        :if={not is_nil(@value)}
         x={if @star, do: "104", else: "100"}
         y="111"
         text-anchor="middle"
