@@ -1,204 +1,179 @@
 defmodule SanctumWeb.CardLive.Show do
   use SanctumWeb, :live_view
 
+  require Ash.Query
+
+  alias SanctumWeb.Components.Card, as: CardComponent
+
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app current_user={@current_user} flash={@flash}>
+    <Layouts.app current_user={@current_user} flash={@flash} active_tab={:cards}>
       <.header>
-        Card {assigns[:card] && @card.base_code}
+        {@title}
         <:subtitle>
-          <span
-            :if={@card.is_multi_sided}
-            class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full mr-2"
-          >
-            Multi-sided
+          <span class="font-ibm-mono text-[12px] uppercase tracking-[0.16em]">
+            {@card.base_code}
           </span>
-          {length(@card.card_sides)} side(s)
+          · {length(@card.card_sides)} side{if length(@card.card_sides) != 1, do: "s"}
+          <span :if={@card.is_multi_sided} class="text-base-content/45">· multi-sided</span>
         </:subtitle>
 
         <:actions>
           <.button navigate={~p"/cards/manage"}>
-            <.icon name="hero-arrow-left" />
+            <.icon name="hero-arrow-left" /> Back
           </.button>
           <.button variant="primary" navigate={~p"/cards/#{@card}/edit?return_to=show"}>
-            <.icon name="hero-pencil-square" /> Edit Card
+            <.icon name="hero-pencil-square" /> Edit
           </.button>
         </:actions>
       </.header>
 
-      <!-- Card-level information -->
-      <div class="mb-8 p-6 bg-gray-50 rounded-lg">
-        <h3 class="text-lg font-semibold mb-4">Card Information</h3>
-        <.list>
-          <:item title="Base Code">{@card.base_code}</:item>
-          <:item title="Primary Code">{@card.code}</:item>
-          <:item title="Multi-sided">{if @card.is_multi_sided, do: "Yes", else: "No"}</:item>
-          <:item title="Deck Limit">{@card.deck_limit}</:item>
-          <:item title="Unique">{if @card.unique, do: "Yes", else: "No"}</:item>
-          <:item title="Permanent">{if @card.permanent, do: "Yes", else: "No"}</:item>
-          <:item title="Set">{@card.set}</:item>
-          <:item title="Pack">{@card.pack}</:item>
-        </.list>
-      </div>
+      <div class="space-y-5">
+        <!-- card-level info -->
+        <.panel class="p-4">
+          <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+            Card Info
+          </div>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
+            <.meta label="Base Code" value={@card.base_code} />
+            <.meta label="Primary Code" value={@card.code} />
+            <.meta label="Set" value={@card.set} />
+            <.meta label="Pack" value={@card.pack} />
+            <.meta label="Deck Limit" value={@card.deck_limit} />
+            <.meta label="Unique" value={yes_no(@card.unique)} />
+            <.meta label="Permanent" value={yes_no(@card.permanent)} />
+            <.meta label="Multi-sided" value={yes_no(@card.is_multi_sided)} />
+          </div>
+        </.panel>
 
-      <!-- Card sides -->
-      <div class="space-y-8">
-        <div :for={side <- @card.card_sides} class="border rounded-lg p-6 bg-white shadow-sm">
-          <div class="flex items-start gap-6">
-            <div :if={side.image_url} class="flex-shrink-0">
-              <img src={side.image_url} alt={side.name} class="w-64 h-auto rounded-lg shadow-lg" />
+        <!-- one panel per side -->
+        <.panel :for={side <- @sides} class="flex flex-col gap-5 p-4 sm:flex-row sm:items-start">
+          <div class="h-[330px] w-[236px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start">
+            <.mc_card
+              name={side.name}
+              cost={side.cost}
+              type={side.type}
+              aspect={side.aspect_key}
+              resources={side.resources}
+              image_url={side.image_url}
+              gradient_from={side.gradient_from}
+              gradient_to={side.gradient_to}
+              size="lg"
+              show_cost={false}
+            />
+          </div>
+
+          <div class="flex min-w-0 flex-1 flex-col">
+            <div class="flex flex-wrap items-center gap-2">
+              <.badge :if={side.is_primary_side} color="var(--aspect-protection)">Primary</.badge>
+              <.badge>Side {side.side_identifier}</.badge>
             </div>
 
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-4">
-                <h3 class="text-xl font-bold">{side.name}</h3>
-                <span
-                  :if={side.is_primary_side}
-                  class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full"
-                >
-                  Primary
-                </span>
-                <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
-                  Side {side.side_identifier}
-                </span>
-              </div>
+            <div
+              class="mt-2 font-ibm-mono text-[10px] uppercase tracking-[0.2em]"
+              style={"color:#{side.aspect_color};"}
+            >
+              {side.type_name}<span :if={side.aspect_name}> · {side.aspect_name}</span>
+            </div>
+            <h2 class="mt-1 font-anton text-[30px] uppercase leading-[0.92]">{side.name}</h2>
+            <div :if={side.subname} class="font-barlow text-[14px] italic text-base-content/55">
+              {side.subname}
+            </div>
 
-              <.list>
-                <:item title="Code">{side.code}</:item>
-                <:item :if={side.subname} title="Subname">{side.subname}</:item>
-                <:item :if={side.type} title="Type">{side.type}</:item>
-                <:item :if={side.aspect} title="Aspect">{side.aspect}</:item>
-                <:item :if={side.cost} title="Cost">{side.cost}</:item>
-                <:item :if={side.text} title="Text">
-                  <div class="prose prose-sm max-w-none">{side.text}</div>
-                </:item>
-                <:item :if={side.traits && side.traits != []} title="Traits">
-                  {Enum.join(side.traits, ", ")}
-                </:item>
+            <!-- resource pips -->
+            <div :if={side.pips != []} class="mt-3 flex items-center gap-1.5">
+              <span
+                :for={{color, glyph} <- side.pips}
+                class="font-champions text-[18px] leading-none"
+                style={"color:#{color};"}
+              >
+                {glyph}
+              </span>
+            </div>
 
-                <!-- Combat Stats -->
-                <div :if={side.attack || side.thwart || side.defense || side.health} class="mt-4">
-                  <h4 class="text-sm font-semibold text-gray-700 mb-2">Combat Stats</h4>
-                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div :if={side.attack} class="text-center p-2 bg-red-50 rounded">
-                      <div class="text-lg font-bold text-red-700">{side.attack}</div>
-                      <div class="text-xs text-red-600">Attack</div>
-                    </div>
-                    <div :if={side.thwart} class="text-center p-2 bg-blue-50 rounded">
-                      <div class="text-lg font-bold text-blue-700">{side.thwart}</div>
-                      <div class="text-xs text-blue-600">Thwart</div>
-                    </div>
-                    <div :if={side.defense} class="text-center p-2 bg-green-50 rounded">
-                      <div class="text-lg font-bold text-green-700">{side.defense}</div>
-                      <div class="text-xs text-green-600">Defense</div>
-                    </div>
-                    <div :if={side.health} class="text-center p-2 bg-yellow-50 rounded">
-                      <div class="text-lg font-bold text-yellow-700">{side.health}</div>
-                      <div class="text-xs text-yellow-600">Health</div>
-                    </div>
-                  </div>
-                </div>
+            <div
+              :if={side.traits != ""}
+              class="mt-3 font-barlow-condensed text-[12px] font-semibold uppercase tracking-[0.02em] text-base-content/55"
+            >
+              {side.traits}
+            </div>
 
-                <!-- Hero/Identity Stats -->
-                <:item :if={side.hand_size} title="Hand Size">{side.hand_size}</:item>
-                <:item :if={side.recover} title="Recover">{side.recover}</:item>
+            <div class="my-3 h-px bg-neutral"></div>
 
-                <!-- Villain Stats -->
-                <:item :if={side.health_per_hero} title="Health Per Hero">Yes</:item>
-                <:item :if={side.stage} title="Stage">{side.stage}</:item>
-                <:item :if={side.scheme} title="Scheme">{side.scheme}</:item>
+            <div :if={side.text} class="font-barlow text-[14px] leading-[1.55] text-base-content/85">
+              {side.text}
+            </div>
 
-                <!-- Scheme Stats -->
-                <:item :if={side.base_threat} title="Base Threat">{side.base_threat}</:item>
-                <:item :if={side.escalation_threat} title="Escalation Threat">
-                  {side.escalation_threat}
-                </:item>
-                <:item :if={side.max_threat} title="Max Threat">{side.max_threat}</:item>
+            <!-- combat stats -->
+            <div :if={side.stats != []} class="mt-4 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              <.stat_box :for={s <- side.stats} value={s.value} label={s.label} color={s.color} />
+            </div>
 
-                <!-- Encounter Stats -->
-                <:item :if={side.boost} title="Boost">{side.boost}</:item>
-                <:item :if={side.boost_star} title="Boost Star">Yes</:item>
+            <!-- keyword icons -->
+            <div :if={side.icons != []} class="mt-4 flex flex-wrap gap-1.5">
+              <.badge :for={icon <- side.icons} color="var(--aspect-hero)">{icon}</.badge>
+            </div>
 
-                <!-- Icons -->
-                <div
-                  :if={
-                    side.acceleration_icon || side.amplify_icon || side.crisis_icon ||
-                      side.hazard_icon
-                  }
-                  class="mt-4"
-                >
-                  <h4 class="text-sm font-semibold text-gray-700 mb-2">Icons</h4>
-                  <div class="flex gap-2">
-                    <span
-                      :if={side.acceleration_icon}
-                      class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded"
-                    >
-                      Acceleration
-                    </span>
-                    <span
-                      :if={side.amplify_icon}
-                      class="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded"
-                    >
-                      Amplify
-                    </span>
-                    <span
-                      :if={side.crisis_icon}
-                      class="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded"
-                    >
-                      Crisis
-                    </span>
-                    <span
-                      :if={side.hazard_icon}
-                      class="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded"
-                    >
-                      Hazard
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Resources -->
-                <div
-                  :if={
-                    side.resource_energy_count || side.resource_physical_count ||
-                      side.resource_mental_count || side.resource_wild_count
-                  }
-                  class="mt-4"
-                >
-                  <h4 class="text-sm font-semibold text-gray-700 mb-2">Resources</h4>
-                  <div class="flex gap-2">
-                    <span
-                      :if={side.resource_energy_count && side.resource_energy_count > 0}
-                      class="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded"
-                    >
-                      Energy: {side.resource_energy_count}
-                    </span>
-                    <span
-                      :if={side.resource_physical_count && side.resource_physical_count > 0}
-                      class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded"
-                    >
-                      Physical: {side.resource_physical_count}
-                    </span>
-                    <span
-                      :if={side.resource_mental_count && side.resource_mental_count > 0}
-                      class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded"
-                    >
-                      Mental: {side.resource_mental_count}
-                    </span>
-                    <span
-                      :if={side.resource_wild_count && side.resource_wild_count > 0}
-                      class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
-                    >
-                      Wild: {side.resource_wild_count}
-                    </span>
-                  </div>
-                </div>
-              </.list>
+            <!-- other typed stats -->
+            <div :if={side.meta != []} class="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+              <.meta :for={m <- side.meta} label={m.label} value={m.value} />
             </div>
           </div>
-        </div>
+        </.panel>
       </div>
     </Layouts.app>
+    """
+  end
+
+  attr :label, :string, required: true
+  attr :value, :any, required: true
+
+  defp meta(assigns) do
+    ~H"""
+    <div :if={present?(@value)}>
+      <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+        {@label}
+      </div>
+      <div class="mt-0.5 font-barlow-condensed text-[15px] font-semibold">{@value}</div>
+    </div>
+    """
+  end
+
+  attr :value, :any, required: true
+  attr :label, :string, required: true
+  attr :color, :string, required: true
+
+  defp stat_box(assigns) do
+    ~H"""
+    <div
+      class="border-2 border-neutral bg-[#0c0c0f] px-0.5 py-1.5 text-center"
+      style={"border-top:3px solid #{@color};"}
+    >
+      <div class="font-anton text-[20px] leading-[0.9]">{@value}</div>
+      <div class="mt-[3px] text-[8px] font-extrabold uppercase tracking-[0.12em] text-base-content/50">
+        {@label}
+      </div>
+    </div>
+    """
+  end
+
+  attr :color, :string, default: nil
+  slot :inner_block, required: true
+
+  defp badge(assigns) do
+    ~H"""
+    <span
+      class="border-2 px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]"
+      style={
+        if(@color,
+          do: "border-color:#{@color};color:#{@color};background:#000;",
+          else: "border-color:var(--color-neutral);color:rgba(244,241,234,.8);background:#000;"
+        )
+      }
+    >
+      {render_slot(@inner_block)}
+    </span>
     """
   end
 
@@ -210,9 +185,138 @@ defmodule SanctumWeb.CardLive.Show do
         load: [:card_sides, :primary_side]
       )
 
+    gradient = hero_gradient(card.set)
+    title = (card.primary_side && card.primary_side.name) || card.base_code
+
+    sides =
+      card.card_sides
+      |> Enum.sort_by(& &1.side_identifier)
+      |> Enum.map(&side_view(&1, gradient))
+
     {:ok,
      socket
-     |> assign(:page_title, "Show Card - #{card.base_code}")
-     |> assign(:card, card)}
+     |> assign(:page_title, "Card - #{title}")
+     |> assign(:card, card)
+     |> assign(:title, title)
+     |> assign(:sides, sides)}
   end
+
+  # Builds the display map for one card side.
+  defp side_view(side, hero_gradient) do
+    hero_face? = side.type in [:hero, :alter_ego]
+
+    resources =
+      [
+        energy: side.resource_energy_count,
+        mental: side.resource_mental_count,
+        physical: side.resource_physical_count,
+        wild: side.resource_wild_count
+      ]
+      |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
+
+    {gradient_from, gradient_to} =
+      if hero_face?, do: hero_gradient || {nil, nil}, else: {nil, nil}
+
+    %{
+      id: side.id,
+      name: side.name,
+      subname: side.subname,
+      cost: side.cost,
+      side_identifier: side.side_identifier,
+      is_primary_side: side.is_primary_side,
+      type: side.type,
+      type_name: type_name(side.type),
+      aspect_key: if(hero_face?, do: :hero, else: side.aspect || :basic),
+      aspect_name: side.aspect && aspect_name(side.aspect),
+      aspect_color: aspect_color(if(hero_face?, do: :hero, else: side.aspect)),
+      resources: resources,
+      pips: CardComponent.resource_pips(resources),
+      traits: format_traits(side.traits),
+      text: side.text,
+      image_url: side.image_url,
+      gradient_from: gradient_from,
+      gradient_to: gradient_to,
+      stats: combat_stats(side),
+      icons: keyword_icons(side),
+      meta: typed_meta(side)
+    }
+  end
+
+  defp combat_stats(side) do
+    [
+      {"THW", side.thwart, "#2ea7b8"},
+      {"ATK", side.attack, "#ce1b2e"},
+      {"DEF", side.defense, "#2456a6"},
+      {"HP", side.health, "#46991b"}
+    ]
+    |> Enum.filter(fn {_l, v, _c} -> not is_nil(v) end)
+    |> Enum.map(fn {label, value, color} -> %{label: label, value: value, color: color} end)
+  end
+
+  defp keyword_icons(side) do
+    [
+      {"Acceleration", side.acceleration_icon},
+      {"Amplify", side.amplify_icon},
+      {"Crisis", side.crisis_icon},
+      {"Hazard", side.hazard_icon}
+    ]
+    |> Enum.filter(fn {_label, on?} -> on? end)
+    |> Enum.map(&elem(&1, 0))
+  end
+
+  defp typed_meta(side) do
+    [
+      {"Cost", side.cost},
+      {"Hand Size", side.hand_size},
+      {"Recover", side.recover},
+      {"Stage", side.stage},
+      {"Scheme", side.scheme},
+      {"Health / Hero", yes_if(side.health_per_hero)},
+      {"Base Threat", side.base_threat},
+      {"Escalation", side.escalation_threat},
+      {"Max Threat", side.max_threat},
+      {"Boost", side.boost},
+      {"Boost Star", yes_if(side.boost_star)}
+    ]
+    |> Enum.filter(fn {_label, value} -> present?(value) end)
+    |> Enum.map(fn {label, value} -> %{label: label, value: value} end)
+  end
+
+  defp hero_gradient(nil), do: nil
+
+  defp hero_gradient(set) do
+    Sanctum.Heroes.Hero
+    |> Ash.Query.filter(set == ^set)
+    |> Ash.read!()
+    |> List.first()
+    |> case do
+      %{primary_color: from, secondary_color: to} when is_binary(from) and is_binary(to) ->
+        {from, to}
+
+      _ ->
+        nil
+    end
+  end
+
+  defp format_traits(traits) when is_list(traits), do: Enum.join(traits, " · ")
+  defp format_traits(_), do: ""
+
+  defp aspect_name(:hero), do: "Hero"
+  defp aspect_name(aspect), do: aspect |> to_string() |> String.capitalize()
+
+  defp aspect_color(nil), do: "var(--aspect-basic)"
+  defp aspect_color(aspect), do: "var(--aspect-#{aspect})"
+
+  defp type_name(nil), do: "Card"
+  defp type_name(type), do: type |> to_string() |> String.replace("_", " ") |> String.capitalize()
+
+  defp yes_no(true), do: "Yes"
+  defp yes_no(_), do: "No"
+
+  defp yes_if(true), do: "Yes"
+  defp yes_if(_), do: nil
+
+  defp present?(nil), do: false
+  defp present?(""), do: false
+  defp present?(_), do: true
 end
