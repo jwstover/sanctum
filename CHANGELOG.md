@@ -1,3 +1,12 @@
+## [1.14.1](https://github.com/jwstover/sanctum/compare/v1.14.0...v1.14.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* **cards:** don't duplicate card sides whose stored enum no longer loads ([b925606](https://github.com/jwstover/sanctum/commit/b9256065cb226e6556eb104520565c357b166969))
+
+
+
 # [1.14.0](https://github.com/jwstover/sanctum/compare/v1.13.0...v1.14.0) (2026-07-14)
 
 
@@ -32,17 +41,6 @@
 ### Features
 
 * **cards:** format MarvelCDB card text into safe HTML ([#96](https://github.com/jwstover/sanctum/issues/96)) ([b252345](https://github.com/jwstover/sanctum/commit/b2523454436855faacf60df666e4c5726dbeb6f5))
-
-
-
-# [1.11.0](https://github.com/jwstover/sanctum/compare/v1.10.0...v1.11.0) (2026-07-14)
-
-
-### Features
-
-* **decks:** score and sort decks by uniqueness ([0bc81b0](https://github.com/jwstover/sanctum/commit/0bc81b0aa3144b67baa27bd825f742f613306e6b))
-* **decks:** shared uniqueness meter + similar decks on detail ([f6975f5](https://github.com/jwstover/sanctum/commit/f6975f543245f0371f3233172a1decdc04e46d0a))
-* **decks:** surface deck uniqueness in list and detail UI ([bb0e0fc](https://github.com/jwstover/sanctum/commit/bb0e0fc3c117b9d54604a8ba7d917bc6d40ec832))
 
 
 
