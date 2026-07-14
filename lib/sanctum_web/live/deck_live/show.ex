@@ -84,6 +84,7 @@ defmodule SanctumWeb.DeckLive.Show do
                   Unique
                 </div>
               </div>
+              <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
               <div :if={@cover.author} class="flex items-center gap-2 self-center">
                 <span class="flex size-[28px] items-center justify-center rounded-full border-2 border-neutral bg-primary font-bangers text-sm text-primary-content">
                   {@cover.author_initial}
@@ -147,6 +148,44 @@ defmodule SanctumWeb.DeckLive.Show do
                     />
                   </.link>
                 </div>
+              </div>
+            </.panel>
+
+            <!-- similar decks -->
+            <.panel :if={@similar != []} class="p-4">
+              <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+                Similar Decks
+              </div>
+              <div class="space-y-2">
+                <.link
+                  :for={s <- @similar}
+                  navigate={~p"/decks/#{s.id}"}
+                  class="mc-tile flex items-center gap-3 border-2 border-neutral bg-black p-2.5 shadow-comic-sm"
+                >
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate font-anton text-[16px] uppercase leading-tight">
+                      {s.title}
+                    </div>
+                    <div class="mt-1 flex flex-wrap gap-1">
+                      <span
+                        :for={a <- s.aspects}
+                        class={[
+                          "border bg-base-200 px-1.5 font-barlow-condensed text-[10px] font-bold uppercase tracking-[0.06em]",
+                          a.text,
+                          a.border
+                        ]}
+                      >
+                        {a.label}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex-none text-right">
+                    <div class="font-anton text-[20px] leading-none text-primary">{s.match}%</div>
+                    <div class="font-barlow-condensed text-[10px] font-bold uppercase tracking-[0.1em] text-base-content/45">
+                      Match
+                    </div>
+                  </div>
+                </.link>
               </div>
             </.panel>
 
@@ -224,7 +263,23 @@ defmodule SanctumWeb.DeckLive.Show do
      |> assign(:deck, deck)
      |> assign(:cover, cover_view(deck, hero_gradient))
      |> assign(:groups, groups)
+     |> assign(:similar, similar_views(deck))
      |> assign(:paragraphs, paragraphs(deck.description_md))}
+  end
+
+  # Same-hero decks that share the most chosen cards with this one.
+  defp similar_views(deck) do
+    deck
+    |> Sanctum.Decks.Uniqueness.similar_decks(limit: 5)
+    |> Enum.map(fn %{deck: d, similarity: sim} ->
+      %{
+        id: d.id,
+        title: d.title,
+        aspects: aspect_badges(d.aspects),
+        card_count: d.total_card_count || 0,
+        match: round(sim * 100)
+      }
+    end)
   end
 
   defp cover_view(deck, {gradient_from, gradient_to}) do
@@ -240,6 +295,7 @@ defmodule SanctumWeb.DeckLive.Show do
       source_label: source_label(deck.source),
       total_cards: deck.total_card_count || 0,
       unique_cards: deck.card_row_count || 0,
+      uniqueness: deck.uniqueness_percentile,
       author: author,
       author_initial: author_initial(author)
     }

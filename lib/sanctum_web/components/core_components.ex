@@ -187,6 +187,46 @@ defmodule SanctumWeb.CoreComponents do
   end
 
   @doc """
+  Renders a deck's uniqueness score as a gold meter (percentile + bar + label).
+
+  Renders nothing when `percentile` is nil (an unscored deck). `size="lg"` is
+  the deck-detail variant; the default `"sm"` is the compact list-row variant.
+
+      <.uniqueness_meter percentile={87} />
+      <.uniqueness_meter percentile={92} size="lg" />
+  """
+  attr :percentile, :integer, default: nil
+  attr :size, :string, default: "sm", values: ~w(sm lg)
+  attr :class, :string, default: nil
+
+  def uniqueness_meter(assigns) do
+    ~H"""
+    <div :if={@percentile} class={@class}>
+      <div class="flex items-baseline gap-1">
+        <span class={[
+          "font-anton leading-none text-primary",
+          (@size == "lg" && "text-[30px]") || "text-[22px]"
+        ]}>
+          {@percentile}
+        </span>
+        <span class="font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em] text-base-content/40">
+          /100
+        </span>
+      </div>
+      <div class={[
+        "mt-1 border border-neutral bg-black",
+        (@size == "lg" && "h-[6px] w-[150px]") || "h-[5px] w-full"
+      ]}>
+        <div class="h-full bg-primary" style={"width:#{@percentile}%"}></div>
+      </div>
+      <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
+        Uniqueness
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Renders an input with label and error messages.
 
   A `Phoenix.HTML.FormField` may be passed as argument,

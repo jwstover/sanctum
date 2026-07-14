@@ -73,8 +73,16 @@ defmodule Sanctum.Decks.Deck do
           end
 
         case sort do
-          "title" -> Ash.Query.sort(query, title: :asc)
-          _ -> Ash.Query.sort(query, updated_at: :desc)
+          "title" ->
+            Ash.Query.sort(query, title: :asc)
+
+          # Most-unique first. Unscored decks (nil percentile — e.g. heroes
+          # below the min-deck threshold) sort last.
+          "unique" ->
+            Ash.Query.sort(query, uniqueness_percentile: :desc_nils_last)
+
+          _ ->
+            Ash.Query.sort(query, updated_at: :desc)
         end
       end
     end
@@ -157,6 +165,17 @@ defmodule Sanctum.Decks.Deck do
     attribute :tags, :string, public?: true
     attribute :description_md, :string, public?: true
     attribute :version, :string, public?: true
+
+    # Deck uniqueness, precomputed by Sanctum.Decks.ComputeUniquenessWorker.
+    # Measures how unlike other decks of the *same hero* this deck's chosen
+    # (non-`:hero`) cards are: uniqueness_score 1.0 = no deck shares its picks,
+    # 0.0 = an exact clone. `uniqueness_percentile` is the per-hero rank (0-100)
+    # used for sorting/badging; `nearest_deck_id` is the closest same-hero deck.
+    # Not public? — these are computed internals, never accepted on write.
+    attribute :uniqueness_score, :float, public?: false
+    attribute :uniqueness_percentile, :integer, public?: false
+    attribute :uniqueness_at, :utc_datetime, public?: false
+    attribute :nearest_deck_id, :uuid, public?: false
 
     timestamps()
   end

@@ -80,4 +80,24 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     assert html =~ "Cosmic Blast"
     refute html =~ "Web Warrior"
   end
+
+  test "a scored deck shows its uniqueness meter; an unscored one doesn't", %{conn: conn} do
+    scored = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+
+    _unscored =
+      make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression])
+
+    # uniqueness_percentile is a computed private attribute, set by the worker;
+    # write it directly to simulate a scored deck.
+    Sanctum.Repo.query!("UPDATE decks SET uniqueness_percentile = $1 WHERE id::text = $2", [
+      87,
+      scored.id
+    ])
+
+    {:ok, _view, html} = live(conn, ~p"/decks")
+
+    assert html =~ "Uniqueness"
+    assert html =~ "87"
+    assert html =~ "width:87%"
+  end
 end

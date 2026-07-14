@@ -22,7 +22,7 @@ defmodule SanctumWeb.DeckLive.Index do
     {"basic", "Basic", "bg-aspect-basic"}
   ]
 
-  @sorts [{"new", "Newest"}, {"title", "A–Z"}]
+  @sorts [{"new", "Newest"}, {"unique", "Unique"}, {"title", "A–Z"}]
 
   @impl true
   def render(assigns) do
@@ -155,15 +155,13 @@ defmodule SanctumWeb.DeckLive.Index do
             </div>
           </div>
 
-          <div class="flex flex-none flex-col justify-center gap-2 border-l-2 border-neutral pl-4">
+          <div class="flex w-[120px] flex-none flex-col justify-center gap-2 border-l-2 border-neutral pl-4">
+            <.uniqueness_meter percentile={deck.uniqueness} />
             <div>
               <div class="font-anton text-[26px] leading-none">{deck.total_card_count}</div>
               <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
                 Cards
               </div>
-            </div>
-            <div class="font-barlow text-[13px] text-base-content/55">
-              {deck.card_row_count} unique
             </div>
             <div class="font-ibm-mono text-[11px] leading-[1.5] text-base-content/40">
               {deck.updated}
@@ -305,6 +303,7 @@ defmodule SanctumWeb.DeckLive.Index do
       author_initial: author_initial(author),
       total_card_count: deck.total_card_count || 0,
       card_row_count: deck.card_row_count || 0,
+      uniqueness: deck.uniqueness_percentile,
       updated: format_date(deck.updated_at)
     }
   end
