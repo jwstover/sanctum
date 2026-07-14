@@ -1,3 +1,12 @@
+# [1.15.0](https://github.com/jwstover/sanctum/compare/v1.14.1...v1.15.0) (2026-07-14)
+
+
+### Features
+
+* **cards:** show every card side in the pool, search by any side title ([cccad4f](https://github.com/jwstover/sanctum/commit/cccad4fd7d63b01b8599b593dcb813f9d452b8f7))
+
+
+
 ## [1.14.1](https://github.com/jwstover/sanctum/compare/v1.14.0...v1.14.1) (2026-07-14)
 
 
@@ -32,15 +41,6 @@
 
 * **cards:** data migration reclassifying 'Pool ownership to aspect ([310d7dd](https://github.com/jwstover/sanctum/commit/310d7ddc39f4b5868bfd80b924275ca4286c74d8))
 * **cards:** model 'pool' as a player aspect, not an ownership ([b7ae5d8](https://github.com/jwstover/sanctum/commit/b7ae5d8189f487da4daa66e6031a3384045bc8df))
-
-
-
-# [1.12.0](https://github.com/jwstover/sanctum/compare/v1.11.0...v1.12.0) (2026-07-14)
-
-
-### Features
-
-* **cards:** format MarvelCDB card text into safe HTML ([#96](https://github.com/jwstover/sanctum/issues/96)) ([b252345](https://github.com/jwstover/sanctum/commit/b2523454436855faacf60df666e4c5726dbeb6f5))
 
 
 
