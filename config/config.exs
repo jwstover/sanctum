@@ -17,7 +17,8 @@ config :sanctum, Oban,
   plugins: [
     {Oban.Plugins.Cron,
      crontab: [
-       {"0 * * * *", Sanctum.Decks.DecklistSyncWorker}
+       {"0 * * * *", Sanctum.Decks.DecklistSyncWorker},
+       {"30 4 * * *", Sanctum.Decks.ComputeUniquenessWorker}
      ]}
   ]
 

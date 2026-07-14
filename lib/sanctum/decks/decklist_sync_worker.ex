@@ -8,7 +8,13 @@ defmodule Sanctum.Decks.DecklistSyncWorker do
 
   @impl Oban.Worker
   def perform(_job) do
-    with {:ok, _summary} <- Sanctum.DeckSync.run() do
+    with {:ok, summary} <- Sanctum.DeckSync.run() do
+      # New decks shift their heroes' uniqueness rankings; recompute. `unique`
+      # on the worker debounces this against the nightly cron run.
+      if summary.imported > 0 do
+        Sanctum.Decks.ComputeUniquenessWorker.new(%{}) |> Oban.insert()
+      end
+
       :ok
     end
   end
