@@ -1,3 +1,12 @@
+# [1.3.0](https://github.com/jwstover/sanctum/compare/v1.2.0...v1.3.0) (2026-07-14)
+
+
+### Features
+
+* **cards:** comic-dossier Card Pool + data-driven hero colors ([aa0a1e2](https://github.com/jwstover/sanctum/commit/aa0a1e2992746dfcc40575d0fc1d9426c80d4a23))
+
+
+
 # [1.2.0](https://github.com/jwstover/sanctum/compare/v1.1.0...v1.2.0) (2026-07-13)
 
 
@@ -65,19 +74,6 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 ### Features
 
 * **auth:** add UserIdentity for OAuth (ash_authentication 4.14) ([1fb7550](https://github.com/jwstover/sanctum/commit/1fb75502020a3376c694aaf01d66a413f81a1a91))
-
-
-
-# [0.12.0](https://github.com/jwstover/sanctum/compare/v0.11.0...v0.12.0) (2026-07-12)
-
-
-
-## [0.10.3](https://github.com/jwstover/sanctum/compare/v0.10.2...v0.10.3) (2026-07-10)
-
-
-### Features
-
-* add required game_id to GameCard ([f0f6078](https://github.com/jwstover/sanctum/commit/f0f60785e5a9ab3ac9f7f66366afbee6ed9a225f))
 
 
 
