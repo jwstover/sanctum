@@ -50,6 +50,7 @@ defmodule Sanctum.Factory do
       type: :hero,
       cost: 0,
       text: Faker.Superhero.descriptor(),
+      ownership: :player,
       aspect: :justice,
       attack: 2,
       thwart: 3,
