@@ -1,3 +1,12 @@
+## [1.7.1](https://github.com/jwstover/sanctum/compare/v1.7.0...v1.7.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* **ui:** restore prod styles blocked by CSP and move colors to Tailwind tokens ([728c579](https://github.com/jwstover/sanctum/commit/728c5790e0e7de3c4d52469fcdafa69ff9955cc6))
+
+
+
 # [1.7.0](https://github.com/jwstover/sanctum/compare/v1.6.0...v1.7.0) (2026-07-14)
 
 
@@ -49,15 +58,6 @@
 ### Features
 
 * **ui:** comic starburst stat badges ([c2be160](https://github.com/jwstover/sanctum/commit/c2be160db09c6e3a553a8ccde98efe7e92159ed5))
-
-
-
-# [1.4.0](https://github.com/jwstover/sanctum/compare/v1.3.0...v1.4.0) (2026-07-14)
-
-
-### Features
-
-* **cards:** comic-dossier card detail page ([9c45214](https://github.com/jwstover/sanctum/commit/9c4521431d316c339f85e0af9cb84b8ca1e061c1))
 
 
 
