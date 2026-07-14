@@ -47,8 +47,8 @@ defmodule Sanctum.Games.GamePlayerTest do
         side_identifier: "A",
         is_primary_side: true,
         type: :villain,
-        health: 10,
-        attack: 2,
+        health: %{value: 10},
+        attack: %{value: 2},
         scheme: 1
       })
       |> Ash.create(authorize?: false)

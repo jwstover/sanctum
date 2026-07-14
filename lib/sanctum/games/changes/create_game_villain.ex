@@ -24,13 +24,15 @@ defmodule Sanctum.Games.Changes.CreateGameVillain do
             {:error, "Invalid villain card"}
           end
 
+        health = side && stat_value(side.health)
+
         attrs = %{
           villain_id: villain.id,
           card_id: villain_card.id,
           active_side_id: side.id,
-          health: side && side.health,
-          max_health: side && side.health,
-          attack: side && side.attack,
+          health: health,
+          max_health: health,
+          attack: side && stat_value(side.attack),
           scheme: side && side.scheme
         }
 
@@ -40,4 +42,7 @@ defmodule Sanctum.Games.Changes.CreateGameVillain do
         changeset
     end
   end
+
+  defp stat_value(nil), do: nil
+  defp stat_value(%{value: value}), do: value
 end

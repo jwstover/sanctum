@@ -28,11 +28,11 @@ defmodule Sanctum.Heroes.HeroTest do
           side_identifier: "A",
           is_primary_side: true,
           type: :hero,
-          health: 11,
+          health: %{value: 11},
           hand_size: 5,
-          attack: 2,
-          thwart: 2,
-          defense: 1
+          attack: %{value: 2},
+          thwart: %{value: 2},
+          defense: %{value: 1}
         })
         |> Ash.create(authorize?: false)
 
@@ -45,9 +45,9 @@ defmodule Sanctum.Heroes.HeroTest do
           side_identifier: "B",
           is_primary_side: false,
           type: :alter_ego,
-          health: 11,
+          health: %{value: 11},
           hand_size: 6,
-          recover: 3
+          recover: %{value: 3}
         })
         |> Ash.create(authorize?: false)
 
@@ -84,7 +84,7 @@ defmodule Sanctum.Heroes.HeroTest do
       assert %Sanctum.Games.CardSide{} = loaded.hero_side
       assert loaded.hero_side.id == hero_side.id
       assert loaded.hero_side.type == :hero
-      assert loaded.hero_side.health == 11
+      assert loaded.hero_side.health.value == 11
     end
 
     test "alter_ego_side loads the single alter_ego card side", %{

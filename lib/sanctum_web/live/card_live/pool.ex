@@ -324,9 +324,9 @@ defmodule SanctumWeb.CardLive.Pool do
       traits: format_traits(side.traits),
       text: side.text || "",
       is_ally: side.type == :ally,
-      attack: side.attack,
-      thwart: side.thwart,
-      health: side.health,
+      attack: stat_value(side.attack),
+      thwart: stat_value(side.thwart),
+      health: stat_value(side.health),
       image_url: side.image_url
     }
   end
@@ -339,6 +339,9 @@ defmodule SanctumWeb.CardLive.Pool do
       _ -> CardComponent.fallback_gradient(set)
     end
   end
+
+  defp stat_value(nil), do: nil
+  defp stat_value(%{value: value}), do: value
 
   defp format_traits(traits) when is_list(traits), do: Enum.join(traits, " · ")
   defp format_traits(_), do: ""

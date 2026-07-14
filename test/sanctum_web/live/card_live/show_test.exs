@@ -21,9 +21,10 @@ defmodule SanctumWeb.CardLive.ShowTest do
         side_identifier: "A",
         is_primary_side: true,
         type: :hero,
+        ownership: :player,
         aspect: :justice,
-        attack: 2,
-        thwart: 3
+        attack: %{value: 2},
+        thwart: %{value: 3}
       }
     )
 
