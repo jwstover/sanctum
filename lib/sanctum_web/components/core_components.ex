@@ -95,7 +95,7 @@ defmodule SanctumWeb.CoreComponents do
 
   def button(%{rest: rest} = assigns) do
     base =
-      "inline-flex items-center justify-center gap-2 cursor-pointer font-barlow-condensed font-extrabold uppercase tracking-[0.08em] text-[13px] transition-all active:translate-x-px active:translate-y-px disabled:opacity-40 disabled:pointer-events-none"
+      "inline-flex min-h-[44px] items-center justify-center gap-2 cursor-pointer font-barlow-condensed font-extrabold uppercase tracking-[0.08em] text-[13px] transition-all active:translate-x-px active:translate-y-px disabled:opacity-40 disabled:pointer-events-none sm:min-h-0"
 
     variants = %{
       "primary" =>
@@ -103,7 +103,7 @@ defmodule SanctumWeb.CoreComponents do
       "ghost" =>
         "px-4 py-2.5 bg-base-300 text-base-content border-2 border-neutral shadow-comic-sm hover:text-white",
       "icon" =>
-        "size-10 rounded-full bg-base-300 text-base-content border-2 border-neutral hover:text-white",
+        "size-11 rounded-full bg-base-300 text-base-content border-2 border-neutral hover:text-white sm:size-10",
       nil =>
         "px-4 py-2.5 bg-base-300 text-base-content border-2 border-neutral shadow-comic-sm hover:text-white"
     }
@@ -153,8 +153,8 @@ defmodule SanctumWeb.CoreComponents do
     ~H"""
     <button
       class={[
-        "inline-flex items-center gap-1.5 cursor-pointer border-2 px-3 py-1.5",
-        "font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.07em] transition-colors",
+        "inline-flex min-h-[44px] items-center gap-1.5 cursor-pointer border-2 px-3.5 py-1.5 sm:min-h-0 sm:px-3",
+        "font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] transition-colors sm:text-[12px]",
         (@active && "border-transparent bg-primary text-primary-content") ||
           "border-neutral bg-base-300 text-base-content hover:text-white",
         @class
