@@ -1,3 +1,13 @@
+# [1.10.0](https://github.com/jwstover/sanctum/compare/v1.9.0...v1.10.0) (2026-07-14)
+
+
+### Features
+
+* **cards:** show ally consequential damage on stat badges ([195314b](https://github.com/jwstover/sanctum/commit/195314bf7d0818132118fa7f3041bce794eeaf1f))
+* **decks:** comic-dossier deck detail page ([1a400c9](https://github.com/jwstover/sanctum/commit/1a400c9368b1f8999851ad3eaddad2e01c27e5e7))
+
+
+
 # [1.9.0](https://github.com/jwstover/sanctum/compare/v1.8.0...v1.9.0) (2026-07-14)
 
 
@@ -40,23 +50,6 @@
 * **cards:** show alternate-printing images on the card detail page ([417de5c](https://github.com/jwstover/sanctum/commit/417de5cb3d050a385f4947e2f91baddd945b20be))
 * **cards:** split faction_code into ownership + nullable aspect ([eb4ec95](https://github.com/jwstover/sanctum/commit/eb4ec95ac566317170577898a4dfcbb95564b20a))
 * **ui:** redesign card pool tiles with comic stat badges ([8857423](https://github.com/jwstover/sanctum/commit/8857423dc447b0c7d878caa2eec30927cdc5c027))
-
-
-
-# [1.6.0](https://github.com/jwstover/sanctum/compare/v1.5.1...v1.6.0) (2026-07-14)
-
-
-### Bug Fixes
-
-* **cards:** read resource + real_ fields under correct MarvelCDB names ([9bcd5c1](https://github.com/jwstover/sanctum/commit/9bcd5c1487e08a9c390f9a712f56fd43d8f98de9))
-
-
-### Features
-
-* **cards:** collapse reprints into CardAlts of a canonical card ([f17a237](https://github.com/jwstover/sanctum/commit/f17a23762a8d5873969f4cf8f183b060c8f55148))
-* **cards:** model stats as structured value/star/scaling ([c9229dc](https://github.com/jwstover/sanctum/commit/c9229dc2bf623f4a97fd473b0e258d284b83704f))
-* **cards:** show alternate-printing images on the card detail page ([60cdf6c](https://github.com/jwstover/sanctum/commit/60cdf6c1a6350bb720ed3ff7b73518e89a8f31dd))
-* **cards:** split faction_code into ownership + nullable aspect ([79b6706](https://github.com/jwstover/sanctum/commit/79b6706a182e8d4fca11ffd9f39a55d0cabc13c9))
 
 
 
