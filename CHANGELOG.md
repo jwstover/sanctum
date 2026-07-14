@@ -1,3 +1,13 @@
+## [1.12.1](https://github.com/jwstover/sanctum/compare/v1.12.0...v1.12.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* **cards:** data migration reclassifying 'Pool ownership to aspect ([310d7dd](https://github.com/jwstover/sanctum/commit/310d7ddc39f4b5868bfd80b924275ca4286c74d8))
+* **cards:** model 'pool' as a player aspect, not an ownership ([b7ae5d8](https://github.com/jwstover/sanctum/commit/b7ae5d8189f487da4daa66e6031a3384045bc8df))
+
+
+
 # [1.12.0](https://github.com/jwstover/sanctum/compare/v1.11.0...v1.12.0) (2026-07-14)
 
 
@@ -34,15 +44,6 @@
 ### Features
 
 * **decks:** comic-dossier public Deck Browser ([909c4e2](https://github.com/jwstover/sanctum/commit/909c4e2428b3e7e4b0848b1d0b22544ace5d9e6a))
-
-
-
-# [1.8.0](https://github.com/jwstover/sanctum/compare/v1.7.1...v1.8.0) (2026-07-14)
-
-
-### Features
-
-* **guess:** add Flavor Town card-guessing mini-game ([2ff0a9c](https://github.com/jwstover/sanctum/commit/2ff0a9cd78cf9b9a22390295026f5cd9d922f1f1))
 
 
 
