@@ -33,7 +33,8 @@ defmodule SanctumWeb.CardLive.Pool do
     {"event", "Event"},
     {"support", "Support"},
     {"upgrade", "Upgrade"},
-    {"resource", "Resource"}
+    {"resource", "Resource"},
+    {"player_side_scheme", "Side Scheme"}
   ]
 
   @impl true
@@ -105,9 +106,13 @@ defmodule SanctumWeb.CardLive.Pool do
           id={dom_id}
           class="mc-tile flex items-start gap-[13px] border-2 border-neutral bg-base-200 p-2 shadow-comic"
         >
-          <div class="h-[210px] w-[150px] flex-none border-2 border-neutral shadow-comic-sm">
+          <div class={[
+            "flex-none border-2 border-neutral shadow-comic-sm",
+            (side.is_landscape && "h-[150px] w-[210px]") || "h-[210px] w-[150px]"
+          ]}>
             <.mc_card
               name={side.name}
+              type={side.type}
               cost={side.cost}
               aspect={side.aspect_key}
               image_url={side.image_url}
@@ -179,7 +184,7 @@ defmodule SanctumWeb.CardLive.Pool do
               {side.traits}
             </div>
 
-            <div class="text-center font-barlow text-[13.5px] leading-[1.5] text-base-content/85">
+            <div class="font-barlow text-[13.5px] leading-[1.5] text-base-content/85">
               {Sanctum.CardText.to_html(side.text)}
             </div>
 
@@ -337,6 +342,7 @@ defmodule SanctumWeb.CardLive.Pool do
       id: side.id,
       name: side.name,
       type: side.type,
+      is_landscape: CardComponent.landscape_type?(side.type),
       cost: side.cost,
       show_cost: side.type != :resource and not is_nil(side.cost),
       aspect_key: aspect_key,

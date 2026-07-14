@@ -55,6 +55,14 @@ defmodule SanctumWeb.Components.Card do
     "lg" => %{pad: 13, title: 20, sub: 13, cost: 34, res: 24, label: 11, badge: 26}
   }
 
+  # Card types printed in landscape orientation (wider than tall): schemes and
+  # environments. Villains and identities are portrait. Consumers use this to
+  # pick a landscape frame instead of the default portrait one.
+  @landscape_types [:main_scheme, :side_scheme, :player_side_scheme, :environment]
+
+  @doc "Whether a card type is printed in landscape orientation."
+  def landscape_type?(type), do: type in @landscape_types
+
   # Fallback gradient when a hero has no stored palette (non-hero sets,
   # un-synced heroes). Hero colors themselves come from MarvelCDB and are
   # passed in via gradient_from/gradient_to.

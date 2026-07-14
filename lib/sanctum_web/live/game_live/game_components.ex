@@ -3,9 +3,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
 
   use SanctumWeb, :html
 
-  @landscape_types [
-    :main_scheme
-  ]
+  alias SanctumWeb.Components.Card
 
   attr :id, :string, required: true
   attr :game_card, Sanctum.Games.GameCard, required: true
@@ -107,7 +105,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
       assign(assigns, :src, assigns.imgsrc || (active_side && active_side.image_url))
       |> assign(
         :aspect,
-        if active_side && active_side.type in @landscape_types do
+        if active_side && Card.landscape_type?(active_side.type) do
           "max-h-[71px] lg:max-h-[110px]"
         else
           "max-h-[100px] lg:max-h-[153px]"
@@ -172,7 +170,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
       assign(assigns, :src, assigns.imgsrc || (active_side && active_side.image_url))
       |> assign(
         :aspect,
-        if active_side && active_side.type in @landscape_types do
+        if active_side && Card.landscape_type?(active_side.type) do
           "max-h-[71px] lg:max-h-[110px]"
         else
           "max-h-[100px] lg:max-h-[153px]"
