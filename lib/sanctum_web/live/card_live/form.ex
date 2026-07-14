@@ -233,31 +233,71 @@ defmodule SanctumWeb.CardLive.Form do
 
         <!-- Combat Stats (stat value only; star/scaling come from sync) -->
         <div class="grid grid-cols-2 gap-2">
-          <.input field={@form[:attack]} type="number" label="Attack" value={stat_value(@form[:attack].value)} />
+          <.input
+            field={@form[:attack]}
+            type="number"
+            label="Attack"
+            value={stat_value(@form[:attack].value)}
+          />
           <.input field={@form[:attack_cost]} type="number" label="Attack Cost" />
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <.input field={@form[:thwart]} type="number" label="Thwart" value={stat_value(@form[:thwart].value)} />
+          <.input
+            field={@form[:thwart]}
+            type="number"
+            label="Thwart"
+            value={stat_value(@form[:thwart].value)}
+          />
           <.input field={@form[:thwart_cost]} type="number" label="Thwart Cost" />
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <.input field={@form[:defense]} type="number" label="Defense" value={stat_value(@form[:defense].value)} />
+          <.input
+            field={@form[:defense]}
+            type="number"
+            label="Defense"
+            value={stat_value(@form[:defense].value)}
+          />
           <.input field={@form[:defense_cost]} type="number" label="Defense Cost" />
         </div>
-        <.input field={@form[:health]} type="number" label="Health" value={stat_value(@form[:health].value)} />
+        <.input
+          field={@form[:health]}
+          type="number"
+          label="Health"
+          value={stat_value(@form[:health].value)}
+        />
 
         <!-- Hero Fields -->
         <div class="grid grid-cols-2 gap-2">
           <.input field={@form[:hand_size]} type="number" label="Hand Size" />
-          <.input field={@form[:recover]} type="number" label="Recover" value={stat_value(@form[:recover].value)} />
+          <.input
+            field={@form[:recover]}
+            type="number"
+            label="Recover"
+            value={stat_value(@form[:recover].value)}
+          />
         </div>
 
         <!-- Villain/Scheme Fields -->
         <.input field={@form[:stage]} type="number" label="Stage" />
         <div class="grid grid-cols-2 gap-2">
-          <.input field={@form[:base_threat]} type="number" label="Base Threat" value={stat_value(@form[:base_threat].value)} />
-          <.input field={@form[:escalation_threat]} type="number" label="Escalation Threat" value={stat_value(@form[:escalation_threat].value)} />
-          <.input field={@form[:max_threat]} type="number" label="Max Threat" value={stat_value(@form[:max_threat].value)} />
+          <.input
+            field={@form[:base_threat]}
+            type="number"
+            label="Base Threat"
+            value={stat_value(@form[:base_threat].value)}
+          />
+          <.input
+            field={@form[:escalation_threat]}
+            type="number"
+            label="Escalation Threat"
+            value={stat_value(@form[:escalation_threat].value)}
+          />
+          <.input
+            field={@form[:max_threat]}
+            type="number"
+            label="Max Threat"
+            value={stat_value(@form[:max_threat].value)}
+          />
         </div>
 
         <!-- Icons -->

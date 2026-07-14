@@ -390,26 +390,36 @@ defmodule Sanctum.MarvelCdb do
   # canonical card rather than as a second Card, so the pool and deck resolution
   # dedupe. One alt row per side entry.
   defp create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun) do
-    with {:ok, canonical} <- resolve_canonical(canonical_code) do
-      Enum.reduce_while(side_entries, {:ok, canonical}, fn entry, acc ->
-        image_url = entry |> resolve_imagesrc(parent) |> image_url_fun.()
-
-        attrs = %{
-          code: entry["code"],
-          base_code: extract_base_code(entry["code"]),
-          side_identifier: extract_side_identifier(entry["code"]),
-          pack: entry["pack_code"],
-          set: entry["card_set_code"],
-          image_url: image_url,
-          card_id: canonical.id
-        }
-
-        case Games.create_card_alt(attrs, authorize?: false) do
-          {:ok, _alt} -> {:cont, acc}
-          err -> {:halt, err}
-        end
-      end)
+    case resolve_canonical(canonical_code) do
+      {:ok, canonical} -> reduce_alts(canonical, side_entries, parent, image_url_fun)
+      err -> err
     end
+  end
+
+  defp reduce_alts(canonical, side_entries, parent, image_url_fun) do
+    Enum.reduce_while(side_entries, {:ok, canonical}, fn entry, acc ->
+      case upsert_alt(canonical, entry, parent, image_url_fun) do
+        {:ok, _alt} -> {:cont, acc}
+        err -> {:halt, err}
+      end
+    end)
+  end
+
+  defp upsert_alt(canonical, entry, parent, image_url_fun) do
+    image_url = entry |> resolve_imagesrc(parent) |> image_url_fun.()
+
+    Games.create_card_alt(
+      %{
+        code: entry["code"],
+        base_code: extract_base_code(entry["code"]),
+        side_identifier: extract_side_identifier(entry["code"]),
+        pack: entry["pack_code"],
+        set: entry["card_set_code"],
+        image_url: image_url,
+        card_id: canonical.id
+      },
+      authorize?: false
+    )
   end
 
   # Resolves a reprint's canonical card, fetching+creating it if it wasn't part
