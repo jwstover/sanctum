@@ -17,13 +17,13 @@ defmodule SanctumWeb.CardLive.Pool do
 
   @aspects [
     {"all", "All", nil},
-    {"hero", "Hero", "var(--aspect-hero)"},
-    {"aggression", "Aggression", "var(--aspect-aggression)"},
-    {"justice", "Justice", "var(--aspect-justice)"},
-    {"leadership", "Leadership", "var(--aspect-leadership)"},
-    {"protection", "Protection", "var(--aspect-protection)"},
-    {"pool", "Pool", "var(--aspect-pool)"},
-    {"basic", "Basic", "var(--aspect-basic)"}
+    {"hero", "Hero", "bg-aspect-hero"},
+    {"aggression", "Aggression", "bg-aspect-aggression"},
+    {"justice", "Justice", "bg-aspect-justice"},
+    {"leadership", "Leadership", "bg-aspect-leadership"},
+    {"protection", "Protection", "bg-aspect-protection"},
+    {"pool", "Pool", "bg-aspect-pool"},
+    {"basic", "Basic", "bg-aspect-basic"}
   ]
 
   @types [
@@ -59,7 +59,7 @@ defmodule SanctumWeb.CardLive.Pool do
             phx-debounce="200"
             autocomplete="off"
             placeholder="Search cards by name…"
-            class="w-full border-[2.5px] border-[#2a2a30] bg-black px-3.5 py-2.5 pl-[38px] font-barlow text-[15px] text-base-content outline-none focus:border-primary"
+            class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 pl-[38px] font-barlow text-[15px] text-base-content outline-none focus:border-primary"
           />
         </form>
         <div class="whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
@@ -70,9 +70,9 @@ defmodule SanctumWeb.CardLive.Pool do
       <!-- aspect filters -->
       <div class="mb-2.5 flex flex-wrap gap-1.5">
         <.filter_pill
-          :for={{key, label, dot} <- @aspect_options}
+          :for={{key, label, dot_class} <- @aspect_options}
           active={@aspect == key}
-          dot={dot}
+          dot_class={dot_class}
           phx-click="filter_aspect"
           phx-value-key={key}
         >
@@ -126,10 +126,10 @@ defmodule SanctumWeb.CardLive.Pool do
                 {card.cost}
               </div>
               <div class="min-w-0 flex-1">
-                <div
-                  class="font-ibm-mono text-[9px] uppercase tracking-[0.2em]"
-                  style={"color:#{card.aspect_color};"}
-                >
+                <div class={[
+                  "font-ibm-mono text-[9px] uppercase tracking-[0.2em]",
+                  card.aspect_text_class
+                ]}>
                   {card.type_name} · {card.aspect_name}
                 </div>
                 <div class="mt-[3px] font-anton text-[22px] uppercase leading-[0.94]">
@@ -170,9 +170,8 @@ defmodule SanctumWeb.CardLive.Pool do
 
             <div :if={card.pips != []} class="mt-2.5 flex items-center gap-1">
               <span
-                :for={{color, glyph} <- card.pips}
-                class="font-champions text-2xl leading-none"
-                style={"color:#{color};"}
+                :for={{color_class, glyph} <- card.pips}
+                class={["font-champions text-2xl leading-none", color_class]}
               >
                 {glyph}
               </span>
@@ -311,7 +310,7 @@ defmodule SanctumWeb.CardLive.Pool do
       gradient_from: gradient_from,
       gradient_to: gradient_to,
       type_name: type_name(side.type),
-      aspect_color: "var(--aspect-#{aspect_key})",
+      aspect_text_class: CardComponent.aspect_classes(aspect_key).text,
       resources: resources,
       pips: CardComponent.resource_pips(resources),
       traits: format_traits(side.traits),

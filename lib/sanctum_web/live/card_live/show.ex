@@ -66,14 +66,14 @@ defmodule SanctumWeb.CardLive.Show do
 
           <div class="flex min-w-0 flex-1 flex-col">
             <div class="flex flex-wrap items-center gap-2">
-              <.badge :if={side.is_primary_side} color="var(--aspect-protection)">Primary</.badge>
+              <.badge :if={side.is_primary_side} aspect="protection">Primary</.badge>
               <.badge>Side {side.side_identifier}</.badge>
             </div>
 
-            <div
-              class="mt-2 font-ibm-mono text-[10px] uppercase tracking-[0.2em]"
-              style={"color:#{side.aspect_color};"}
-            >
+            <div class={[
+              "mt-2 font-ibm-mono text-[10px] uppercase tracking-[0.2em]",
+              side.aspect_text_class
+            ]}>
               {side.type_name}<span :if={side.aspect_name}> · {side.aspect_name}</span>
             </div>
             <h2 class="mt-1 font-anton text-[30px] uppercase leading-[0.92]">{side.name}</h2>
@@ -84,9 +84,8 @@ defmodule SanctumWeb.CardLive.Show do
             <!-- resource pips -->
             <div :if={side.pips != []} class="mt-3 flex items-center gap-1.5">
               <span
-                :for={{color, glyph} <- side.pips}
-                class="font-champions text-[18px] leading-none"
-                style={"color:#{color};"}
+                :for={{color_class, glyph} <- side.pips}
+                class={["font-champions text-[18px] leading-none", color_class]}
               >
                 {glyph}
               </span>
@@ -112,7 +111,7 @@ defmodule SanctumWeb.CardLive.Show do
 
             <!-- keyword icons -->
             <div :if={side.icons != []} class="mt-4 flex flex-wrap gap-1.5">
-              <.badge :for={icon <- side.icons} color="var(--aspect-hero)">{icon}</.badge>
+              <.badge :for={icon <- side.icons} aspect="hero">{icon}</.badge>
             </div>
 
             <!-- other typed stats -->
@@ -169,7 +168,7 @@ defmodule SanctumWeb.CardLive.Show do
   defp stat_box(assigns) do
     ~H"""
     <div
-      class="border-2 border-neutral bg-[#0c0c0f] px-0.5 py-1.5 text-center"
+      class="border-2 border-neutral bg-base-100 px-0.5 py-1.5 text-center"
       style={"border-top:3px solid #{@color};"}
     >
       <div class="font-anton text-[20px] leading-[0.9]">{@value}</div>
@@ -180,20 +179,19 @@ defmodule SanctumWeb.CardLive.Show do
     """
   end
 
-  attr :color, :string, default: nil
+  attr :aspect, :any, default: nil, doc: "aspect key for accent color; nil = neutral badge"
   slot :inner_block, required: true
 
   defp badge(assigns) do
+    classes = assigns.aspect && CardComponent.aspect_classes(assigns.aspect)
+    assigns = assign(assigns, :badge_classes, classes)
+
     ~H"""
-    <span
-      class="border-2 px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]"
-      style={
-        if(@color,
-          do: "border-color:#{@color};color:#{@color};background:#000;",
-          else: "border-color:var(--color-neutral);color:rgba(244,241,234,.8);background:#000;"
-        )
-      }
-    >
+    <span class={[
+      "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]",
+      (@badge_classes && [@badge_classes.text, @badge_classes.border]) ||
+        "border-neutral text-base-content/80"
+    ]}>
       {render_slot(@inner_block)}
     </span>
     """
@@ -258,7 +256,8 @@ defmodule SanctumWeb.CardLive.Show do
       type_name: type_name(side.type),
       aspect_key: if(hero_face?, do: :hero, else: side.aspect || :basic),
       aspect_name: side.aspect && aspect_name(side.aspect),
-      aspect_color: aspect_color(if(hero_face?, do: :hero, else: side.aspect)),
+      aspect_text_class:
+        CardComponent.aspect_classes(if(hero_face?, do: :hero, else: side.aspect)).text,
       resources: resources,
       pips: CardComponent.resource_pips(resources),
       traits: format_traits(side.traits),
@@ -274,10 +273,10 @@ defmodule SanctumWeb.CardLive.Show do
 
   defp combat_stats(side) do
     [
-      {"THW", side.thwart, "#2ea7b8"},
-      {"ATK", side.attack, "#ce1b2e"},
-      {"DEF", side.defense, "#2456a6"},
-      {"HP", side.health, "#46991b"}
+      {"THW", side.thwart, "var(--color-aspect-leadership)"},
+      {"ATK", side.attack, "var(--color-aspect-hero)"},
+      {"DEF", side.defense, "var(--color-stat-defense)"},
+      {"HP", side.health, "var(--color-aspect-protection)"}
     ]
     |> Enum.filter(fn {_l, stat, _c} -> stat_value(stat) != nil end)
     |> Enum.map(fn {label, stat, color} ->
@@ -358,9 +357,6 @@ defmodule SanctumWeb.CardLive.Show do
 
   defp aspect_name(:hero), do: "Hero"
   defp aspect_name(aspect), do: aspect |> to_string() |> String.capitalize()
-
-  defp aspect_color(nil), do: "var(--aspect-basic)"
-  defp aspect_color(aspect), do: "var(--aspect-#{aspect})"
 
   defp type_name(nil), do: "Card"
   defp type_name(type), do: type |> to_string() |> String.replace("_", " ") |> String.capitalize()

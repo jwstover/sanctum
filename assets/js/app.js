@@ -49,6 +49,15 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+// Register the service worker. Kept here (not as an inline <script> in the
+// root layout) so the prod CSP can leave script-src at 'self' with no
+// 'unsafe-inline'.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js")
+    .then(() => console.log("Service Worker registered"))
+    .catch((error) => console.log("Service Worker registration failed:", error))
+}
+
 // The lines below enable quality of life phoenix_live_reload
 // development features:
 //

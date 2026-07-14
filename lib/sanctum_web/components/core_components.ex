@@ -135,12 +135,16 @@ defmodule SanctumWeb.CoreComponents do
 
   ## Examples
 
-      <.filter_pill active={@aspect == :hero} dot="var(--aspect-hero)" phx-click="filter">
+      <.filter_pill active={@aspect == :hero} dot_class="bg-aspect-hero" phx-click="filter">
         Hero
       </.filter_pill>
   """
   attr :active, :boolean, default: false
-  attr :dot, :string, default: nil, doc: "optional CSS color for a leading square swatch"
+
+  attr :dot_class, :string,
+    default: nil,
+    doc: "optional Tailwind bg-* class for a leading square swatch (e.g. bg-aspect-hero)"
+
   attr :class, :string, default: ""
   attr :rest, :global, include: ~w(href navigate patch phx-click phx-value-key value name)
   slot :inner_block, required: true
@@ -158,9 +162,8 @@ defmodule SanctumWeb.CoreComponents do
       {@rest}
     >
       <span
-        :if={@dot}
-        class="size-2 rounded-[2px]"
-        style={"background:#{if @active, do: "var(--color-primary-content)", else: @dot};"}
+        :if={@dot_class}
+        class={["size-2 rounded-[2px]", (@active && "bg-primary-content") || @dot_class]}
       />
       {render_slot(@inner_block)}
     </button>
