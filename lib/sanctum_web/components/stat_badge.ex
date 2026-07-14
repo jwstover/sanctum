@@ -52,6 +52,7 @@ defmodule SanctumWeb.Components.StatBadge do
   attr :bright, :string, default: nil, doc: "override the bright fill color"
   attr :dark, :string, default: nil, doc: "override the dark rim/dot color"
   attr :tilt, :integer, default: @tilt, doc: "star tilt in degrees (plate/text stay flat)"
+  attr :hero, :boolean, default: false, doc: "Whether or not this stat is for a hero card"
 
   attr :consequential, :integer,
     default: 0,
@@ -78,7 +79,7 @@ defmodule SanctumWeb.Components.StatBadge do
     conseq = max(assigns.consequential || 0, 0)
     # Plate grows a row taller when it carries consequential stars; sides keep the
     # same lean so the short and tall variants read as the same shape.
-    plate_bottom = 264
+    plate_bottom = if assigns.hero, do: 224, else: 264
     dy = plate_bottom - 162
     bottom_l = Float.round(16 + -16 / 102 * dy, 1)
     bottom_r = Float.round(196 + -16 / 102 * dy, 1)

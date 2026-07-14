@@ -8,6 +8,7 @@ defmodule SanctumWeb.CardLive.Pool do
 
   require Ash.Query
 
+  import SanctumWeb.Components.HandSizeBadge
   import SanctumWeb.Components.HealthBadge
   import SanctumWeb.Components.StatBadge
 
@@ -118,7 +119,7 @@ defmodule SanctumWeb.CardLive.Pool do
           </div>
 
           <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex items-start gap-3">
+            <div class="h-12 flex items-start gap-3">
               <div
                 :if={card.show_cost}
                 class="flex flex-none items-center justify-center rounded-full font-elektra-med text-4xl/normal"
@@ -158,6 +159,17 @@ defmodule SanctumWeb.CardLive.Pool do
               </div>
             </div>
 
+            <div :if={card.is_hero} class="flex items-start gap-2 w-full">
+              <div class="flex flex-grow items-start justify-start">
+                <.stat_badge stat={:thw} value={card.thwart} size={64} hero={true} />
+                <.stat_badge stat={:atk} value={card.attack} size={64} hero={true} />
+                <.stat_badge stat={:def} value={card.defense} size={64} hero={true} />
+              </div>
+              <div class="flex items-start justify-end">
+                <.health_badge value={card.health} size={52} />
+              </div>
+            </div>
+
             <div class="my-2 h-px bg-neutral"></div>
 
             <div
@@ -178,13 +190,21 @@ defmodule SanctumWeb.CardLive.Pool do
               {Sanctum.CardText.to_html(card.flavor)}
             </div>
 
-            <div :if={card.pips != []} class="mt-2.5 flex items-center gap-1">
+            <div
+              :if={card.pips != [] or (card.is_hero and card.hand_size)}
+              class="mt-2.5 flex items-center gap-1"
+            >
               <span
                 :for={{color_class, glyph} <- card.pips}
                 class={["font-champions text-2xl leading-none", color_class]}
               >
                 {glyph}
               </span>
+              <.hand_size_badge
+                :if={card.is_hero and card.hand_size}
+                value={card.hand_size}
+                class="ml-auto text-base-content/75"
+              />
             </div>
           </div>
         </div>
@@ -327,10 +347,13 @@ defmodule SanctumWeb.CardLive.Pool do
       text: side.text || "",
       flavor: Map.get(side, :flavor, ""),
       is_ally: side.type == :ally,
+      is_hero: side.type == :hero,
+      hand_size: side.hand_size,
       attack: stat_value(side.attack),
       attack_consequential: stat_consequential(side.attack),
       thwart: stat_value(side.thwart),
       thwart_consequential: stat_consequential(side.thwart),
+      defense: stat_value(side.defense),
       health: stat_value(side.health),
       image_url: side.image_url
     }
