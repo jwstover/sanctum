@@ -4,7 +4,7 @@ defmodule Sanctum.Decks.Uniqueness do
 
   Every deck of a given hero shares the same ~15 fixed `:hero` signature cards,
   so those carry no signal and are excluded entirely. What remains — the chosen
-  aspect/basic/pool cards — is the deck's *choice set*. A deck is unique to the
+  aspect and basic cards — is the deck's *choice set*. A deck is unique to the
   degree that no other deck of the same hero shares those choices.
 
   ## Algorithm

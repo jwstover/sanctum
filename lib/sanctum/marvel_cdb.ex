@@ -679,7 +679,7 @@ defmodule Sanctum.MarvelCdb do
       traits: parse_traits(mcdb_card["traits"]),
 
       # Card classification. faction_code is split into ownership (which pool)
-      # and aspect (only the four player aspects).
+      # and aspect (only the player aspects).
       type: map_card_type(mcdb_card["type_code"]),
       ownership: map_ownership(mcdb_card["faction_code"]),
       aspect: map_aspect(mcdb_card["faction_code"]),
@@ -819,15 +819,16 @@ defmodule Sanctum.MarvelCdb do
   end
 
   # MarvelCDB's faction_code overloads ownership with aspect. Ownership is the
-  # pool the card comes from; aspect is only the four player aspects.
+  # pool the card comes from; aspect is only the player aspects. `pool` is an
+  # aspect (a deck-buildable player card), so it maps to `:player` ownership.
   defp map_ownership(faction_code) do
     case faction_code do
       "aggression" -> :player
       "justice" -> :player
       "leadership" -> :player
       "protection" -> :player
+      "pool" -> :player
       "basic" -> :basic
-      "pool" -> :pool
       "hero" -> :hero
       "encounter" -> :encounter
       "campaign" -> :campaign
@@ -841,6 +842,7 @@ defmodule Sanctum.MarvelCdb do
       "justice" -> :justice
       "leadership" -> :leadership
       "protection" -> :protection
+      "pool" -> :pool
       _ -> nil
     end
   end

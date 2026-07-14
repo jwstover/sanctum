@@ -354,12 +354,11 @@ defmodule SanctumWeb.CardLive.Pool do
   defp format_traits(traits) when is_list(traits), do: Enum.join(traits, " · ")
   defp format_traits(_), do: ""
 
-  # The display key drives tile color/label: aspect cards use their aspect;
-  # every other pool (hero signature, basic, pool) uses its ownership.
+  # The display key drives tile color/label: aspect cards (including pool) use
+  # their aspect; every other pool (hero signature, basic) uses its ownership.
   defp display_aspect(%{ownership: :player, aspect: aspect}) when not is_nil(aspect), do: aspect
   defp display_aspect(%{ownership: :hero}), do: :hero
   defp display_aspect(%{ownership: :basic}), do: :basic
-  defp display_aspect(%{ownership: :pool}), do: :pool
   defp display_aspect(%{aspect: aspect}) when not is_nil(aspect), do: aspect
   defp display_aspect(_), do: :basic
 

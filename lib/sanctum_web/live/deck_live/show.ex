@@ -328,12 +328,11 @@ defmodule SanctumWeb.DeckLive.Show do
   defp identity_image(%{card: %{primary_side: %{image_url: url}}}) when is_binary(url), do: url
   defp identity_image(_), do: nil
 
-  # Player-card aspect display key (aspect cards use their aspect; hero/basic/
-  # pool ownership pools use their ownership).
+  # Player-card aspect display key (aspect cards — including pool — use their
+  # aspect; hero/basic ownership pools use their ownership).
   defp display_aspect(%{ownership: :player, aspect: aspect}) when not is_nil(aspect), do: aspect
   defp display_aspect(%{ownership: :hero}), do: :hero
   defp display_aspect(%{ownership: :basic}), do: :basic
-  defp display_aspect(%{ownership: :pool}), do: :pool
   defp display_aspect(%{aspect: aspect}) when not is_nil(aspect), do: aspect
   defp display_aspect(_), do: :basic
 

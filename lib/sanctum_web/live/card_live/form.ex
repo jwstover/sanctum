@@ -191,7 +191,6 @@ defmodule SanctumWeb.CardLive.Form do
           options={[
             {"Player", "player"},
             {"Basic", "basic"},
-            {"Pool", "pool"},
             {"Hero", "hero"},
             {"Encounter", "encounter"},
             {"Campaign", "campaign"}
@@ -206,7 +205,8 @@ defmodule SanctumWeb.CardLive.Form do
             {"Aggression", "aggression"},
             {"Justice", "justice"},
             {"Leadership", "leadership"},
-            {"Protection", "protection"}
+            {"Protection", "protection"},
+            {"Pool", "pool"}
           ]}
         />
         <.input field={@form[:cost]} type="number" label="Cost" />
