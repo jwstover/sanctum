@@ -1,3 +1,12 @@
+# [1.12.0](https://github.com/jwstover/sanctum/compare/v1.11.0...v1.12.0) (2026-07-14)
+
+
+### Features
+
+* **cards:** format MarvelCDB card text into safe HTML ([#96](https://github.com/jwstover/sanctum/issues/96)) ([b252345](https://github.com/jwstover/sanctum/commit/b2523454436855faacf60df666e4c5726dbeb6f5))
+
+
+
 # [1.11.0](https://github.com/jwstover/sanctum/compare/v1.10.0...v1.11.0) (2026-07-14)
 
 
@@ -34,15 +43,6 @@
 ### Features
 
 * **guess:** add Flavor Town card-guessing mini-game ([2ff0a9c](https://github.com/jwstover/sanctum/commit/2ff0a9cd78cf9b9a22390295026f5cd9d922f1f1))
-
-
-
-## [1.7.1](https://github.com/jwstover/sanctum/compare/v1.7.0...v1.7.1) (2026-07-14)
-
-
-### Bug Fixes
-
-* **ui:** restore prod styles blocked by CSP and move colors to Tailwind tokens ([728c579](https://github.com/jwstover/sanctum/commit/728c5790e0e7de3c4d52469fcdafa69ff9955cc6))
 
 
 
