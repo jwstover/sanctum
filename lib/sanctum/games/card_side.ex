@@ -65,8 +65,8 @@ defmodule Sanctum.Games.CardSide do
     attribute :traits, {:array, :string}, public?: true, default: []
     attribute :type, Sanctum.Games.CardType, public?: true, allow_nil?: true
 
-    # `ownership` = which pool the card comes from; `aspect` (one of the four
-    # player aspects, or nil) is only set for aspect cards.
+    # `ownership` = which pool the card comes from; `aspect` (one of the player
+    # aspects, or nil) is only set for aspect cards.
     attribute :ownership, Sanctum.Games.CardOwnership, public?: true
     attribute :aspect, Sanctum.Games.CardAspect, public?: true
 

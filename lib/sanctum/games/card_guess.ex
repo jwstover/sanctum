@@ -21,7 +21,7 @@ defmodule Sanctum.Games.CardGuess do
   # knob, tune after playtesting.
   @match_threshold 0.9
 
-  @player_ownerships [:player, :basic, :pool, :hero]
+  @player_ownerships [:player, :basic, :hero]
   @encounter_ownerships [:encounter, :campaign]
   @character_types [:hero, :alter_ego, :ally, :minion, :villain]
   @scheme_types [:main_scheme, :side_scheme]
@@ -141,8 +141,6 @@ defmodule Sanctum.Games.CardGuess do
 
   defp aspect_hint(%{ownership: :basic}),
     do: hint(:aspect, "It's a Basic card — any deck can include it.")
-
-  defp aspect_hint(%{ownership: :pool}), do: hint(:aspect, "It comes from the general card pool.")
 
   defp aspect_hint(_), do: nil
 

@@ -3,16 +3,16 @@ defmodule Sanctum.Games.CardOwnership do
   Which pool a card belongs to.
 
   Split out from MarvelCDB's `faction_code`, which overloads ownership
-  (`hero`, `encounter`, ...) with the four player aspects. Ownership answers
+  (`hero`, `encounter`, ...) with the player aspects. Ownership answers
   "where does this card come from"; the separate `aspect` answers "which aspect"
-  and is only set for aspect player cards.
+  and is only set for aspect player cards. `pool` is an aspect, not an ownership,
+  so it lives on `Sanctum.Games.CardAspect`.
   """
 
   use Ash.Type.Enum,
     values: [
       :player,
       :basic,
-      :pool,
       :hero,
       :encounter,
       :campaign

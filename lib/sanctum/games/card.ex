@@ -16,9 +16,10 @@ defmodule Sanctum.Games.Card do
 
   # Ownership pools and types that belong in the player card pool (deck-buildable
   # cards). Encounter/villain/identity/scheme cards are excluded. Hero signature
-  # cards are the `:hero` pool and surface under the "hero" filter.
-  @player_ownerships [:player, :basic, :pool, :hero]
-  @player_types [:ally, :event, :support, :upgrade, :resource]
+  # cards are the `:hero` pool and surface under the "hero" filter. Pool cards are
+  # ordinary `:player` cards carrying the `:pool` aspect.
+  @player_ownerships [:player, :basic, :hero]
+  @player_types [:hero, :alter_ego, :ally, :event, :support, :upgrade, :resource]
 
   actions do
     defaults [:destroy]
@@ -64,8 +65,8 @@ defmodule Sanctum.Games.Card do
             not is_binary(aspect) or aspect in ["", "all"] ->
               query
 
-            # "hero"/"basic"/"pool" are ownership pools, not aspects.
-            aspect in ["hero", "basic", "pool"] ->
+            # "hero"/"basic" are ownership pools, not aspects.
+            aspect in ["hero", "basic"] ->
               Ash.Query.filter(query, primary_side.ownership == ^to_enum(aspect))
 
             true ->
