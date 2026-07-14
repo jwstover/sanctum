@@ -1,3 +1,13 @@
+## [1.5.1](https://github.com/jwstover/sanctum/compare/v1.5.0...v1.5.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* **ci:** annotate escaped raw usage for Sobelow ([5c06a0e](https://github.com/jwstover/sanctum/commit/5c06a0e0c50c1ccf3b5d3e887238ed86160dd945))
+* **ui:** enlarge health-badge number and tighten player-icon gap ([ca9025a](https://github.com/jwstover/sanctum/commit/ca9025adf71a31e4d18bbc408887b778d2ef43e9))
+
+
+
 # [1.5.0](https://github.com/jwstover/sanctum/compare/v1.4.0...v1.5.0) (2026-07-14)
 
 
@@ -37,15 +47,6 @@
 
 * **decks:** add basic deck list and view pages ([1398dbd](https://github.com/jwstover/sanctum/commit/1398dbd5c42676fac262cd02aba461540cfe7e3c))
 * **ui:** comic-dossier design-system foundation ([8ff2872](https://github.com/jwstover/sanctum/commit/8ff2872fec0fcfff88e40e866640dec8411124dd)), closes [#0b0b0](https://github.com/jwstover/sanctum/issues/0b0b0) [#15151](https://github.com/jwstover/sanctum/issues/15151) [#dbcb36](https://github.com/jwstover/sanctum/issues/dbcb36)
-
-
-
-# [1.1.0](https://github.com/jwstover/sanctum/compare/v1.0.0...v1.1.0) (2026-07-13)
-
-
-### Features
-
-* **decks:** sync decks from MarvelCDB and make decks first-class ([9c7de0b](https://github.com/jwstover/sanctum/commit/9c7de0b1dc8d7087bb62a2dac414ec0f5ae98d2d))
 
 
 
