@@ -17,6 +17,68 @@ defmodule Sanctum.Decks.Deck do
   actions do
     defaults [:read, :destroy, create: :*]
 
+    # Public deck-browser search: filter by title/hero name, aspect, and hero,
+    # with sorting and offset pagination. Backs SanctumWeb.DeckLive.Index.
+    read :browse do
+      argument :query, :string, allow_nil?: true
+      argument :aspect, :string, allow_nil?: true
+      argument :hero_id, :string, allow_nil?: true
+      argument :sort, :string, allow_nil?: true
+
+      pagination offset?: true, default_limit: 24, countable: true, required?: false
+
+      prepare fn query, _context ->
+        require Ash.Query
+
+        search = Ash.Query.get_argument(query, :query)
+        aspect = Ash.Query.get_argument(query, :aspect)
+        hero_id = Ash.Query.get_argument(query, :hero_id)
+        sort = Ash.Query.get_argument(query, :sort)
+
+        query =
+          Ash.Query.load(query, [
+            :card_row_count,
+            :total_card_count,
+            :mcdb_user,
+            :owner,
+            hero: [:hero_side, card: [:primary_side]]
+          ])
+
+        query =
+          if is_binary(search) and String.trim(search) != "" do
+            pattern = "%" <> String.trim(search) <> "%"
+            Ash.Query.filter(query, ilike(title, ^pattern) or ilike(hero.hero_name, ^pattern))
+          else
+            query
+          end
+
+        query =
+          cond do
+            not is_binary(aspect) or aspect in ["", "all"] ->
+              query
+
+            # An empty aspect list is a basic deck.
+            aspect == "basic" ->
+              Ash.Query.filter(query, fragment("cardinality(?) = 0", aspects))
+
+            true ->
+              Ash.Query.filter(query, ^to_enum(aspect) in aspects)
+          end
+
+        query =
+          if is_binary(hero_id) and hero_id not in ["", "all"] do
+            Ash.Query.filter(query, hero_id == ^hero_id)
+          else
+            query
+          end
+
+        case sort do
+          "title" -> Ash.Query.sort(query, title: :asc)
+          _ -> Ash.Query.sort(query, updated_at: :desc)
+        end
+      end
+    end
+
     update :update do
       primary? true
       accept [:*]
@@ -127,5 +189,13 @@ defmodule Sanctum.Decks.Deck do
 
   identities do
     identity :unique_mcdb_deck, [:mcdb_type, :mcdb_id]
+  end
+
+  # Safely convert an incoming filter string to an existing atom; unknown
+  # values fall back to a sentinel that matches nothing.
+  defp to_enum(value) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError -> :__invalid__
   end
 end

@@ -45,6 +45,10 @@ defmodule SanctumWeb.Router do
       # Public card pool (catalog reads are unauthenticated).
       live "/cards", CardLive.Pool, :index
 
+      # Public deck browser + detail (deck reads are unauthenticated).
+      live "/decks", DeckLive.Index, :index
+      live "/decks/:id", DeckLive.Show, :show
+
       # Public "Name That Card" flavor-text guessing mini-game.
       live "/guess", GuessLive.Play, :index
 
@@ -62,9 +66,6 @@ defmodule SanctumWeb.Router do
 
       live "/cards/:id", CardLive.Show, :show
       live "/cards/:id/show/edit", CardLive.Show, :edit
-
-      live "/decks", DeckLive.Index, :index
-      live "/decks/:id", DeckLive.Show, :show
     end
   end
 
