@@ -121,6 +121,28 @@ defmodule SanctumWeb.CardLive.Show do
             </div>
           </div>
         </.panel>
+
+        <!-- alternate printings -->
+        <.panel :if={@alts != []} class="p-4">
+          <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+            Alternate Printings ({length(@alts)})
+          </div>
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <figure :for={alt <- @alts} class="flex flex-col gap-1.5">
+              <div class="aspect-[5/7] w-full overflow-hidden border-2 border-neutral shadow-comic">
+                <img
+                  src={alt.image_url}
+                  alt={alt.code}
+                  loading="lazy"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+              <figcaption class="font-ibm-mono text-[10px] uppercase tracking-[0.16em] text-base-content/50">
+                {alt.code}<span :if={alt.pack}> · {alt.pack}</span>
+              </figcaption>
+            </figure>
+          </div>
+        </.panel>
       </div>
     </Layouts.app>
     """
@@ -182,7 +204,7 @@ defmodule SanctumWeb.CardLive.Show do
     card =
       Ash.get!(Sanctum.Games.Card, id,
         actor: socket.assigns[:current_user],
-        load: [:card_sides, :primary_side]
+        load: [:card_sides, :primary_side, :alts]
       )
 
     gradient = hero_gradient(card.set)
@@ -193,12 +215,20 @@ defmodule SanctumWeb.CardLive.Show do
       |> Enum.sort_by(& &1.side_identifier)
       |> Enum.map(&side_view(&1, gradient))
 
+    # Alternate printings that have a mirrored scan to show.
+    alts =
+      card.alts
+      |> Enum.filter(& &1.image_url)
+      |> Enum.sort_by(& &1.code)
+      |> Enum.map(&%{code: &1.code, pack: &1.pack, image_url: &1.image_url})
+
     {:ok,
      socket
      |> assign(:page_title, "Card - #{title}")
      |> assign(:card, card)
      |> assign(:title, title)
-     |> assign(:sides, sides)}
+     |> assign(:sides, sides)
+     |> assign(:alts, alts)}
   end
 
   # Builds the display map for one card side.
@@ -249,8 +279,10 @@ defmodule SanctumWeb.CardLive.Show do
       {"DEF", side.defense, "#2456a6"},
       {"HP", side.health, "#46991b"}
     ]
-    |> Enum.filter(fn {_l, v, _c} -> not is_nil(v) end)
-    |> Enum.map(fn {label, value, color} -> %{label: label, value: value, color: color} end)
+    |> Enum.filter(fn {_l, stat, _c} -> stat_value(stat) != nil end)
+    |> Enum.map(fn {label, stat, color} ->
+      %{label: label, value: stat_box_value(stat), color: color}
+    end)
   end
 
   defp keyword_icons(side) do
@@ -268,19 +300,42 @@ defmodule SanctumWeb.CardLive.Show do
     [
       {"Cost", side.cost},
       {"Hand Size", side.hand_size},
-      {"Recover", side.recover},
+      {"Recover", stat_meta(side.recover)},
       {"Stage", side.stage},
       {"Scheme", side.scheme},
-      {"Health / Hero", yes_if(side.health_per_hero)},
-      {"Base Threat", side.base_threat},
-      {"Escalation", side.escalation_threat},
-      {"Max Threat", side.max_threat},
+      {"Health Scaling", scaling_label(side.health)},
+      {"Base Threat", stat_meta(side.base_threat)},
+      {"Escalation", stat_meta(side.escalation_threat)},
+      {"Max Threat", stat_meta(side.max_threat)},
       {"Boost", side.boost},
       {"Boost Star", yes_if(side.boost_star)}
     ]
     |> Enum.filter(fn {_label, value} -> present?(value) end)
     |> Enum.map(fn {label, value} -> %{label: label, value: value} end)
   end
+
+  # Stat helpers. `stat_box_value` is compact (number + ★); `stat_meta` also
+  # carries the scaling suffix for the detail rows.
+  defp stat_value(%{value: value}), do: value
+  defp stat_value(_), do: nil
+
+  defp stat_box_value(%{value: value, star: star}) when not is_nil(value),
+    do: "#{value}#{if star, do: "★", else: ""}"
+
+  defp stat_box_value(_), do: nil
+
+  defp stat_meta(%{value: value, star: star, scaling: scaling}) when not is_nil(value),
+    do: "#{value}#{if star, do: "★", else: ""}#{scaling_suffix(scaling)}"
+
+  defp stat_meta(_), do: nil
+
+  defp scaling_suffix(:per_player), do: " /player"
+  defp scaling_suffix(:per_group), do: " /group"
+  defp scaling_suffix(_), do: ""
+
+  defp scaling_label(%{scaling: :per_player}), do: "Per player"
+  defp scaling_label(%{scaling: :per_group}), do: "Per group"
+  defp scaling_label(_), do: nil
 
   defp hero_gradient(nil), do: nil
 

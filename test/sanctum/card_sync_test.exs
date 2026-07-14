@@ -239,6 +239,46 @@ defmodule Sanctum.CardSyncTest do
     assert {:error, _} = Games.get_card_side_by_code("01001a")
   end
 
+  test "reprints become CardAlts of the canonical card, not new cards" do
+    Req.Test.stub(Sanctum.MarvelCdb, fn conn ->
+      Req.Test.json(conn, [
+        %{
+          "code" => "01088",
+          "name" => "Energy",
+          "type_code" => "resource",
+          "faction_code" => "basic",
+          "pack_code" => "core",
+          "resource_energy" => 2,
+          "imagesrc" => "/bundles/cards/01088.png"
+        },
+        %{
+          "code" => "16021",
+          "name" => "Energy",
+          "type_code" => "resource",
+          "faction_code" => "basic",
+          "pack_code" => "gmw",
+          "duplicate_of_code" => "01088",
+          "imagesrc" => "/bundles/cards/16021.png"
+        }
+      ])
+    end)
+
+    assert {:ok, %{data: %{failures: []}}} = CardSync.run(packs: :all, images?: false)
+
+    # The canonical card exists; the reprint did NOT create a second Card.
+    assert {:ok, canonical} = Games.get_card_by_code("01088")
+    refute match?({:ok, %Games.Card{}}, Games.get_card_by_code("16021"))
+
+    # A CardAlt records the reprint and points at the canonical card.
+    assert {:ok, alt} = Games.get_card_alt_by_code("16021", load: [:card])
+    assert alt.card_id == canonical.id
+    assert alt.image_url == bucket_url("16021.png")
+
+    # Deck resolution: a slot listing the reprint code resolves to the canonical.
+    assert {:ok, resolved} = Sanctum.MarvelCdb.load_card("16021")
+    assert resolved.id == canonical.id
+  end
+
   defp sides(base_code) do
     card = Games.get_card_by_code!(base_code, load: [:card_sides])
     Enum.sort_by(card.card_sides, & &1.side_identifier)

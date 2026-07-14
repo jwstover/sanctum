@@ -49,8 +49,8 @@ defmodule Sanctum.Games.GameVillainTest do
         is_primary_side: true,
         type: :villain,
         stage: 1,
-        health: 15,
-        attack: 2,
+        health: %{value: 15},
+        attack: %{value: 2},
         scheme: 1
       })
       |> Ash.create(authorize?: false)
@@ -202,8 +202,8 @@ defmodule Sanctum.Games.GameVillainTest do
           is_primary_side: true,
           type: :villain,
           stage: 1,
-          health: 10,
-          attack: 1,
+          health: %{value: 10},
+          attack: %{value: 1},
           scheme: 1
         })
         |> Ash.create(authorize?: false)
@@ -229,8 +229,8 @@ defmodule Sanctum.Games.GameVillainTest do
           is_primary_side: true,
           type: :villain,
           stage: 2,
-          health: 15,
-          attack: 2,
+          health: %{value: 15},
+          attack: %{value: 2},
           scheme: 2
         })
         |> Ash.create(authorize?: false)
@@ -256,8 +256,8 @@ defmodule Sanctum.Games.GameVillainTest do
           is_primary_side: true,
           type: :villain,
           stage: 3,
-          health: 20,
-          attack: 3,
+          health: %{value: 20},
+          attack: %{value: 3},
           scheme: 3
         })
         |> Ash.create(authorize?: false)
@@ -357,8 +357,8 @@ defmodule Sanctum.Games.GameVillainTest do
           is_primary_side: false,
           type: :villain,
           stage: 1,
-          health: 12,
-          attack: 2,
+          health: %{value: 12},
+          attack: %{value: 2},
           scheme: 1
         })
         |> Ash.create(authorize?: false)

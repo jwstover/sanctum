@@ -16,15 +16,18 @@ defmodule Sanctum.Games.Changes.SetHealth do
         # We need to load the sides to get health values
         hero = Ash.get!(Heroes.Hero, deck.hero.id, load: [:hero_side, :alter_ego_side])
 
-        {health, max_health} =
+        health =
           case current_form do
-            :hero -> {hero.hero_side.health, hero.hero_side.health}
-            :alter_ego -> {hero.alter_ego_side.health, hero.alter_ego_side.health}
+            :hero -> stat_value(hero.hero_side.health)
+            :alter_ego -> stat_value(hero.alter_ego_side.health)
           end
 
         changeset
         |> Changeset.change_attribute(:health, health)
-        |> Changeset.change_attribute(:max_health, max_health)
+        |> Changeset.change_attribute(:max_health, health)
     end
   end
+
+  defp stat_value(nil), do: nil
+  defp stat_value(%{value: value}), do: value
 end

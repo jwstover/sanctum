@@ -84,11 +84,11 @@ defmodule Sanctum.MarvelCdbTest do
           [stage1, stage2, stage3 | _] = stages_with_health
 
           # Rhino should get stronger with each stage
-          assert stage1.health <= stage2.health,
-                 "Stage 2 health (#{stage2.health}) should be >= Stage 1 health (#{stage1.health})"
+          assert stage1.health.value <= stage2.health.value,
+                 "Stage 2 health (#{stage2.health.value}) should be >= Stage 1 health (#{stage1.health.value})"
 
-          assert stage2.health <= stage3.health,
-                 "Stage 3 health (#{stage3.health}) should be >= Stage 2 health (#{stage2.health})"
+          assert stage2.health.value <= stage3.health.value,
+                 "Stage 3 health (#{stage3.health.value}) should be >= Stage 2 health (#{stage2.health.value})"
         end
 
       error ->

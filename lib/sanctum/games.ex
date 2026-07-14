@@ -26,6 +26,11 @@ defmodule Sanctum.Games do
         action: :by_card_and_side
     end
 
+    resource Sanctum.Games.CardAlt do
+      define :create_card_alt, action: :create
+      define :get_card_alt_by_code, args: [:code], get?: true, action: :by_code
+    end
+
     resource Sanctum.Games.Game do
       define :create_game, action: :create
       define :get_game, get_by: :id, action: :read

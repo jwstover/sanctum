@@ -12,7 +12,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
 
   def scheme_card(assigns) do
     active_side = assigns.game_card.active_side
-    max_threat = active_side && active_side.max_threat
+    max_threat = active_side && active_side.max_threat && active_side.max_threat.value
 
     assigns =
       assigns

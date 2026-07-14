@@ -26,10 +26,12 @@ defmodule Sanctum.Games.Changes.FlipSchemeCard do
     if is_binary(new_active_side_id) do
       active_side = Sanctum.Games.get_card_side!(new_active_side_id)
 
-      if active_side.base_threat do
-        Ash.Changeset.change_attribute(changeset, :threat, active_side.base_threat)
-      else
-        changeset
+      case active_side.base_threat do
+        %{value: threat} when not is_nil(threat) ->
+          Ash.Changeset.change_attribute(changeset, :threat, threat)
+
+        _ ->
+          changeset
       end
     else
       changeset

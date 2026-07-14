@@ -227,11 +227,17 @@ defmodule Sanctum.MarvelCdb do
   def sync_entries(entries, opts \\ []) do
     on_progress = Keyword.get(opts, :on_progress)
 
-    groups =
+    # Process canonical (non-reprint) groups before reprint groups so a
+    # reprint's canonical card already exists when its printing is written.
+    # resolve_canonical/1 still covers the rare cross-payload gap.
+    {reprints, canonicals} =
       entries
       |> Enum.uniq_by(& &1["code"])
       |> Enum.group_by(&extract_base_code(&1["code"]))
       |> Enum.sort_by(fn {base_code, _group} -> base_code end)
+      |> Enum.split_with(fn {_base_code, group} -> reprint_group?(group) end)
+
+    groups = canonicals ++ reprints
 
     total = length(groups)
 
@@ -275,7 +281,14 @@ defmodule Sanctum.MarvelCdb do
         {:ok, card}
 
       _ ->
-        fetch_and_create_card(card_id)
+        # A reprint code resolves to its canonical card via CardAlt.
+        case Games.get_card_alt_by_code(card_id, load: [:card]) do
+          {:ok, %Games.CardAlt{card: %Games.Card{} = card}} ->
+            {:ok, card}
+
+          _ ->
+            fetch_and_create_card(card_id)
+        end
     end
   end
 
@@ -349,8 +362,18 @@ defmodule Sanctum.MarvelCdb do
 
     parent = Enum.find(entries, &(!suffixed?(&1["code"])))
     side_entries = side_entries(entries, parent)
-
     card_entry = parent || hd(side_entries)
+
+    case presence(card_entry["duplicate_of_code"]) do
+      nil ->
+        create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun)
+
+      canonical_code ->
+        create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun)
+    end
+  end
+
+  defp create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun) do
     primary_code = side_entries |> hd() |> Map.fetch!("code")
     card_attrs = prepare_card_attrs(card_entry, primary_code, length(side_entries) > 1)
 
@@ -361,6 +384,56 @@ defmodule Sanctum.MarvelCdb do
       maybe_upsert_hero(card, entries)
       {:ok, card}
     end
+  end
+
+  # A reprint (`duplicate_of_code` set) is stored as CardAlts pointing at the
+  # canonical card rather than as a second Card, so the pool and deck resolution
+  # dedupe. One alt row per side entry.
+  defp create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun) do
+    case resolve_canonical(canonical_code) do
+      {:ok, canonical} -> reduce_alts(canonical, side_entries, parent, image_url_fun)
+      err -> err
+    end
+  end
+
+  defp reduce_alts(canonical, side_entries, parent, image_url_fun) do
+    Enum.reduce_while(side_entries, {:ok, canonical}, fn entry, acc ->
+      case upsert_alt(canonical, entry, parent, image_url_fun) do
+        {:ok, _alt} -> {:cont, acc}
+        err -> {:halt, err}
+      end
+    end)
+  end
+
+  defp upsert_alt(canonical, entry, parent, image_url_fun) do
+    image_url = entry |> resolve_imagesrc(parent) |> image_url_fun.()
+
+    Games.create_card_alt(
+      %{
+        code: entry["code"],
+        base_code: extract_base_code(entry["code"]),
+        side_identifier: extract_side_identifier(entry["code"]),
+        pack: entry["pack_code"],
+        set: entry["card_set_code"],
+        image_url: image_url,
+        card_id: canonical.id
+      },
+      authorize?: false
+    )
+  end
+
+  # Resolves a reprint's canonical card, fetching+creating it if it wasn't part
+  # of this sync (duplicate_of_code points backward, but not always to the same
+  # payload).
+  defp resolve_canonical(canonical_code) do
+    case Games.get_card_by_code(extract_base_code(canonical_code)) do
+      {:ok, %Games.Card{} = card} -> {:ok, card}
+      _ -> load_card(canonical_code)
+    end
+  end
+
+  defp reprint_group?(group) do
+    Enum.any?(group, &presence(&1["duplicate_of_code"]))
   end
 
   # Hero identity groups carry the hero's color palette in the identity card's
@@ -540,6 +613,7 @@ defmodule Sanctum.MarvelCdb do
         "real_name" => nil,
         "text" => parent["back_text"],
         "real_text" => nil,
+        "flavor" => parent["back_flavor"],
         "imagesrc" => presence(parent["backimagesrc"])
       })
 
@@ -595,21 +669,26 @@ defmodule Sanctum.MarvelCdb do
       is_primary_side: side_identifier == "a",
       code: mcdb_card["code"],
 
-      # Core card content
+      # Core card content. MarvelCDB carries both localized (`name`/`text`/
+      # `traits`) and unlocalized-English `real_*` variants; for an English-only
+      # app the non-`real_` fields are canonical.
       name: mcdb_card["name"],
-      subname: mcdb_card["real_name"],
-      text: mcdb_card["text"] || mcdb_card["real_text"],
-      traits: parse_traits(mcdb_card["real_traits"] || mcdb_card["traits"]),
+      subname: mcdb_card["subname"],
+      text: mcdb_card["text"],
+      flavor: mcdb_card["flavor"],
+      traits: parse_traits(mcdb_card["traits"]),
 
-      # Card classification
+      # Card classification. faction_code is split into ownership (which pool)
+      # and aspect (only the four player aspects).
       type: map_card_type(mcdb_card["type_code"]),
+      ownership: map_ownership(mcdb_card["faction_code"]),
       aspect: map_aspect(mcdb_card["faction_code"]),
 
-      # Combat stats
-      attack: mcdb_card["attack"],
-      thwart: mcdb_card["thwart"],
-      defense: mcdb_card["defense"],
-      health: mcdb_card["health"],
+      # Combat stats (structured value/star/scaling)
+      attack: stat(mcdb_card["attack"], mcdb_card["attack_star"], :flat),
+      thwart: stat(mcdb_card["thwart"], mcdb_card["thwart_star"], :flat),
+      defense: stat(mcdb_card["defense"], mcdb_card["defense_star"], :flat),
+      health: stat(mcdb_card["health"], mcdb_card["health_star"], health_scaling(mcdb_card)),
       cost: mcdb_card["cost"],
 
       # Icons
@@ -618,25 +697,40 @@ defmodule Sanctum.MarvelCdb do
       crisis_icon: mcdb_card["crisis_icon"] || false,
       hazard_icon: mcdb_card["hazard_icon"] || false,
 
-      # Resource fields
-      resource_energy_count: mcdb_card["resource_energy_count"],
-      resource_physical_count: mcdb_card["resource_physical_count"],
-      resource_mental_count: mcdb_card["resource_mental_count"],
-      resource_wild_count: mcdb_card["resource_wild_count"],
+      # Resource fields. MarvelCDB names these `resource_energy` (etc.); the
+      # `resource_*_count` API variants are always null.
+      resource_energy_count: mcdb_card["resource_energy"],
+      resource_physical_count: mcdb_card["resource_physical"],
+      resource_mental_count: mcdb_card["resource_mental"],
+      resource_wild_count: mcdb_card["resource_wild"],
 
       # Hero fields
       hand_size: mcdb_card["hand_size"],
-      recover: mcdb_card["recover"],
+      recover: stat(mcdb_card["recover"], mcdb_card["recover_star"], :flat),
 
-      # Villain fields
-      health_per_hero: mcdb_card["health_per_hero"] || false,
+      # Villain fields (health scaling lives in health.scaling)
       stage: stage_to_integer(mcdb_card["stage"]),
       scheme: mcdb_card["scheme"],
 
-      # Scheme fields
-      base_threat: mcdb_card["base_threat"],
-      escalation_threat: mcdb_card["escalation_threat"],
-      max_threat: mcdb_card["threat"],
+      # Scheme fields (structured value/star/scaling)
+      base_threat:
+        stat(
+          mcdb_card["base_threat"],
+          false,
+          threat_scaling(mcdb_card, "base_threat_per_group", "base_threat_fixed")
+        ),
+      escalation_threat:
+        stat(
+          mcdb_card["escalation_threat"],
+          mcdb_card["escalation_threat_star"],
+          threat_scaling(mcdb_card, "escalation_threat_per_group", "escalation_threat_fixed")
+        ),
+      max_threat:
+        stat(
+          mcdb_card["threat"],
+          mcdb_card["threat_star"],
+          threat_scaling(mcdb_card, "threat_per_group", "threat_fixed")
+        ),
 
       # Encounter fields
       boost: mcdb_card["boost"],
@@ -647,6 +741,29 @@ defmodule Sanctum.MarvelCdb do
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
+  end
+
+  # Builds a structured stat map. A nil value means the stat is absent, so we
+  # return nil and let the trailing Enum.reject drop the attribute entirely.
+  defp stat(nil, _star, _scaling), do: nil
+  defp stat(value, star, scaling), do: %{value: value, star: star || false, scaling: scaling}
+
+  # Health scaling from MarvelCDB's booleans.
+  defp health_scaling(entry) do
+    cond do
+      entry["health_per_hero"] -> :per_player
+      entry["health_per_group"] -> :per_group
+      true -> :flat
+    end
+  end
+
+  # Threat scaling: X_per_group → :per_group, X_fixed → :flat, else :per_player.
+  defp threat_scaling(entry, group_key, fixed_key) do
+    cond do
+      entry[group_key] -> :per_group
+      entry[fixed_key] -> :flat
+      true -> :per_player
+    end
   end
 
   defp stage_to_integer(nil), do: nil
@@ -694,14 +811,29 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
+  # MarvelCDB's faction_code overloads ownership with aspect. Ownership is the
+  # pool the card comes from; aspect is only the four player aspects.
+  defp map_ownership(faction_code) do
+    case faction_code do
+      "aggression" -> :player
+      "justice" -> :player
+      "leadership" -> :player
+      "protection" -> :player
+      "basic" -> :basic
+      "pool" -> :pool
+      "hero" -> :hero
+      "encounter" -> :encounter
+      "campaign" -> :campaign
+      _ -> nil
+    end
+  end
+
   defp map_aspect(faction_code) do
     case faction_code do
       "aggression" -> :aggression
       "justice" -> :justice
       "leadership" -> :leadership
       "protection" -> :protection
-      "basic" -> :basic
-      "encounter" -> :encounter
       _ -> nil
     end
   end

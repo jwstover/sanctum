@@ -65,8 +65,8 @@ defmodule Sanctum.Games.GameDestroyTest do
           %{
             name: "Destroy Villain",
             type: :villain,
-            health: 10,
-            attack: 2,
+            health: %{value: 10},
+            attack: %{value: 2},
             scheme: 1
           }
         )
@@ -83,8 +83,8 @@ defmodule Sanctum.Games.GameDestroyTest do
           %{
             name: "Destroy Scheme",
             type: :main_scheme,
-            base_threat: 5,
-            max_threat: 10
+            base_threat: %{value: 5},
+            max_threat: %{value: 10}
           }
         )
 
