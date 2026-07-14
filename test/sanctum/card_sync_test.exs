@@ -234,6 +234,31 @@ defmodule Sanctum.CardSyncTest do
     assert side_a.name == "Spider-Man"
   end
 
+  test "does not duplicate a side whose stored enum value no longer loads" do
+    assert {:ok, _} = CardSync.run(packs: :all, images?: false)
+
+    {:ok, card} = Games.get_card_by_code("01001")
+
+    # Corrupt an existing side the way legacy prod data is corrupt: an
+    # ownership-only faction value ("encounter") left in the aspect column,
+    # which the current CardAspect enum can no longer load.
+    Sanctum.Repo.query!("UPDATE card_sides SET aspect = 'encounter' WHERE code = '01001a'")
+
+    count_sql = "SELECT count(*) FROM card_sides WHERE card_id::text = $1"
+    before = Sanctum.Repo.query!(count_sql, [card.id]).rows
+
+    assert {:error, %{data: %{failures: failures}}} = CardSync.run(packs: :all, images?: false)
+
+    # The card group failed, but NOT with a duplicate-side constraint violation:
+    # the un-loadable row's error propagates instead of being mistaken for "not
+    # found" and re-inserted.
+    assert {"01001", error} = Enum.find(failures, fn {code, _} -> code == "01001" end)
+    refute inspect(error) =~ "has already been taken"
+
+    # No duplicate side was inserted for the card.
+    assert before == Sanctum.Repo.query!(count_sql, [card.id]).rows
+  end
+
   test "dry run writes nothing" do
     assert {:ok, :dry_run} = CardSync.run(packs: :all, dry_run?: true)
     assert {:error, _} = Games.get_card_side_by_code("01001a")
