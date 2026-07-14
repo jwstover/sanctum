@@ -101,7 +101,7 @@ defmodule SanctumWeb.CardLive.Show do
             <div class="my-3 h-px bg-neutral"></div>
 
             <div :if={side.text} class="font-barlow text-[14px] leading-[1.55] text-base-content/85">
-              {side.text}
+              {Sanctum.CardText.to_html(side.text)}
             </div>
 
             <!-- combat stats -->

@@ -168,14 +168,14 @@ defmodule SanctumWeb.CardLive.Pool do
             </div>
 
             <div class="text-center font-barlow text-[13.5px] leading-[1.5] text-base-content/85">
-              {card.text}
+              {Sanctum.CardText.to_html(card.text)}
             </div>
 
             <div
               :if={card.flavor}
               class="text-center font-barlow italic text-xs text-base-content/65 my-2"
             >
-              {card.flavor}
+              {Sanctum.CardText.to_html(card.flavor)}
             </div>
 
             <div :if={card.pips != []} class="mt-2.5 flex items-center gap-1">
