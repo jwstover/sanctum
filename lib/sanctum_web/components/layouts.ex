@@ -53,13 +53,8 @@ defmodule SanctumWeb.Layouts do
           </a>
           <nav class="flex h-[34px] items-end gap-5">
             <.nav_tab navigate={~p"/cards"} active={@active_tab == :cards}>Card Pool</.nav_tab>
+            <.nav_tab navigate={~p"/decks"} active={@active_tab == :decks}>Decks</.nav_tab>
             <.nav_tab navigate={~p"/guess"} active={@active_tab == :guess}>Flavor Town</.nav_tab>
-            <span
-              class="cursor-default pb-[3px] text-[13px] font-bold uppercase tracking-[0.13em] text-base-content/25"
-              title="Coming soon"
-            >
-              Decks
-            </span>
           </nav>
           <div class="ml-auto flex items-center gap-4">
             <span class="font-ibm-mono text-xs text-base-content/40">
