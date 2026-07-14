@@ -82,10 +82,7 @@ defmodule SanctumWeb.DevLive.StatBadges do
         <h2 class="text-sm uppercase tracking-widest font-black border-b-2 border-current pb-1">
           On dark
         </h2>
-        <div
-          class="flex flex-wrap items-start gap-8 rounded-xl p-8"
-          style="background:#14141b;background-image:radial-gradient(rgba(255,255,255,.05) 1.4px,transparent 1.5px);background-size:16px 16px"
-        >
+        <div class="bg-base-200 bg-halftone flex flex-wrap items-start gap-8 rounded-xl p-8">
           <div :for={stat <- @stats} class="flex flex-col items-center gap-2">
             <.stat_badge
               stat={stat}
@@ -119,10 +116,7 @@ defmodule SanctumWeb.DevLive.StatBadges do
         <h2 class="text-sm uppercase tracking-widest font-black border-b-2 border-current pb-1">
           Health badge
         </h2>
-        <div
-          class="flex flex-wrap items-center gap-8 rounded-xl p-8"
-          style="background:#14141b;background-image:radial-gradient(rgba(255,255,255,.05) 1.4px,transparent 1.5px);background-size:16px 16px"
-        >
+        <div class="bg-base-200 bg-halftone flex flex-wrap items-center gap-8 rounded-xl p-8">
           <div class="flex flex-col items-center gap-2">
             <.health_badge value={@value} size={@size} />
             <span class="text-[11px] uppercase tracking-widest text-white/50 font-bold">hp</span>
@@ -146,10 +140,7 @@ defmodule SanctumWeb.DevLive.StatBadges do
         <h2 class="text-sm uppercase tracking-widest font-black border-b-2 border-current pb-1">
           Custom colors (bright + dark overrides)
         </h2>
-        <div
-          class="flex flex-wrap items-start gap-8 rounded-xl p-8"
-          style="background:#14141b"
-        >
+        <div class="bg-base-200 flex flex-wrap items-start gap-8 rounded-xl p-8">
           <.stat_badge value={@value} size={@size} label="POW" bright="#ff7a00" dark="#a33c00" />
           <.stat_badge value={@value} size={@size} label="ARM" bright="#8a8f98" dark="#3a3d44" />
           <.stat_badge value={@value} size={@size} label="SPD" bright="#12b886" dark="#0a6b4f" />

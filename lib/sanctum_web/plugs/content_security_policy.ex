@@ -22,7 +22,12 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
 
     case Application.get_env(:sanctum, :env) do
       :prod ->
+        # LiveView applies inline style="" attributes at runtime (aspect colors,
+        # resource pips, stat/health badges), which can't be hashed or nonced —
+        # so style-src must allow 'unsafe-inline'. Without an explicit style-src,
+        # it falls back to default-src 'self' and every inline style is blocked.
         "default-src 'self';" <>
+          "style-src 'self' 'unsafe-inline';" <>
           "connect-src wss://#{host} https://#{host}:*;" <>
           "img-src 'self' blob: data: #{img_src_hosts()};" <>
           "font-src 'self' data:;"

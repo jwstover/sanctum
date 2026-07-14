@@ -59,6 +59,34 @@
   --noise: 0;
 }
 
+/* ── Semantic color tokens ────────────────────────────────────────────
+   Registered with Tailwind's @theme so they generate utilities
+   (text-aspect-hero, bg-aspect-justice, text-res-energy, …). This is the
+   single source of truth for aspect + resource colors; the legacy
+   aspect/res var names below alias these for any remaining var() use.
+   Aspect greys/surfaces reuse daisyUI's base-100/200/300 tokens rather
+   than one-off hexes. */
+@theme {
+  --color-aspect-hero: #ce1b2e;
+  --color-aspect-aggression: #b12020;
+  --color-aspect-justice: #dbcb36;
+  --color-aspect-leadership: #2ea7b8;
+  --color-aspect-protection: #46991b;
+  --color-aspect-pool: #d074ac;
+  --color-aspect-basic: #87868f;
+
+  /* DEF stat has no aspect; the other combat stats reuse aspect hues. */
+  --color-stat-defense: #2456a6;
+
+  --color-res-energy: oklch(0.8 0.16 65);
+  --color-res-mental: oklch(0.72 0.15 255);
+  --color-res-physical: oklch(0.67 0.22 25);
+  --color-res-wild: oklch(0.68 0.13 165);
+
+  /* Mid grey used for input/search borders. */
+  --color-line: #2a2a30;
+}
+
 /* Set root font size to 16 */
 :root, html {
   font-size: 16px;
@@ -479,20 +507,20 @@ main, #game-board {
   --sanctum-panel: #15151a;
   --sanctum-border: #08080a;
 
-  /* Aspect accents */
-  --aspect-hero: #ce1b2e;
-  --aspect-aggression: #b12020;
-  --aspect-justice: #dbcb36;
-  --aspect-leadership: #2ea7b8;
-  --aspect-protection: #46991b;
-  --aspect-pool: #d074ac;
-  --aspect-basic: #87868f;
+  /* Aspect accents — alias the @theme tokens (single source of truth). */
+  --aspect-hero: var(--color-aspect-hero);
+  --aspect-aggression: var(--color-aspect-aggression);
+  --aspect-justice: var(--color-aspect-justice);
+  --aspect-leadership: var(--color-aspect-leadership);
+  --aspect-protection: var(--color-aspect-protection);
+  --aspect-pool: var(--color-aspect-pool);
+  --aspect-basic: var(--color-aspect-basic);
 
   /* Resource-pip colors (ChampionsIcons glyphs) */
-  --res-energy: oklch(0.8 0.16 65);
-  --res-mental: oklch(0.72 0.15 255);
-  --res-physical: oklch(0.67 0.22 25);
-  --res-wild: oklch(0.68 0.13 165);
+  --res-energy: var(--color-res-energy);
+  --res-mental: var(--color-res-mental);
+  --res-physical: var(--color-res-physical);
+  --res-wild: var(--color-res-wild);
 }
 
 @layer base {
@@ -548,6 +576,11 @@ textarea::placeholder {
   .bg-halftone {
     background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1.1px, transparent 1.5px);
     background-size: 15px 15px;
+  }
+
+  /* Diagonal-hatch placeholder shown behind card faces with no art */
+  .bg-card-hatch {
+    background: repeating-linear-gradient(135deg, #1b1b21 0 7px, #23232c 7px 14px);
   }
 }
 

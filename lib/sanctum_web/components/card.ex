@@ -13,21 +13,40 @@ defmodule SanctumWeb.Components.Card do
   """
   use Phoenix.Component
 
-  @aspect %{
-    "hero" => "#ce1b2e",
-    "aggression" => "#b12020",
-    "justice" => "#dbcb36",
-    "leadership" => "#2ea7b8",
-    "protection" => "#46991b",
-    "pool" => "#d074ac",
-    "basic" => "#87868f"
+  # Tailwind color-class trio per aspect (backed by the --color-aspect-*
+  # tokens in app.css). Full literal class names so Tailwind's source
+  # scanner detects them; do not build these by interpolation.
+  @aspect_classes %{
+    "hero" => %{text: "text-aspect-hero", bg: "bg-aspect-hero", border: "border-aspect-hero"},
+    "aggression" => %{
+      text: "text-aspect-aggression",
+      bg: "bg-aspect-aggression",
+      border: "border-aspect-aggression"
+    },
+    "justice" => %{
+      text: "text-aspect-justice",
+      bg: "bg-aspect-justice",
+      border: "border-aspect-justice"
+    },
+    "leadership" => %{
+      text: "text-aspect-leadership",
+      bg: "bg-aspect-leadership",
+      border: "border-aspect-leadership"
+    },
+    "protection" => %{
+      text: "text-aspect-protection",
+      bg: "bg-aspect-protection",
+      border: "border-aspect-protection"
+    },
+    "pool" => %{text: "text-aspect-pool", bg: "bg-aspect-pool", border: "border-aspect-pool"},
+    "basic" => %{text: "text-aspect-basic", bg: "bg-aspect-basic", border: "border-aspect-basic"}
   }
 
   @res %{
-    "energy" => {"var(--res-energy)", "E"},
-    "mental" => {"var(--res-mental)", "M"},
-    "physical" => {"var(--res-physical)", "P"},
-    "wild" => {"var(--res-wild)", "W"}
+    "energy" => {"text-res-energy", "E"},
+    "mental" => {"text-res-mental", "M"},
+    "physical" => {"text-res-physical", "P"},
+    "wild" => {"text-res-wild", "W"}
   }
 
   @dims %{
@@ -71,7 +90,7 @@ defmodule SanctumWeb.Components.Card do
     aspect = to_s(assigns.aspect)
     type = to_s(assigns.type)
     hero? = aspect == "hero"
-    aspect_color = Map.get(@aspect, aspect, @aspect["basic"])
+    aspect_classes = aspect_classes(aspect)
     dims = Map.get(@dims, assigns.size, @dims["md"])
 
     pips =
@@ -82,26 +101,30 @@ defmodule SanctumWeb.Components.Card do
 
     has_cost? = assigns.show_cost and assigns.cost not in [nil, ""] and type != "resource"
 
-    card_bg =
+    # Hero cards get a MarvelCDB gradient border painted via border-box, so
+    # that background stays inline (dynamic colors). Other aspects use the
+    # solid `bg-base-200` utility and a `border-aspect-*` class instead.
+    card_style =
       if hero? do
         {default_from, default_to} = @default_gradient
         from = assigns.gradient_from || default_from
         to = assigns.gradient_to || default_to
 
-        "linear-gradient(#15151a,#15151a) padding-box, " <>
-          "linear-gradient(135deg, #{from}, #{to}) border-box"
+        "background:linear-gradient(var(--color-base-200),var(--color-base-200)) padding-box," <>
+          "linear-gradient(135deg,#{from},#{to}) border-box;"
       else
-        "#15151a"
+        ""
       end
 
     assigns =
       assign(assigns,
-        aspect_color: aspect_color,
+        aspect_classes: aspect_classes,
+        hero?: hero?,
         dims: dims,
         pips: pips,
         has_cost?: has_cost?,
-        card_bg: card_bg,
-        border_color: if(hero?, do: "transparent", else: aspect_color),
+        card_style: card_style,
+        border_class: if(hero?, do: "border-transparent", else: aspect_classes.border),
         type_label: type_label(type),
         show_res?: assigns.size != "sm" and pips != [] and assigns.qty == 0,
         show_qty?: assigns.qty > 0,
@@ -111,29 +134,27 @@ defmodule SanctumWeb.Components.Card do
     ~H"""
     <div
       class={[
-        "relative h-full w-full overflow-hidden rounded-[7px] font-barlow-condensed text-white",
+        "relative h-full w-full overflow-hidden rounded-[7px] border-2 font-barlow-condensed text-white",
+        @border_class,
+        !@hero? && "bg-base-200",
         @class
       ]}
-      style={"background:#{@card_bg};border:2px solid #{@border_color};box-shadow:0 4px 14px rgba(0,0,0,.5);"}
+      style={"#{@card_style}box-shadow:0 4px 14px rgba(0,0,0,.5);"}
       {@rest}
     >
       <!-- diagonal-hatch art placeholder -->
-      <div
-        class="absolute inset-0"
-        style="background:repeating-linear-gradient(135deg,#1b1b21 0 7px,#23232c 7px 14px);"
-      >
-      </div>
+      <div class="bg-card-hatch absolute inset-0"></div>
       <div class="absolute inset-x-0 top-[38%] flex items-center justify-center">
         <span
-          class="font-ibm-mono uppercase tracking-[0.2em]"
-          style={"font-size:#{@dims.label}px;color:rgba(255,255,255,.32);"}
+          class="font-ibm-mono uppercase tracking-[0.2em] text-white/[0.32]"
+          style={"font-size:#{@dims.label}px;"}
         >
           card&nbsp;art
         </span>
       </div>
 
       <!-- aspect stripe -->
-      <div class="absolute inset-y-0 left-0 w-[5px]" style={"background:#{@aspect_color};"}></div>
+      <div class={["absolute inset-y-0 left-0 w-[5px]", @aspect_classes.bg]}></div>
 
       <!-- card image -->
       <img
@@ -146,8 +167,11 @@ defmodule SanctumWeb.Components.Card do
       <!-- cost bubble -->
       <div
         :if={@has_cost?}
-        class="font-elektra absolute left-[9px] top-[6px] z-[3] flex items-center justify-center rounded-full"
-        style={"width:#{@dims.cost}px;height:#{@dims.cost}px;background:#0c0c0f;border:2px solid #{@aspect_color};font-size:#{@dims.sub}px;box-shadow:0 2px 5px rgba(0,0,0,.5);"}
+        class={[
+          "font-elektra absolute left-[9px] top-[6px] z-[3] flex items-center justify-center rounded-full border-2 bg-base-100",
+          @aspect_classes.border
+        ]}
+        style={"width:#{@dims.cost}px;height:#{@dims.cost}px;font-size:#{@dims.sub}px;box-shadow:0 2px 5px rgba(0,0,0,.5);"}
       >
         {@cost}
       </div>
@@ -155,9 +179,9 @@ defmodule SanctumWeb.Components.Card do
       <!-- resource pips -->
       <div :if={@show_res?} class="absolute right-[6px] top-[6px] z-[3] flex gap-[3px]">
         <span
-          :for={{color, glyph} <- @pips}
-          class="font-champions leading-none"
-          style={"font-size:#{@dims.res}px;color:#{color};text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.8);"}
+          :for={{color_class, glyph} <- @pips}
+          class={["font-champions leading-none", color_class]}
+          style={"font-size:#{@dims.res}px;text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.8);"}
         >
           {glyph}
         </span>
@@ -166,7 +190,7 @@ defmodule SanctumWeb.Components.Card do
       <!-- quantity badge -->
       <div
         :if={@show_qty?}
-        class="absolute right-[6px] top-[6px] z-[3] flex items-center justify-center rounded-[5px] bg-white font-anton text-[#0c0c0f]"
+        class="absolute right-[6px] top-[6px] z-[3] flex items-center justify-center rounded-[5px] bg-white font-anton text-base-100"
         style={"min-width:#{@dims.badge}px;height:#{@dims.badge}px;padding:0 5px;font-size:#{@dims.sub}px;box-shadow:0 2px 6px rgba(0,0,0,.6);"}
       >
         ×{@qty}
@@ -184,7 +208,7 @@ defmodule SanctumWeb.Components.Card do
           {@name}
         </div>
         <div class="mt-1 flex items-center gap-[5px]">
-          <span class="rounded-[1px]" style={"width:7px;height:7px;background:#{@aspect_color};"}></span>
+          <span class={["size-[7px] rounded-[1px]", @aspect_classes.bg]}></span>
           <span
             class="font-semibold uppercase tracking-[0.16em] text-white/60"
             style={"font-size:#{@dims.label}px;"}
@@ -198,15 +222,26 @@ defmodule SanctumWeb.Components.Card do
   end
 
   @doc """
-  Maps a list of resource atoms/strings to `{css_color, glyph}` tuples for
-  rendering ChampionsIcons pips outside a card face (e.g. a detail row).
-  Unknown resources are dropped.
+  Maps a list of resource atoms/strings to `{text_color_class, glyph}` tuples
+  for rendering ChampionsIcons pips outside a card face (e.g. a detail row).
+  The class (e.g. `"text-res-energy"`) goes on the element's `class`, not an
+  inline style. Unknown resources are dropped.
   """
   def resource_pips(resources) do
     resources
     |> Enum.map(&to_s/1)
     |> Enum.map(&Map.get(@res, &1))
     |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
+  Tailwind color classes for an aspect as `%{text:, bg:, border:}` (backed by
+  the `--color-aspect-*` theme tokens). Unknown aspects fall back to `basic`.
+  Use these classes instead of inline color styles so the prod CSP can keep
+  `style-src` free of inline color rules.
+  """
+  def aspect_classes(aspect) do
+    Map.get(@aspect_classes, to_s(aspect), @aspect_classes["basic"])
   end
 
   @doc """
