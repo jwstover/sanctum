@@ -146,7 +146,7 @@ defmodule SanctumWeb.Components.Card do
       <!-- cost bubble -->
       <div
         :if={@has_cost?}
-        class="absolute left-[9px] top-[6px] z-[3] flex items-center justify-center rounded-full font-anton"
+        class="font-elektra absolute left-[9px] top-[6px] z-[3] flex items-center justify-center rounded-full"
         style={"width:#{@dims.cost}px;height:#{@dims.cost}px;background:#0c0c0f;border:2px solid #{@aspect_color};font-size:#{@dims.sub}px;box-shadow:0 2px 5px rgba(0,0,0,.5);"}
       >
         {@cost}
