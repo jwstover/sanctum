@@ -1,3 +1,12 @@
+# [1.14.0](https://github.com/jwstover/sanctum/compare/v1.13.0...v1.14.0) (2026-07-14)
+
+
+### Features
+
+* **cards:** show hero combat stats and hand size in the card pool ([74a906b](https://github.com/jwstover/sanctum/commit/74a906b3e0223f9366ea4542c8e94d94ab8b00bc))
+
+
+
 # [1.13.0](https://github.com/jwstover/sanctum/compare/v1.12.1...v1.13.0) (2026-07-14)
 
 
@@ -34,16 +43,6 @@
 * **decks:** score and sort decks by uniqueness ([0bc81b0](https://github.com/jwstover/sanctum/commit/0bc81b0aa3144b67baa27bd825f742f613306e6b))
 * **decks:** shared uniqueness meter + similar decks on detail ([f6975f5](https://github.com/jwstover/sanctum/commit/f6975f543245f0371f3233172a1decdc04e46d0a))
 * **decks:** surface deck uniqueness in list and detail UI ([bb0e0fc](https://github.com/jwstover/sanctum/commit/bb0e0fc3c117b9d54604a8ba7d917bc6d40ec832))
-
-
-
-# [1.10.0](https://github.com/jwstover/sanctum/compare/v1.9.0...v1.10.0) (2026-07-14)
-
-
-### Features
-
-* **cards:** show ally consequential damage on stat badges ([195314b](https://github.com/jwstover/sanctum/commit/195314bf7d0818132118fa7f3041bce794eeaf1f))
-* **decks:** comic-dossier deck detail page ([1a400c9](https://github.com/jwstover/sanctum/commit/1a400c9368b1f8999851ad3eaddad2e01c27e5e7))
 
 
 
