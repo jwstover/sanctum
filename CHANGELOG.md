@@ -1,3 +1,12 @@
+# [1.9.0](https://github.com/jwstover/sanctum/compare/v1.8.0...v1.9.0) (2026-07-14)
+
+
+### Features
+
+* **decks:** comic-dossier public Deck Browser ([909c4e2](https://github.com/jwstover/sanctum/commit/909c4e2428b3e7e4b0848b1d0b22544ace5d9e6a))
+
+
+
 # [1.8.0](https://github.com/jwstover/sanctum/compare/v1.7.1...v1.8.0) (2026-07-14)
 
 
@@ -48,16 +57,6 @@
 * **cards:** model stats as structured value/star/scaling ([c9229dc](https://github.com/jwstover/sanctum/commit/c9229dc2bf623f4a97fd473b0e258d284b83704f))
 * **cards:** show alternate-printing images on the card detail page ([60cdf6c](https://github.com/jwstover/sanctum/commit/60cdf6c1a6350bb720ed3ff7b73518e89a8f31dd))
 * **cards:** split faction_code into ownership + nullable aspect ([79b6706](https://github.com/jwstover/sanctum/commit/79b6706a182e8d4fca11ffd9f39a55d0cabc13c9))
-
-
-
-## [1.5.1](https://github.com/jwstover/sanctum/compare/v1.5.0...v1.5.1) (2026-07-14)
-
-
-### Bug Fixes
-
-* **ci:** annotate escaped raw usage for Sobelow ([5c06a0e](https://github.com/jwstover/sanctum/commit/5c06a0e0c50c1ccf3b5d3e887238ed86160dd945))
-* **ui:** enlarge health-badge number and tighten player-icon gap ([ca9025a](https://github.com/jwstover/sanctum/commit/ca9025adf71a31e4d18bbc408887b778d2ef43e9))
 
 
 
