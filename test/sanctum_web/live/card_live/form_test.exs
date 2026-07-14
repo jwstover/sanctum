@@ -214,7 +214,7 @@ defmodule SanctumWeb.CardLive.FormTest do
                view
                |> element("a", "Cancel")
                |> render_click()
-               |> follow_redirect(conn, ~p"/cards")
+               |> follow_redirect(conn, ~p"/cards/manage")
     end
 
     test "successful save redirects to index", %{conn: conn} do

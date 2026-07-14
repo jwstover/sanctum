@@ -36,8 +36,10 @@ defmodule SanctumWeb.Components.Card do
     "lg" => %{pad: 13, title: 20, sub: 13, cost: 34, res: 24, label: 11, badge: 26}
   }
 
-  @spidey_red "#ce1b2e"
-  @spidey_blue "#234fa6"
+  # Fallback gradient when a hero has no stored palette (non-hero sets,
+  # un-synced heroes). Hero colors themselves come from MarvelCDB and are
+  # passed in via gradient_from/gradient_to.
+  @default_gradient {"#ce1b2e", "#234fa6"}
 
   @doc """
   Renders a card face.
@@ -55,6 +57,13 @@ defmodule SanctumWeb.Components.Card do
   attr :qty, :integer, default: 0
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :image_url, :string, default: nil
+
+  attr :gradient_from, :string,
+    default: nil,
+    doc: "hero gradient-border start color; falls back to the default when nil"
+
+  attr :gradient_to, :string, default: nil, doc: "hero gradient-border end color"
+  attr :show_cost, :boolean, default: true, doc: "render the cost bubble overlay"
   attr :class, :string, default: ""
   attr :rest, :global
 
@@ -71,12 +80,16 @@ defmodule SanctumWeb.Components.Card do
       |> Enum.map(&Map.get(@res, &1))
       |> Enum.reject(&is_nil/1)
 
-    has_cost? = assigns.cost not in [nil, ""] and type != "resource"
+    has_cost? = assigns.show_cost and assigns.cost not in [nil, ""] and type != "resource"
 
     card_bg =
       if hero? do
+        {default_from, default_to} = @default_gradient
+        from = assigns.gradient_from || default_from
+        to = assigns.gradient_to || default_to
+
         "linear-gradient(#15151a,#15151a) padding-box, " <>
-          "linear-gradient(135deg, #{@spidey_red}, #{@spidey_blue}) border-box"
+          "linear-gradient(135deg, #{from}, #{to}) border-box"
       else
         "#15151a"
       end
@@ -182,6 +195,29 @@ defmodule SanctumWeb.Components.Card do
       </div>
     </div>
     """
+  end
+
+  @doc """
+  Maps a list of resource atoms/strings to `{css_color, glyph}` tuples for
+  rendering ChampionsIcons pips outside a card face (e.g. a detail row).
+  Unknown resources are dropped.
+  """
+  def resource_pips(resources) do
+    resources
+    |> Enum.map(&to_s/1)
+    |> Enum.map(&Map.get(@res, &1))
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
+  A stable `{from, to}` gradient derived from a set slug, for heroes with no
+  stored MarvelCDB palette (or non-hero sets). Deterministic per slug.
+  """
+  def fallback_gradient(slug) when slug in [nil, ""], do: @default_gradient
+
+  def fallback_gradient(slug) do
+    h = :erlang.phash2(to_s(slug), 360)
+    {"hsl(#{h} 60% 46%)", "hsl(#{rem(h + 40, 360)} 55% 38%)"}
   end
 
   defp to_s(nil), do: ""

@@ -18,7 +18,7 @@ defmodule SanctumWeb.CardLive.Show do
         </:subtitle>
 
         <:actions>
-          <.button navigate={~p"/cards"}>
+          <.button navigate={~p"/cards/manage"}>
             <.icon name="hero-arrow-left" />
           </.button>
           <.button variant="primary" navigate={~p"/cards/#{@card}/edit?return_to=show"}>

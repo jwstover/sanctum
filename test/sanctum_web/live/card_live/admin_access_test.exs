@@ -5,7 +5,7 @@ defmodule SanctumWeb.CardLive.AdminAccessTest do
 
   import Phoenix.LiveViewTest
 
-  @admin_paths ["/cards", "/cards/new", "/cards/sync"]
+  @admin_paths ["/cards/manage", "/cards/new", "/cards/sync"]
 
   describe "anonymous visitors" do
     test "are redirected to sign-in", %{conn: conn} do

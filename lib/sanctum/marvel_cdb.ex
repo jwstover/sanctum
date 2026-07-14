@@ -358,9 +358,96 @@ defmodule Sanctum.MarvelCdb do
     # bypass the admin-only Card/CardSide policies.
     with {:ok, card} <- Games.create_card(card_attrs, authorize?: false),
          :ok <- upsert_sides(card, side_entries, parent, image_url_fun) do
+      maybe_upsert_hero(card, entries)
       {:ok, card}
     end
   end
+
+  # Hero identity groups carry the hero's color palette in the identity card's
+  # `meta.colors`. Upsert a Hero (keyed by set) with that palette so the Hero
+  # table is complete and colors are available regardless of deck imports.
+  defp maybe_upsert_hero(card, entries) do
+    with hero_entry when is_map(hero_entry) <-
+           Enum.find(entries, &(&1["type_code"] == "hero")) do
+      alter_ego = Enum.find(entries, &(&1["type_code"] == "alter_ego"))
+      colors = get_in(hero_entry, ["meta", "colors"])
+      {primary, secondary} = pick_gradient(colors)
+
+      Heroes.find_or_create_hero(
+        %{
+          hero_name: hero_entry["name"],
+          alter_ego_name: alter_ego && alter_ego["name"],
+          set: hero_entry["card_set_code"],
+          base_code: extract_base_code(hero_entry["code"]),
+          card_id: card.id,
+          colors: colors,
+          primary_color: primary,
+          secondary_color: secondary
+        },
+        authorize?: false
+      )
+    end
+
+    :ok
+  end
+
+  # Minimum RGB distance for two palette colors to read as a distinct gradient.
+  @min_gradient_distance 64
+
+  # Chooses the two gradient colors from a MarvelCDB palette. The base is always
+  # the first color; the accent is the second color when it's visibly different,
+  # otherwise the third — some heroes (e.g. Black Widow) lead with two near-black
+  # colors, so the second would give a near-invisible gradient.
+  def pick_gradient(colors) when is_list(colors) do
+    case colors do
+      [] ->
+        {nil, nil}
+
+      [only] ->
+        {only, only}
+
+      [first | _] ->
+        second = Enum.at(colors, 1)
+        third = Enum.at(colors, 2)
+
+        accent =
+          cond do
+            distinct?(first, second) -> second
+            is_binary(third) and not near_white?(third) -> third
+            true -> second
+          end
+
+        {first, accent}
+    end
+  end
+
+  def pick_gradient(_), do: {nil, nil}
+
+  defp distinct?(a, b) do
+    with {r1, g1, b1} <- hex_to_rgb(a),
+         {r2, g2, b2} <- hex_to_rgb(b) do
+      dist = :math.sqrt(:math.pow(r1 - r2, 2) + :math.pow(g1 - g2, 2) + :math.pow(b1 - b2, 2))
+      dist >= @min_gradient_distance
+    else
+      _ -> true
+    end
+  end
+
+  defp near_white?(hex) do
+    case hex_to_rgb(hex) do
+      {r, g, b} -> r > 240 and g > 240 and b > 240
+      _ -> false
+    end
+  end
+
+  defp hex_to_rgb("#" <> hex) when byte_size(hex) == 6 do
+    case Integer.parse(hex, 16) do
+      {int, ""} -> {div(int, 65_536), div(rem(int, 65_536), 256), rem(int, 256)}
+      _ -> :error
+    end
+  end
+
+  defp hex_to_rgb(_), do: :error
 
   defp side_entries(entries, parent) do
     sides = entries |> Enum.filter(&suffixed?(&1["code"])) |> Enum.sort_by(& &1["code"])
