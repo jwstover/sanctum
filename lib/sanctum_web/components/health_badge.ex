@@ -44,6 +44,12 @@ defmodule SanctumWeb.Components.HealthBadge do
                end
              end)
 
+  # Player icon (ChampionsIcons 'v') rendered as a raw tspan so no template
+  # whitespace can sneak in between the number and the icon — the formatter
+  # reflows a nested <tspan> onto its own line, and that whitespace renders
+  # as a full-size space glyph splitting the pair apart.
+  @player_icon ~s(<tspan dx="-10" dy="34" stroke-width="5" style="font-family:'ChampionsIcons';font-style:normal;font-size:80px;paint-order:stroke">v</tspan>)
+
   @doc """
   Renders one health badge.
 
@@ -55,7 +61,7 @@ defmodule SanctumWeb.Components.HealthBadge do
       <.health_badge value="*" bright="#f59b1f" dark="#8f160d" />
   """
   attr :value, :any, default: nil, doc: "number/marker shown in the disc"
-  attr :size, :integer, default: 88, doc: "rendered width in px"
+  attr :size, :integer, default: 72, doc: "rendered width in px"
   attr :bright, :string, default: "#e38323", doc: "override the orange core color"
   attr :dark, :string, default: "#d01439", doc: "override the red outer-ring color"
   attr :splatter, :string, default: "#d19c2e", doc: "override the splatter fleck color"
@@ -72,11 +78,25 @@ defmodule SanctumWeb.Components.HealthBadge do
     # even when the same badge is rendered more than once on a page.
     uid = "hb#{System.unique_integer([:positive])}"
 
+    value = Phoenix.HTML.Safe.to_iodata(assigns.value || "")
+    glyphs = if assigns.player, do: [value, @player_icon], else: value
+
+    # Single digits get the biggest type; longer values step down to stay
+    # inside the disc.
+    font_size =
+      case value |> IO.iodata_to_binary() |> String.length() do
+        n when n <= 1 -> 170
+        2 -> 135
+        _ -> 110
+      end
+
     assigns =
       assign(assigns,
         uid: uid,
         height: round(assigns.size * 220 / 240),
-        flecks: @splatter
+        flecks: @splatter,
+        glyphs: Phoenix.HTML.raw(glyphs),
+        font_size: font_size
       )
 
     ~H"""
@@ -116,19 +136,10 @@ defmodule SanctumWeb.Components.HealthBadge do
         stroke="#101014"
         stroke-width="8"
         stroke-linejoin="round"
-        style="font-family:'ElektraMed','Elektra Medium Pro',sans-serif;font-weight:700;font-style:italic;font-size:130px;paint-order:stroke"
+        style={"font-family:'ElektraMed','Elektra Medium Pro',sans-serif;font-weight:700;font-style:italic;font-size:#{@font_size}px;paint-order:stroke"}
         filter={"url(#shadow-#{@uid})"}
       >
-        {@value}
-        <tspan
-          :if={@player}
-          dx="4"
-          dy="26"
-          stroke-width="5"
-          style="font-family:'ChampionsIcons';font-style:normal;font-size:64px;paint-order:stroke"
-        >
-          v
-        </tspan>
+        {@glyphs}
       </text>
     </svg>
     """
