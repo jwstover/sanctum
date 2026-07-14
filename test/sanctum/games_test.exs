@@ -583,7 +583,13 @@ defmodule Sanctum.GamesTest do
             set: "scheme_scenario",
             pack: "scheme_scenario"
           },
-          %{name: "Scheme Villain", type: :villain, health: %{value: 10}, attack: %{value: 2}, scheme: 1}
+          %{
+            name: "Scheme Villain",
+            type: :villain,
+            health: %{value: 10},
+            attack: %{value: 2},
+            scheme: 1
+          }
         )
 
       # Main scheme card with two sides (A -> B) that reset threat differently.
