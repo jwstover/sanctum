@@ -61,7 +61,7 @@ defmodule SanctumWeb.CardLive.Pool do
             phx-debounce="200"
             autocomplete="off"
             placeholder="Search cards by name…"
-            class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 pl-[38px] font-barlow text-[15px] text-base-content outline-none focus:border-primary"
+            class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 pl-[38px] font-barlow text-base text-base-content outline-none focus:border-primary sm:text-[15px]"
           />
         </form>
         <div class="whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
@@ -99,15 +99,15 @@ defmodule SanctumWeb.CardLive.Pool do
         id="card-pool"
         phx-update="stream"
         phx-viewport-bottom={!@end_of_timeline? && "next-page"}
-        class="grid grid-cols-[repeat(auto-fill,minmax(452px,1fr))] items-start gap-[18px]"
+        class="grid grid-cols-1 items-start gap-[18px] sm:grid-cols-[repeat(auto-fill,minmax(452px,1fr))]"
       >
         <div
           :for={{dom_id, side} <- @streams.cards}
           id={dom_id}
-          class="mc-tile flex items-start gap-[13px] border-2 border-neutral bg-base-200 p-2 shadow-comic"
+          class="mc-tile flex flex-col items-start gap-[13px] border-2 border-neutral bg-base-200 p-2 shadow-comic sm:flex-row"
         >
           <div class={[
-            "flex-none border-2 border-neutral shadow-comic-sm",
+            "flex-none self-center border-2 border-neutral shadow-comic-sm sm:self-start",
             (side.is_landscape && "h-[150px] w-[210px]") || "h-[210px] w-[150px]"
           ]}>
             <.mc_card

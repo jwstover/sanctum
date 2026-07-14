@@ -54,7 +54,7 @@ defmodule SanctumWeb.DeckLive.Show do
             <div class="font-ibm-mono text-[11px] uppercase tracking-[0.25em] text-primary">
               {@cover.source_label} · {@cover.hero_name}
             </div>
-            <h1 class="mt-1.5 font-anton text-[46px] uppercase leading-[0.88] [text-wrap:balance]">
+            <h1 class="mt-1.5 font-anton text-[34px] uppercase leading-[0.9] [text-wrap:balance] sm:text-[46px] sm:leading-[0.88]">
               {@deck.title}
             </h1>
 
@@ -71,7 +71,7 @@ defmodule SanctumWeb.DeckLive.Show do
               </span>
             </div>
 
-            <div class="mt-4 flex items-end gap-6">
+            <div class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
               <div>
                 <div class="font-anton text-[30px] leading-none">{@cover.total_cards}</div>
                 <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
