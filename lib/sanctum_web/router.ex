@@ -44,6 +44,9 @@ defmodule SanctumWeb.Router do
 
       # Public card pool (catalog reads are unauthenticated).
       live "/cards", CardLive.Pool, :index
+
+      # Dev playground for refining the comic stat badges.
+      live "/dev/stat-badges", DevLive.StatBadges, :index
     end
 
     ash_authentication_live_session :admin_routes,
