@@ -140,8 +140,18 @@ defmodule SanctumWeb.CardLive.Pool do
 
             <div :if={card.is_ally} class="flex items-start gap-2 w-full">
               <div class="flex flex-grow items-start justify-start">
-                <.stat_badge stat={:thw} value={card.thwart} size={64} />
-                <.stat_badge stat={:atk} value={card.attack} size={64} />
+                <.stat_badge
+                  stat={:thw}
+                  value={card.thwart}
+                  consequential={card.thwart_consequential}
+                  size={64}
+                />
+                <.stat_badge
+                  stat={:atk}
+                  value={card.attack}
+                  consequential={card.attack_consequential}
+                  size={64}
+                />
               </div>
               <div class="flex items-start justify-end">
                 <.health_badge value={card.health} size={52} />
@@ -318,7 +328,9 @@ defmodule SanctumWeb.CardLive.Pool do
       flavor: Map.get(side, :flavor, ""),
       is_ally: side.type == :ally,
       attack: stat_value(side.attack),
+      attack_consequential: stat_consequential(side.attack),
       thwart: stat_value(side.thwart),
+      thwart_consequential: stat_consequential(side.thwart),
       health: stat_value(side.health),
       image_url: side.image_url
     }
@@ -335,6 +347,9 @@ defmodule SanctumWeb.CardLive.Pool do
 
   defp stat_value(nil), do: nil
   defp stat_value(%{value: value}), do: value
+
+  defp stat_consequential(%{consequential: n}) when is_integer(n), do: n
+  defp stat_consequential(_), do: 0
 
   defp format_traits(traits) when is_list(traits), do: Enum.join(traits, " · ")
   defp format_traits(_), do: ""

@@ -73,15 +73,11 @@ defmodule Sanctum.Games.CardSide do
     attribute :text, :string, public?: true
     attribute :flavor, :string, public?: true
 
-    # Combat stats (structured: value / star / scaling)
+    # Combat stats (structured: value / star / scaling / consequential). An
+    # ally's consequential damage lives on the relevant stat, not a separate column.
     attribute :attack, Sanctum.Games.Stat, public?: true
-    attribute :attack_cost, :integer, public?: true
-
     attribute :thwart, Sanctum.Games.Stat, public?: true
-    attribute :thwart_cost, :integer, public?: true
-
     attribute :defense, Sanctum.Games.Stat, public?: true
-    attribute :defense_cost, :integer, public?: true
 
     attribute :health, Sanctum.Games.Stat, public?: true
 

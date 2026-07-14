@@ -74,7 +74,7 @@ defmodule SanctumWeb.Components.StatBadge do
     conseq = max(assigns.consequential || 0, 0)
     # Plate grows a row taller when it carries consequential stars; sides keep the
     # same lean so the short and tall variants read as the same shape.
-    plate_bottom = if conseq > 0, do: 264, else: 214
+    plate_bottom = 264
     dy = plate_bottom - 162
     bottom_l = Float.round(16 + -16 / 102 * dy, 1)
     bottom_r = Float.round(196 + -16 / 102 * dy, 1)
