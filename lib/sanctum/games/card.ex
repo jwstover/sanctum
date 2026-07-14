@@ -14,11 +14,10 @@ defmodule Sanctum.Games.Card do
     end
   end
 
-  # Aspects and types that belong in the player card pool (deck-buildable
-  # cards). Encounter/villain/identity/scheme cards are excluded. Hero
-  # signature cards carry no aspect (nil), so they're allowed separately and
-  # surfaced under the "hero" filter.
-  @player_aspects [:aggression, :basic, :protection, :leadership, :justice, :pool]
+  # Ownership pools and types that belong in the player card pool (deck-buildable
+  # cards). Encounter/villain/identity/scheme cards are excluded. Hero signature
+  # cards are the `:hero` pool and surface under the "hero" filter.
+  @player_ownerships [:player, :basic, :pool, :hero]
   @player_types [:ally, :event, :support, :upgrade, :resource]
 
   actions do
@@ -49,9 +48,7 @@ defmodule Sanctum.Games.Card do
           query
           |> Ash.Query.load([:primary_side])
           |> Ash.Query.filter(primary_side.type in ^@player_types)
-          |> Ash.Query.filter(
-            is_nil(primary_side.aspect) or primary_side.aspect in ^@player_aspects
-          )
+          |> Ash.Query.filter(primary_side.ownership in ^@player_ownerships)
           |> Ash.Query.sort(base_code: :asc)
 
         query =
@@ -67,9 +64,9 @@ defmodule Sanctum.Games.Card do
             not is_binary(aspect) or aspect in ["", "all"] ->
               query
 
-            # Hero signature cards have no aspect in the catalog.
-            aspect == "hero" ->
-              Ash.Query.filter(query, is_nil(primary_side.aspect))
+            # "hero"/"basic"/"pool" are ownership pools, not aspects.
+            aspect in ["hero", "basic", "pool"] ->
+              Ash.Query.filter(query, primary_side.ownership == ^to_enum(aspect))
 
             true ->
               Ash.Query.filter(query, primary_side.aspect == ^to_enum(aspect))

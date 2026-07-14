@@ -295,7 +295,7 @@ defmodule SanctumWeb.CardLive.Pool do
 
   # Builds the display map the tile renders from, derived from the primary side.
   defp card_view(%{primary_side: side} = card, hero_colors) do
-    aspect_key = side.aspect || :hero
+    aspect_key = display_aspect(side)
     {gradient_from, gradient_to} = hero_gradient(card.set, hero_colors)
 
     resources =
@@ -342,6 +342,15 @@ defmodule SanctumWeb.CardLive.Pool do
 
   defp format_traits(traits) when is_list(traits), do: Enum.join(traits, " · ")
   defp format_traits(_), do: ""
+
+  # The display key drives tile color/label: aspect cards use their aspect;
+  # every other pool (hero signature, basic, pool) uses its ownership.
+  defp display_aspect(%{ownership: :player, aspect: aspect}) when not is_nil(aspect), do: aspect
+  defp display_aspect(%{ownership: :hero}), do: :hero
+  defp display_aspect(%{ownership: :basic}), do: :basic
+  defp display_aspect(%{ownership: :pool}), do: :pool
+  defp display_aspect(%{aspect: aspect}) when not is_nil(aspect), do: aspect
+  defp display_aspect(_), do: :basic
 
   # Hero signature cards have no aspect; name them after their hero set instead.
   defp aspect_name(:hero, set), do: hero_name(set)
