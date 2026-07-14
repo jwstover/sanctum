@@ -68,8 +68,8 @@ defmodule Sanctum.Games.GameCardTest do
         %{
           name: "Test Villain",
           type: :villain,
-          health: 10,
-          attack: 2,
+          health: %{value: 10},
+          attack: %{value: 2},
           scheme: 1
         }
       )

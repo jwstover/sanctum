@@ -124,6 +124,12 @@ defmodule SanctumWeb.CardLive.Form do
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
+  # Stats are stored as Sanctum.Games.Stat structs; the number inputs edit only
+  # the value (a bare number casts to a flat, unstarred stat).
+  defp stat_value(%Sanctum.Games.Stat{value: value}), do: value
+  defp stat_value(value) when is_integer(value) or is_binary(value), do: value
+  defp stat_value(_), do: nil
+
   defp assign_forms(%{assigns: %{card: card}} = socket) do
     card_form =
       if card do
@@ -178,16 +184,29 @@ defmodule SanctumWeb.CardLive.Form do
           ]}
         />
         <.input
+          field={@form[:ownership]}
+          type="select"
+          label="Ownership"
+          prompt="—"
+          options={[
+            {"Player", "player"},
+            {"Basic", "basic"},
+            {"Pool", "pool"},
+            {"Hero", "hero"},
+            {"Encounter", "encounter"},
+            {"Campaign", "campaign"}
+          ]}
+        />
+        <.input
           field={@form[:aspect]}
           type="select"
           label="Aspect"
+          prompt="—"
           options={[
             {"Aggression", "aggression"},
             {"Justice", "justice"},
             {"Leadership", "leadership"},
-            {"Protection", "protection"},
-            {"Basic", "basic"},
-            {"Pool", "pool"}
+            {"Protection", "protection"}
           ]}
         />
         <.input field={@form[:cost]} type="number" label="Cost" />
@@ -212,34 +231,33 @@ defmodule SanctumWeb.CardLive.Form do
       <div class="space-y-4">
         <h4 class="font-medium text-gray-900">Stats & Details</h4>
 
-        <!-- Combat Stats -->
+        <!-- Combat Stats (stat value only; star/scaling come from sync) -->
         <div class="grid grid-cols-2 gap-2">
-          <.input field={@form[:attack]} type="number" label="Attack" />
+          <.input field={@form[:attack]} type="number" label="Attack" value={stat_value(@form[:attack].value)} />
           <.input field={@form[:attack_cost]} type="number" label="Attack Cost" />
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <.input field={@form[:thwart]} type="number" label="Thwart" />
+          <.input field={@form[:thwart]} type="number" label="Thwart" value={stat_value(@form[:thwart].value)} />
           <.input field={@form[:thwart_cost]} type="number" label="Thwart Cost" />
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <.input field={@form[:defense]} type="number" label="Defense" />
+          <.input field={@form[:defense]} type="number" label="Defense" value={stat_value(@form[:defense].value)} />
           <.input field={@form[:defense_cost]} type="number" label="Defense Cost" />
         </div>
-        <.input field={@form[:health]} type="number" label="Health" />
+        <.input field={@form[:health]} type="number" label="Health" value={stat_value(@form[:health].value)} />
 
         <!-- Hero Fields -->
         <div class="grid grid-cols-2 gap-2">
           <.input field={@form[:hand_size]} type="number" label="Hand Size" />
-          <.input field={@form[:recover]} type="number" label="Recover" />
+          <.input field={@form[:recover]} type="number" label="Recover" value={stat_value(@form[:recover].value)} />
         </div>
 
         <!-- Villain/Scheme Fields -->
-        <.input field={@form[:health_per_hero]} type="checkbox" label="Health Per Hero" />
         <.input field={@form[:stage]} type="number" label="Stage" />
         <div class="grid grid-cols-2 gap-2">
-          <.input field={@form[:base_threat]} type="number" label="Base Threat" />
-          <.input field={@form[:escalation_threat]} type="number" label="Escalation Threat" />
-          <.input field={@form[:max_threat]} type="number" label="Max Threat" />
+          <.input field={@form[:base_threat]} type="number" label="Base Threat" value={stat_value(@form[:base_threat].value)} />
+          <.input field={@form[:escalation_threat]} type="number" label="Escalation Threat" value={stat_value(@form[:escalation_threat].value)} />
+          <.input field={@form[:max_threat]} type="number" label="Max Threat" value={stat_value(@form[:max_threat].value)} />
         </div>
 
         <!-- Icons -->

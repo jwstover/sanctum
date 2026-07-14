@@ -48,8 +48,8 @@ defmodule SanctumWeb.GameLive.ShowTest do
         side_identifier: "A",
         is_primary_side: true,
         type: :villain,
-        health: 10,
-        attack: 2,
+        health: %{value: 10},
+        attack: %{value: 2},
         scheme: 1
       })
       |> Ash.create(authorize?: false)
@@ -76,8 +76,8 @@ defmodule SanctumWeb.GameLive.ShowTest do
         side_identifier: "A",
         is_primary_side: true,
         type: :main_scheme,
-        base_threat: 5,
-        escalation_threat: 1
+        base_threat: %{value: 5},
+        escalation_threat: %{value: 1}
       })
       |> Ash.create(authorize?: false)
 

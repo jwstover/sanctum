@@ -37,7 +37,7 @@ defmodule Sanctum.Games.Changes.CreateGameSchemeCards do
             game_id: game.id,
             zone: :main_scheme,
             order: index,
-            threat: (side && side.base_threat) || 0
+            threat: base_threat_value(side)
           }
           |> then(&Ash.Changeset.for_create(Sanctum.Games.GameCard, :create, &1))
           |> Ash.create!(domain: Sanctum.Games)
@@ -47,4 +47,7 @@ defmodule Sanctum.Games.Changes.CreateGameSchemeCards do
         :ok
     end
   end
+
+  defp base_threat_value(%{base_threat: %{value: value}}) when not is_nil(value), do: value
+  defp base_threat_value(_), do: 0
 end

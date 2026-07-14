@@ -540,6 +540,7 @@ defmodule Sanctum.MarvelCdb do
         "real_name" => nil,
         "text" => parent["back_text"],
         "real_text" => nil,
+        "flavor" => parent["back_flavor"],
         "imagesrc" => presence(parent["backimagesrc"])
       })
 
@@ -601,6 +602,7 @@ defmodule Sanctum.MarvelCdb do
       name: mcdb_card["name"],
       subname: mcdb_card["subname"],
       text: mcdb_card["text"],
+      flavor: mcdb_card["flavor"],
       traits: parse_traits(mcdb_card["traits"]),
 
       # Card classification. faction_code is split into ownership (which pool)
@@ -609,11 +611,11 @@ defmodule Sanctum.MarvelCdb do
       ownership: map_ownership(mcdb_card["faction_code"]),
       aspect: map_aspect(mcdb_card["faction_code"]),
 
-      # Combat stats
-      attack: mcdb_card["attack"],
-      thwart: mcdb_card["thwart"],
-      defense: mcdb_card["defense"],
-      health: mcdb_card["health"],
+      # Combat stats (structured value/star/scaling)
+      attack: stat(mcdb_card["attack"], mcdb_card["attack_star"], :flat),
+      thwart: stat(mcdb_card["thwart"], mcdb_card["thwart_star"], :flat),
+      defense: stat(mcdb_card["defense"], mcdb_card["defense_star"], :flat),
+      health: stat(mcdb_card["health"], mcdb_card["health_star"], health_scaling(mcdb_card)),
       cost: mcdb_card["cost"],
 
       # Icons
@@ -631,17 +633,31 @@ defmodule Sanctum.MarvelCdb do
 
       # Hero fields
       hand_size: mcdb_card["hand_size"],
-      recover: mcdb_card["recover"],
+      recover: stat(mcdb_card["recover"], mcdb_card["recover_star"], :flat),
 
-      # Villain fields
-      health_per_hero: mcdb_card["health_per_hero"] || false,
+      # Villain fields (health scaling lives in health.scaling)
       stage: stage_to_integer(mcdb_card["stage"]),
       scheme: mcdb_card["scheme"],
 
-      # Scheme fields
-      base_threat: mcdb_card["base_threat"],
-      escalation_threat: mcdb_card["escalation_threat"],
-      max_threat: mcdb_card["threat"],
+      # Scheme fields (structured value/star/scaling)
+      base_threat:
+        stat(
+          mcdb_card["base_threat"],
+          false,
+          threat_scaling(mcdb_card, "base_threat_per_group", "base_threat_fixed")
+        ),
+      escalation_threat:
+        stat(
+          mcdb_card["escalation_threat"],
+          mcdb_card["escalation_threat_star"],
+          threat_scaling(mcdb_card, "escalation_threat_per_group", "escalation_threat_fixed")
+        ),
+      max_threat:
+        stat(
+          mcdb_card["threat"],
+          mcdb_card["threat_star"],
+          threat_scaling(mcdb_card, "threat_per_group", "threat_fixed")
+        ),
 
       # Encounter fields
       boost: mcdb_card["boost"],
@@ -652,6 +668,29 @@ defmodule Sanctum.MarvelCdb do
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
+  end
+
+  # Builds a structured stat map. A nil value means the stat is absent, so we
+  # return nil and let the trailing Enum.reject drop the attribute entirely.
+  defp stat(nil, _star, _scaling), do: nil
+  defp stat(value, star, scaling), do: %{value: value, star: star || false, scaling: scaling}
+
+  # Health scaling from MarvelCDB's booleans.
+  defp health_scaling(entry) do
+    cond do
+      entry["health_per_hero"] -> :per_player
+      entry["health_per_group"] -> :per_group
+      true -> :flat
+    end
+  end
+
+  # Threat scaling: X_per_group → :per_group, X_fixed → :flat, else :per_player.
+  defp threat_scaling(entry, group_key, fixed_key) do
+    cond do
+      entry[group_key] -> :per_group
+      entry[fixed_key] -> :flat
+      true -> :per_player
+    end
   end
 
   defp stage_to_integer(nil), do: nil

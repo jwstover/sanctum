@@ -47,8 +47,8 @@ defmodule Sanctum.GamesTest do
           %{
             name: "Zone Test Villain",
             type: :villain,
-            health: 10,
-            attack: 2,
+            health: %{value: 10},
+            attack: %{value: 2},
             scheme: 1
           }
         )
@@ -181,8 +181,8 @@ defmodule Sanctum.GamesTest do
           %{
             name: "Test Villain",
             type: :villain,
-            health: 10,
-            attack: 2,
+            health: %{value: 10},
+            attack: %{value: 2},
             scheme: 1
           }
         )
@@ -398,8 +398,8 @@ defmodule Sanctum.GamesTest do
           %{
             name: "Empty Villain",
             type: :villain,
-            health: 8,
-            attack: 1,
+            health: %{value: 8},
+            attack: %{value: 1},
             scheme: 1
           }
         )
@@ -583,7 +583,7 @@ defmodule Sanctum.GamesTest do
             set: "scheme_scenario",
             pack: "scheme_scenario"
           },
-          %{name: "Scheme Villain", type: :villain, health: 10, attack: 2, scheme: 1}
+          %{name: "Scheme Villain", type: :villain, health: %{value: 10}, attack: %{value: 2}, scheme: 1}
         )
 
       # Main scheme card with two sides (A -> B) that reset threat differently.
@@ -606,8 +606,8 @@ defmodule Sanctum.GamesTest do
           is_primary_side: true,
           name: "Scheme Side A",
           type: :main_scheme,
-          base_threat: 5,
-          max_threat: 10
+          base_threat: %{value: 5},
+          max_threat: %{value: 10}
         })
         |> Ash.create(authorize?: false)
 
@@ -620,8 +620,8 @@ defmodule Sanctum.GamesTest do
           is_primary_side: false,
           name: "Scheme Side B",
           type: :main_scheme,
-          base_threat: 12,
-          max_threat: 20
+          base_threat: %{value: 12},
+          max_threat: %{value: 20}
         })
         |> Ash.create(authorize?: false)
 
@@ -651,8 +651,8 @@ defmodule Sanctum.GamesTest do
       assert scheme.card_id == scheme_card.id
       assert scheme.threat == 5
       assert scheme.active_side.side_identifier == "A"
-      assert scheme.active_side.base_threat == 5
-      assert scheme.active_side.max_threat == 10
+      assert scheme.active_side.base_threat.value == 5
+      assert scheme.active_side.max_threat.value == 10
     end
 
     test "threat can be incremented and decremented via update_counters", %{

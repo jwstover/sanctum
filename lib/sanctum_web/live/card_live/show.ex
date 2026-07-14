@@ -249,8 +249,10 @@ defmodule SanctumWeb.CardLive.Show do
       {"DEF", side.defense, "#2456a6"},
       {"HP", side.health, "#46991b"}
     ]
-    |> Enum.filter(fn {_l, v, _c} -> not is_nil(v) end)
-    |> Enum.map(fn {label, value, color} -> %{label: label, value: value, color: color} end)
+    |> Enum.filter(fn {_l, stat, _c} -> stat_value(stat) != nil end)
+    |> Enum.map(fn {label, stat, color} ->
+      %{label: label, value: stat_box_value(stat), color: color}
+    end)
   end
 
   defp keyword_icons(side) do
@@ -268,19 +270,42 @@ defmodule SanctumWeb.CardLive.Show do
     [
       {"Cost", side.cost},
       {"Hand Size", side.hand_size},
-      {"Recover", side.recover},
+      {"Recover", stat_meta(side.recover)},
       {"Stage", side.stage},
       {"Scheme", side.scheme},
-      {"Health / Hero", yes_if(side.health_per_hero)},
-      {"Base Threat", side.base_threat},
-      {"Escalation", side.escalation_threat},
-      {"Max Threat", side.max_threat},
+      {"Health Scaling", scaling_label(side.health)},
+      {"Base Threat", stat_meta(side.base_threat)},
+      {"Escalation", stat_meta(side.escalation_threat)},
+      {"Max Threat", stat_meta(side.max_threat)},
       {"Boost", side.boost},
       {"Boost Star", yes_if(side.boost_star)}
     ]
     |> Enum.filter(fn {_label, value} -> present?(value) end)
     |> Enum.map(fn {label, value} -> %{label: label, value: value} end)
   end
+
+  # Stat helpers. `stat_box_value` is compact (number + ★); `stat_meta` also
+  # carries the scaling suffix for the detail rows.
+  defp stat_value(%{value: value}), do: value
+  defp stat_value(_), do: nil
+
+  defp stat_box_value(%{value: value, star: star}) when not is_nil(value),
+    do: "#{value}#{if star, do: "★", else: ""}"
+
+  defp stat_box_value(_), do: nil
+
+  defp stat_meta(%{value: value, star: star, scaling: scaling}) when not is_nil(value),
+    do: "#{value}#{if star, do: "★", else: ""}#{scaling_suffix(scaling)}"
+
+  defp stat_meta(_), do: nil
+
+  defp scaling_suffix(:per_player), do: " /player"
+  defp scaling_suffix(:per_group), do: " /group"
+  defp scaling_suffix(_), do: ""
+
+  defp scaling_label(%{scaling: :per_player}), do: "Per player"
+  defp scaling_label(%{scaling: :per_group}), do: "Per group"
+  defp scaling_label(_), do: nil
 
   defp hero_gradient(nil), do: nil
 

@@ -71,18 +71,19 @@ defmodule Sanctum.Games.CardSide do
     attribute :aspect, Sanctum.Games.CardAspect, public?: true
 
     attribute :text, :string, public?: true
+    attribute :flavor, :string, public?: true
 
-    # Combat stats
-    attribute :attack, :integer, public?: true
+    # Combat stats (structured: value / star / scaling)
+    attribute :attack, Sanctum.Games.Stat, public?: true
     attribute :attack_cost, :integer, public?: true
 
-    attribute :thwart, :integer, public?: true
+    attribute :thwart, Sanctum.Games.Stat, public?: true
     attribute :thwart_cost, :integer, public?: true
 
-    attribute :defense, :integer, public?: true
+    attribute :defense, Sanctum.Games.Stat, public?: true
     attribute :defense_cost, :integer, public?: true
 
-    attribute :health, :integer, public?: true
+    attribute :health, Sanctum.Games.Stat, public?: true
 
     attribute :cost, :integer, public?: true
 
@@ -100,17 +101,16 @@ defmodule Sanctum.Games.CardSide do
 
     # Hero Fields
     attribute :hand_size, :integer, public?: true
-    attribute :recover, :integer, public?: true
+    attribute :recover, Sanctum.Games.Stat, public?: true
 
-    # Villain Fields
-    attribute :health_per_hero, :boolean, public?: true, default: false
+    # Villain Fields (health scaling lives in `health.scaling`)
     attribute :stage, :integer, public?: true
     attribute :scheme, :integer, public?: true
 
-    # Scheme Fields
-    attribute :base_threat, :integer, public?: true
-    attribute :escalation_threat, :integer, public?: true
-    attribute :max_threat, :integer, public?: true
+    # Scheme Fields (structured: value / star / scaling)
+    attribute :base_threat, Sanctum.Games.Stat, public?: true
+    attribute :escalation_threat, Sanctum.Games.Stat, public?: true
+    attribute :max_threat, Sanctum.Games.Stat, public?: true
 
     # Encounter Fields
     attribute :boost, :integer, public?: true
