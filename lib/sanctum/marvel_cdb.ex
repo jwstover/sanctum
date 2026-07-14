@@ -560,12 +560,14 @@ defmodule Sanctum.MarvelCdb do
   defp upsert_side(card, side_attrs) do
     attrs = Map.put(side_attrs, :card_id, card.id)
 
-    find_existing_side(card, attrs)
-    |> case do
-      {:ok, existing} -> Games.update_card_side(existing, attrs, authorize?: false)
-      {:error, _not_found} -> Games.create_card_side(attrs, authorize?: false)
-    end
-    |> case do
+    result =
+      case find_existing_side(card, attrs) do
+        {:ok, existing} -> Games.update_card_side(existing, attrs, authorize?: false)
+        :not_found -> Games.create_card_side(attrs, authorize?: false)
+        {:error, _} = err -> err
+      end
+
+    case result do
       {:ok, side} ->
         create_or_find_villain(card, side)
         :ok
@@ -575,15 +577,42 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
-  # The card+identifier fallback catches rows written by older sync logic
-  # under a differently-suffixed code (e.g. "01144" where the payload now says
+  # Resolves an existing side to update, or `:not_found` to create. A lookup that
+  # fails for any reason *other* than a missing row — e.g. an existing row that
+  # can't be loaded because a stored enum value is no longer valid (a legacy
+  # `aspect`/`ownership` faction value) — returns `{:error, reason}` and must
+  # propagate. Treating such an error as "not found" is what inserts a duplicate
+  # and trips the (card_id, side_identifier) unique constraint (the ~1,600 prod
+  # sync failures).
+  #
+  # The card+identifier fallback catches rows written by older sync logic under
+  # a differently-suffixed code (e.g. "01144" where the payload now says
   # "01144a"); updating them corrects the code in place.
   defp find_existing_side(card, attrs) do
     case Games.get_card_side_by_code(attrs.code) do
-      {:ok, existing} -> {:ok, existing}
-      {:error, _} -> Games.get_card_side_by_card_and_side(card.id, attrs.side_identifier)
+      {:ok, existing} ->
+        {:ok, existing}
+
+      {:error, error} ->
+        if not_found?(error),
+          do: find_side_by_card_and_side(card, attrs),
+          else: {:error, error}
     end
   end
+
+  defp find_side_by_card_and_side(card, attrs) do
+    case Games.get_card_side_by_card_and_side(card.id, attrs.side_identifier) do
+      {:ok, existing} -> {:ok, existing}
+      {:error, error} -> if not_found?(error), do: :not_found, else: {:error, error}
+    end
+  end
+
+  defp not_found?(%Ash.Error.Query.NotFound{}), do: true
+
+  defp not_found?(%Ash.Error.Invalid{errors: errors}),
+    do: Enum.any?(errors, &match?(%Ash.Error.Query.NotFound{}, &1))
+
+  defp not_found?(_), do: false
 
   # The side's image with fallback to the double-sided parent entry, which
   # alone carries the front (`imagesrc`) and back (`backimagesrc`) scans for
