@@ -1,3 +1,12 @@
+# [1.4.0](https://github.com/jwstover/sanctum/compare/v1.3.0...v1.4.0) (2026-07-14)
+
+
+### Features
+
+* **cards:** comic-dossier card detail page ([9c45214](https://github.com/jwstover/sanctum/commit/9c4521431d316c339f85e0af9cb84b8ca1e061c1))
+
+
+
 # [1.3.0](https://github.com/jwstover/sanctum/compare/v1.2.0...v1.3.0) (2026-07-14)
 
 
@@ -65,15 +74,6 @@ Green under Elixir 1.18.4/OTP28: compile --warnings-as-errors, format,
 credo, sobelow, deps.unlock --check-unused, 107 tests.
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
-
-
-
-# [0.13.0](https://github.com/jwstover/sanctum/compare/v0.12.0...v0.13.0) (2026-07-13)
-
-
-### Features
-
-* **auth:** add UserIdentity for OAuth (ash_authentication 4.14) ([1fb7550](https://github.com/jwstover/sanctum/commit/1fb75502020a3376c694aaf01d66a413f81a1a91))
 
 
 
