@@ -1,3 +1,14 @@
+# [1.11.0](https://github.com/jwstover/sanctum/compare/v1.10.0...v1.11.0) (2026-07-14)
+
+
+### Features
+
+* **decks:** score and sort decks by uniqueness ([0bc81b0](https://github.com/jwstover/sanctum/commit/0bc81b0aa3144b67baa27bd825f742f613306e6b))
+* **decks:** shared uniqueness meter + similar decks on detail ([f6975f5](https://github.com/jwstover/sanctum/commit/f6975f543245f0371f3233172a1decdc04e46d0a))
+* **decks:** surface deck uniqueness in list and detail UI ([bb0e0fc](https://github.com/jwstover/sanctum/commit/bb0e0fc3c117b9d54604a8ba7d917bc6d40ec832))
+
+
+
 # [1.10.0](https://github.com/jwstover/sanctum/compare/v1.9.0...v1.10.0) (2026-07-14)
 
 
@@ -32,24 +43,6 @@
 ### Bug Fixes
 
 * **ui:** restore prod styles blocked by CSP and move colors to Tailwind tokens ([728c579](https://github.com/jwstover/sanctum/commit/728c5790e0e7de3c4d52469fcdafa69ff9955cc6))
-
-
-
-# [1.7.0](https://github.com/jwstover/sanctum/compare/v1.6.0...v1.7.0) (2026-07-14)
-
-
-### Bug Fixes
-
-* **cards:** read resource + real_ fields under correct MarvelCDB names ([19a51a5](https://github.com/jwstover/sanctum/commit/19a51a5007772a232eaec98c83e27b853efde8f2))
-
-
-### Features
-
-* **cards:** collapse reprints into CardAlts of a canonical card ([463ad4b](https://github.com/jwstover/sanctum/commit/463ad4b4f7011be98587672ec647812382cc4d34))
-* **cards:** model stats as structured value/star/scaling ([fd25828](https://github.com/jwstover/sanctum/commit/fd25828bf4207ba030f2bb628b32fd3429b10718))
-* **cards:** show alternate-printing images on the card detail page ([417de5c](https://github.com/jwstover/sanctum/commit/417de5cb3d050a385f4947e2f91baddd945b20be))
-* **cards:** split faction_code into ownership + nullable aspect ([eb4ec95](https://github.com/jwstover/sanctum/commit/eb4ec95ac566317170577898a4dfcbb95564b20a))
-* **ui:** redesign card pool tiles with comic stat badges ([8857423](https://github.com/jwstover/sanctum/commit/8857423dc447b0c7d878caa2eec30927cdc5c027))
 
 
 
