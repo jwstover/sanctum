@@ -227,11 +227,17 @@ defmodule Sanctum.MarvelCdb do
   def sync_entries(entries, opts \\ []) do
     on_progress = Keyword.get(opts, :on_progress)
 
-    groups =
+    # Process canonical (non-reprint) groups before reprint groups so a
+    # reprint's canonical card already exists when its printing is written.
+    # resolve_canonical/1 still covers the rare cross-payload gap.
+    {reprints, canonicals} =
       entries
       |> Enum.uniq_by(& &1["code"])
       |> Enum.group_by(&extract_base_code(&1["code"]))
       |> Enum.sort_by(fn {base_code, _group} -> base_code end)
+      |> Enum.split_with(fn {_base_code, group} -> reprint_group?(group) end)
+
+    groups = canonicals ++ reprints
 
     total = length(groups)
 
@@ -275,7 +281,14 @@ defmodule Sanctum.MarvelCdb do
         {:ok, card}
 
       _ ->
-        fetch_and_create_card(card_id)
+        # A reprint code resolves to its canonical card via CardAlt.
+        case Games.get_card_alt_by_code(card_id, load: [:card]) do
+          {:ok, %Games.CardAlt{card: %Games.Card{} = card}} ->
+            {:ok, card}
+
+          _ ->
+            fetch_and_create_card(card_id)
+        end
     end
   end
 
@@ -349,8 +362,18 @@ defmodule Sanctum.MarvelCdb do
 
     parent = Enum.find(entries, &(!suffixed?(&1["code"])))
     side_entries = side_entries(entries, parent)
-
     card_entry = parent || hd(side_entries)
+
+    case presence(card_entry["duplicate_of_code"]) do
+      nil ->
+        create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun)
+
+      canonical_code ->
+        create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun)
+    end
+  end
+
+  defp create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun) do
     primary_code = side_entries |> hd() |> Map.fetch!("code")
     card_attrs = prepare_card_attrs(card_entry, primary_code, length(side_entries) > 1)
 
@@ -361,6 +384,46 @@ defmodule Sanctum.MarvelCdb do
       maybe_upsert_hero(card, entries)
       {:ok, card}
     end
+  end
+
+  # A reprint (`duplicate_of_code` set) is stored as CardAlts pointing at the
+  # canonical card rather than as a second Card, so the pool and deck resolution
+  # dedupe. One alt row per side entry.
+  defp create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun) do
+    with {:ok, canonical} <- resolve_canonical(canonical_code) do
+      Enum.reduce_while(side_entries, {:ok, canonical}, fn entry, acc ->
+        image_url = entry |> resolve_imagesrc(parent) |> image_url_fun.()
+
+        attrs = %{
+          code: entry["code"],
+          base_code: extract_base_code(entry["code"]),
+          side_identifier: extract_side_identifier(entry["code"]),
+          pack: entry["pack_code"],
+          set: entry["card_set_code"],
+          image_url: image_url,
+          card_id: canonical.id
+        }
+
+        case Games.create_card_alt(attrs, authorize?: false) do
+          {:ok, _alt} -> {:cont, acc}
+          err -> {:halt, err}
+        end
+      end)
+    end
+  end
+
+  # Resolves a reprint's canonical card, fetching+creating it if it wasn't part
+  # of this sync (duplicate_of_code points backward, but not always to the same
+  # payload).
+  defp resolve_canonical(canonical_code) do
+    case Games.get_card_by_code(extract_base_code(canonical_code)) do
+      {:ok, %Games.Card{} = card} -> {:ok, card}
+      _ -> load_card(canonical_code)
+    end
+  end
+
+  defp reprint_group?(group) do
+    Enum.any?(group, &presence(&1["duplicate_of_code"]))
   end
 
   # Hero identity groups carry the hero's color palette in the identity card's

@@ -181,6 +181,11 @@ defmodule Sanctum.Games.Card do
       filter expr(is_primary_side == true)
     end
 
+    has_many :alts, Sanctum.Games.CardAlt do
+      destination_attribute :card_id
+      public? true
+    end
+
     many_to_many :decks, Sanctum.Decks.Deck, through: Sanctum.Decks.DeckCard
   end
 
