@@ -156,22 +156,7 @@ defmodule SanctumWeb.DeckLive.Index do
           </div>
 
           <div class="flex w-[120px] flex-none flex-col justify-center gap-2 border-l-2 border-neutral pl-4">
-            <div :if={deck.uniqueness}>
-              <div class="flex items-baseline gap-1">
-                <span class="font-anton text-[22px] leading-none text-primary">
-                  {deck.uniqueness}
-                </span>
-                <span class="font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em] text-base-content/40">
-                  /100
-                </span>
-              </div>
-              <div class="mt-1 h-[5px] w-full border border-neutral bg-black">
-                <div class="h-full bg-primary" style={"width:#{deck.uniqueness}%"}></div>
-              </div>
-              <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
-                Uniqueness
-              </div>
-            </div>
+            <.uniqueness_meter percentile={deck.uniqueness} />
             <div>
               <div class="font-anton text-[26px] leading-none">{deck.total_card_count}</div>
               <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">

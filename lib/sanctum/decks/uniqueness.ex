@@ -67,6 +67,79 @@ defmodule Sanctum.Decks.Uniqueness do
      }}
   end
 
+  @doc """
+  The decks most similar to `deck` (same hero, by shared non-`:hero` cards).
+
+  Computed on demand — cheap for a single deck, and always fresh regardless of
+  when the last full sweep ran. Returns `[%{deck: deck, similarity: float}]`
+  sorted most-similar first, at most `:limit` (default 6) entries, each sharing
+  at least one chosen card. `deck` is loaded with the relationships a compact
+  tile needs. Returns `[]` when the deck has no chosen cards.
+  """
+  def similar_decks(deck, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 6)
+    sets = hero_choice_sets(deck.hero_id)
+    target = Map.get(sets, deck.id, MapSet.new())
+
+    if MapSet.size(target) == 0 do
+      []
+    else
+      scored =
+        sets
+        |> Map.delete(deck.id)
+        |> Enum.map(fn {id, set} -> {id, jaccard(target, set)} end)
+        |> Enum.filter(fn {_id, sim} -> sim > 0 end)
+        |> Enum.sort_by(fn {_id, sim} -> sim end, :desc)
+        |> Enum.take(limit)
+
+      decks_by_id = load_decks_for_display(Enum.map(scored, &elem(&1, 0)))
+      Enum.flat_map(scored, &attach_deck(&1, decks_by_id))
+    end
+  end
+
+  defp attach_deck({id, similarity}, decks_by_id) do
+    case Map.fetch(decks_by_id, id) do
+      {:ok, deck} -> [%{deck: deck, similarity: similarity}]
+      :error -> []
+    end
+  end
+
+  defp jaccard(a, b) do
+    inter = MapSet.size(MapSet.intersection(a, b))
+    union = MapSet.size(a) + MapSet.size(b) - inter
+    if union == 0, do: 0.0, else: inter / union
+  end
+
+  # %{deck_id => MapSet(non-hero card_ids)} for every deck of one hero.
+  # sobelow_skip ["SQL.Query"] — static query; hero id travels as a bound param.
+  defp hero_choice_sets(hero_id) do
+    sql = """
+    SELECT dc.deck_id::text, dc.card_id::text
+    FROM deck_cards dc
+    JOIN decks d ON d.id = dc.deck_id
+    JOIN card_sides cs ON cs.card_id = dc.card_id AND cs.is_primary_side = true
+    WHERE d.hero_id::text = $1 AND cs.ownership IS DISTINCT FROM 'hero'
+    """
+
+    %{rows: rows} = Sanctum.Repo.query!(sql, [to_string(hero_id)])
+
+    Enum.reduce(rows, %{}, fn [deck_id, card_id], acc ->
+      Map.update(acc, deck_id, MapSet.new([card_id]), &MapSet.put(&1, card_id))
+    end)
+  end
+
+  defp load_decks_for_display([]), do: %{}
+
+  defp load_decks_for_display(ids) do
+    require Ash.Query
+
+    Sanctum.Decks.Deck
+    |> Ash.Query.filter(id in ^ids)
+    |> Ash.Query.load([:total_card_count, hero: [:hero_side, card: [:primary_side]]])
+    |> Ash.read!(authorize?: false)
+    |> Map.new(&{&1.id, &1})
+  end
+
   # %{deck_id => {hero_id, MapSet(card_ids)}} for all non-`:hero` cards.
   # Decks with only hero cards (empty choice set) are absent and stay unscored.
   # sobelow_skip ["SQL.Query"] — static query, no interpolation.

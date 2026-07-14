@@ -86,7 +86,7 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     assert html =~ "Thwart twice"
   end
 
-  test "a scored deck shows its uniqueness badge and caption", %{conn: conn} do
+  test "a scored deck shows its uniqueness meter", %{conn: conn} do
     deck = make_deck_with_card()
 
     # uniqueness_percentile is a computed private attribute; write it directly.
@@ -97,8 +97,92 @@ defmodule SanctumWeb.DeckLive.ShowTest do
 
     {:ok, _view, html} = live(conn, ~p"/decks/#{deck.id}")
 
-    assert html =~ "UNIQ"
-    assert html =~ "More unique than"
-    assert html =~ "92% of Spider-Man decks"
+    assert html =~ "Uniqueness"
+    assert html =~ "92"
+    assert html =~ "width:92%"
+  end
+
+  test "the detail page lists similar decks of the same hero", %{conn: conn} do
+    hero = make_hero("Spider-Man", "spider_man", "91000")
+    ally = make_ally("Aunt May", "91010")
+
+    deck_a = deck_with_hero("Amazing Build", hero, [ally])
+    _deck_b = deck_with_hero("Spectacular Build", hero, [ally])
+
+    {:ok, _view, html} = live(conn, ~p"/decks/#{deck_a.id}")
+
+    assert html =~ "Similar Decks"
+    assert html =~ "Spectacular Build"
+    # Both share their only chosen card → 100% match.
+    assert html =~ "100%"
+  end
+
+  defp make_hero(name, set, base_code) do
+    card =
+      create(Sanctum.Games.Card, attrs: %{base_code: base_code, code: base_code <> "a", set: set})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: card.id,
+        name: name,
+        type: :hero,
+        code: base_code <> "a",
+        side_identifier: "A",
+        is_primary_side: true
+      }
+    )
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: card.id,
+        name: name <> " (alter-ego)",
+        type: :alter_ego,
+        code: base_code <> "b",
+        side_identifier: "B",
+        is_primary_side: false
+      }
+    )
+
+    {:ok, hero} =
+      Sanctum.Heroes.find_or_create_hero(%{
+        hero_name: name,
+        alter_ego_name: name <> " (alter-ego)",
+        set: set,
+        base_code: base_code,
+        card_id: card.id
+      })
+
+    hero
+  end
+
+  defp make_ally(name, base_code) do
+    card = create(Sanctum.Games.Card, attrs: %{base_code: base_code, code: base_code <> "a"})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: card.id,
+        name: name,
+        type: :ally,
+        aspect: :justice,
+        cost: 1,
+        code: base_code <> "a",
+        side_identifier: "A",
+        is_primary_side: true
+      }
+    )
+
+    card
+  end
+
+  defp deck_with_hero(title, hero, cards) do
+    Sanctum.Decks.Deck
+    |> Ash.Changeset.for_create(:create_with_cards, %{
+      title: title,
+      hero_id: hero.id,
+      aspects: [:justice],
+      source: :native,
+      slots: Enum.map(cards, &%{card_id: &1.id, quantity: 1})
+    })
+    |> Ash.create!(authorize?: false)
   end
 end
