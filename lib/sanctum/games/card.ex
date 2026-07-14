@@ -112,6 +112,16 @@ defmodule Sanctum.Games.Card do
       prepare build(load: [:card_sides, :primary_side])
     end
 
+    # Random-pickable pool for the "Name That Card" guessing game: any card
+    # whose primary side has flavor text. Backs SanctumWeb.GuessLive.Play.
+    read :guessable do
+      prepare build(load: [:primary_side])
+
+      filter expr(not is_nil(primary_side.flavor) and primary_side.flavor != "")
+
+      pagination offset?: true, default_limit: 1, countable: true, required?: false
+    end
+
     read :by_set do
       argument :set, :string, allow_nil?: false
       filter expr(set == ^arg(:set))

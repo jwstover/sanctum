@@ -45,6 +45,9 @@ defmodule SanctumWeb.Router do
       # Public card pool (catalog reads are unauthenticated).
       live "/cards", CardLive.Pool, :index
 
+      # Public "Name That Card" flavor-text guessing mini-game.
+      live "/guess", GuessLive.Play, :index
+
       # Dev playground for refining the comic stat badges.
       live "/dev/stat-badges", DevLive.StatBadges, :index
     end
