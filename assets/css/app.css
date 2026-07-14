@@ -426,6 +426,10 @@ main, #game-board {
     font-family: 'Elektra Medium Pro', sans-serif;
   }
 
+  .font-elektra-med {
+    font-family: 'ElektraMed', sans-serif;
+  }
+
   .font-exo2 {
     font-family: 'Exo2', sans-serif;
   }

@@ -8,6 +8,9 @@ defmodule SanctumWeb.CardLive.Pool do
 
   require Ash.Query
 
+  import SanctumWeb.Components.HealthBadge
+  import SanctumWeb.Components.StatBadge
+
   alias SanctumWeb.Components.Card, as: CardComponent
 
   @page_size 24
@@ -105,9 +108,7 @@ defmodule SanctumWeb.CardLive.Pool do
             <.mc_card
               name={card.name}
               cost={card.cost}
-              type={card.type}
               aspect={card.aspect_key}
-              resources={card.resources}
               image_url={card.image_url}
               gradient_from={card.gradient_from}
               gradient_to={card.gradient_to}
@@ -117,11 +118,10 @@ defmodule SanctumWeb.CardLive.Pool do
           </div>
 
           <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex items-start gap-2.5">
+            <div class="flex items-start gap-3">
               <div
                 :if={card.show_cost}
-                class="flex size-[34px] flex-none items-center justify-center rounded-full bg-[#0c0c0f] font-anton text-[17px]"
-                style={"border:2.5px solid #{card.aspect_color};"}
+                class="flex flex-none items-center justify-center rounded-full font-elektra-med text-4xl/normal"
               >
                 {card.cost}
               </div>
@@ -138,33 +138,44 @@ defmodule SanctumWeb.CardLive.Pool do
               </div>
             </div>
 
-            <div :if={card.pips != []} class="mt-2.5 flex items-center gap-1">
-              <span
-                :for={{color, glyph} <- card.pips}
-                class="font-champions text-[16px] leading-none"
-                style={"color:#{color};"}
-              >
-                {glyph}
-              </span>
+            <div :if={card.is_ally} class="flex items-start gap-2 w-full">
+              <div class="flex flex-grow items-start justify-start">
+                <.stat_badge stat={:thw} value={card.thwart} size={64} />
+                <.stat_badge stat={:atk} value={card.attack} size={64} />
+              </div>
+              <div class="flex items-start justify-end">
+                <.health_badge value={card.health} size={52} />
+              </div>
             </div>
+
+            <div class="my-2 h-px bg-neutral"></div>
 
             <div
               :if={card.traits != ""}
-              class="mt-2.5 font-barlow-condensed text-[12px] font-semibold uppercase tracking-[0.02em] text-base-content/55"
+              class="flex justify-center mb-1 font-komika text-xs font-semibold uppercase tracking-[0.02em] text-base-content/75"
             >
               {card.traits}
             </div>
 
-            <div class="my-2.5 h-px bg-neutral"></div>
-
-            <div class="font-barlow text-[13.5px] leading-[1.5] text-base-content/85">
+            <div class="text-center font-barlow text-[13.5px] leading-[1.5] text-base-content/85">
               {card.text}
             </div>
 
-            <div :if={card.is_ally} class="mt-3 grid grid-cols-3 gap-1.5">
-              <.stat_box value={card.thwart} label="THW" color="#2ea7b8" />
-              <.stat_box value={card.attack} label="ATK" color="#ce1b2e" />
-              <.stat_box value={card.health} label="HP" color="#46991b" />
+            <div
+              :if={card.flavor}
+              class="text-center font-barlow italic text-xs text-base-content/65 my-2"
+            >
+              {card.flavor}
+            </div>
+
+            <div :if={card.pips != []} class="mt-2.5 flex items-center gap-1">
+              <span
+                :for={{color, glyph} <- card.pips}
+                class="font-champions text-2xl leading-none"
+                style={"color:#{color};"}
+              >
+                {glyph}
+              </span>
             </div>
           </div>
         </div>
@@ -182,24 +193,6 @@ defmodule SanctumWeb.CardLive.Pool do
         <.button variant="primary" phx-click="clear" class="mt-4">Clear filters</.button>
       </.panel>
     </Layouts.app>
-    """
-  end
-
-  attr :value, :any, required: true
-  attr :label, :string, required: true
-  attr :color, :string, required: true
-
-  defp stat_box(assigns) do
-    ~H"""
-    <div
-      class="border-2 border-neutral bg-[#0c0c0f] px-0.5 py-1.5 text-center"
-      style={"border-top:3px solid #{@color};"}
-    >
-      <div class="font-anton text-[19px] leading-[0.9]">{@value || "–"}</div>
-      <div class="mt-[3px] text-[8px] font-extrabold uppercase tracking-[0.12em] text-base-content/50">
-        {@label}
-      </div>
-    </div>
     """
   end
 
@@ -323,6 +316,7 @@ defmodule SanctumWeb.CardLive.Pool do
       pips: CardComponent.resource_pips(resources),
       traits: format_traits(side.traits),
       text: side.text || "",
+      flavor: Map.get(side, :flavor, ""),
       is_ally: side.type == :ally,
       attack: stat_value(side.attack),
       thwart: stat_value(side.thwart),
