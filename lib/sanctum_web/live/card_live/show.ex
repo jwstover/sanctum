@@ -121,6 +121,28 @@ defmodule SanctumWeb.CardLive.Show do
             </div>
           </div>
         </.panel>
+
+        <!-- alternate printings -->
+        <.panel :if={@alts != []} class="p-4">
+          <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+            Alternate Printings ({length(@alts)})
+          </div>
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <figure :for={alt <- @alts} class="flex flex-col gap-1.5">
+              <div class="aspect-[5/7] w-full overflow-hidden border-2 border-neutral shadow-comic">
+                <img
+                  src={alt.image_url}
+                  alt={alt.code}
+                  loading="lazy"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+              <figcaption class="font-ibm-mono text-[10px] uppercase tracking-[0.16em] text-base-content/50">
+                {alt.code}<span :if={alt.pack}> · {alt.pack}</span>
+              </figcaption>
+            </figure>
+          </div>
+        </.panel>
       </div>
     </Layouts.app>
     """
@@ -182,7 +204,7 @@ defmodule SanctumWeb.CardLive.Show do
     card =
       Ash.get!(Sanctum.Games.Card, id,
         actor: socket.assigns[:current_user],
-        load: [:card_sides, :primary_side]
+        load: [:card_sides, :primary_side, :alts]
       )
 
     gradient = hero_gradient(card.set)
@@ -193,12 +215,20 @@ defmodule SanctumWeb.CardLive.Show do
       |> Enum.sort_by(& &1.side_identifier)
       |> Enum.map(&side_view(&1, gradient))
 
+    # Alternate printings that have a mirrored scan to show.
+    alts =
+      card.alts
+      |> Enum.filter(& &1.image_url)
+      |> Enum.sort_by(& &1.code)
+      |> Enum.map(&%{code: &1.code, pack: &1.pack, image_url: &1.image_url})
+
     {:ok,
      socket
      |> assign(:page_title, "Card - #{title}")
      |> assign(:card, card)
      |> assign(:title, title)
-     |> assign(:sides, sides)}
+     |> assign(:sides, sides)
+     |> assign(:alts, alts)}
   end
 
   # Builds the display map for one card side.
