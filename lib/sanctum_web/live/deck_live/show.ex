@@ -5,6 +5,8 @@ defmodule SanctumWeb.DeckLive.Show do
   """
   use SanctumWeb, :live_view
 
+  import SanctumWeb.Components.StatBadge
+
   alias SanctumWeb.Components.Card, as: CardComponent
 
   @type_order [:ally, :event, :support, :upgrade, :resource]
@@ -82,6 +84,23 @@ defmodule SanctumWeb.DeckLive.Show do
                 <div class="font-anton text-[30px] leading-none">{@cover.unique_cards}</div>
                 <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
                   Unique
+                </div>
+              </div>
+              <div
+                :if={@cover.uniqueness}
+                class="flex items-center gap-2 self-center"
+                title={"More unique than #{@cover.uniqueness}% of #{@cover.hero_name} decks"}
+              >
+                <.stat_badge
+                  value={@cover.uniqueness}
+                  size={58}
+                  label="UNIQ"
+                  bright="#dbcb36"
+                  dark="#8a7f16"
+                />
+                <div class="max-w-[132px] font-barlow text-[12px] leading-[1.35] text-base-content/55">
+                  More unique than <span class="font-bold text-primary">{@cover.uniqueness}%</span>
+                  of {@cover.hero_name} decks
                 </div>
               </div>
               <div :if={@cover.author} class="flex items-center gap-2 self-center">
@@ -240,6 +259,7 @@ defmodule SanctumWeb.DeckLive.Show do
       source_label: source_label(deck.source),
       total_cards: deck.total_card_count || 0,
       unique_cards: deck.card_row_count || 0,
+      uniqueness: deck.uniqueness_percentile,
       author: author,
       author_initial: author_initial(author)
     }

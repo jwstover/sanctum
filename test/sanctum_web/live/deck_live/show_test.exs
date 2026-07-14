@@ -85,4 +85,20 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     assert html =~ "Allies"
     assert html =~ "Thwart twice"
   end
+
+  test "a scored deck shows its uniqueness badge and caption", %{conn: conn} do
+    deck = make_deck_with_card()
+
+    # uniqueness_percentile is a computed private attribute; write it directly.
+    Sanctum.Repo.query!("UPDATE decks SET uniqueness_percentile = $1 WHERE id::text = $2", [
+      92,
+      deck.id
+    ])
+
+    {:ok, _view, html} = live(conn, ~p"/decks/#{deck.id}")
+
+    assert html =~ "UNIQ"
+    assert html =~ "More unique than"
+    assert html =~ "92% of Spider-Man decks"
+  end
 end
