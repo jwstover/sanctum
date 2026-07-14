@@ -1,3 +1,12 @@
+# [1.8.0](https://github.com/jwstover/sanctum/compare/v1.7.1...v1.8.0) (2026-07-14)
+
+
+### Features
+
+* **guess:** add Flavor Town card-guessing mini-game ([2ff0a9c](https://github.com/jwstover/sanctum/commit/2ff0a9cd78cf9b9a22390295026f5cd9d922f1f1))
+
+
+
 ## [1.7.1](https://github.com/jwstover/sanctum/compare/v1.7.0...v1.7.1) (2026-07-14)
 
 
@@ -49,15 +58,6 @@
 
 * **ci:** annotate escaped raw usage for Sobelow ([5c06a0e](https://github.com/jwstover/sanctum/commit/5c06a0e0c50c1ccf3b5d3e887238ed86160dd945))
 * **ui:** enlarge health-badge number and tighten player-icon gap ([ca9025a](https://github.com/jwstover/sanctum/commit/ca9025adf71a31e4d18bbc408887b778d2ef43e9))
-
-
-
-# [1.5.0](https://github.com/jwstover/sanctum/compare/v1.4.0...v1.5.0) (2026-07-14)
-
-
-### Features
-
-* **ui:** comic starburst stat badges ([c2be160](https://github.com/jwstover/sanctum/commit/c2be160db09c6e3a553a8ccde98efe7e92159ed5))
 
 
 
