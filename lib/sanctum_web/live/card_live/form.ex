@@ -231,33 +231,26 @@ defmodule SanctumWeb.CardLive.Form do
       <div class="space-y-4">
         <h4 class="font-medium text-gray-900">Stats & Details</h4>
 
-        <!-- Combat Stats (stat value only; star/scaling come from sync) -->
-        <div class="grid grid-cols-2 gap-2">
+        <!-- Combat Stats (stat value only; star/scaling/consequential come from sync) -->
+        <div class="grid grid-cols-3 gap-2">
           <.input
             field={@form[:attack]}
             type="number"
             label="Attack"
             value={stat_value(@form[:attack].value)}
           />
-          <.input field={@form[:attack_cost]} type="number" label="Attack Cost" />
-        </div>
-        <div class="grid grid-cols-2 gap-2">
           <.input
             field={@form[:thwart]}
             type="number"
             label="Thwart"
             value={stat_value(@form[:thwart].value)}
           />
-          <.input field={@form[:thwart_cost]} type="number" label="Thwart Cost" />
-        </div>
-        <div class="grid grid-cols-2 gap-2">
           <.input
             field={@form[:defense]}
             type="number"
             label="Defense"
             value={stat_value(@form[:defense].value)}
           />
-          <.input field={@form[:defense_cost]} type="number" label="Defense Cost" />
         </div>
         <.input
           field={@form[:health]}

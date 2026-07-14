@@ -684,10 +684,14 @@ defmodule Sanctum.MarvelCdb do
       ownership: map_ownership(mcdb_card["faction_code"]),
       aspect: map_aspect(mcdb_card["faction_code"]),
 
-      # Combat stats (structured value/star/scaling)
-      attack: stat(mcdb_card["attack"], mcdb_card["attack_star"], :flat),
-      thwart: stat(mcdb_card["thwart"], mcdb_card["thwart_star"], :flat),
-      defense: stat(mcdb_card["defense"], mcdb_card["defense_star"], :flat),
+      # Combat stats (structured value/star/scaling/consequential). MarvelCDB's
+      # `*_cost` fields carry an ally's consequential damage for that action.
+      attack:
+        stat(mcdb_card["attack"], mcdb_card["attack_star"], :flat, mcdb_card["attack_cost"]),
+      thwart:
+        stat(mcdb_card["thwart"], mcdb_card["thwart_star"], :flat, mcdb_card["thwart_cost"]),
+      defense:
+        stat(mcdb_card["defense"], mcdb_card["defense_star"], :flat, mcdb_card["defense_cost"]),
       health: stat(mcdb_card["health"], mcdb_card["health_star"], health_scaling(mcdb_card)),
       cost: mcdb_card["cost"],
 
@@ -745,8 +749,11 @@ defmodule Sanctum.MarvelCdb do
 
   # Builds a structured stat map. A nil value means the stat is absent, so we
   # return nil and let the trailing Enum.reject drop the attribute entirely.
-  defp stat(nil, _star, _scaling), do: nil
-  defp stat(value, star, scaling), do: %{value: value, star: star || false, scaling: scaling}
+  defp stat(value, star, scaling, consequential \\ nil)
+  defp stat(nil, _star, _scaling, _consequential), do: nil
+
+  defp stat(value, star, scaling, consequential),
+    do: %{value: value, star: star || false, scaling: scaling, consequential: consequential}
 
   # Health scaling from MarvelCDB's booleans.
   defp health_scaling(entry) do

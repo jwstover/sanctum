@@ -1,11 +1,13 @@
 defmodule Sanctum.Games.Stat do
   @moduledoc """
-  A card stat as three independent axes:
+  A card stat as four independent axes:
 
     * `value` — the printed number (nil when the stat is absent)
     * `star` — a ★ effect relates to this stat (co-occurs with `value`)
     * `scaling` — how the value scales with player count (`:flat`, `:per_player`,
       `:per_group`)
+    * `consequential` — an ally's consequential damage for this stat (stars taken
+      when it attacks/thwarts/defends; nil when the stat carries no cost)
 
   Used for attack, thwart, defense, recover, health, and the scheme threats,
   stored inline as a jsonb column per stat. A card with no such stat stores the
@@ -19,7 +21,7 @@ defmodule Sanctum.Games.Stat do
 
   use Ash.Type
 
-  defstruct value: nil, star: false, scaling: :flat
+  defstruct value: nil, star: false, scaling: :flat, consequential: nil
 
   @scalings [:flat, :per_player, :per_group]
 
@@ -56,7 +58,13 @@ defmodule Sanctum.Games.Stat do
   def dump_to_native(nil, _), do: {:ok, nil}
 
   def dump_to_native(%__MODULE__{} = stat, _) do
-    {:ok, %{"value" => stat.value, "star" => stat.star, "scaling" => to_string(stat.scaling)}}
+    {:ok,
+     %{
+       "value" => stat.value,
+       "star" => stat.star,
+       "scaling" => to_string(stat.scaling),
+       "consequential" => stat.consequential
+     }}
   end
 
   def dump_to_native(_, _), do: :error
@@ -65,7 +73,8 @@ defmodule Sanctum.Games.Stat do
     %__MODULE__{
       value: to_int(fetch(map, :value)),
       star: truthy(fetch(map, :star)),
-      scaling: to_scaling(fetch(map, :scaling))
+      scaling: to_scaling(fetch(map, :scaling)),
+      consequential: to_int(fetch(map, :consequential))
     }
   end
 
