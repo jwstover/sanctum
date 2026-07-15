@@ -1,3 +1,12 @@
+## [1.22.1](https://github.com/jwstover/sanctum/compare/v1.22.0...v1.22.1) (2026-07-15)
+
+
+### Performance Improvements
+
+* **deck-sync:** batch slot card lookups and pace deck imports ([#130](https://github.com/jwstover/sanctum/issues/130)) ([1117620](https://github.com/jwstover/sanctum/commit/11176203e32783204a5b4ed4894f82648d951cc4))
+
+
+
 # [1.22.0](https://github.com/jwstover/sanctum/compare/v1.21.3...v1.22.0) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **deploy:** stop node when idle instead of letting Fly autostop kill Oban jobs ([64e5e47](https://github.com/jwstover/sanctum/commit/64e5e47acd1bc4fe2f07cb111642c18fe6260d44))
-
-
-
-# [1.21.0](https://github.com/jwstover/sanctum/compare/v1.20.1...v1.21.0) (2026-07-15)
-
-
-### Features
-
-* **admin:** unify admin routes under /admin with dashboard + Oban Web ([d34b12f](https://github.com/jwstover/sanctum/commit/d34b12f1c5e5118f9949d5e72c3fd7ec3c8f4184))
 
 
 
