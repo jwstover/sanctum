@@ -15,6 +15,11 @@ config :sanctum, Oban,
   queues: [default: 10],
   repo: Sanctum.Repo,
   plugins: [
+    # Prune old completed/discarded jobs so the table doesn't grow unbounded.
+    Oban.Plugins.Pruner,
+    # Rescue jobs orphaned in the `executing` state (e.g. a hard node kill during
+    # a Fly restart) back to `available` so they run again instead of hanging.
+    {Oban.Plugins.Lifeline, rescue_after: :timer.hours(24)},
     {Oban.Plugins.Cron,
      crontab: [
        {"0 * * * *", Sanctum.Decks.DecklistSyncWorker},

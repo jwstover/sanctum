@@ -19,6 +19,7 @@ defmodule Sanctum.Application do
       {Phoenix.PubSub, name: Sanctum.PubSub},
       {Task.Supervisor, name: Sanctum.TaskSupervisor},
       Sanctum.CardSync.Server,
+      {Sanctum.AutoShutdown, enabled?: Application.get_env(:sanctum, :auto_stop, false)},
       # Start a worker by calling: Sanctum.Worker.start_link(arg)
       # {Sanctum.Worker, arg},
       # Start to serve requests, typically the last entry
