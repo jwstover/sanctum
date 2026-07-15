@@ -10,10 +10,15 @@ defmodule Sanctum.DeckSync do
 
   The cursor is checkpointed at the last day fetched *successfully* — a 404 (no
   decks that day) counts as success, but a transient fetch failure (timeout /
-  5xx / rate-limit) **halts the run** and leaves the cursor at the last good
-  day. `run/1` then returns `{:error, summary}` so the caller (the Oban worker)
-  can fail and retry, resuming from the checkpoint. This keeps a slow or flaky
-  MarvelCDB from silently skipping days.
+  rate-limit / a 5xx that reflects a real outage) **halts the run** and leaves
+  the cursor at the last good day. `run/1` then returns `{:error, summary}` so
+  the caller (the Oban worker) can fail and retry, resuming from the checkpoint.
+  This keeps a slow or flaky MarvelCDB from silently skipping days.
+
+  One wrinkle: MarvelCDB answers `by_date` for a day with no decklists with an
+  HTTP 500 rather than a 404. `sync_date/2` disambiguates that benign case from
+  a genuine outage by canary-probing the endpoint's health, so an empty day
+  doesn't wedge the walk (see `MarvelCdb.decklists_endpoint_healthy?/0`).
 
   Entry points: `mix sanctum.sync_decks` (manual/backfill) and
   `Sanctum.Decks.DecklistSyncWorker` (scheduled via Oban Cron).
@@ -25,12 +30,10 @@ defmodule Sanctum.DeckSync do
   alias Sanctum.MarvelCdb
 
   # MarvelCDB launched in late 2019; used as the backfill floor when no cursor
-  # exists and no `:since` is given. Floored at 2019-11-02 rather than 11-01
-  # because MarvelCDB's `/decklists/by_date/2019-11-01` endpoint permanently
-  # returns HTTP 500 (a server-side bug on that single earliest date). Since a
-  # 5xx halts the run to avoid skipping days, starting on 11-01 wedged the sync
-  # on day one forever; 11-01 holds no fetchable decks anyway.
-  @default_start_date ~D[2019-11-02]
+  # exists and no `:since` is given. (Empty early days that MarvelCDB answers
+  # with a 500 are handled in `sync_date/2`, so the floor no longer needs to
+  # dodge them.)
+  @default_start_date ~D[2019-11-01]
 
   # Re-scan this many days before the cursor each run, so decks published late
   # (or edited on) a day that was already synced still get picked up.
@@ -132,6 +135,27 @@ defmodule Sanctum.DeckSync do
         progress.({:date, %{date: date, imported: 0, failed: 0}})
         Process.sleep(@download_pause_ms)
         {:ok, 0, 0}
+
+      # MarvelCDB returns HTTP 500 (not 404) for dates with no decklists — a
+      # quirk scattered across historical days. Halting on every 500 wedges the
+      # backfill on the first empty day, so disambiguate: if the endpoint is
+      # otherwise healthy (a canary date still serves data), this 500 means "no
+      # decks that day" — treat it as an empty day and advance. Only a 500 that
+      # coincides with an unhealthy endpoint (a real outage) halts the run, so
+      # the cursor never skips days that actually have decks.
+      {:error, {:server_error, status}} ->
+        if MarvelCdb.decklists_endpoint_healthy?() do
+          Logger.info(
+            "Deck sync #{date}: MarvelCDB #{status}, endpoint healthy — treating as empty day"
+          )
+
+          progress.({:date, %{date: date, imported: 0, failed: 0}})
+          Process.sleep(@download_pause_ms)
+          {:ok, 0, 0}
+        else
+          progress.({:date_error, %{date: date, reason: {:server_error, status}}})
+          {:error, "Unexpected status code: #{status}"}
+        end
 
       {:error, reason} ->
         progress.({:date_error, %{date: date, reason: reason}})
