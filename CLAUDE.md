@@ -16,6 +16,7 @@ personal use, designed with room to grow into multiplayer.
   migrations to model domain data — change the resource and run codegen.
 - **Single dark theme.** The UI is a pinned dark "comic-dossier" design. There is
   no light/dark toggle — do not reintroduce daisyUI theme switching.
+- There are often several agents making changes and working in the single shared gitbutler workspace. Make sure that when you are committing your change you FIRST STAGE THE SPECIFIC HUNK and then review the staged changes before committing. We have already gotten into situations where work got mixed up. 
 
 ## Technical Stack
 
@@ -146,3 +147,4 @@ mix dialyzer                 # static analysis (PLTs in priv/plts/)
   authentication ≠ trust — the `User.admin` flag is what gates privileged surfaces.
 - `docs/card_fields.md` and `docs/card_model_v2.md` document the card data model
   and its most recent redesign.
+- Test your changes using the playwright-cli against the running dev server at localhost:4150
