@@ -51,6 +51,50 @@ defmodule SanctumWeb.AdminLive.Index do
 
       <section class="mt-8">
         <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+          Import Deck
+        </h2>
+        <div class="border-[3px] border-neutral bg-base-300 p-4 space-y-3">
+          <form phx-submit="import_deck" class="flex flex-col gap-3 sm:flex-row sm:items-start">
+            <div class="w-full">
+              <.input
+                name="deck_url"
+                value={@deck_import.url}
+                placeholder="https://marvelcdb.com/decklist/view/…"
+                autocomplete="off"
+              />
+            </div>
+            <.button variant="primary" disabled={@deck_import.status == :running}>
+              <.icon name="hero-arrow-down-tray" />
+              {if @deck_import.status == :running, do: "Importing…", else: "Import"}
+            </.button>
+          </form>
+
+          <p class="font-ibm-mono text-xs text-base-content/40">
+            Paste a MarvelCDB decklist or deck URL to sync that deck into Sanctum.
+          </p>
+
+          <p
+            :if={@deck_import.status == :error}
+            class="break-words font-ibm-mono text-xs text-error"
+          >
+            {@deck_import.error}
+          </p>
+
+          <div
+            :if={@deck_import.status == :done}
+            class="flex flex-wrap items-center gap-x-3 gap-y-1 font-ibm-mono text-xs"
+          >
+            <span class="text-success">Imported “{@deck_import.deck.title}”</span>
+            <%!-- href, not navigate: /decks/:id is in a different live_session --%>
+            <.link href={~p"/decks/#{@deck_import.deck.id}"} class="text-primary underline">
+              Open deck view →
+            </.link>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
           Manage
         </h2>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -142,8 +186,88 @@ defmodule SanctumWeb.AdminLive.Index do
      |> assign(:page_title, "Admin")
      |> assign(:dev_routes?, Application.get_env(:sanctum, :dev_routes, false))
      |> assign(:stats, load_stats())
-     |> assign(:jobs, load_job_counts())}
+     |> assign(:jobs, load_job_counts())
+     |> assign(:deck_import, %{status: :idle, deck: nil, error: nil, url: ""})}
   end
+
+  @impl true
+  def handle_event("import_deck", %{"deck_url" => url}, socket) do
+    case parse_deck_url(url) do
+      {:ok, canonical_url} ->
+        {:noreply,
+         socket
+         |> assign(:deck_import, %{status: :running, deck: nil, error: nil, url: String.trim(url)})
+         |> start_async(:import_deck, fn -> import_deck(canonical_url) end)}
+
+      :error ->
+        {:noreply,
+         assign(socket, :deck_import, %{
+           status: :error,
+           deck: nil,
+           error:
+             "Not a MarvelCDB deck URL — expected marvelcdb.com/decklist/view/… or marvelcdb.com/deck/view/…",
+           url: url
+         })}
+    end
+  end
+
+  @impl true
+  def handle_async(:import_deck, {:ok, result}, socket) do
+    deck_import = socket.assigns.deck_import
+
+    socket =
+      case result do
+        {:ok, deck} ->
+          socket
+          |> assign(:deck_import, %{deck_import | status: :done, deck: deck})
+          |> assign(:stats, load_stats())
+
+        {:error, reason} ->
+          assign(socket, :deck_import, %{
+            deck_import
+            | status: :error,
+              error: import_error(reason)
+          })
+      end
+
+    {:noreply, socket}
+  end
+
+  def handle_async(:import_deck, {:exit, reason}, socket) do
+    deck_import = %{
+      socket.assigns.deck_import
+      | status: :error,
+        error: "Import crashed: #{inspect(reason)}"
+    }
+
+    {:noreply, assign(socket, :deck_import, deck_import)}
+  end
+
+  # Accept anything a user is likely to paste — http/https, www, trailing slug
+  # or query string — plus a bare decklist id, and reduce it to the canonical
+  # URL form `MarvelCdb.load_deck/1` matches on.
+  defp parse_deck_url(input) do
+    input = String.trim(input)
+
+    case Regex.run(~r{marvelcdb\.com/(decklist|deck)/view/(\d+)}, input) do
+      [_, type, id] -> {:ok, "https://marvelcdb.com/#{type}/view/#{id}"}
+      nil -> if input =~ ~r/^\d+$/, do: {:ok, input}, else: :error
+    end
+  end
+
+  # load_deck can raise (e.g. a hero card missing from the catalog), not just
+  # return `{:error, _}` — surface any raise as a failed import.
+  defp import_deck(url) do
+    Sanctum.MarvelCdb.load_deck(url)
+  rescue
+    exception -> {:error, Exception.format(:error, exception, __STACKTRACE__)}
+  end
+
+  defp import_error(:not_found),
+    do: "MarvelCDB returned 404 — deck not found (private decks can't be fetched)."
+
+  defp import_error(reason) when is_binary(reason), do: reason
+  defp import_error(reason), do: inspect(reason)
 
   # Aggregate counts for the health snapshot. `authorize?: false` is deliberate:
   # the route is already admin-gated and these are non-sensitive row counts, so
