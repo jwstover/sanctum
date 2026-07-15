@@ -29,8 +29,14 @@ config :sentry,
   in_app_otp_apps: [:sanctum],
   integrations: [oban: [capture_errors: true, cron: [enabled: true]]],
   enable_logs: true,
-  logs: [level: :info, metadata: [:request_id, :game_id, :user_id]],
-  traces_sampler: {Sanctum.Observability, :traces_sampler}
+  logs: [level: :info, metadata: [:request_id, :game_id, :user_id]]
+
+# :traces_sampler is configured in config/runtime.exs, NOT here: Sentry's
+# config validation checks the sampler function is exported, and during
+# `mix sentry.package_source_code` in the Docker build the app's modules are
+# compiled but not loaded, so a compile-time sampler fails the build. At
+# release boot (embedded mode) all modules load before apps start, so the
+# runtime-config check passes.
 
 # Route OTel spans into Sentry instead of an OTLP collector.
 config :opentelemetry,
