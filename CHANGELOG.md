@@ -1,3 +1,12 @@
+# [1.25.0](https://github.com/jwstover/sanctum/compare/v1.24.0...v1.25.0) (2026-07-15)
+
+
+### Features
+
+* **observability:** Sentry integration — errors, tracing, logs, browser RUM ([d2411b7](https://github.com/jwstover/sanctum/commit/d2411b718d0f9d89fdcdda50a5833ebe5a0397af))
+
+
+
 # [1.24.0](https://github.com/jwstover/sanctum/compare/v1.23.0...v1.24.0) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **admin:** deck import tool on the admin dashboard ([#131](https://github.com/jwstover/sanctum/issues/131)) ([2c444b6](https://github.com/jwstover/sanctum/commit/2c444b688ce67044c3b21f539aa842bf994feccf))
-
-
-
-## [1.21.3](https://github.com/jwstover/sanctum/compare/v1.21.2...v1.21.3) (2026-07-15)
-
-
-### Bug Fixes
-
-* **deck sync:** handle heroes with no alter-ego side ([e9a8529](https://github.com/jwstover/sanctum/commit/e9a8529171628673a564dbde10230f110fd68848))
 
 
 
