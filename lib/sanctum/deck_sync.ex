@@ -25,8 +25,12 @@ defmodule Sanctum.DeckSync do
   alias Sanctum.MarvelCdb
 
   # MarvelCDB launched in late 2019; used as the backfill floor when no cursor
-  # exists and no `:since` is given.
-  @default_start_date ~D[2019-11-01]
+  # exists and no `:since` is given. Floored at 2019-11-02 rather than 11-01
+  # because MarvelCDB's `/decklists/by_date/2019-11-01` endpoint permanently
+  # returns HTTP 500 (a server-side bug on that single earliest date). Since a
+  # 5xx halts the run to avoid skipping days, starting on 11-01 wedged the sync
+  # on day one forever; 11-01 holds no fetchable decks anyway.
+  @default_start_date ~D[2019-11-02]
 
   # Re-scan this many days before the cursor each run, so decks published late
   # (or edited on) a day that was already synced still get picked up.
