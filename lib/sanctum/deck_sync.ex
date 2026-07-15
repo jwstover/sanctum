@@ -8,6 +8,13 @@ defmodule Sanctum.DeckSync do
   run also re-scans a small trailing window to catch late-arriving decks before
   advancing the cursor.
 
+  The cursor is checkpointed at the last day fetched *successfully* — a 404 (no
+  decks that day) counts as success, but a transient fetch failure (timeout /
+  5xx / rate-limit) **halts the run** and leaves the cursor at the last good
+  day. `run/1` then returns `{:error, summary}` so the caller (the Oban worker)
+  can fail and retry, resuming from the checkpoint. This keeps a slow or flaky
+  MarvelCDB from silently skipping days.
+
   Entry points: `mix sanctum.sync_decks` (manual/backfill) and
   `Sanctum.Decks.DecklistSyncWorker` (scheduled via Oban Cron).
   """
@@ -41,7 +48,10 @@ defmodule Sanctum.DeckSync do
     * `:progress_fun` — `fun/1` receiving progress events; defaults to
       CLI-style logging
 
-  Returns `{:ok, %{days, imported, failed}}`.
+  Returns `{:ok, summary}` when the whole range was fetched, or `{:error,
+  summary}` when a transient failure halted it early. `summary` is a map of
+  `%{days, processed, imported, failed, halted}` where `halted` is `nil` or
+  `%{date, reason}`.
   """
   def run(opts \\ []) do
     progress = Keyword.get(opts, :progress_fun, &log_progress/1)
@@ -51,43 +61,92 @@ defmodule Sanctum.DeckSync do
     dates = date_range(start_date, until)
     progress.({:started, %{from: start_date, to: until, days: length(dates)}})
 
-    {imported, failed} =
-      Enum.reduce(dates, {0, 0}, fn date, {imported, failed} ->
-        {di, df} = sync_date(date, progress)
-        {imported + di, failed + df}
+    initial = %{imported: 0, failed: 0, processed: 0, last_ok: nil, halted: nil}
+
+    acc =
+      Enum.reduce_while(dates, initial, fn date, acc ->
+        case sync_date(date, progress) do
+          {:ok, imported, failed} ->
+            {:cont,
+             %{
+               acc
+               | imported: acc.imported + imported,
+                 failed: acc.failed + failed,
+                 processed: acc.processed + 1,
+                 last_ok: date
+             }}
+
+          {:error, reason} ->
+            # A transient fetch failure (timeout / 5xx / rate-limit): stop the
+            # walk so the cursor never advances past a day we couldn't fetch.
+            {:halt, %{acc | halted: %{date: date, reason: reason}}}
+        end
       end)
 
-    {:ok, _state} = Decks.set_last_synced_date(until)
+    checkpoint_cursor(acc.last_ok)
 
-    summary = %{days: length(dates), imported: imported, failed: failed}
+    summary = %{
+      days: length(dates),
+      processed: acc.processed,
+      imported: acc.imported,
+      failed: acc.failed,
+      halted: acc.halted
+    }
+
     progress.({:done, summary})
-    {:ok, summary}
+
+    if acc.halted, do: {:error, summary}, else: {:ok, summary}
+  end
+
+  # Advance the cursor to the last day we successfully fetched, but never rewind
+  # it: a halted run or a historical `--since` backfill of old dates must not
+  # drag the frontier backward. Nothing fetched (nil) leaves the cursor as-is.
+  defp checkpoint_cursor(nil), do: :ok
+
+  defp checkpoint_cursor(%Date{} = last_ok) do
+    advance? =
+      case current_cursor() do
+        %Date{} = cursor -> Date.compare(last_ok, cursor) == :gt
+        nil -> true
+      end
+
+    if advance?, do: {:ok, _state} = Decks.set_last_synced_date(last_ok)
+    :ok
   end
 
   defp sync_date(date, progress) do
     case MarvelCdb.get_decklists_by_date(date) do
       {:ok, decklists} ->
-        result = import_decklists(decklists)
+        result = import_decklists(decklists, date, progress)
         progress.({:date, Map.put(result, :date, date)})
         Process.sleep(@download_pause_ms)
-        {result.imported, result.failed}
+        {:ok, result.imported, result.failed}
+
+      # 404 means MarvelCDB simply has no decklists for this date — a normal,
+      # permanent outcome, not a failure. Record an empty day and keep going.
+      {:error, :not_found} ->
+        progress.({:date, %{date: date, imported: 0, failed: 0}})
+        Process.sleep(@download_pause_ms)
+        {:ok, 0, 0}
 
       {:error, reason} ->
         progress.({:date_error, %{date: date, reason: reason}})
-        {0, 0}
+        {:error, reason}
     end
   end
 
-  defp import_decklists(decklists) do
+  defp import_decklists(decklists, date, progress) do
     Enum.reduce(decklists, %{imported: 0, failed: 0}, fn decklist, acc ->
       Process.sleep(@deck_pause_ms)
 
       case import_one(decklist) do
         {:ok, _deck} ->
+          progress.({:deck, %{date: date, name: decklist["name"], ok?: true}})
           Map.update!(acc, :imported, &(&1 + 1))
 
         {:error, reason} ->
           Logger.warning("Failed to import decklist #{decklist["id"]}: #{inspect(reason)}")
+          progress.({:deck, %{date: date, name: decklist["name"], ok?: false}})
           Map.update!(acc, :failed, &(&1 + 1))
       end
     end)
@@ -136,6 +195,13 @@ defmodule Sanctum.DeckSync do
 
   defp log_progress({:date_error, %{date: date, reason: reason}}),
     do: Logger.warning("  #{date}: fetch failed: #{inspect(reason)}")
+
+  defp log_progress({:done, %{halted: %{date: date, reason: reason}} = s}),
+    do:
+      Logger.warning(
+        "Deck sync halted at #{date} (#{inspect(reason)}) after #{s.processed} day(s): " <>
+          "#{s.imported} imported, #{s.failed} failed"
+      )
 
   defp log_progress({:done, %{days: days, imported: imported, failed: failed}}),
     do: Logger.info("Deck sync done: #{days} days, #{imported} imported, #{failed} failed")

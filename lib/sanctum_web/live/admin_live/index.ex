@@ -51,6 +51,70 @@ defmodule SanctumWeb.AdminLive.Index do
 
       <section class="mt-8">
         <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+          Deck Sync
+        </h2>
+        <div class="border-[3px] border-neutral bg-base-300 p-4 space-y-4">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span class={[
+              "inline-flex items-center border-2 px-3 py-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em]",
+              deck_status_class(@deck_sync.status)
+            ]}>
+              {deck_status_label(@deck_sync.status)}
+            </span>
+            <span :if={@deck_sync.started_at} class="font-ibm-mono text-xs text-base-content/55">
+              started {fmt_ts(@deck_sync.started_at)}
+            </span>
+            <span :if={@deck_sync.finished_at} class="font-ibm-mono text-xs text-base-content/55">
+              &middot; finished {fmt_ts(@deck_sync.finished_at)}
+            </span>
+          </div>
+
+          <div :if={@deck_sync.status == :running} class="space-y-2">
+            <div class="flex items-baseline justify-between font-ibm-mono text-xs text-base-content/70">
+              <span>
+                {if @deck_sync.current_date,
+                  do: "Syncing #{@deck_sync.current_date}",
+                  else: "Starting…"}
+              </span>
+              <span :if={@deck_sync.days_total} class="tabular-nums">
+                day {@deck_sync.days_done} / {@deck_sync.days_total}
+              </span>
+            </div>
+            <div class="h-2 w-full overflow-hidden bg-base-100">
+              <div
+                class="h-full bg-primary transition-[width] duration-150"
+                style={"width: #{deck_percent(@deck_sync)}%"}
+              >
+              </div>
+            </div>
+            <div
+              :if={@deck_sync.current_deck}
+              class="truncate font-ibm-mono text-xs text-base-content/70"
+            >
+              importing: {@deck_sync.current_deck}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <.text_tile label="Cursor" value={fmt_date(@deck_health.cursor)} />
+            <.text_tile label="Last Run" value={fmt_last_run(@deck_health.last_run)} />
+            <.stat_tile label="Imported" value={@deck_sync.imported} />
+            <.stat_tile label="Failed" value={@deck_sync.failed} accent={@deck_sync.failed > 0} />
+          </div>
+
+          <div :if={@deck_sync.failures != []}>
+            <h3 class="mb-2 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-error">
+              Recent failures ({length(@deck_sync.failures)})
+            </h3>
+            <ul class="space-y-1 font-ibm-mono text-xs text-base-content/70">
+              <li :for={failure <- @deck_sync.failures} class="truncate">{failure}</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
           Import Deck
         </h2>
         <div class="border-[3px] border-neutral bg-base-300 p-4 space-y-3">
@@ -155,6 +219,22 @@ defmodule SanctumWeb.AdminLive.Index do
     """
   end
 
+  attr :label, :string, required: true
+  attr :value, :string, required: true
+
+  defp text_tile(assigns) do
+    ~H"""
+    <div class="border-[3px] border-neutral bg-base-300 px-4 py-3">
+      <div class="truncate font-barlow-condensed text-xl font-bold leading-none text-primary">
+        {@value}
+      </div>
+      <div class="mt-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/55">
+        {@label}
+      </div>
+    </div>
+    """
+  end
+
   attr :title, :string, required: true
   attr :icon, :string, required: true
   attr :rest, :global, include: ~w(href navigate patch)
@@ -181,12 +261,16 @@ defmodule SanctumWeb.AdminLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Sanctum.DeckSync.Monitor.subscribe()
+
     {:ok,
      socket
      |> assign(:page_title, "Admin")
      |> assign(:dev_routes?, Application.get_env(:sanctum, :dev_routes, false))
      |> assign(:stats, load_stats())
      |> assign(:jobs, load_job_counts())
+     |> assign(:deck_sync, Sanctum.DeckSync.Monitor.status())
+     |> assign(:deck_health, load_deck_health())
      |> assign(:deck_import, %{status: :idle, deck: nil, error: nil, url: ""})}
   end
 
@@ -269,6 +353,20 @@ defmodule SanctumWeb.AdminLive.Index do
   defp import_error(reason) when is_binary(reason), do: reason
   defp import_error(reason), do: inspect(reason)
 
+  # Live progress from the deck-sync Monitor. Reload the DB-backed health
+  # (cursor + last Oban run) once a run settles, since those change on completion.
+  @impl true
+  def handle_info({:deck_sync, sync}, socket) do
+    socket = assign(socket, :deck_sync, sync)
+
+    socket =
+      if sync.status in [:done, :error],
+        do: assign(socket, :deck_health, load_deck_health()),
+        else: socket
+
+    {:noreply, socket}
+  end
+
   # Aggregate counts for the health snapshot. `authorize?: false` is deliberate:
   # the route is already admin-gated and these are non-sensitive row counts, so
   # we skip per-resource read policies rather than thread an actor through each.
@@ -305,4 +403,61 @@ defmodule SanctumWeb.AdminLive.Index do
   rescue
     _ -> Map.new(@job_states, &{&1, 0})
   end
+
+  # DB-backed deck-sync health that outlives the in-memory Monitor snapshot: the
+  # persisted cursor and the most recent Oban job for the worker (any state).
+  defp load_deck_health do
+    %{cursor: deck_sync_cursor(), last_run: last_deck_sync_job()}
+  end
+
+  defp deck_sync_cursor do
+    case Sanctum.Decks.get_deck_sync_state() do
+      {:ok, %{last_synced_date: %Date{} = date}} -> date
+      _ -> nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp last_deck_sync_job do
+    from(j in "oban_jobs",
+      where: j.worker == "Sanctum.Decks.DecklistSyncWorker",
+      order_by: [desc: j.id],
+      limit: 1,
+      select: %{state: j.state, completed_at: j.completed_at, attempted_at: j.attempted_at}
+    )
+    |> Sanctum.Repo.one()
+  rescue
+    _ -> nil
+  end
+
+  defp deck_status_label(:idle), do: "Idle"
+  defp deck_status_label(:running), do: "Running"
+  defp deck_status_label(:done), do: "Completed"
+  defp deck_status_label(:error), do: "Failed"
+
+  defp deck_status_class(:idle), do: "border-neutral text-base-content/60"
+  defp deck_status_class(:running), do: "border-info text-info"
+  defp deck_status_class(:done), do: "border-success text-success"
+  defp deck_status_class(:error), do: "border-error text-error"
+
+  defp deck_percent(%{days_total: total, days_done: done}) when is_integer(total) and total > 0,
+    do: Float.round(done / total * 100, 1)
+
+  defp deck_percent(_sync), do: 0
+
+  defp fmt_date(%Date{} = date), do: Date.to_iso8601(date)
+  defp fmt_date(_), do: "—"
+
+  defp fmt_ts(%struct{} = ts) when struct in [DateTime, NaiveDateTime],
+    do: Calendar.strftime(ts, "%Y-%m-%d %H:%M UTC")
+
+  defp fmt_ts(_), do: "—"
+
+  defp fmt_last_run(%{state: state, completed_at: completed, attempted_at: attempted}) do
+    ts = completed || attempted
+    if ts, do: "#{state} · #{fmt_ts(ts)}", else: state
+  end
+
+  defp fmt_last_run(_), do: "never"
 end

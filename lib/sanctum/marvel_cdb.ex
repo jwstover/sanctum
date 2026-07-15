@@ -28,6 +28,10 @@ defmodule Sanctum.MarvelCdb do
 
   @base_url "https://marvelcdb.com/api/public"
 
+  # MarvelCDB's by-date endpoint can be sluggish; give a slow-but-alive response
+  # room to land before treating it as a transient failure.
+  @decklist_receive_timeout_ms 20_000
+
   @doc """
   Imports a single deck from a MarvelCDB URL or bare id.
 
@@ -355,7 +359,10 @@ defmodule Sanctum.MarvelCdb do
   @spec get_decklists_by_date(Date.t()) :: {:ok, list(map())} | {:error, term()}
   def get_decklists_by_date(%Date{} = date) do
     "#{@base_url}/decklists/by_date/#{Date.to_iso8601(date)}"
-    |> Req.get([max_retries: 1] ++ req_options())
+    |> Req.get(
+      [retry: :transient, max_retries: 2, receive_timeout: @decklist_receive_timeout_ms] ++
+        req_options()
+    )
     |> handle_response()
   end
 
