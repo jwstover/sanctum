@@ -66,6 +66,12 @@ if config_env() == :prod do
 
   config :sanctum, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  # Let the node stop itself when idle (see `Sanctum.AutoShutdown`) so Fly can
+  # scale the machine to zero. Fly's own proxy autostop is disabled in fly.toml
+  # (`auto_stop_machines = "off"`) because it can't see in-flight Oban jobs.
+  # Opt out with SANCTUM_AUTO_STOP=false (e.g. to keep a machine pinned up).
+  config :sanctum, :auto_stop, System.get_env("SANCTUM_AUTO_STOP", "true") == "true"
+
   config :sanctum, SanctumWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
