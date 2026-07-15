@@ -166,6 +166,13 @@ defmodule Sanctum.Decks.Deck do
     attribute :description_md, :string, public?: true
     attribute :version, :string, public?: true
 
+    # MarvelCDB's own creation/update timestamps for the source decklist. These
+    # are the author-facing dates (when the deck was published / last edited on
+    # MarvelCDB), distinct from `inserted_at`/`updated_at`, which track when we
+    # last synced the row locally. Nil for native decks.
+    attribute :mcdb_date_creation, :utc_datetime, public?: true
+    attribute :mcdb_date_update, :utc_datetime, public?: true
+
     # Deck uniqueness, precomputed by Sanctum.Decks.ComputeUniquenessWorker.
     # Measures how unlike other decks of the *same hero* this deck's chosen
     # (non-`:hero`) cards are: uniqueness_score 1.0 = no deck shares its picks,
