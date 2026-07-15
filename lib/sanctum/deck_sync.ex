@@ -159,6 +159,7 @@ defmodule Sanctum.DeckSync do
     MarvelCdb.import_decklist(decklist, mcdb_type: :decklist)
   rescue
     exception ->
+      Sentry.capture_exception(exception, stacktrace: __STACKTRACE__)
       {:error, Exception.format(:error, exception, __STACKTRACE__)}
   end
 

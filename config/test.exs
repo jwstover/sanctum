@@ -40,3 +40,7 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+# Spans only go to Sentry in prod; stop the OTLP exporter from retrying
+# a nonexistent localhost collector.
+config :opentelemetry, traces_exporter: :none

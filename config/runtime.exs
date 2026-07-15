@@ -72,6 +72,13 @@ if config_env() == :prod do
   # Opt out with SANCTUM_AUTO_STOP=false (e.g. to keep a machine pinned up).
   config :sanctum, :auto_stop, System.get_env("SANCTUM_AUTO_STOP", "true") == "true"
 
+  # SENTRY_DSN is set by `fly extensions sentry create`; with no DSN the SDK
+  # sends nothing, so dev/test (which never reach this block) stay no-op.
+  # FLY_IMAGE_REF is set per-deploy by Fly and doubles as the release tag.
+  config :sentry,
+    dsn: System.get_env("SENTRY_DSN"),
+    release: System.get_env("FLY_IMAGE_REF")
+
   config :sanctum, SanctumWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [

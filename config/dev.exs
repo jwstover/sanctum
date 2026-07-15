@@ -89,3 +89,7 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Spans only go to Sentry in prod; stop the OTLP exporter from retrying
+# a nonexistent localhost collector.
+config :opentelemetry, traces_exporter: :none

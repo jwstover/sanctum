@@ -10,11 +10,13 @@ defmodule SanctumWeb.Router do
     plug :accepts, ["html"]
     plug SanctumWeb.Plugs.ContentSecurityPolicy
     plug :fetch_session
+    plug Sentry.Plug.LiveViewContext
     plug :fetch_live_flash
     plug :put_root_layout, html: {SanctumWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug :load_from_session
+    plug :set_sentry_user
   end
 
   pipeline :api do
@@ -161,6 +163,17 @@ defmodule SanctumWeb.Router do
 
       ash_admin "/"
     end
+  end
+
+  # Tags Sentry events from the request process with the user id (no PII).
+  # LiveView processes set their own context in SanctumWeb.LiveUserAuth.
+  defp set_sentry_user(conn, _opts) do
+    case conn.assigns[:current_user] do
+      %{id: id} -> Sentry.Context.set_user_context(%{id: id})
+      _ -> :ok
+    end
+
+    conn
   end
 
   # Redirects non-admins away from admin-only conn routes (the Oban dashboard).

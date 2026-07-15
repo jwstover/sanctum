@@ -19,6 +19,7 @@
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"
+import * as Sentry from "@sentry/browser"
 // Establish Phoenix Socket and LiveView configuration.
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
@@ -27,6 +28,21 @@ import topbar from "../vendor/topbar"
 import CardDrag from "./hooks/card-drag";
 import DragDrop from "./hooks/drag-drop";
 import LayoutHand from "./hooks/layout-hand";
+
+// Sentry config arrives via meta tags rendered only when a DSN is configured
+// (prod). Kept out of an inline <script> so the prod CSP can leave script-src
+// at 'self' with no 'unsafe-inline'.
+const meta = (name) => document.querySelector(`meta[name='${name}']`)?.getAttribute("content")
+const sentryDsn = meta("sentry-dsn")
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: meta("sentry-environment") ?? "production",
+    release: meta("sentry-release") ?? undefined,
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: 1.0,
+  })
+}
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {

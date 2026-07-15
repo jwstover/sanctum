@@ -7,6 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
 
+    <%= if sentry_dsn = Application.get_env(:sentry, :dsn) do %>
+      <meta name="sentry-dsn" content={sentry_dsn} />
+      <meta name="sentry-environment" content="production" />
+      <meta name="sentry-release" content={Application.get_env(:sentry, :release)} />
+    <% end %>
+
     <meta name="theme-color" content="#0b0b0d" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

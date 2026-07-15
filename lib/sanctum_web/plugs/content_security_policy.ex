@@ -28,7 +28,7 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
         # it falls back to default-src 'self' and every inline style is blocked.
         "default-src 'self';" <>
           "style-src 'self' 'unsafe-inline';" <>
-          "connect-src wss://#{host} https://#{host}:*;" <>
+          "connect-src wss://#{host} https://#{host}:*#{sentry_ingest_origin()};" <>
           "img-src 'self' blob: data: #{img_src_hosts()};" <>
           "font-src 'self' data:;"
 
@@ -37,6 +37,15 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
           "connect-src * ws://#{host}:* http://#{host}:*;" <>
           "img-src 'self' blob: data: #{img_src_hosts()};" <>
           "font-src 'self' data:;"
+    end
+  end
+
+  # The browser SDK posts events directly to Sentry's ingest endpoint, whose
+  # host is only knowable from the runtime-provided DSN.
+  defp sentry_ingest_origin do
+    case Application.get_env(:sentry, :dsn) do
+      nil -> ""
+      dsn -> " https://#{URI.parse(dsn).host}"
     end
   end
 
