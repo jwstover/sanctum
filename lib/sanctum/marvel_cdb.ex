@@ -22,6 +22,7 @@ defmodule Sanctum.MarvelCdb do
 
   require Logger
 
+  alias Sanctum.Catalog
   alias Sanctum.Decks
   alias Sanctum.Games
   alias Sanctum.Heroes
@@ -261,12 +262,18 @@ defmodule Sanctum.MarvelCdb do
   def sync_entries(entries, opts \\ []) do
     on_progress = Keyword.get(opts, :on_progress)
 
+    entries = Enum.uniq_by(entries, & &1["code"])
+
+    # Pre-pass: upsert CardSets and build the code→id lookup maps that
+    # prepare_card_attrs uses to populate Card's catalog FKs. Packs must already
+    # be synced (Sanctum.CardSync runs sync_packs before this).
+    opts = Keyword.put_new_lazy(opts, :catalog, fn -> build_catalog_maps(entries) end)
+
     # Process canonical (non-reprint) groups before reprint groups so a
     # reprint's canonical card already exists when its printing is written.
     # resolve_canonical/1 still covers the rare cross-payload gap.
     {reprints, canonicals} =
       entries
-      |> Enum.uniq_by(& &1["code"])
       |> Enum.group_by(&extract_base_code(&1["code"]))
       |> Enum.sort_by(fn {base_code, _group} -> base_code end)
       |> Enum.split_with(fn {_base_code, group} -> reprint_group?(group) end)
@@ -405,6 +412,143 @@ defmodule Sanctum.MarvelCdb do
     |> handle_response()
   end
 
+  @doc "Fetches the product/pack listing (`/packs/`)."
+  @spec get_packs() :: {:ok, list(map())} | {:error, term()}
+  def get_packs do
+    "#{@base_url}/packs/"
+    |> Req.get([max_retries: 1] ++ req_options())
+    |> handle_response()
+  end
+
+  @doc """
+  Syncs the product catalog: upserts a `Pack` per MarvelCDB `/packs/` entry
+  (MarvelCDB-owned columns only), then applies the curated product-type/wave
+  overlay. Idempotent. Must run before `sync_entries/2` so card-set/card FKs
+  resolve.
+  """
+  @spec sync_packs() :: :ok | {:error, term()}
+  def sync_packs do
+    with {:ok, packs} <- get_packs() do
+      Enum.each(packs, fn pack ->
+        Catalog.upsert_pack(
+          %{
+            code: pack["code"],
+            name: pack["name"],
+            position: pack["position"],
+            released_on: parse_date(pack["available"]),
+            known_count: pack["known"],
+            total_count: pack["total"],
+            marvelcdb_id: pack["id"]
+          },
+          authorize?: false
+        )
+      end)
+
+      Catalog.Curated.apply!()
+    end
+  end
+
+  defp parse_date(nil), do: nil
+
+  defp parse_date(str) when is_binary(str) do
+    case Date.from_iso8601(str) do
+      {:ok, date} -> date
+      _ -> nil
+    end
+  end
+
+  # Builds the `%{packs: %{code => id}, card_sets: %{code => id}}` maps that
+  # prepare_card_attrs uses to populate Card FKs. Upserts a CardSet per distinct
+  # `card_set_code` and links nemesis sets to their heroes.
+  defp build_catalog_maps(entries) do
+    pack_ids = Map.new(Catalog.list_packs!(authorize?: false), &{&1.code, &1.id})
+    %{packs: pack_ids, card_sets: upsert_card_sets(entries, pack_ids)}
+  end
+
+  defp upsert_card_sets(entries, pack_ids) do
+    sets =
+      entries
+      |> Enum.filter(&presence(&1["card_set_code"]))
+      |> Enum.group_by(& &1["card_set_code"])
+
+    code_to_set =
+      Map.new(sets, fn {code, group} ->
+        rep = Enum.find(group, &presence(&1["card_set_name"])) || hd(group)
+
+        {:ok, card_set} =
+          Catalog.upsert_card_set(
+            %{
+              code: code,
+              name: rep["card_set_name"],
+              set_type: map_set_type(rep["card_set_type_name_code"]),
+              pack_id: pack_ids[rep["pack_code"]]
+            },
+            authorize?: false
+          )
+
+        {code, card_set}
+      end)
+
+    link_nemesis_sets(code_to_set)
+    Map.new(code_to_set, fn {code, card_set} -> {code, card_set.id} end)
+  end
+
+  # Every MarvelCDB nemesis set is named `<hero_set>_nemesis`, so strip the
+  # suffix to find the hero's set and record the tie. Verified against the full
+  # catalog; a future set that breaks the convention simply stays unlinked.
+  defp link_nemesis_sets(code_to_set) do
+    code_to_set
+    |> Enum.filter(fn {_code, card_set} -> card_set.set_type == :nemesis end)
+    |> Enum.each(fn {code, card_set} -> link_nemesis_set(code, card_set, code_to_set) end)
+  end
+
+  defp link_nemesis_set(code, card_set, code_to_set) do
+    hero_code = String.replace_suffix(code, "_nemesis", "")
+
+    case code_to_set[hero_code] do
+      %Catalog.CardSet{id: hero_id} ->
+        Catalog.set_card_set_hero_set!(card_set, %{hero_set_id: hero_id}, authorize?: false)
+
+      _ ->
+        Logger.warning("nemesis set #{code} has no matching hero set #{hero_code}")
+    end
+  end
+
+  defp map_set_type("hero"), do: :hero
+  defp map_set_type("hero_special"), do: :hero
+  defp map_set_type("villain"), do: :villain
+  defp map_set_type("nemesis"), do: :nemesis
+  defp map_set_type("modular"), do: :modular
+  defp map_set_type("main_scheme"), do: :main_scheme
+  defp map_set_type("standard"), do: :standard
+  defp map_set_type("expert"), do: :expert
+  defp map_set_type("leader"), do: :leader
+  defp map_set_type("evidence"), do: :evidence
+  defp map_set_type(_), do: nil
+
+  # Full-sync path passes the pre-built maps; the single-card path (nil catalog)
+  # falls back to a nil-safe DB lookup so deck-import cards still get linked when
+  # the catalog is already synced.
+  defp resolve_card_set_id(nil, _catalog), do: nil
+  defp resolve_card_set_id(code, %{card_sets: sets}), do: sets[code]
+
+  defp resolve_card_set_id(code, _catalog) do
+    case Catalog.get_card_set_by_code(code, authorize?: false) do
+      {:ok, %Catalog.CardSet{id: id}} -> id
+      _ -> nil
+    end
+  end
+
+  defp resolve_pack_id(nil, _catalog), do: nil
+  defp resolve_pack_id(code, %{packs: packs}), do: packs[code]
+
+  defp resolve_pack_id(code, _catalog) do
+    case Catalog.get_pack_by_code(code, authorize?: false) do
+      {:ok, %Catalog.Pack{id: id}} -> id
+      _ -> nil
+    end
+  end
+
   # MarvelCDB answers unknown card codes with HTTP 500, which Req's default
   # retry treats as transient — never retry single-card fetches.
   defp fetch_card(card_id) do
@@ -419,6 +563,7 @@ defmodule Sanctum.MarvelCdb do
   """
   def create_card_from_entries(entries, opts \\ []) do
     image_url_fun = Keyword.get(opts, :image_url_fun, &build_image_url/1)
+    catalog = Keyword.get(opts, :catalog)
 
     parent = Enum.find(entries, &(!suffixed?(&1["code"])))
     side_entries = side_entries(entries, parent)
@@ -426,16 +571,16 @@ defmodule Sanctum.MarvelCdb do
 
     case presence(card_entry["duplicate_of_code"]) do
       nil ->
-        create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun)
+        create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun, catalog)
 
       canonical_code ->
         create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun)
     end
   end
 
-  defp create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun) do
+  defp create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun, catalog) do
     primary_code = side_entries |> hd() |> Map.fetch!("code")
-    card_attrs = prepare_card_attrs(card_entry, primary_code, length(side_entries) > 1)
+    card_attrs = prepare_card_attrs(card_entry, primary_code, length(side_entries) > 1, catalog)
 
     # Catalog writes are system-level (sync, seeds, player deck import) and
     # bypass the admin-only Card/CardSide policies.
@@ -745,7 +890,7 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
-  defp prepare_card_attrs(%{} = mcdb_card, primary_code, is_multi_sided) do
+  defp prepare_card_attrs(%{} = mcdb_card, primary_code, is_multi_sided, catalog) do
     %{
       # Multi-sided card support
       is_multi_sided: is_multi_sided,
@@ -759,9 +904,13 @@ defmodule Sanctum.MarvelCdb do
       unique: mcdb_card["is_unique"] || false,
       permanent: mcdb_card["permanent"] || false,
 
-      # Categorization fields
+      # Categorization fields (the strings are kept for now; the FKs are the
+      # first-class catalog links, resolved from the pre-built sync maps or, on
+      # the single-card path, a nil-safe DB lookup).
       set: mcdb_card["card_set_code"],
-      pack: mcdb_card["pack_code"]
+      pack: mcdb_card["pack_code"],
+      card_set_id: resolve_card_set_id(mcdb_card["card_set_code"], catalog),
+      pack_id: resolve_pack_id(mcdb_card["pack_code"], catalog)
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()

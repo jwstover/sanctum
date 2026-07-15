@@ -11,6 +11,8 @@ defmodule Sanctum.Games.Card do
 
     custom_indexes do
       index [:set]
+      index [:card_set_id]
+      index [:pack_id]
     end
   end
 
@@ -139,6 +141,22 @@ defmodule Sanctum.Games.Card do
     end
 
     many_to_many :decks, Sanctum.Decks.Deck, through: Sanctum.Decks.DeckCard
+
+    # Catalog taxonomy FKs (populated during sync). Nullable — player/basic cards
+    # have a pack but no card set. The `set`/`pack` strings above are kept for now
+    # (Scenario/Hero/Villain joins + game setup still read them); these become the
+    # canonical links in a later phase. Named `pack_ref` to avoid colliding with
+    # the `pack` string attribute.
+    belongs_to :card_set, Sanctum.Catalog.CardSet do
+      public? true
+      allow_nil? true
+    end
+
+    belongs_to :pack_ref, Sanctum.Catalog.Pack do
+      public? true
+      allow_nil? true
+      source_attribute :pack_id
+    end
   end
 
   identities do
