@@ -1,3 +1,12 @@
+## [1.25.5](https://github.com/jwstover/sanctum/compare/v1.25.4...v1.25.5) (2026-07-15)
+
+
+### Bug Fixes
+
+* **deck-sync:** treat MarvelCDB 500 as empty day when endpoint is healthy ([583d40a](https://github.com/jwstover/sanctum/commit/583d40a24d60ba334c330d1f2c52603800c82465))
+
+
+
 ## [1.25.4](https://github.com/jwstover/sanctum/compare/v1.25.3...v1.25.4) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **deck-sync:** floor backfill at 2019-11-02 to skip MarvelCDB 500 ([#141](https://github.com/jwstover/sanctum/issues/141)) ([094e3fa](https://github.com/jwstover/sanctum/commit/094e3fa51bf670254c1842bb06239361baf7e51e)), closes [#1](https://github.com/jwstover/sanctum/issues/1)
-
-
-
-# [1.25.0](https://github.com/jwstover/sanctum/compare/v1.24.0...v1.25.0) (2026-07-15)
-
-
-### Features
-
-* **observability:** Sentry integration — errors, tracing, logs, browser RUM ([d2411b7](https://github.com/jwstover/sanctum/commit/d2411b718d0f9d89fdcdda50a5833ebe5a0397af))
 
 
 
