@@ -235,7 +235,11 @@ defmodule Sanctum.CardSyncTest do
   end
 
   test "does not duplicate a side whose stored enum value no longer loads" do
-    assert {:ok, _} = CardSync.run(packs: :all, images?: false)
+    # Quiet progress: the second run intentionally fails one card, and the
+    # default progress reporter would dump that error to stdout via IO.puts.
+    quiet = fn _ -> :ok end
+
+    assert {:ok, _} = CardSync.run(packs: :all, images?: false, progress_fun: quiet)
 
     {:ok, card} = Games.get_card_by_code("01001")
 
@@ -247,7 +251,8 @@ defmodule Sanctum.CardSyncTest do
     count_sql = "SELECT count(*) FROM card_sides WHERE card_id::text = $1"
     before = Sanctum.Repo.query!(count_sql, [card.id]).rows
 
-    assert {:error, %{data: %{failures: failures}}} = CardSync.run(packs: :all, images?: false)
+    assert {:error, %{data: %{failures: failures}}} =
+             CardSync.run(packs: :all, images?: false, progress_fun: quiet)
 
     # The card group failed, but NOT with a duplicate-side constraint violation:
     # the un-loadable row's error propagates instead of being mistaken for "not
