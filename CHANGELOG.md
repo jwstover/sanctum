@@ -1,3 +1,12 @@
+## [1.21.1](https://github.com/jwstover/sanctum/compare/v1.21.0...v1.21.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* **deploy:** stop node when idle instead of letting Fly autostop kill Oban jobs ([64e5e47](https://github.com/jwstover/sanctum/commit/64e5e47acd1bc4fe2f07cb111642c18fe6260d44))
+
+
+
 # [1.21.0](https://github.com/jwstover/sanctum/compare/v1.20.1...v1.21.0) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **flavor-town:** redesign the guessing game for mobile & rename route ([f7a52a7](https://github.com/jwstover/sanctum/commit/f7a52a75e723270c1702dcf29a1bdb2fcdc25e27))
-
-
-
-# [1.18.0](https://github.com/jwstover/sanctum/compare/v1.17.0...v1.18.0) (2026-07-15)
-
-
-### Features
-
-* **ui:** consistent page titles with Sanctum suffix ([#113](https://github.com/jwstover/sanctum/issues/113)) ([90da392](https://github.com/jwstover/sanctum/commit/90da39207855b092758154bb94b617d55f48dc9b))
 
 
 
