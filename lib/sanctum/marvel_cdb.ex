@@ -614,16 +614,34 @@ defmodule Sanctum.MarvelCdb do
 
   defp not_found?(_), do: false
 
-  # The side's image with fallback to the double-sided parent entry, which
-  # alone carries the front (`imagesrc`) and back (`backimagesrc`) scans for
-  # main schemes and friends.
+  # Resolves the image for a side.
+  #
+  # For a face of a double-sided parent (main schemes, Intangible, …) the
+  # per-side `imagesrc` MarvelCDB emits is unreliable: its auto-generated side
+  # entries carry images that don't line up with their own text. A main
+  # scheme's "a" (setup) side has no image and would fall back to the parent's
+  # front scan, while the "b" (scheme) side ships the parent's *back* scan —
+  # so both faces come out swapped. The parent itself is internally consistent
+  # (`imagesrc` ↔ `text`, `backimagesrc` ↔ `back_text`), so we pick the parent
+  # scan whose text matches this side. Non-double-sided sides (heroes, allies,
+  # …) carry their own correct image.
   defp resolve_imagesrc(entry, parent) do
     cond do
+      parent && parent["double_sided"] -> resolve_double_sided_imagesrc(entry, parent)
       src = presence(entry["imagesrc"]) -> src
-      is_nil(parent) -> nil
-      extract_side_identifier(entry["code"]) == "a" -> presence(parent["imagesrc"])
-      extract_side_identifier(entry["code"]) == "b" -> presence(parent["backimagesrc"])
       true -> nil
+    end
+  end
+
+  defp resolve_double_sided_imagesrc(entry, parent) do
+    back_text = presence(parent["back_text"])
+    front = presence(parent["imagesrc"])
+    back = presence(parent["backimagesrc"])
+
+    if back_text && entry["text"] == back_text do
+      back || front
+    else
+      front || back
     end
   end
 

@@ -96,6 +96,72 @@ defmodule Sanctum.MarvelCdbTest do
     end
   end
 
+  describe "create_card_from_entries/2 image resolution" do
+    # MarvelCDB's main-scheme payload is internally inconsistent: the parent
+    # double-sided entry pairs `imagesrc` with `text` and `backimagesrc` with
+    # `back_text`, but the auto-generated per-side entries don't line up — the
+    # "a" (setup) side has no image and the "b" (scheme) side ships the *back*
+    # scan. Each Sanctum side must get the parent scan whose text matches it.
+    test "assigns main-scheme side images by matching parent text, not side letter" do
+      parent = %{
+        "code" => "01097",
+        "name" => "The Break-In!",
+        "type_code" => "main_scheme",
+        "card_set_code" => "rhino",
+        "pack_code" => "core",
+        "quantity" => 1,
+        "double_sided" => true,
+        "imagesrc" => "/bundles/cards/01097.png",
+        "backimagesrc" => "/bundles/cards/01097b.png",
+        "text" => "If this stage is completed, the players lose the game.",
+        "back_text" => "Contents: Rhino (I) and Rhino (II). Setup: Advance to stage 1B.",
+        "threat" => 7,
+        "base_threat" => 0,
+        "escalation_threat" => 1
+      }
+
+      side_a = %{
+        "code" => "01097a",
+        "name" => "The Break-In!",
+        "type_code" => "main_scheme",
+        "card_set_code" => "rhino",
+        "pack_code" => "core",
+        "double_sided" => false,
+        "imagesrc" => nil,
+        "text" => "Contents: Rhino (I) and Rhino (II). Setup: Advance to stage 1B."
+      }
+
+      side_b = %{
+        "code" => "01097b",
+        "name" => "The Break-In!",
+        "type_code" => "main_scheme",
+        "card_set_code" => "rhino",
+        "pack_code" => "core",
+        "double_sided" => false,
+        # MarvelCDB puts the *back* scan on the scheme side — the bug source.
+        "imagesrc" => "/bundles/cards/01097b.png",
+        "text" => "If this stage is completed, the players lose the game.",
+        "threat" => 7,
+        "base_threat" => 0,
+        "escalation_threat" => 1
+      }
+
+      assert {:ok, card} =
+               MarvelCdb.create_card_from_entries([parent, side_a, side_b], image_url_fun: & &1)
+
+      sides =
+        card
+        |> Ash.load!([:card_sides])
+        |> Map.fetch!(:card_sides)
+        |> Map.new(&{&1.side_identifier, &1})
+
+      # Side "a" is the setup face → the "b"-suffixed (grayscale setup) scan.
+      assert sides["a"].image_url == "/bundles/cards/01097b.png"
+      # Side "b" is the scheme face → the unsuffixed (colored threat) scan.
+      assert sides["b"].image_url == "/bundles/cards/01097.png"
+    end
+  end
+
   describe "helper functions" do
     test "extract_base_code/1" do
       assert MarvelCdb.extract_base_code("01001a") == "01001"
