@@ -1,3 +1,12 @@
+# [1.18.0](https://github.com/jwstover/sanctum/compare/v1.17.0...v1.18.0) (2026-07-15)
+
+
+### Features
+
+* **ui:** consistent page titles with Sanctum suffix ([#113](https://github.com/jwstover/sanctum/issues/113)) ([90da392](https://github.com/jwstover/sanctum/commit/90da39207855b092758154bb94b617d55f48dc9b))
+
+
+
 # [1.17.0](https://github.com/jwstover/sanctum/compare/v1.16.0...v1.17.0) (2026-07-14)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **cards:** don't duplicate card sides whose stored enum no longer loads ([b925606](https://github.com/jwstover/sanctum/commit/b9256065cb226e6556eb104520565c357b166969))
-
-
-
-# [1.14.0](https://github.com/jwstover/sanctum/compare/v1.13.0...v1.14.0) (2026-07-14)
-
-
-### Features
-
-* **cards:** show hero combat stats and hand size in the card pool ([74a906b](https://github.com/jwstover/sanctum/commit/74a906b3e0223f9366ea4542c8e94d94ab8b00bc))
 
 
 
