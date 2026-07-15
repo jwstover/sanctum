@@ -32,6 +32,14 @@ defmodule Sanctum.MarvelCdb do
   # room to land before treating it as a transient failure.
   @decklist_receive_timeout_ms 20_000
 
+  # MarvelCDB's `/decklists/by_date/<date>` returns HTTP 500 (not 404) for dates
+  # with no decklists — a server-side quirk affecting scattered historical days.
+  # To tell that benign case apart from a real outage, `decklists_endpoint_healthy?/0`
+  # probes this canary: a busy day deep in an active period that reliably serves
+  # data. If the canary 200s the API is up and a date's 500 means "no decks"; if
+  # the canary also fails, MarvelCDB is actually down.
+  @decklists_health_check_date ~D[2024-01-01]
+
   @doc """
   Imports a single deck from a MarvelCDB URL or bare id.
 
@@ -356,15 +364,38 @@ defmodule Sanctum.MarvelCdb do
   Fetches every published decklist created on `date` (a `Date`), as full
   decklist payloads. This is the source for incremental deck sync.
   """
-  @spec get_decklists_by_date(Date.t()) :: {:ok, list(map())} | {:error, term()}
+  @spec get_decklists_by_date(Date.t()) ::
+          {:ok, list(map())}
+          | {:error, :not_found}
+          | {:error, {:server_error, pos_integer()}}
+          | {:error, term()}
   def get_decklists_by_date(%Date{} = date) do
     "#{@base_url}/decklists/by_date/#{Date.to_iso8601(date)}"
     |> Req.get(
       [retry: :transient, max_retries: 2, receive_timeout: @decklist_receive_timeout_ms] ++
         req_options()
     )
-    |> handle_response()
+    |> handle_decklist_response()
   end
+
+  @doc """
+  Cheap liveness probe for the by-date decklist endpoint. Fetches a canary date
+  known to have decklists; returns `true` only if MarvelCDB serves it. Used by
+  the deck sync to decide whether a per-date 500 means "no decks that day"
+  (endpoint healthy) or "MarvelCDB is down" (endpoint unhealthy).
+  """
+  @spec decklists_endpoint_healthy?() :: boolean()
+  def decklists_endpoint_healthy? do
+    match?({:ok, _}, get_decklists_by_date(@decklists_health_check_date))
+  end
+
+  # Like `handle_response/1`, but surfaces a 5xx as a distinct `{:server_error,
+  # status}` so the deck sync can canary-check API health rather than blindly
+  # treating every 500 as a hard failure (MarvelCDB 500s on empty-decklist days).
+  defp handle_decklist_response({:ok, %Req.Response{status: status}}) when status >= 500,
+    do: {:error, {:server_error, status}}
+
+  defp handle_decklist_response(response), do: handle_response(response)
 
   @doc "Fetches every card (player + encounter) as a single payload."
   @spec get_all_cards() :: {:ok, list(map())} | {:error, term()}
