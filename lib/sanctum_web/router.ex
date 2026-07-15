@@ -56,6 +56,10 @@ defmodule SanctumWeb.Router do
       live "/games/new", GameLive.New, :new
       live "/games/:id", GameLive.Show, :show
 
+      # Public content browser — waves → products → card sets → cards.
+      live "/browse", BrowseLive.Index, :index
+      live "/browse/:pack", BrowseLive.Show, :show
+
       # Public card pool (catalog reads are unauthenticated).
       live "/cards", CardLive.Pool, :index
 

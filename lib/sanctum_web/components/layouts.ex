@@ -35,7 +35,7 @@ defmodule SanctumWeb.Layouts do
 
   attr :active_tab, :atom,
     default: nil,
-    values: [nil, :cards, :guess, :decks, :admin],
+    values: [nil, :browse, :cards, :guess, :decks, :admin],
     doc: "which top-nav tab to highlight"
 
   slot :inner_block, required: true
@@ -55,6 +55,7 @@ defmodule SanctumWeb.Layouts do
             SANCTUM
           </a>
           <nav class="hidden h-[34px] items-end gap-5 sm:flex">
+            <.nav_tab navigate={~p"/browse"} active={@active_tab == :browse}>Browse</.nav_tab>
             <.nav_tab navigate={~p"/cards"} active={@active_tab == :cards}>Card Pool</.nav_tab>
             <.nav_tab navigate={~p"/decks"} active={@active_tab == :decks}>Decks</.nav_tab>
             <.nav_tab navigate={~p"/flavor-town"} active={@active_tab == :guess}>
@@ -113,6 +114,7 @@ defmodule SanctumWeb.Layouts do
           </button>
         </div>
         <nav class="mt-6 flex flex-col gap-1">
+          <.drawer_link navigate={~p"/browse"} active={@active_tab == :browse}>Browse</.drawer_link>
           <.drawer_link navigate={~p"/cards"} active={@active_tab == :cards}>Card Pool</.drawer_link>
           <.drawer_link navigate={~p"/decks"} active={@active_tab == :decks}>Decks</.drawer_link>
           <.drawer_link navigate={~p"/flavor-town"} active={@active_tab == :guess}>Flavor Town</.drawer_link>
