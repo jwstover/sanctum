@@ -1,3 +1,12 @@
+## [1.25.3](https://github.com/jwstover/sanctum/compare/v1.25.2...v1.25.3) (2026-07-15)
+
+
+### Bug Fixes
+
+* **observability:** move traces_sampler to runtime config to unbreak deploy ([9d0a289](https://github.com/jwstover/sanctum/commit/9d0a289af1ae4c71dff8335470ce25fec733eb7b)), closes [#143](https://github.com/jwstover/sanctum/issues/143)
+
+
+
 ## [1.25.2](https://github.com/jwstover/sanctum/compare/v1.25.1...v1.25.2) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **decks:** store & display MarvelCDB deck update date ([a1af5db](https://github.com/jwstover/sanctum/commit/a1af5dbc821f497128b42ee3767fbd0d9d80676a))
-
-
-
-# [1.23.0](https://github.com/jwstover/sanctum/compare/v1.22.1...v1.23.0) (2026-07-15)
-
-
-### Features
-
-* **deck sync:** live progress dashboard + graceful slow-MarvelCDB handling ([#135](https://github.com/jwstover/sanctum/issues/135)) ([daeef25](https://github.com/jwstover/sanctum/commit/daeef25dbd3fde346fe2ceef398379daa803f4e5))
 
 
 
