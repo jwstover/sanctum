@@ -312,7 +312,7 @@ defmodule SanctumWeb.DeckLive.Index do
       total_card_count: deck.total_card_count || 0,
       card_row_count: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
-      updated: format_date(deck.updated_at)
+      updated: format_date(deck.mcdb_date_update || deck.updated_at)
     }
   end
 
