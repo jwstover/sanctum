@@ -86,6 +86,11 @@ defmodule Sanctum.Games.CardSide do
       filter expr(code == ^arg(:code))
     end
 
+    read :by_codes do
+      argument :codes, {:array, :string}, allow_nil?: false
+      filter expr(code in ^arg(:codes))
+    end
+
     read :by_card_and_side do
       argument :card_id, :uuid, allow_nil?: false
       argument :side_identifier, :string, allow_nil?: false
