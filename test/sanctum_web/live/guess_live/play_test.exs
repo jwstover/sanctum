@@ -35,7 +35,7 @@ defmodule SanctumWeb.GuessLive.PlayTest do
   test "shows the flavor text and no answer up front", %{conn: conn} do
     seed_card("Nick Fury", "The ultimate spy.")
 
-    {:ok, _view, html} = live(conn, ~p"/guess")
+    {:ok, _view, html} = live(conn, ~p"/flavor-town")
 
     assert html =~ "Flavor Town"
     assert html =~ "The ultimate spy."
@@ -45,7 +45,7 @@ defmodule SanctumWeb.GuessLive.PlayTest do
   test "a wrong guess reveals the first hint", %{conn: conn} do
     seed_card("Nick Fury", "The ultimate spy.")
 
-    {:ok, view, _html} = live(conn, ~p"/guess")
+    {:ok, view, _html} = live(conn, ~p"/flavor-town")
 
     html = view |> form("form", %{guess: "Definitely Wrong"}) |> render_submit()
 
@@ -57,7 +57,7 @@ defmodule SanctumWeb.GuessLive.PlayTest do
   test "a correct guess wins and reveals the card", %{conn: conn} do
     seed_card("Nick Fury", "The ultimate spy.")
 
-    {:ok, view, _html} = live(conn, ~p"/guess")
+    {:ok, view, _html} = live(conn, ~p"/flavor-town")
 
     html = view |> form("form", %{guess: "nick fury"}) |> render_submit()
 
@@ -69,6 +69,6 @@ defmodule SanctumWeb.GuessLive.PlayTest do
   test "is reachable by a logged-out visitor", %{conn: conn} do
     seed_card("Nick Fury", "The ultimate spy.")
 
-    assert {:ok, _view, _html} = live(conn, ~p"/guess")
+    assert {:ok, _view, _html} = live(conn, ~p"/flavor-town")
   end
 end

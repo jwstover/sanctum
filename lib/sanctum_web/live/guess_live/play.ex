@@ -30,75 +30,102 @@ defmodule SanctumWeb.GuessLive.Play do
         </div>
       </.panel>
 
-      <div :if={@status != :empty} class="mx-auto max-w-[720px]">
-        <!-- flavor prompt -->
-        <.panel class="px-6 py-8">
-          <div class="font-ibm-mono text-[10px] uppercase tracking-[0.25em] text-base-content/45">
+      <div
+        :if={@status != :empty}
+        class={["mx-auto max-w-[720px]", @status == :playing && "pb-36 sm:pb-0"]}
+      >
+        <!-- flavor prompt — the hero of the round -->
+        <.panel class="relative overflow-hidden px-5 py-9 sm:px-6 sm:py-8">
+          <div
+            class="pointer-events-none absolute -left-1 -top-5 font-bangers text-[90px] leading-none text-primary/15 select-none sm:text-[70px]"
+            aria-hidden="true"
+          >
+            “
+          </div>
+          <div class="relative font-ibm-mono text-[10px] uppercase tracking-[0.25em] text-base-content/45">
             Flavor text
           </div>
-          <blockquote class="mt-3 font-barlow text-[20px] italic leading-[1.5] text-base-content/90">
+          <blockquote class="relative mt-3 font-barlow text-[23px] italic leading-[1.42] text-base-content/90 [text-wrap:balance] sm:text-[20px] sm:leading-[1.5]">
             “{@card.primary_side.flavor}”
           </blockquote>
         </.panel>
 
-        <!-- guess form -->
-        <form :if={@status == :playing} phx-submit="guess" class="mt-5 flex gap-2.5">
-          <input
-            type="text"
-            name="guess"
-            value=""
-            autocomplete="off"
-            phx-mounted={JS.focus()}
-            placeholder="Name the card…"
-            class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 font-barlow text-[15px] text-base-content outline-none focus:border-primary placeholder:text-base-content/40"
-          />
-          <.button variant="primary" type="submit">Guess</.button>
-        </form>
-
-        <div :if={@status == :playing} class="mt-2.5 text-right">
-          <button
-            type="button"
-            phx-click="give-up"
-            class="font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/40 hover:text-base-content/70"
-          >
-            Give up
-          </button>
+        <!-- hint progress HUD (persistent during play) -->
+        <div :if={@status == :playing and @hints != []} class="mt-4 flex items-center gap-2.5">
+          <span class="font-ibm-mono text-[10px] uppercase tracking-[0.25em] text-base-content/45">
+            Hints
+          </span>
+          <div class="flex items-center gap-1.5">
+            <span
+              :for={n <- 1..length(@hints)}
+              class={[
+                "size-[11px] border-2 border-neutral",
+                (n <= @revealed_count && "bg-primary") || "bg-base-300"
+              ]}
+            />
+          </div>
+          <span class={[
+            "ml-auto font-ibm-mono text-[10px] uppercase tracking-[0.15em]",
+            (@revealed_count >= length(@hints) && "text-error") || "text-base-content/45"
+          ]}>
+            {hint_hud_label(@hints, @revealed_count)}
+          </span>
         </div>
 
         <!-- revealed hints -->
-        <div :if={@revealed_count > 0} class="mt-6">
-          <div class="font-ibm-mono text-[10px] uppercase tracking-[0.25em] text-base-content/45">
-            Hints
-          </div>
-          <ol class="mt-2.5 flex flex-col gap-2">
+        <div :if={@revealed_count > 0} class="mt-5">
+          <ol class="flex flex-col gap-2">
             <li
               :for={{hint, i} <- Enum.with_index(Enum.take(@hints, @revealed_count), 1)}
-              class="flex gap-3 border-2 border-neutral bg-base-200 px-3.5 py-2.5 shadow-comic-sm"
+              class="flex gap-3 border-2 border-neutral bg-base-200 px-3.5 py-3 shadow-comic-sm"
             >
               <span class="font-anton text-[15px] text-primary">{i}.</span>
-              <span class="font-barlow text-[15px] text-base-content/90">{hint.text}</span>
+              <span class="font-barlow text-[15px] leading-[1.4] text-base-content/90">
+                {hint.text}
+              </span>
             </li>
           </ol>
-          <div
-            :if={@status == :playing}
-            class="mt-2 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/40"
-          >
-            {hints_remaining_label(@hints, @revealed_count)}
-          </div>
         </div>
 
         <!-- missed guesses -->
-        <div
-          :if={@guesses != []}
-          class="mt-4 font-barlow text-[13px] text-base-content/50"
-        >
+        <div :if={@guesses != []} class="mt-4 font-barlow text-[13px] text-base-content/50">
           Missed guesses: {Enum.join(@guesses, ", ")}
         </div>
 
+        <!-- guess bar: sticky to the bottom on mobile, inline on desktop -->
+        <div
+          :if={@status == :playing}
+          class="fixed inset-x-0 bottom-0 z-20 border-t-2 border-neutral bg-base-100/95 px-4 py-3 backdrop-blur sm:static sm:mt-5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none"
+        >
+          <div class="mx-auto max-w-[720px]">
+            <form phx-submit="guess" class="flex gap-2.5">
+              <input
+                type="text"
+                name="guess"
+                value=""
+                autocomplete="off"
+                phx-mounted={JS.focus()}
+                placeholder="Name the card…"
+                class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 font-barlow text-base text-base-content outline-none focus:border-primary placeholder:text-base-content/40 sm:text-[15px]"
+              />
+              <.button variant="primary" type="submit">Guess</.button>
+            </form>
+            <div class="mt-2 text-center sm:mt-2.5 sm:text-right">
+              <button
+                type="button"
+                phx-click="give-up"
+                class="inline-flex min-h-[44px] items-center font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/40 hover:text-base-content/70 sm:min-h-0"
+              >
+                Give up
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- result + reveal -->
-        <.panel :if={@status in [:won, :lost]} class="mt-6 px-6 py-6 text-center">
+        <.panel :if={@status in [:won, :lost]} class="mt-6 px-5 py-7 text-center sm:px-6 sm:py-6">
           <div class={[
-            "font-bangers text-[34px] tracking-[0.02em]",
+            "font-bangers text-[38px] tracking-[0.02em] sm:text-[34px]",
             (@status == :won && "text-success") || "text-error"
           ]}>
             {(@status == :won && "You got it!") || "Out of guesses!"}
@@ -132,7 +159,9 @@ defmodule SanctumWeb.GuessLive.Play do
             </div>
           </div>
 
-          <.button variant="primary" phx-click="new-game" class="mt-6">Play again</.button>
+          <.button variant="primary" phx-click="new-game" class="mt-6 w-full sm:w-auto">
+            Play again
+          </.button>
         </.panel>
       </div>
     </Layouts.app>
@@ -200,11 +229,12 @@ defmodule SanctumWeb.GuessLive.Play do
     end
   end
 
-  defp hints_remaining_label(hints, revealed) do
+  # Compact HUD counter shown beside the hint pips during play.
+  defp hint_hud_label(hints, revealed) do
     case length(hints) - revealed do
-      0 -> "No more hints — the next wrong guess ends the round."
-      1 -> "1 hint remaining."
-      n -> "#{n} hints remaining."
+      0 -> "Final guess"
+      1 -> "1 left"
+      n -> "#{n} left"
     end
   end
 

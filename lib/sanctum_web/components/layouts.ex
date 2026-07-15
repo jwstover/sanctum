@@ -57,7 +57,9 @@ defmodule SanctumWeb.Layouts do
           <nav class="hidden h-[34px] items-end gap-5 sm:flex">
             <.nav_tab navigate={~p"/cards"} active={@active_tab == :cards}>Card Pool</.nav_tab>
             <.nav_tab navigate={~p"/decks"} active={@active_tab == :decks}>Decks</.nav_tab>
-            <.nav_tab navigate={~p"/guess"} active={@active_tab == :guess}>Flavor Town</.nav_tab>
+            <.nav_tab navigate={~p"/flavor-town"} active={@active_tab == :guess}>
+              Flavor Town
+            </.nav_tab>
           </nav>
           <div class="ml-auto hidden items-center gap-4 sm:flex">
             <span class="font-ibm-mono text-xs text-base-content/40">
@@ -106,7 +108,7 @@ defmodule SanctumWeb.Layouts do
         <nav class="mt-6 flex flex-col gap-1">
           <.drawer_link navigate={~p"/cards"} active={@active_tab == :cards}>Card Pool</.drawer_link>
           <.drawer_link navigate={~p"/decks"} active={@active_tab == :decks}>Decks</.drawer_link>
-          <.drawer_link navigate={~p"/guess"} active={@active_tab == :guess}>Flavor Town</.drawer_link>
+          <.drawer_link navigate={~p"/flavor-town"} active={@active_tab == :guess}>Flavor Town</.drawer_link>
         </nav>
         <div class="mt-auto flex items-center justify-between border-t-2 border-neutral pt-4">
           <span class="font-ibm-mono text-xs text-base-content/40">

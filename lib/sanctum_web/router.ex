@@ -49,8 +49,8 @@ defmodule SanctumWeb.Router do
       live "/decks", DeckLive.Index, :index
       live "/decks/:id", DeckLive.Show, :show
 
-      # Public "Name That Card" flavor-text guessing mini-game.
-      live "/guess", GuessLive.Play, :index
+      # Public "Flavor Town" flavor-text guessing mini-game.
+      live "/flavor-town", GuessLive.Play, :index
 
       # Dev playground for refining the comic stat badges.
       live "/dev/stat-badges", DevLive.StatBadges, :index
