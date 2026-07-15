@@ -1,3 +1,12 @@
+# [1.23.0](https://github.com/jwstover/sanctum/compare/v1.22.1...v1.23.0) (2026-07-15)
+
+
+### Features
+
+* **deck sync:** live progress dashboard + graceful slow-MarvelCDB handling ([#135](https://github.com/jwstover/sanctum/issues/135)) ([daeef25](https://github.com/jwstover/sanctum/commit/daeef25dbd3fde346fe2ceef398379daa803f4e5))
+
+
+
 ## [1.22.1](https://github.com/jwstover/sanctum/compare/v1.22.0...v1.22.1) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **deck sync:** ensure only one decklist sync runs at a time ([b937767](https://github.com/jwstover/sanctum/commit/b9377670557a8004b45d16672976949a5e75ae35))
-
-
-
-## [1.21.1](https://github.com/jwstover/sanctum/compare/v1.21.0...v1.21.1) (2026-07-15)
-
-
-### Bug Fixes
-
-* **deploy:** stop node when idle instead of letting Fly autostop kill Oban jobs ([64e5e47](https://github.com/jwstover/sanctum/commit/64e5e47acd1bc4fe2f07cb111642c18fe6260d44))
 
 
 
