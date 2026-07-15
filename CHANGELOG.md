@@ -1,3 +1,12 @@
+## [1.25.1](https://github.com/jwstover/sanctum/compare/v1.25.0...v1.25.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* **deck-sync:** floor backfill at 2019-11-02 to skip MarvelCDB 500 ([#141](https://github.com/jwstover/sanctum/issues/141)) ([094e3fa](https://github.com/jwstover/sanctum/commit/094e3fa51bf670254c1842bb06239361baf7e51e)), closes [#1](https://github.com/jwstover/sanctum/issues/1)
+
+
+
 # [1.25.0](https://github.com/jwstover/sanctum/compare/v1.24.0...v1.25.0) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Performance Improvements
 
 * **deck-sync:** batch slot card lookups and pace deck imports ([#130](https://github.com/jwstover/sanctum/issues/130)) ([1117620](https://github.com/jwstover/sanctum/commit/11176203e32783204a5b4ed4894f82648d951cc4))
-
-
-
-# [1.22.0](https://github.com/jwstover/sanctum/compare/v1.21.3...v1.22.0) (2026-07-15)
-
-
-### Features
-
-* **admin:** deck import tool on the admin dashboard ([#131](https://github.com/jwstover/sanctum/issues/131)) ([2c444b6](https://github.com/jwstover/sanctum/commit/2c444b688ce67044c3b21f539aa842bf994feccf))
 
 
 
