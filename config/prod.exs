@@ -30,7 +30,7 @@ config :sentry,
   integrations: [oban: [capture_errors: true, cron: [enabled: true]]],
   enable_logs: true,
   logs: [level: :info, metadata: [:request_id, :game_id, :user_id]],
-  traces_sample_rate: 1.0
+  traces_sampler: {Sanctum.Observability, :traces_sampler}
 
 # Route OTel spans into Sentry instead of an OTLP collector.
 config :opentelemetry,
