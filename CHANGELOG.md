@@ -1,3 +1,12 @@
+## [1.21.3](https://github.com/jwstover/sanctum/compare/v1.21.2...v1.21.3) (2026-07-15)
+
+
+### Bug Fixes
+
+* **deck sync:** handle heroes with no alter-ego side ([e9a8529](https://github.com/jwstover/sanctum/commit/e9a8529171628673a564dbde10230f110fd68848))
+
+
+
 ## [1.21.2](https://github.com/jwstover/sanctum/compare/v1.21.1...v1.21.2) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **sync:** correct swapped A/B side images for main schemes ([c9c7718](https://github.com/jwstover/sanctum/commit/c9c77187f23eb43b385ce3f71ca98b808bf5d14b))
-
-
-
-# [1.20.0](https://github.com/jwstover/sanctum/compare/v1.19.0...v1.20.0) (2026-07-15)
-
-
-### Features
-
-* **card pool:** show every card side with encounter stats ([7e91de1](https://github.com/jwstover/sanctum/commit/7e91de1980662f6d94a535cf6d87250e2c7a092e))
 
 
 
