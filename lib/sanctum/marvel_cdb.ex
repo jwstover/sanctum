@@ -177,9 +177,11 @@ defmodule Sanctum.MarvelCdb do
     hero_side = Enum.find(card_loaded.card_sides, &(&1.type == :hero))
     alter_ego_side = Enum.find(card_loaded.card_sides, &(&1.type == :alter_ego))
 
+    # A few heroes have no alter-ego flip side (e.g. SP//dr, whose reverse is a
+    # `support` card), so `alter_ego_side` can legitimately be nil.
     hero_attrs = %{
-      hero_name: hero_side.name,
-      alter_ego_name: alter_ego_side.name,
+      hero_name: hero_side && hero_side.name,
+      alter_ego_name: alter_ego_side && alter_ego_side.name,
       set: hero_card.set,
       base_code: hero_card.base_code,
       card_id: hero_card.id
