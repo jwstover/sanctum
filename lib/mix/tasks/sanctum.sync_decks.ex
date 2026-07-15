@@ -32,8 +32,16 @@ defmodule Mix.Tasks.Sanctum.SyncDecks do
       |> maybe_put_date(:since, opts[:since])
       |> maybe_put_date(:until, opts[:until])
 
-    {:ok, _summary} = Sanctum.DeckSync.run(sync_opts)
-    :ok
+    case Sanctum.DeckSync.run(sync_opts) do
+      {:ok, _summary} ->
+        :ok
+
+      {:error, summary} ->
+        Mix.raise(
+          "Deck sync halted at #{summary.halted.date}: #{inspect(summary.halted.reason)} " <>
+            "(#{summary.imported} imported before halting). Re-run to resume from the checkpoint."
+        )
+    end
   end
 
   defp maybe_put_date(opts, _key, nil), do: opts
