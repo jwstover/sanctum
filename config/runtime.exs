@@ -75,9 +75,14 @@ if config_env() == :prod do
   # SENTRY_DSN is set by `fly extensions sentry create`; with no DSN the SDK
   # sends nothing, so dev/test (which never reach this block) stay no-op.
   # FLY_IMAGE_REF is set per-deploy by Fly and doubles as the release tag.
+  # The sampler lives here rather than config/prod.exs so that
+  # `mix sentry.package_source_code` (Docker build) never sees it — its config
+  # validation requires the sampler module to be loaded, which only holds at
+  # release boot.
   config :sentry,
     dsn: System.get_env("SENTRY_DSN"),
-    release: System.get_env("FLY_IMAGE_REF")
+    release: System.get_env("FLY_IMAGE_REF"),
+    traces_sampler: {Sanctum.Observability, :traces_sampler}
 
   config :sanctum, SanctumWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
