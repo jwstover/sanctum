@@ -1,3 +1,12 @@
+## [1.25.4](https://github.com/jwstover/sanctum/compare/v1.25.3...v1.25.4) (2026-07-15)
+
+
+### Bug Fixes
+
+* **observability:** coerce span names to strings in traces_sampler ([5b96aa3](https://github.com/jwstover/sanctum/commit/5b96aa3e4c8558623d6aea4d0a6dee5e161323d0))
+
+
+
 ## [1.25.3](https://github.com/jwstover/sanctum/compare/v1.25.2...v1.25.3) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **observability:** Sentry integration — errors, tracing, logs, browser RUM ([d2411b7](https://github.com/jwstover/sanctum/commit/d2411b718d0f9d89fdcdda50a5833ebe5a0397af))
-
-
-
-# [1.24.0](https://github.com/jwstover/sanctum/compare/v1.23.0...v1.24.0) (2026-07-15)
-
-
-### Features
-
-* **decks:** store & display MarvelCDB deck update date ([a1af5db](https://github.com/jwstover/sanctum/commit/a1af5dbc821f497128b42ee3767fbd0d9d80676a))
 
 
 
