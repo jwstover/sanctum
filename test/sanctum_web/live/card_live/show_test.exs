@@ -28,7 +28,7 @@ defmodule SanctumWeb.CardLive.ShowTest do
       }
     )
 
-    {:ok, _view, html} = live(conn, ~p"/cards/#{card}")
+    {:ok, _view, html} = live(conn, ~p"/admin/cards/#{card}")
 
     # title + card-level info
     assert html =~ "Test Hero"

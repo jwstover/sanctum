@@ -23,6 +23,18 @@ defmodule SanctumWeb.Router do
     plug :set_actor, :user
   end
 
+  # Conn-level admin gate for non-LiveView-macro routes (e.g. the Oban
+  # dashboard) that can't use the :live_admin_required on_mount hook.
+  pipeline :require_admin do
+    plug :ensure_admin
+  end
+
+  # Route-scoped CSP that permits the Oban dashboard's inline bootstrap script
+  # (via a per-request nonce) without loosening the app-wide policy.
+  pipeline :oban_csp do
+    plug :put_oban_csp
+  end
+
   scope "/", SanctumWeb do
     pipe_through :browser
 
@@ -58,15 +70,32 @@ defmodule SanctumWeb.Router do
 
     ash_authentication_live_session :admin_routes,
       on_mount: [{SanctumWeb.LiveUserAuth, :live_admin_required}] do
-      # Admin card catalog management (data table + CRUD + sync).
-      live "/cards/manage", CardLive.Index, :index
-      live "/cards/new", CardLive.Form, :new
-      live "/cards/sync", CardLive.Sync, :index
-      live "/cards/:id/edit", CardLive.Form, :edit
+      # Admin landing page — system health + links to admin surfaces.
+      live "/admin", AdminLive.Index, :index
 
-      live "/cards/:id", CardLive.Show, :show
-      live "/cards/:id/show/edit", CardLive.Show, :edit
+      # Admin card catalog management (data table + CRUD + sync).
+      live "/admin/cards", CardLive.Index, :index
+      live "/admin/cards/new", CardLive.Form, :new
+      live "/admin/cards/sync", CardLive.Sync, :index
+      live "/admin/cards/:id/edit", CardLive.Form, :edit
+
+      live "/admin/cards/:id", CardLive.Show, :show
+      live "/admin/cards/:id/show/edit", CardLive.Show, :edit
     end
+  end
+
+  # Oban Web job dashboard — admin-only, available in every environment.
+  #
+  # oban_dashboard/2 builds its OWN live_session with a fixed session extractor
+  # that drops our Ash auth token, so the LiveView on_mount hooks can't see
+  # current_user. We gate it at the plug level instead (:require_admin runs
+  # against conn.assigns.current_user, populated by load_from_session). Oban Web
+  # also emits an inline bootstrap <script>, which our strict prod CSP would
+  # block — :oban_csp swaps in a scoped, nonce-based policy for this route only.
+  scope "/admin" do
+    pipe_through [:browser, :require_admin, :oban_csp]
+
+    oban_dashboard("/oban", csp_nonce_assign_key: :csp_nonce)
   end
 
   scope "/", SanctumWeb do
@@ -121,21 +150,50 @@ defmodule SanctumWeb.Router do
       live_dashboard "/dashboard", metrics: SanctumWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
-
-    scope "/" do
-      pipe_through :browser
-
-      oban_dashboard("/oban")
-    end
   end
 
   if Application.compile_env(:sanctum, :dev_routes) do
     import AshAdmin.Router
 
-    scope "/admin" do
+    # Nested under /admin/ash so the admin landing page can own /admin.
+    scope "/admin/ash" do
       pipe_through :browser
 
       ash_admin "/"
     end
+  end
+
+  # Redirects non-admins away from admin-only conn routes (the Oban dashboard).
+  defp ensure_admin(conn, _opts) do
+    case conn.assigns[:current_user] do
+      %{admin: true} ->
+        conn
+
+      _ ->
+        conn
+        |> Phoenix.Controller.put_flash(:error, "You do not have permission to access that page.")
+        |> Phoenix.Controller.redirect(to: "/")
+        |> halt()
+    end
+  end
+
+  # Emits a per-request nonce (consumed by the Oban dashboard's inline script)
+  # and replaces the app-wide CSP header for this route only. Styles stay
+  # 'unsafe-inline' because Oban Web uses inline style attributes a nonce can't
+  # cover; scripts are locked to self + the nonce.
+  defp put_oban_csp(conn, _opts) do
+    nonce = 18 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
+
+    policy =
+      "default-src 'self';" <>
+        "script-src 'self' 'nonce-#{nonce}';" <>
+        "style-src 'self' 'unsafe-inline';" <>
+        "img-src 'self' data:;" <>
+        "font-src 'self' data:;" <>
+        "connect-src 'self';"
+
+    conn
+    |> assign(:csp_nonce, nonce)
+    |> put_resp_header("content-security-policy", policy)
   end
 end

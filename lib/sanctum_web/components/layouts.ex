@@ -35,7 +35,7 @@ defmodule SanctumWeb.Layouts do
 
   attr :active_tab, :atom,
     default: nil,
-    values: [nil, :cards, :guess, :decks],
+    values: [nil, :cards, :guess, :decks, :admin],
     doc: "which top-nav tab to highlight"
 
   slot :inner_block, required: true
@@ -59,6 +59,13 @@ defmodule SanctumWeb.Layouts do
             <.nav_tab navigate={~p"/decks"} active={@active_tab == :decks}>Decks</.nav_tab>
             <.nav_tab navigate={~p"/flavor-town"} active={@active_tab == :guess}>
               Flavor Town
+            </.nav_tab>
+            <.nav_tab
+              :if={@current_user && @current_user.admin}
+              navigate={~p"/admin"}
+              active={@active_tab == :admin}
+            >
+              Admin
             </.nav_tab>
           </nav>
           <div class="ml-auto hidden items-center gap-4 sm:flex">
@@ -109,6 +116,13 @@ defmodule SanctumWeb.Layouts do
           <.drawer_link navigate={~p"/cards"} active={@active_tab == :cards}>Card Pool</.drawer_link>
           <.drawer_link navigate={~p"/decks"} active={@active_tab == :decks}>Decks</.drawer_link>
           <.drawer_link navigate={~p"/flavor-town"} active={@active_tab == :guess}>Flavor Town</.drawer_link>
+          <.drawer_link
+            :if={@current_user && @current_user.admin}
+            navigate={~p"/admin"}
+            active={@active_tab == :admin}
+          >
+            Admin
+          </.drawer_link>
         </nav>
         <div class="mt-auto flex items-center justify-between border-t-2 border-neutral pt-4">
           <span class="font-ibm-mono text-xs text-base-content/40">
