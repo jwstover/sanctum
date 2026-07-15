@@ -43,3 +43,4 @@ core-set.json
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/marvel-champions-rules/
+.playwright-cli/
