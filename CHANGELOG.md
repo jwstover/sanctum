@@ -1,3 +1,12 @@
+# [1.19.0](https://github.com/jwstover/sanctum/compare/v1.18.0...v1.19.0) (2026-07-15)
+
+
+### Features
+
+* **flavor-town:** redesign the guessing game for mobile & rename route ([f7a52a7](https://github.com/jwstover/sanctum/commit/f7a52a75e723270c1702dcf29a1bdb2fcdc25e27))
+
+
+
 # [1.18.0](https://github.com/jwstover/sanctum/compare/v1.17.0...v1.18.0) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **cards:** show every card side in the pool, search by any side title ([cccad4f](https://github.com/jwstover/sanctum/commit/cccad4fd7d63b01b8599b593dcb813f9d452b8f7))
-
-
-
-## [1.14.1](https://github.com/jwstover/sanctum/compare/v1.14.0...v1.14.1) (2026-07-14)
-
-
-### Bug Fixes
-
-* **cards:** don't duplicate card sides whose stored enum no longer loads ([b925606](https://github.com/jwstover/sanctum/commit/b9256065cb226e6556eb104520565c357b166969))
 
 
 
