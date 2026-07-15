@@ -62,7 +62,12 @@ defmodule Sanctum.CardSyncTest do
       "pack_code" => "angel",
       "imagesrc" => "/bundles/cards/42001c.png"
     },
-    # Main scheme: parent alone carries the front image; the a-side has none
+    # Main scheme: MarvelCDB's scans are inverted relative to the stage. The
+    # parent pairs `imagesrc` with `text` (the scheme/1B face) and
+    # `backimagesrc` with `back_text` (the setup/1A face), but the per-side
+    # entries don't line up — the "a" (setup) side has no image and the "b"
+    # (scheme) side ships the *setup* scan (`01097b.png`). Each side must get
+    # the parent scan whose text matches it, not its own imagesrc.
     %{
       "code" => "01097",
       "name" => "The Break-In!",
@@ -71,6 +76,8 @@ defmodule Sanctum.CardSyncTest do
       "card_set_code" => "rhino",
       "stage" => "1",
       "double_sided" => true,
+      "text" => "If this stage is completed, the players lose the game.",
+      "back_text" => "Contents: Rhino (I) and Rhino (II). Setup: Advance to stage 1B.",
       "imagesrc" => "/bundles/cards/01097.png",
       "backimagesrc" => "/bundles/cards/01097b.png"
     },
@@ -81,6 +88,7 @@ defmodule Sanctum.CardSyncTest do
       "pack_code" => "core",
       "card_set_code" => "rhino",
       "stage" => "1A",
+      "text" => "Contents: Rhino (I) and Rhino (II). Setup: Advance to stage 1B.",
       "imagesrc" => nil
     },
     %{
@@ -90,6 +98,7 @@ defmodule Sanctum.CardSyncTest do
       "pack_code" => "core",
       "card_set_code" => "rhino",
       "stage" => "1B",
+      "text" => "If this stage is completed, the players lose the game.",
       "imagesrc" => "/bundles/cards/01097b.png"
     },
     # Double-sided card with NO side entries (Intangible): synthesize both
@@ -161,12 +170,14 @@ defmodule Sanctum.CardSyncTest do
     assert [%{name: "Angel"}, %{name: "Warren Worthington III"}, %{name: "Archangel"}] =
              sides("42001")
 
-    # Main scheme: the a-side inherits the PARENT's front image (01097.png,
-    # not 01097a.png which doesn't exist); stages parse to integers
+    # Main scheme: images resolve by matching each side's text to the parent's
+    # front/back scan, NOT by side letter — so the setup "a" side gets the
+    # `b`-suffixed scan and the scheme "b" side gets the unsuffixed scan (the
+    # opposite of what the filenames suggest). Stages parse to integers.
     assert [side_a, side_b] = sides("01097")
-    assert side_a.image_url == bucket_url("01097.png")
+    assert side_a.image_url == bucket_url("01097b.png")
     assert side_a.stage == 1
-    assert side_b.image_url == bucket_url("01097b.png")
+    assert side_b.image_url == bucket_url("01097.png")
 
     # Intangible: both sides synthesized from the lone parent entry
     assert [front, back] = sides("26002")
