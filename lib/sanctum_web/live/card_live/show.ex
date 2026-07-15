@@ -222,7 +222,7 @@ defmodule SanctumWeb.CardLive.Show do
 
     {:ok,
      socket
-     |> assign(:page_title, "Card - #{title}")
+     |> assign(:page_title, title)
      |> assign(:card, card)
      |> assign(:title, title)
      |> assign(:sides, sides)

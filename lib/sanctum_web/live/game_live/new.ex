@@ -10,6 +10,7 @@ defmodule SanctumWeb.GameLive.New do
   def mount(_params, _session, socket) do
     {:ok,
      socket
+     |> assign(:page_title, "New Game")
      |> assign_scenarios()
      |> assign_form()}
   end

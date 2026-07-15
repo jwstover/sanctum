@@ -8,7 +8,7 @@ defmodule SanctumWeb.GameLive.Index do
   alias Sanctum.Games
 
   def mount(_params, _session, socket) do
-    {:ok, socket |> assign_games()}
+    {:ok, socket |> assign(:page_title, "Games") |> assign_games()}
   end
 
   def handle_event("new-game", _params, socket) do

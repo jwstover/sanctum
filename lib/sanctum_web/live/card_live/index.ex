@@ -94,7 +94,7 @@ defmodule SanctumWeb.CardLive.Index do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "Listing Cards")
+     |> assign(:page_title, "Manage Cards")
      |> assign(:offset, 0)
      |> assign(:end_of_timeline?, false)
      |> paginate_cards(0)}

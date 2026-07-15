@@ -352,6 +352,7 @@ defmodule SanctumWeb.GameLive.Show do
        when is_binary(game_id) do
     case Games.get_game(game_id,
            load: [
+             :scenario,
              game_villain: [:active_side, card: [:primary_side]],
              main_scheme_cards: [active_side: [], card: [:primary_side]],
              encounter_deck: [
@@ -363,7 +364,9 @@ defmodule SanctumWeb.GameLive.Show do
            actor: current_user
          ) do
       {:ok, %Game{} = game} ->
-        assign(socket, :game, game)
+        socket
+        |> assign(:game, game)
+        |> assign(:page_title, game.scenario.name)
 
       {:error, err} ->
         Logger.warning(
