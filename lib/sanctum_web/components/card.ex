@@ -39,7 +39,12 @@ defmodule SanctumWeb.Components.Card do
       border: "border-aspect-protection"
     },
     "pool" => %{text: "text-aspect-pool", bg: "bg-aspect-pool", border: "border-aspect-pool"},
-    "basic" => %{text: "text-aspect-basic", bg: "bg-aspect-basic", border: "border-aspect-basic"}
+    "basic" => %{text: "text-aspect-basic", bg: "bg-aspect-basic", border: "border-aspect-basic"},
+    "encounter" => %{
+      text: "text-aspect-encounter",
+      bg: "bg-aspect-encounter",
+      border: "border-aspect-encounter"
+    }
   }
 
   @res %{

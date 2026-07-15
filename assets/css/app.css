@@ -74,6 +74,7 @@
   --color-aspect-protection: #46991b;
   --color-aspect-pool: #d074ac;
   --color-aspect-basic: #87868f;
+  --color-aspect-encounter: #c2703a;
 
   /* DEF stat has no aspect; the other combat stats reuse aspect hues. */
   --color-stat-defense: #2456a6;
@@ -515,6 +516,7 @@ main, #game-board {
   --aspect-protection: var(--color-aspect-protection);
   --aspect-pool: var(--color-aspect-pool);
   --aspect-basic: var(--color-aspect-basic);
+  --aspect-encounter: var(--color-aspect-encounter);
 
   /* Resource-pip colors (ChampionsIcons glyphs) */
   --res-energy: var(--color-res-energy);

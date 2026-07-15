@@ -48,7 +48,7 @@ defmodule SanctumWeb.Components.HealthBadge do
   # whitespace can sneak in between the number and the icon — the formatter
   # reflows a nested <tspan> onto its own line, and that whitespace renders
   # as a full-size space glyph splitting the pair apart.
-  @player_icon ~s(<tspan dx="-10" dy="34" stroke-width="5" style="font-family:'ChampionsIcons';font-style:normal;font-size:80px;paint-order:stroke">v</tspan>)
+  @player_icon ~s(<tspan dx="-10" dy="10" stroke-width="5" style="font-family:'ChampionsIcons';font-style:normal;font-size:80px;paint-order:stroke">v</tspan>)
 
   @doc """
   Renders one health badge.
