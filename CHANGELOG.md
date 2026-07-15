@@ -1,3 +1,12 @@
+# [1.22.0](https://github.com/jwstover/sanctum/compare/v1.21.3...v1.22.0) (2026-07-15)
+
+
+### Features
+
+* **admin:** deck import tool on the admin dashboard ([#131](https://github.com/jwstover/sanctum/issues/131)) ([2c444b6](https://github.com/jwstover/sanctum/commit/2c444b688ce67044c3b21f539aa842bf994feccf))
+
+
+
 ## [1.21.3](https://github.com/jwstover/sanctum/compare/v1.21.2...v1.21.3) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **admin:** unify admin routes under /admin with dashboard + Oban Web ([d34b12f](https://github.com/jwstover/sanctum/commit/d34b12f1c5e5118f9949d5e72c3fd7ec3c8f4184))
-
-
-
-## [1.20.1](https://github.com/jwstover/sanctum/compare/v1.20.0...v1.20.1) (2026-07-15)
-
-
-### Bug Fixes
-
-* **sync:** correct swapped A/B side images for main schemes ([c9c7718](https://github.com/jwstover/sanctum/commit/c9c77187f23eb43b385ce3f71ca98b808bf5d14b))
 
 
 
