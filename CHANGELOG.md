@@ -1,3 +1,12 @@
+## [1.20.1](https://github.com/jwstover/sanctum/compare/v1.20.0...v1.20.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* **sync:** correct swapped A/B side images for main schemes ([c9c7718](https://github.com/jwstover/sanctum/commit/c9c77187f23eb43b385ce3f71ca98b808bf5d14b))
+
+
+
 # [1.20.0](https://github.com/jwstover/sanctum/compare/v1.19.0...v1.20.0) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **ui:** make card pool, deck browser & deck detail mobile-friendly ([c056861](https://github.com/jwstover/sanctum/commit/c0568611a6e0de5aecf201332533feb540285859))
-
-
-
-# [1.16.0](https://github.com/jwstover/sanctum/compare/v1.15.0...v1.16.0) (2026-07-14)
-
-
-### Features
-
-* **cards:** support player side schemes as a distinct card type ([0e4210c](https://github.com/jwstover/sanctum/commit/0e4210cf315772583dc427631a62536c4beebd50))
 
 
 
