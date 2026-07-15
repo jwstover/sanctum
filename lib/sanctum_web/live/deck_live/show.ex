@@ -259,7 +259,7 @@ defmodule SanctumWeb.DeckLive.Show do
 
     {:ok,
      socket
-     |> assign(:page_title, "Deck - #{deck.title}")
+     |> assign(:page_title, deck.title)
      |> assign(:deck, deck)
      |> assign(:cover, cover_view(deck, hero_gradient))
      |> assign(:groups, groups)
