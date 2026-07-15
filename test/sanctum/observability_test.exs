@@ -24,5 +24,11 @@ defmodule Sanctum.ObservabilityTest do
       assert sample("process default") == 1.0
       assert sample("SanctumWeb.GameLive.Show.mount") == 1.0
     end
+
+    test "handles non-binary span names (opentelemetry_bandit uses atoms)" do
+      assert sample(:GET) == 1.0
+      assert sample(:HTTP) == 1.0
+      assert sample(~c"sanctum.repo.query:oban_jobs") == 0.0
+    end
   end
 end
