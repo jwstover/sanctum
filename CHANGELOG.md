@@ -1,3 +1,12 @@
+## [1.25.2](https://github.com/jwstover/sanctum/compare/v1.25.1...v1.25.2) (2026-07-15)
+
+
+### Bug Fixes
+
+* **observability:** stop background-noise transactions flooding Sentry ([41bd43d](https://github.com/jwstover/sanctum/commit/41bd43d8e4c7184ce3835a06ecb530002a89d7f3))
+
+
+
 ## [1.25.1](https://github.com/jwstover/sanctum/compare/v1.25.0...v1.25.1) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **deck sync:** live progress dashboard + graceful slow-MarvelCDB handling ([#135](https://github.com/jwstover/sanctum/issues/135)) ([daeef25](https://github.com/jwstover/sanctum/commit/daeef25dbd3fde346fe2ceef398379daa803f4e5))
-
-
-
-## [1.22.1](https://github.com/jwstover/sanctum/compare/v1.22.0...v1.22.1) (2026-07-15)
-
-
-### Performance Improvements
-
-* **deck-sync:** batch slot card lookups and pace deck imports ([#130](https://github.com/jwstover/sanctum/issues/130)) ([1117620](https://github.com/jwstover/sanctum/commit/11176203e32783204a5b4ed4894f82648d951cc4))
 
 
 
