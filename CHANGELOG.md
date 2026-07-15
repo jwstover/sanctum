@@ -1,3 +1,12 @@
+# [1.20.0](https://github.com/jwstover/sanctum/compare/v1.19.0...v1.20.0) (2026-07-15)
+
+
+### Features
+
+* **card pool:** show every card side with encounter stats ([7e91de1](https://github.com/jwstover/sanctum/commit/7e91de1980662f6d94a535cf6d87250e2c7a092e))
+
+
+
 # [1.19.0](https://github.com/jwstover/sanctum/compare/v1.18.0...v1.19.0) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **cards:** support player side schemes as a distinct card type ([0e4210c](https://github.com/jwstover/sanctum/commit/0e4210cf315772583dc427631a62536c4beebd50))
-
-
-
-# [1.15.0](https://github.com/jwstover/sanctum/compare/v1.14.1...v1.15.0) (2026-07-14)
-
-
-### Features
-
-* **cards:** show every card side in the pool, search by any side title ([cccad4f](https://github.com/jwstover/sanctum/commit/cccad4fd7d63b01b8599b593dcb813f9d452b8f7))
 
 
 
