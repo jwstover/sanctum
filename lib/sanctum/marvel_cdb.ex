@@ -117,9 +117,11 @@ defmodule Sanctum.MarvelCdb do
   # as multiple physical copies, each with its own code. Aggregate by resolved
   # `card_id`, summing quantities and OR-ing the deck-limit-ignore flag.
   defp build_slots(cards_map, ignore_limits) do
+    card_ids = resolve_slot_codes(Map.keys(cards_map))
+
     cards_map
     |> Enum.reduce(%{}, fn {code, count}, acc ->
-      card_id = load_card!(code).id
+      card_id = Map.fetch!(card_ids, code)
       ignore? = Map.has_key?(ignore_limits, code)
 
       Map.update(acc, card_id, %{quantity: count, ignore_deck_limit: ignore?}, fn slot ->
@@ -131,6 +133,24 @@ defmodule Sanctum.MarvelCdb do
     end)
     |> Enum.map(fn {card_id, slot} -> Map.put(slot, :card_id, card_id) end)
   end
+
+  # Resolves slot codes to canonical card ids in bulk — one CardSide query plus
+  # one CardAlt query for the leftovers, rather than up to two queries per code.
+  # CardSide wins over CardAlt for a code present in both, matching load_card/1.
+  # Only codes absent from the catalog entirely fall back to the per-code
+  # fetch-and-create path (which has to call MarvelCDB anyway).
+  defp resolve_slot_codes(codes) do
+    sides = lookup_codes(codes, &Games.list_card_sides_by_codes!/1)
+    alts = codes |> unresolved(sides) |> lookup_codes(&Games.list_card_alts_by_codes!/1)
+    known = Map.merge(sides, alts)
+    fetched = codes |> unresolved(known) |> Map.new(&{&1, load_card!(&1).id})
+    Map.merge(known, fetched)
+  end
+
+  defp lookup_codes([], _list_fun), do: %{}
+  defp lookup_codes(codes, list_fun), do: Map.new(list_fun.(codes), &{&1.code, &1.card_id})
+
+  defp unresolved(codes, resolved), do: Enum.reject(codes, &Map.has_key?(resolved, &1))
 
   # MarvelCDB stores `meta` as a JSON-encoded string (or nil/empty).
   defp parse_meta(meta) when is_binary(meta) and meta != "" do

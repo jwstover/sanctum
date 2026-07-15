@@ -39,6 +39,11 @@ defmodule Sanctum.Games.CardAlt do
       argument :code, :string, allow_nil?: false
       filter expr(code == ^arg(:code))
     end
+
+    read :by_codes do
+      argument :codes, {:array, :string}, allow_nil?: false
+      filter expr(code in ^arg(:codes))
+    end
   end
 
   policies do

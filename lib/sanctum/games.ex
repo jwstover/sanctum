@@ -19,6 +19,7 @@ defmodule Sanctum.Games do
       define :update_card_side, action: :update
       define :get_card_side, get_by: :id, action: :read
       define :get_card_side_by_code, args: [:code], get?: true, action: :by_code
+      define :list_card_sides_by_codes, args: [:codes], action: :by_codes
 
       define :get_card_side_by_card_and_side,
         args: [:card_id, :side_identifier],
@@ -29,6 +30,7 @@ defmodule Sanctum.Games do
     resource Sanctum.Games.CardAlt do
       define :create_card_alt, action: :create
       define :get_card_alt_by_code, args: [:code], get?: true, action: :by_code
+      define :list_card_alts_by_codes, args: [:codes], action: :by_codes
     end
 
     resource Sanctum.Games.Game do

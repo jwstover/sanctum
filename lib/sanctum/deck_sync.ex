@@ -28,6 +28,11 @@ defmodule Sanctum.DeckSync do
   # Be polite between day requests, matching the card sync's pacing.
   @download_pause_ms 200
 
+  # Brief yield between deck imports so a burst (a busy day, or a backfill)
+  # doesn't monopolize the database — on Neon's small shared compute a
+  # back-to-back import stream visibly delays interactive queries.
+  @deck_pause_ms 50
+
   @doc """
   Runs the sync. Options:
 
@@ -75,6 +80,8 @@ defmodule Sanctum.DeckSync do
 
   defp import_decklists(decklists) do
     Enum.reduce(decklists, %{imported: 0, failed: 0}, fn decklist, acc ->
+      Process.sleep(@deck_pause_ms)
+
       case import_one(decklist) do
         {:ok, _deck} ->
           Map.update!(acc, :imported, &(&1 + 1))
