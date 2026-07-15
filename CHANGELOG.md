@@ -1,3 +1,12 @@
+# [1.21.0](https://github.com/jwstover/sanctum/compare/v1.20.1...v1.21.0) (2026-07-15)
+
+
+### Features
+
+* **admin:** unify admin routes under /admin with dashboard + Oban Web ([d34b12f](https://github.com/jwstover/sanctum/commit/d34b12f1c5e5118f9949d5e72c3fd7ec3c8f4184))
+
+
+
 ## [1.20.1](https://github.com/jwstover/sanctum/compare/v1.20.0...v1.20.1) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **ui:** consistent page titles with Sanctum suffix ([#113](https://github.com/jwstover/sanctum/issues/113)) ([90da392](https://github.com/jwstover/sanctum/commit/90da39207855b092758154bb94b617d55f48dc9b))
-
-
-
-# [1.17.0](https://github.com/jwstover/sanctum/compare/v1.16.0...v1.17.0) (2026-07-14)
-
-
-### Features
-
-* **ui:** make card pool, deck browser & deck detail mobile-friendly ([c056861](https://github.com/jwstover/sanctum/commit/c0568611a6e0de5aecf201332533feb540285859))
 
 
 
