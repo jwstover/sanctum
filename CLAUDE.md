@@ -77,7 +77,7 @@ area, etc.) — a prior separate `GameScheme` was folded into it.
 
 - **MarvelCDB sync** — `mix sanctum.sync_cards` / `mix sanctum.sync_decks` (dev)
   and `Sanctum.Release.sync_cards()` (prod, data-only). Card sync also runs
-  interactively from the `/cards/sync` admin LiveView, backed by
+  interactively from the `/admin/cards/sync` admin LiveView, backed by
   `Sanctum.CardSync.Server` (GenServer + `Task` broadcasting throttled progress
   over PubSub). Sync groups payload entries per `base_code` to resolve sides
   (MarvelCDB's `linked_to_code` chains are incomplete). See `lib/sanctum/marvel_cdb.ex`.
@@ -86,11 +86,14 @@ area, etc.) — a prior separate `GameScheme` was folded into it.
   `lib/sanctum/card_images.ex`.
 - **Deck import** — decks come from MarvelCDB; Oban workers handle sync
   (`decklist_sync_worker`) and uniqueness computation (`compute_uniqueness_worker`).
-- **Admin lockdown** — all `/cards/*` management routes live in an `:admin_routes`
+- **Admin lockdown** — all `/admin/*` routes live in an `:admin_routes`
   live session behind a `:live_admin_required` on_mount hook (`User.admin`), plus
-  admin-only Card/CardSide mutation policies (reads are open). Bootstrap the first
-  admin with `Sanctum.Release.promote_admin(email)`. System writes (sync, seeds,
-  deck import) run with `authorize?: false`.
+  admin-only Card/CardSide mutation policies (reads are open). The `/admin/oban`
+  dashboard is the exception: Oban Web builds its own live_session (bypassing our
+  on_mount), so it's gated by a `:require_admin` **conn plug** and served with a
+  scoped nonce-based CSP (`:oban_csp`) that permits Oban's inline bootstrap script.
+  Bootstrap the first admin with `Sanctum.Release.promote_admin(email)`. System
+  writes (sync, seeds, deck import) run with `authorize?: false`.
 - **Design system** — the pinned dark "comic-dossier" theme: self-hosted fonts,
   design tokens, halftone/offset-shadow utilities, an app shell, and the `mc_card`
   component. See `lib/sanctum_web/components`.
@@ -101,7 +104,8 @@ area, etc.) — a prior separate `GameScheme` was folded into it.
 - `/cards` — `CardLive.Pool` (card browser, public read)
 - `/decks`, `/decks/:id` — deck browser
 - `/guess` — `GuessLive.Play` (card-guessing mini-game)
-- `/cards/manage`, `/cards/new`, `/cards/sync`, `/cards/:id/edit` — **admin only**
+- `/admin` — `AdminLive.Index` (admin landing: system-health stats + links); the
+  `/admin/cards*` management routes and `/admin/oban` — **admin only**
 
 ## Development Commands
 
@@ -127,9 +131,9 @@ mix dialyzer                 # static analysis (PLTs in priv/plts/)
 
 ## Dev Dashboards
 
-- `/dev/dashboard` — Phoenix LiveDashboard
-- `/oban` — Oban job monitoring
-- `/admin` — AshAdmin resource management
+- `/dev/dashboard` — Phoenix LiveDashboard (dev only)
+- `/admin/oban` — Oban job monitoring (**admin only, available in prod**)
+- `/admin/ash` — AshAdmin resource management (dev only)
 - `/dev/mailbox` — email preview
 
 ## Notes

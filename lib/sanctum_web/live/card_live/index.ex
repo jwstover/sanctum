@@ -8,10 +8,10 @@ defmodule SanctumWeb.CardLive.Index do
       <.header>
         Listing Cards
         <:actions>
-          <.button navigate={~p"/cards/sync"}>
+          <.button navigate={~p"/admin/cards/sync"}>
             <.icon name="hero-arrow-path" /> Sync
           </.button>
-          <.button variant="primary" navigate={~p"/cards/new"}>
+          <.button variant="primary" navigate={~p"/admin/cards/new"}>
             <.icon name="hero-plus" /> New Card
           </.button>
         </:actions>
@@ -21,7 +21,7 @@ defmodule SanctumWeb.CardLive.Index do
         <.table
           id="cards"
           rows={@streams.cards}
-          row_click={fn {_id, card} -> JS.navigate(~p"/cards/#{card}") end}
+          row_click={fn {_id, card} -> JS.navigate(~p"/admin/cards/#{card}") end}
           phx-viewport-bottom={!@end_of_timeline? && "next-page"}
         >
           <:col :let={{_id, card}} label="Image">
@@ -68,10 +68,10 @@ defmodule SanctumWeb.CardLive.Index do
 
           <:action :let={{_id, card}}>
             <div class="sr-only">
-              <.link navigate={~p"/cards/#{card}"}>Show</.link>
+              <.link navigate={~p"/admin/cards/#{card}"}>Show</.link>
             </div>
 
-            <.link navigate={~p"/cards/#{card}/edit"}>Edit</.link>
+            <.link navigate={~p"/admin/cards/#{card}/edit"}>Edit</.link>
           </:action>
 
           <:action :let={{id, card}}>

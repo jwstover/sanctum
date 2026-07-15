@@ -20,10 +20,10 @@ defmodule SanctumWeb.CardLive.Show do
         </:subtitle>
 
         <:actions>
-          <.button navigate={~p"/cards/manage"}>
+          <.button navigate={~p"/admin/cards"}>
             <.icon name="hero-arrow-left" /> Back
           </.button>
-          <.button variant="primary" navigate={~p"/cards/#{@card}/edit?return_to=show"}>
+          <.button variant="primary" navigate={~p"/admin/cards/#{@card}/edit?return_to=show"}>
             <.icon name="hero-pencil-square" /> Edit
           </.button>
         </:actions>

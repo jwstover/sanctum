@@ -13,7 +13,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "renders new card form", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/cards/new")
+      {:ok, _view, html} = live(conn, ~p"/admin/cards/new")
 
       assert html =~ "New Card"
       assert html =~ "Card Information"
@@ -26,7 +26,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "validates required fields on change", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/cards/new")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/new")
 
       # Test card form validation
       html =
@@ -38,7 +38,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "creates card with basic data", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/cards/new")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/new")
 
       unique_id = :rand.uniform(100_000)
 
@@ -58,7 +58,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "shows validation errors for invalid card data", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/cards/new")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/new")
 
       # Submit with missing required fields
       html =
@@ -70,7 +70,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "shows card sides section", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/cards/new")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/new")
 
       # The card sides section should be visible
       html = view |> render()
@@ -114,7 +114,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "renders edit form with existing data", %{conn: conn, card: card} do
-      {:ok, _view, html} = live(conn, ~p"/cards/#{card.id}/edit")
+      {:ok, _view, html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
       assert html =~ "Edit Card"
       assert html =~ card.base_code
@@ -122,13 +122,13 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "displays traits as comma-separated string", %{conn: conn, card: card} do
-      {:ok, _view, html} = live(conn, ~p"/cards/#{card.id}/edit")
+      {:ok, _view, html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
       assert html =~ "Test, Trait"
     end
 
     test "updates existing card basic fields", %{conn: conn, card: card} do
-      {:ok, view, _html} = live(conn, ~p"/cards/#{card.id}/edit")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
       {:ok, _view, html} =
         view
@@ -142,7 +142,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "updates card side fields", %{conn: conn, card: card} do
-      {:ok, view, _html} = live(conn, ~p"/cards/#{card.id}/edit")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
       {:ok, _view, html} =
         view
@@ -167,7 +167,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "updates card side traits", %{conn: conn, card: card} do
-      {:ok, view, _html} = live(conn, ~p"/cards/#{card.id}/edit")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
       {:ok, _view, html} =
         view
@@ -188,7 +188,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "handles validation errors on update", %{conn: conn, card: card} do
-      {:ok, view, _html} = live(conn, ~p"/cards/#{card.id}/edit")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
       # Try to submit with invalid data
       html =
@@ -208,17 +208,17 @@ defmodule SanctumWeb.CardLive.FormTest do
     end
 
     test "cancel button navigates back to index", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/cards/new")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/new")
 
       assert {:ok, _, _html} =
                view
                |> element("a", "Cancel")
                |> render_click()
-               |> follow_redirect(conn, ~p"/cards/manage")
+               |> follow_redirect(conn, ~p"/admin/cards")
     end
 
     test "successful save redirects to index", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/cards/new")
+      {:ok, view, _html} = live(conn, ~p"/admin/cards/new")
 
       unique_id = :rand.uniform(100_000)
 

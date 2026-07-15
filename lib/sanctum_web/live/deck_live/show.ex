@@ -132,7 +132,7 @@ defmodule SanctumWeb.DeckLive.Show do
                 <div class="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2">
                   <.link
                     :for={c <- g.cards}
-                    navigate={~p"/cards/#{c.card_id}"}
+                    navigate={~p"/admin/cards/#{c.card_id}"}
                     class="h-[101px] border-2 border-neutral shadow-comic-sm"
                   >
                     <.mc_card

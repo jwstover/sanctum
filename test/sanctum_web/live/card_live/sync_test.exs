@@ -13,7 +13,7 @@ defmodule SanctumWeb.CardLive.SyncTest do
   test "renders the sync page with a start button when no sync is running", %{conn: conn} do
     # The singleton server may hold :idle or a previous test's :done state —
     # either way, no sync is running and the form must be startable.
-    {:ok, _view, html} = live(conn, ~p"/cards/sync")
+    {:ok, _view, html} = live(conn, ~p"/admin/cards/sync")
 
     assert html =~ "Card Sync"
     assert html =~ "Start sync"
@@ -21,7 +21,7 @@ defmodule SanctumWeb.CardLive.SyncTest do
   end
 
   test "renders live progress from PubSub broadcasts", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/cards/sync")
+    {:ok, view, _html} = live(conn, ~p"/admin/cards/sync")
 
     running = %{
       status: :running,
