@@ -18,5 +18,25 @@ config :swoosh, local: false
 # Do not print debug messages in production
 config :logger, level: :info
 
+# Sentry: errors, logs, and OTel-based tracing. The DSN (and release) are set
+# at runtime from Fly secrets — see config/runtime.exs. Source-context options
+# must live here (compile time) so `mix sentry.package_source_code` can read
+# them during the Docker build.
+config :sentry,
+  environment_name: "production",
+  enable_source_code_context: true,
+  root_source_code_paths: [File.cwd!()],
+  in_app_otp_apps: [:sanctum],
+  integrations: [oban: [capture_errors: true, cron: [enabled: true]]],
+  enable_logs: true,
+  logs: [level: :info, metadata: [:request_id, :game_id, :user_id]],
+  traces_sample_rate: 1.0
+
+# Route OTel spans into Sentry instead of an OTLP collector.
+config :opentelemetry,
+  span_processor: {Sentry.OpenTelemetry.SpanProcessor, []},
+  sampler: {Sentry.OpenTelemetry.Sampler, []},
+  text_map_propagators: [:trace_context, :baggage, Sentry.OpenTelemetry.Propagator]
+
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.

@@ -69,6 +69,8 @@ defmodule Sanctum.CardSync.Server do
   end
 
   def handle_info({:DOWN, ref, :process, _pid, reason}, %{task_ref: ref} = state) do
+    Sentry.capture_message("card sync crashed: #{inspect(reason)}", level: :error)
+
     sync = %{
       state.sync
       | status: :error,

@@ -15,7 +15,7 @@ defmodule SanctumWeb.LiveUserAuth do
 
   def on_mount(:live_user_optional, _params, _session, socket) do
     if socket.assigns[:current_user] do
-      {:cont, socket}
+      {:cont, set_sentry_user(socket)}
     else
       {:cont, assign(socket, :current_user, nil)}
     end
@@ -23,7 +23,7 @@ defmodule SanctumWeb.LiveUserAuth do
 
   def on_mount(:live_user_required, _params, _session, socket) do
     if socket.assigns[:current_user] do
-      {:cont, socket}
+      {:cont, set_sentry_user(socket)}
     else
       {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/sign-in")}
     end
@@ -35,7 +35,7 @@ defmodule SanctumWeb.LiveUserAuth do
         {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/sign-in")}
 
       %{admin: true} ->
-        {:cont, socket}
+        {:cont, set_sentry_user(socket)}
 
       _non_admin ->
         {:halt,
@@ -51,5 +51,12 @@ defmodule SanctumWeb.LiveUserAuth do
     else
       {:cont, assign(socket, :current_user, nil)}
     end
+  end
+
+  # Sentry context is process-local, so it must be set in the LiveView process
+  # itself (the request-time plug context doesn't carry over). Id only — no PII.
+  defp set_sentry_user(socket) do
+    Sentry.Context.set_user_context(%{id: socket.assigns.current_user.id})
+    socket
   end
 end

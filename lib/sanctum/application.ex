@@ -7,6 +7,8 @@ defmodule Sanctum.Application do
 
   @impl true
   def start(_type, _args) do
+    setup_opentelemetry()
+
     children = [
       SanctumWeb.Telemetry,
       Sanctum.Repo,
@@ -32,6 +34,20 @@ defmodule Sanctum.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Sanctum.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  # Spans are only shipped in prod (Sentry's span processor; see config/prod.exs),
+  # and tests must not pay per-query/per-job instrumentation overhead.
+  defp setup_opentelemetry do
+    if Application.get_env(:sanctum, :env) != :test do
+      OpentelemetryBandit.setup()
+      # Must run before OpentelemetryPhoenix.setup/1 so LiveView spans continue
+      # the originating HTTP request's trace instead of starting new roots.
+      Sentry.OpenTelemetry.LiveViewPropagator.setup()
+      OpentelemetryPhoenix.setup(adapter: :bandit)
+      OpentelemetryEcto.setup([:sanctum, :repo], db_statement: :enabled)
+      OpentelemetryOban.setup()
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration

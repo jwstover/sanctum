@@ -27,7 +27,7 @@ RUN apt-get update \
 
 # isntall NVM
 ENV NVM_DIR=/usr/local/nvm
-ENV NODE_VERSION=v16.14.2
+ENV NODE_VERSION=v20.19.0
 
 # Install nvm with node and npm
 RUN mkdir -p $NVM_DIR \
@@ -66,6 +66,9 @@ COPY lib lib
 
 # Compile the release
 RUN mix compile
+
+# Bundle source files into the release so Sentry events show source context
+RUN mix sentry.package_source_code
 
 COPY assets assets
 
