@@ -1,3 +1,12 @@
+# [1.24.0](https://github.com/jwstover/sanctum/compare/v1.23.0...v1.24.0) (2026-07-15)
+
+
+### Features
+
+* **decks:** store & display MarvelCDB deck update date ([a1af5db](https://github.com/jwstover/sanctum/commit/a1af5dbc821f497128b42ee3767fbd0d9d80676a))
+
+
+
 # [1.23.0](https://github.com/jwstover/sanctum/compare/v1.22.1...v1.23.0) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **deck sync:** handle heroes with no alter-ego side ([e9a8529](https://github.com/jwstover/sanctum/commit/e9a8529171628673a564dbde10230f110fd68848))
-
-
-
-## [1.21.2](https://github.com/jwstover/sanctum/compare/v1.21.1...v1.21.2) (2026-07-15)
-
-
-### Bug Fixes
-
-* **deck sync:** ensure only one decklist sync runs at a time ([b937767](https://github.com/jwstover/sanctum/commit/b9377670557a8004b45d16672976949a5e75ae35))
 
 
 
