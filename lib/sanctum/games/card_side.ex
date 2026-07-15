@@ -10,29 +10,13 @@ defmodule Sanctum.Games.CardSide do
     repo Sanctum.Repo
   end
 
-  # Ownership pools and types that belong in the player card pool (deck-buildable
-  # cards). Encounter/villain/identity/scheme faces are excluded. Hero signature
-  # cards are the `:hero` pool; pool cards are ordinary `:player` cards carrying
-  # the `:pool` aspect.
-  @player_ownerships [:player, :basic, :hero]
-  @player_types [
-    :hero,
-    :alter_ego,
-    :ally,
-    :event,
-    :support,
-    :upgrade,
-    :resource,
-    :player_side_scheme
-  ]
-
   actions do
     defaults [:read, :destroy]
 
-    # Public card pool browsing: player card faces filtered by name/aspect/type.
-    # Each side is its own row so multi-sided cards surface every face, and
-    # searching an alternate title (e.g. "Peter Parker") ranks that face first.
-    # Backs SanctumWeb.CardLive.Pool.
+    # Public card pool browsing: every card face — player *and* encounter —
+    # filtered by name/aspect/type. Each side is its own row so multi-sided
+    # cards surface every face, and searching an alternate title (e.g. "Peter
+    # Parker") ranks that face first. Backs SanctumWeb.CardLive.Pool.
     read :browse do
       argument :query, :string, allow_nil?: true
       argument :aspect, :string, allow_nil?: true
@@ -50,8 +34,6 @@ defmodule Sanctum.Games.CardSide do
         query =
           query
           |> Ash.Query.load(:card)
-          |> Ash.Query.filter(type in ^@player_types)
-          |> Ash.Query.filter(ownership in ^@player_ownerships)
           # Side `code` sorts by base_code across cards and primary-first within
           # a card (the primary side always holds the smallest code).
           |> Ash.Query.sort(code: :asc)

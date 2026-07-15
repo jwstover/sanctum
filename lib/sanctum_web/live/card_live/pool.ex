@@ -1,8 +1,8 @@
 defmodule SanctumWeb.CardLive.Pool do
   @moduledoc """
-  Public "Card Pool" — every player card with full text and stats, filterable
-  by name, aspect, and type. The comic-dossier counterpart to the admin card
-  table.
+  Public "Card Pool" — every card side in the game (player *and* encounter) with
+  full text and stats, filterable by name, aspect, and type. The comic-dossier
+  counterpart to the admin card table.
   """
   use SanctumWeb, :live_view
 
@@ -44,7 +44,7 @@ defmodule SanctumWeb.CardLive.Pool do
       <.header>
         Card Pool
         <:subtitle>
-          Every player card, with full text and stats. Filter by aspect or type to find what you need.
+          Every card in the game — player and encounter — with full text and stats. Filter by aspect or type to find what you need.
         </:subtitle>
       </.header>
 
@@ -138,8 +138,16 @@ defmodule SanctumWeb.CardLive.Pool do
                 ]}>
                   {side.type_name} · {side.aspect_name}
                 </div>
-                <div class="mt-[3px] font-anton text-[22px] uppercase leading-[0.94]">
-                  {side.name}
+                <div class="mt-[3px] flex items-baseline gap-2">
+                  <div class="min-w-0 flex-1 font-anton text-[22px] uppercase leading-[0.94]">
+                    {side.name}
+                  </div>
+                  <div
+                    :if={side.stage_label}
+                    class="flex-none font-elektra-med text-[18px] leading-none text-white"
+                  >
+                    {side.stage_label}
+                  </div>
                 </div>
               </div>
             </div>
@@ -172,6 +180,38 @@ defmodule SanctumWeb.CardLive.Pool do
               </div>
               <div class="flex items-start justify-end">
                 <.health_badge value={side.health} size={52} />
+              </div>
+            </div>
+
+            <div :if={side.is_villain or side.is_minion} class="flex items-start gap-2 w-full">
+              <div class="flex flex-grow items-start justify-start">
+                <.stat_badge stat={:thw} value={side.scheme} label="SCH" size={64} />
+                <.stat_badge stat={:atk} value={side.attack} star={side.attack_star} size={64} />
+              </div>
+              <div :if={side.health} class="flex items-start justify-end">
+                <.health_badge value={side.health} player={side.health_per_player} size={52} />
+              </div>
+            </div>
+
+            <div
+              :if={side.is_scheme and (side.start_threat || side.escalation_threat)}
+              class="mb-1 w-full"
+            >
+              <div class="inline-flex -skew-x-[9deg] border-2 border-white bg-base-100 shadow-comic-sm">
+                <.scheme_cell value={side.start_threat} per_player={side.start_threat_pp} />
+                <div :if={side.is_main_scheme} class="w-px self-stretch bg-white"></div>
+                <.scheme_cell
+                  :if={side.is_main_scheme}
+                  value={side.escalation_threat}
+                  per_player={side.escalation_threat_pp}
+                  sign
+                />
+                <div :if={side.is_main_scheme} class="w-px self-stretch bg-white"></div>
+                <.scheme_cell
+                  :if={side.is_main_scheme}
+                  value={side.threat_target}
+                  per_player={side.threat_per_player}
+                />
               </div>
             </div>
 
@@ -229,6 +269,28 @@ defmodule SanctumWeb.CardLive.Pool do
     </Layouts.app>
     """
   end
+
+  # One segment of the main-scheme threat plate: starting threat, escalation,
+  # then threshold. The ChampionsIcons per-player icon is appended when the value
+  # scales per hero. Counter-skewed so the text stays upright in the comic plate.
+  attr :value, :any, default: nil
+  attr :per_player, :boolean, default: false
+  attr :sign, :boolean, default: false, doc: "prefix positive values with + (escalation threat)"
+
+  defp scheme_cell(assigns) do
+    ~H"""
+    <div class="flex skew-x-[9deg] items-baseline gap-0.5 px-2 font-elektra-med text-2xl/snug">
+      {scheme_value(@value, @sign)}
+      <span :if={@per_player} class="font-champions text-xs leading-none text-white">
+        v
+      </span>
+    </div>
+    """
+  end
+
+  defp scheme_value(nil, _sign), do: "—"
+  defp scheme_value(v, true) when is_integer(v) and v > 0, do: "+#{v}"
+  defp scheme_value(v, _sign), do: v
 
   @impl true
   def mount(_params, _session, socket) do
@@ -358,16 +420,38 @@ defmodule SanctumWeb.CardLive.Pool do
       flavor: Map.get(side, :flavor, ""),
       is_ally: side.type == :ally,
       is_hero: side.type == :hero,
+      is_villain: side.type == :villain,
+      is_minion: side.type == :minion,
+      is_scheme: side.type in [:main_scheme, :side_scheme, :player_side_scheme],
       hand_size: side.hand_size,
       attack: stat_value(side.attack),
+      attack_star: stat_star(side.attack),
       attack_consequential: stat_consequential(side.attack),
       thwart: stat_value(side.thwart),
       thwart_consequential: stat_consequential(side.thwart),
       defense: stat_value(side.defense),
       health: stat_value(side.health),
+      health_per_player: stat_per_player(side.health),
+      scheme: side.scheme,
+      is_main_scheme: side.type == :main_scheme,
+      threat_target: threat_target(side),
+      threat_per_player: threat_target_per_player?(side),
+      start_threat: stat_value(side.base_threat),
+      start_threat_pp: stat_per_player(side.base_threat),
+      escalation_threat: stat_value(side.escalation_threat),
+      escalation_threat_pp: stat_per_player(side.escalation_threat),
+      stage_label: stage_label(side),
       image_url: side.image_url
     }
   end
+
+  # Main-scheme stage + side, e.g. "1A"/"2B", from the printed stage number and
+  # side identifier.
+  defp stage_label(%{type: :main_scheme, stage: stage, side_identifier: side})
+       when is_integer(stage) and is_binary(side),
+       do: "#{stage}#{String.upcase(side)}"
+
+  defp stage_label(_), do: nil
 
   # Resolve a hero's gradient from stored MarvelCDB colors, falling back to a
   # stable slug-derived gradient for sets with no stored palette.
@@ -384,19 +468,44 @@ defmodule SanctumWeb.CardLive.Pool do
   defp stat_consequential(%{consequential: n}) when is_integer(n), do: n
   defp stat_consequential(_), do: 0
 
+  defp stat_star(%{star: true}), do: true
+  defp stat_star(_), do: false
+
+  # A per-player-scaling stat (X per hero) is marked with the champions star.
+  defp stat_per_player(%{scaling: scaling}) when scaling in [:per_player, "per_player"], do: true
+  defp stat_per_player(_), do: false
+
+  # A scheme's threat target: main schemes carry it in `max_threat`; side schemes
+  # (and player side schemes) carry it in `base_threat`.
+  defp threat_target(%{max_threat: %{value: v}}), do: v
+  defp threat_target(%{base_threat: %{value: v}}), do: v
+  defp threat_target(_), do: nil
+
+  defp threat_target_per_player?(%{max_threat: stat}) when not is_nil(stat),
+    do: stat_per_player(stat)
+
+  defp threat_target_per_player?(%{base_threat: stat}) when not is_nil(stat),
+    do: stat_per_player(stat)
+
+  defp threat_target_per_player?(_), do: false
+
   defp format_traits(traits) when is_list(traits), do: Enum.join(traits, " · ")
   defp format_traits(_), do: ""
 
   # The display key drives tile color/label: aspect cards (including pool) use
-  # their aspect; every other pool (hero signature, basic) uses its ownership.
+  # their aspect; every other pool uses its ownership. Encounter and campaign
+  # cards share the encounter accent.
   defp display_aspect(%{ownership: :player, aspect: aspect}) when not is_nil(aspect), do: aspect
   defp display_aspect(%{ownership: :hero}), do: :hero
   defp display_aspect(%{ownership: :basic}), do: :basic
+  defp display_aspect(%{ownership: :encounter}), do: :encounter
+  defp display_aspect(%{ownership: :campaign}), do: :encounter
   defp display_aspect(%{aspect: aspect}) when not is_nil(aspect), do: aspect
   defp display_aspect(_), do: :basic
 
   # Hero signature cards have no aspect; name them after their hero set instead.
   defp aspect_name(:hero, set), do: hero_name(set)
+  defp aspect_name(:encounter, _set), do: "Encounter"
   defp aspect_name(aspect, _set), do: aspect |> to_string() |> String.capitalize()
 
   defp hero_name(set) when is_binary(set) and set != "",

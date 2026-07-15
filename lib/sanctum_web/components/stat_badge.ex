@@ -175,7 +175,7 @@ defmodule SanctumWeb.Components.StatBadge do
         {@value}
         <tspan
           :if={@star}
-          dx="1"
+          dx="-30"
           dy="-34"
           stroke-width="3"
           style="font-family:'ChampionsIcons';font-style:normal;font-size:42px;paint-order:stroke"
