@@ -1,3 +1,12 @@
+## [1.21.2](https://github.com/jwstover/sanctum/compare/v1.21.1...v1.21.2) (2026-07-15)
+
+
+### Bug Fixes
+
+* **deck sync:** ensure only one decklist sync runs at a time ([b937767](https://github.com/jwstover/sanctum/commit/b9377670557a8004b45d16672976949a5e75ae35))
+
+
+
 ## [1.21.1](https://github.com/jwstover/sanctum/compare/v1.21.0...v1.21.1) (2026-07-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **card pool:** show every card side with encounter stats ([7e91de1](https://github.com/jwstover/sanctum/commit/7e91de1980662f6d94a535cf6d87250e2c7a092e))
-
-
-
-# [1.19.0](https://github.com/jwstover/sanctum/compare/v1.18.0...v1.19.0) (2026-07-15)
-
-
-### Features
-
-* **flavor-town:** redesign the guessing game for mobile & rename route ([f7a52a7](https://github.com/jwstover/sanctum/commit/f7a52a75e723270c1702dcf29a1bdb2fcdc25e27))
 
 
 
