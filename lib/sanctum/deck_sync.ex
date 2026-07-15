@@ -75,7 +75,7 @@ defmodule Sanctum.DeckSync do
 
   defp import_decklists(decklists) do
     Enum.reduce(decklists, %{imported: 0, failed: 0}, fn decklist, acc ->
-      case MarvelCdb.import_decklist(decklist, mcdb_type: :decklist) do
+      case import_one(decklist) do
         {:ok, _deck} ->
           Map.update!(acc, :imported, &(&1 + 1))
 
@@ -84,6 +84,16 @@ defmodule Sanctum.DeckSync do
           Map.update!(acc, :failed, &(&1 + 1))
       end
     end)
+  end
+
+  # A single malformed deck must never abort the whole run: import_decklist can
+  # raise (e.g. a hero_code whose card isn't in the catalog yet), not just return
+  # `{:error, _}`, so rescue and treat any raise as a per-deck failure.
+  defp import_one(decklist) do
+    MarvelCdb.import_decklist(decklist, mcdb_type: :decklist)
+  rescue
+    exception ->
+      {:error, Exception.format(:error, exception, __STACKTRACE__)}
   end
 
   # `:since` wins; otherwise resume one overlap window before the cursor; else
