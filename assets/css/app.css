@@ -600,4 +600,155 @@ textarea::placeholder {
 /*   outline-offset: 2px; */
 /* } */
 
+/* ---------------------------------------------------------------------------
+   Deck writeup — themed rendering of MarvelCDB `description_md` (rendered by
+   Sanctum.Decks.Writeup). Author markup (headings, tables, blockquotes, images,
+   card links) is mapped onto the comic-dossier design instead of inline styles.
+   --------------------------------------------------------------------------- */
+.deck-writeup {
+  font-family: 'Barlow', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
+}
+
+.deck-writeup > :first-child {
+  margin-top: 0;
+}
+.deck-writeup > :last-child {
+  margin-bottom: 0;
+}
+
+.deck-writeup p {
+  margin: 0 0 1rem;
+}
+
+/* Author headings + the common bold/centered "section title" idiom */
+.deck-writeup h1,
+.deck-writeup h2,
+.deck-writeup h3,
+.deck-writeup h4,
+.deck-writeup h5,
+.deck-writeup h6,
+.deck-writeup center {
+  display: block;
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.05;
+  color: var(--color-base-content);
+  margin: 1.75rem 0 0.75rem;
+}
+.deck-writeup h1 { font-size: 1.7rem; }
+.deck-writeup h2 { font-size: 1.45rem; }
+.deck-writeup h3,
+.deck-writeup center { font-size: 1.25rem; }
+.deck-writeup h4,
+.deck-writeup h5,
+.deck-writeup h6 { font-size: 1.1rem; }
+
+.deck-writeup a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}
+.deck-writeup a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.deck-writeup strong { font-weight: 700; color: var(--color-base-content); }
+.deck-writeup em { font-style: italic; }
+.deck-writeup del,
+.deck-writeup s {
+  color: color-mix(in srgb, var(--color-base-content) 45%, transparent);
+}
+
+.deck-writeup ul,
+.deck-writeup ol {
+  margin: 0 0 1rem;
+  padding-left: 1.35rem;
+}
+.deck-writeup ul { list-style: square; }
+.deck-writeup ol { list-style: decimal; }
+.deck-writeup li { margin: 0.2rem 0; }
+.deck-writeup li::marker { color: var(--color-primary); }
+
+.deck-writeup blockquote {
+  margin: 1rem 0;
+  padding: 0.35rem 0 0.35rem 1rem;
+  border-left: 3px solid var(--color-primary);
+  color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
+  font-style: italic;
+}
+.deck-writeup blockquote p { margin: 0.25rem 0; }
+
+.deck-writeup hr {
+  border: 0;
+  height: 2px;
+  margin: 1.75rem 0;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-neutral) 0 8px,
+    transparent 8px 14px
+  );
+}
+
+.deck-writeup img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.25rem 0;
+  border: 2px solid var(--color-neutral);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.85);
+}
+
+.deck-writeup code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.85em;
+  background: var(--color-base-300);
+  padding: 0.1em 0.35em;
+  border: 1px solid var(--color-line);
+}
+.deck-writeup pre {
+  overflow-x: auto;
+  background: var(--color-base-300);
+  border: 2px solid var(--color-neutral);
+  padding: 0.85rem;
+  margin: 1rem 0;
+}
+.deck-writeup pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+/* Stat-block tables (Player Type / Complexity / ratings) */
+.deck-writeup table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+.deck-writeup th,
+.deck-writeup td {
+  border: 1px solid var(--color-line);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.deck-writeup thead th {
+  background: var(--color-base-300);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+}
+.deck-writeup tbody td:first-child {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-base-content) 65%, transparent);
+  white-space: nowrap;
+}
+
 /* This file is for your main application CSS */
