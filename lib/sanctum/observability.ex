@@ -21,6 +21,12 @@ defmodule Sanctum.Observability do
   Everything else (HTTP requests, LiveView, Oban jobs) is sampled at 100%.
   """
   def traces_sampler(%{transaction_context: %{name: name}}) do
+    # OTel span names are chardata, not necessarily binaries — e.g.
+    # opentelemetry_bandit names HTTP request spans with atoms (:GET, :HTTP).
+    # A crash here is worse than it looks: Sentry rescues sampler errors and
+    # samples the span at 0.0, silently dropping the trace.
+    name = to_string(name)
+
     oban_plugin_tick? =
       String.starts_with?(name, "Elixir.Oban.") and String.ends_with?(name, " process")
 
