@@ -1,3 +1,12 @@
+## [1.32.1](https://github.com/jwstover/sanctum/compare/v1.32.0...v1.32.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **observability:** drop LiveView longpoll traces from Sentry ([cae88a8](https://github.com/jwstover/sanctum/commit/cae88a828360569c8a241cdf0a1634a0843df959))
+
+
+
 # [1.32.0](https://github.com/jwstover/sanctum/compare/v1.31.2...v1.32.0) (2026-07-16)
 
 
@@ -41,15 +50,6 @@
 ### Features
 
 * **oban:** reset orphaned executing jobs on boot ([064ddf9](https://github.com/jwstover/sanctum/commit/064ddf90b7767e49396c2e34aa4f25001148391b))
-
-
-
-# [1.30.0](https://github.com/jwstover/sanctum/compare/v1.29.0...v1.30.0) (2026-07-16)
-
-
-### Features
-
-* **decks:** isolate HTML-heavy writeups in sandboxed iframes ([bac23de](https://github.com/jwstover/sanctum/commit/bac23de7edf3505a7c8af3ffde8d245993198334))
 
 
 
