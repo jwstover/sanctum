@@ -105,13 +105,10 @@ defmodule SanctumWeb.DeckLive.Show do
             <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
               Deck Notes
             </div>
-            <div
-              :if={@paragraphs != []}
-              class="font-barlow text-[15px] leading-[1.7] text-base-content/85"
-            >
-              <p :for={p <- @paragraphs} class="mb-4 whitespace-pre-line">{p}</p>
+            <div :if={@writeup_html} class="deck-writeup">
+              {@writeup_html}
             </div>
-            <div :if={@paragraphs == []} class="font-barlow text-[14px] italic text-base-content/45">
+            <div :if={!@writeup_html} class="font-barlow text-[14px] italic text-base-content/45">
               No writeup for this deck.
             </div>
           </.panel>
@@ -264,7 +261,7 @@ defmodule SanctumWeb.DeckLive.Show do
      |> assign(:cover, cover_view(deck, hero_gradient))
      |> assign(:groups, groups)
      |> assign(:similar, similar_views(deck))
-     |> assign(:paragraphs, paragraphs(deck.description_md))}
+     |> assign(:writeup_html, Sanctum.Decks.Writeup.to_html(deck.description_md))}
   end
 
   # Same-hero decks that share the most chosen cards with this one.
@@ -361,11 +358,6 @@ defmodule SanctumWeb.DeckLive.Show do
 
   defp author_initial(author),
     do: author |> String.trim_leading("@") |> String.first() |> String.upcase()
-
-  defp paragraphs(md) when is_binary(md) and md != "",
-    do: md |> String.split(~r/\n\s*\n/, trim: true) |> Enum.map(&String.trim/1)
-
-  defp paragraphs(_), do: []
 
   defp type_plural(type),
     do: Map.get(@type_plural, type, type |> to_string() |> String.capitalize())

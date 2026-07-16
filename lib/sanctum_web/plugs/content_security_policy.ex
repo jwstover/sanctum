@@ -29,13 +29,13 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
         "default-src 'self';" <>
           "style-src 'self' 'unsafe-inline';" <>
           "connect-src wss://#{host} https://#{host}:*#{sentry_ingest_origin()};" <>
-          "img-src 'self' blob: data: #{img_src_hosts()};" <>
+          "img-src 'self' blob: data: https: #{img_src_hosts()};" <>
           "font-src 'self' data:;"
 
       _ ->
         "default-src 'self' 'unsafe-eval' 'unsafe-inline' #{host}:4007;" <>
           "connect-src * ws://#{host}:* http://#{host}:*;" <>
-          "img-src 'self' blob: data: #{img_src_hosts()};" <>
+          "img-src 'self' blob: data: https: #{img_src_hosts()};" <>
           "font-src 'self' data:;"
     end
   end
@@ -49,6 +49,11 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
     end
   end
 
+  # NOTE: `img-src` also carries a blanket `https:` (see content_security_policy/0)
+  # so deck writeups can render images hotlinked from arbitrary hosts. This is an
+  # interim measure — the proper fix (mirror writeup images to our bucket, then
+  # drop `https:`) is described in deck-writeup-image-security.md at the repo root.
+  #
   # marvelcdb.com stays allowed: ad-hoc deck/card loads and fresh seeds store
   # marvelcdb image URLs until `mix sanctum.sync_cards` rewrites them.
   defp img_src_hosts do
