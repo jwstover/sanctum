@@ -329,7 +329,7 @@ defmodule Sanctum.MarvelCdb do
     Games.get_card_side_by_code(card_id, load: [:card])
     |> case do
       {:ok, %Games.CardSide{card: %Games.Card{} = card}} ->
-        Logger.info("Not loading existing card #{card_id}")
+        Logger.debug("Not loading existing card #{card_id}")
         {:ok, card}
 
       _ ->
