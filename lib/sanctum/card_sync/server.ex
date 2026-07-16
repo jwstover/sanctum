@@ -65,6 +65,7 @@ defmodule Sanctum.CardSync.Server do
   def handle_info({ref, result}, %{task_ref: ref} = state) do
     Process.demonitor(ref, [:flush])
     sync = finish_sync(state.sync, result)
+    emit_run_metrics(sync)
     {:noreply, broadcast(%{state | task_ref: nil, sync: sync}, :force)}
   end
 
@@ -80,6 +81,7 @@ defmodule Sanctum.CardSync.Server do
         failures: add_failure(state.sync.failures, "sync crashed: #{inspect(reason)}")
     }
 
+    emit_run_metrics(sync)
     {:noreply, broadcast(%{state | task_ref: nil, sync: sync}, :force)}
   end
 
@@ -213,6 +215,30 @@ defmodule Sanctum.CardSync.Server do
   end
 
   defp add_failure(failures, message), do: Enum.take([message | failures], @max_failures_kept)
+
+  # One summary event per finished (or crashed) run, from the accumulated
+  # snapshot. Wall-clock duration is fine here — runs are minutes long.
+  defp emit_run_metrics(sync) do
+    duration_ms =
+      if sync.started_at && sync.finished_at do
+        DateTime.diff(sync.finished_at, sync.started_at, :millisecond)
+      else
+        0
+      end
+
+    :telemetry.execute(
+      [:sanctum, :card_sync, :run, :stop],
+      %{
+        duration_ms: duration_ms,
+        synced: sync.data.synced,
+        data_failed: sync.data.failed,
+        uploaded: sync.images.uploaded,
+        skipped: sync.images.skipped,
+        images_failed: sync.images.failed
+      },
+      %{status: sync.status}
+    )
+  end
 
   defp broadcast_mode({:card, _}), do: :throttled
   defp broadcast_mode({:image, _}), do: :throttled

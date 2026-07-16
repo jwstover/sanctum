@@ -66,13 +66,24 @@ defmodule Sanctum.MarvelCdb do
   defp fetch_and_import(mcdb_type, mcdb_deck_id) do
     endpoint = if mcdb_type == :deck, do: "deck", else: "decklist"
 
-    "#{@base_url}/#{endpoint}/#{mcdb_deck_id}"
-    |> Req.get([max_retries: 1] ++ req_options())
-    |> handle_response()
-    |> case do
-      {:ok, decklist} -> import_decklist(decklist, mcdb_type: mcdb_type)
-      err -> err
-    end
+    result =
+      "#{@base_url}/#{endpoint}/#{mcdb_deck_id}"
+      |> http_get(mcdb_type, max_retries: 1)
+      |> handle_response()
+      |> case do
+        {:ok, decklist} -> import_decklist(decklist, mcdb_type: mcdb_type)
+        err -> err
+      end
+
+    # load_deck/1 is only reached from user-initiated imports (game setup,
+    # admin) — the scheduled by-date sync calls import_decklist/2 directly.
+    :telemetry.execute(
+      [:sanctum, :deck, :user_import],
+      %{count: 1},
+      %{result: if(match?({:ok, _}, result), do: :ok, else: :error), mcdb_type: mcdb_type}
+    )
+
+    result
   end
 
   @doc """
@@ -363,7 +374,7 @@ defmodule Sanctum.MarvelCdb do
   @spec get_cards_by_pack(String.t()) :: {:ok, list(map())} | {:error, term()}
   def get_cards_by_pack(pack_code) when is_binary(pack_code) do
     "#{@base_url}/cards/#{pack_code}"
-    |> Req.get([max_retries: 1] ++ req_options())
+    |> http_get(:cards_by_pack, max_retries: 1)
     |> handle_response()
   end
 
@@ -378,9 +389,10 @@ defmodule Sanctum.MarvelCdb do
           | {:error, term()}
   def get_decklists_by_date(%Date{} = date) do
     "#{@base_url}/decklists/by_date/#{Date.to_iso8601(date)}"
-    |> Req.get(
-      [retry: :transient, max_retries: 2, receive_timeout: @decklist_receive_timeout_ms] ++
-        req_options()
+    |> http_get(:decklists_by_date,
+      retry: :transient,
+      max_retries: 2,
+      receive_timeout: @decklist_receive_timeout_ms
     )
     |> handle_decklist_response()
   end
@@ -408,7 +420,7 @@ defmodule Sanctum.MarvelCdb do
   @spec get_all_cards() :: {:ok, list(map())} | {:error, term()}
   def get_all_cards do
     "#{@base_url}/cards/?encounter=1"
-    |> Req.get([max_retries: 1] ++ req_options())
+    |> http_get(:all_cards, max_retries: 1)
     |> handle_response()
   end
 
@@ -416,7 +428,7 @@ defmodule Sanctum.MarvelCdb do
   @spec get_packs() :: {:ok, list(map())} | {:error, term()}
   def get_packs do
     "#{@base_url}/packs/"
-    |> Req.get([max_retries: 1] ++ req_options())
+    |> http_get(:packs, max_retries: 1)
     |> handle_response()
   end
 
@@ -553,7 +565,7 @@ defmodule Sanctum.MarvelCdb do
   # retry treats as transient — never retry single-card fetches.
   defp fetch_card(card_id) do
     "#{@base_url}/card/#{card_id}"
-    |> Req.get([retry: false] ++ req_options())
+    |> http_get(:card, retry: false)
     |> handle_response()
   end
 
@@ -1144,6 +1156,29 @@ defmodule Sanctum.MarvelCdb do
       {:ok, %Req.Response{status: status}} -> {:error, "Unexpected status code: #{status}"}
       {:error, exception} -> {:error, exception}
     end
+  end
+
+  # Every MarvelCDB request funnels through here so a single telemetry event
+  # covers per-endpoint request counts, status classes, and latency. The
+  # duration spans Req's internal retries; `status` is the final outcome
+  # (an HTTP status, or `:error` when no response came back at all).
+  defp http_get(url, endpoint, extra_opts) do
+    started_at = System.monotonic_time(:millisecond)
+    result = Req.get(url, extra_opts ++ req_options())
+
+    status =
+      case result do
+        {:ok, %Req.Response{status: status}} -> status
+        {:error, _} -> :error
+      end
+
+    :telemetry.execute(
+      [:sanctum, :marvel_cdb, :request, :stop],
+      %{duration_ms: System.monotonic_time(:millisecond) - started_at},
+      %{endpoint: endpoint, status: status}
+    )
+
+    result
   end
 
   defp req_options, do: Application.get_env(:sanctum, :marvel_cdb_req_options, [])

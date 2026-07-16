@@ -20,6 +20,7 @@ defmodule SanctumWeb.GameLive.New do
 
     case Games.create_game(game_params, actor: current_user) do
       {:ok, game} ->
+        Sanctum.Observability.game_created()
         {:noreply, push_navigate(socket, to: ~p"/games/#{game.id}")}
 
       {:error, changeset} ->

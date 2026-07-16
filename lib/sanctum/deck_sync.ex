@@ -68,6 +68,7 @@ defmodule Sanctum.DeckSync do
   `%{date, reason}`.
   """
   def run(opts \\ []) do
+    started_at = System.monotonic_time(:millisecond)
     progress = Keyword.get(opts, :progress_fun, &log_progress/1)
     start_date = start_date(opts)
     until = Keyword.get(opts, :until, Date.utc_today())
@@ -119,6 +120,18 @@ defmodule Sanctum.DeckSync do
 
     progress.({:done, summary})
 
+    :telemetry.execute(
+      [:sanctum, :deck_sync, :run, :stop],
+      %{
+        duration_ms: System.monotonic_time(:millisecond) - started_at,
+        days: summary.days,
+        processed: summary.processed,
+        imported: summary.imported,
+        failed: summary.failed
+      },
+      %{halted: summary.halted}
+    )
+
     if acc.halted, do: {:error, summary}, else: {:ok, summary}
   end
 
@@ -160,6 +173,12 @@ defmodule Sanctum.DeckSync do
         if MarvelCdb.decklists_endpoint_healthy?() do
           Logger.info(
             "Deck sync #{date}: MarvelCDB #{status}, endpoint healthy — treating as empty day"
+          )
+
+          :telemetry.execute(
+            [:sanctum, :deck_sync, :empty_day],
+            %{count: 1},
+            %{date: date, status: status}
           )
 
           progress.({:date, %{date: date, imported: 0, failed: 0}})

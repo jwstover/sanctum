@@ -11,7 +11,19 @@ defmodule Sanctum.Decks.ComputeUniquenessWorker do
 
   @impl Oban.Worker
   def perform(_job) do
-    with {:ok, _summary} <- Sanctum.Decks.Uniqueness.recompute_all() do
+    started_at = System.monotonic_time(:millisecond)
+
+    with {:ok, %{decks: decks, ranked: ranked}} <- Sanctum.Decks.Uniqueness.recompute_all() do
+      :telemetry.execute(
+        [:sanctum, :uniqueness, :recompute, :stop],
+        %{
+          duration_ms: System.monotonic_time(:millisecond) - started_at,
+          decks: decks,
+          ranked: ranked
+        },
+        %{}
+      )
+
       :ok
     end
   end
