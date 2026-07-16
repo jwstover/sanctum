@@ -72,7 +72,14 @@ config :sanctum,
   env: config_env(),
   ecto_repos: [Sanctum.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Sanctum.Accounts, Sanctum.Decks, Sanctum.Games, Sanctum.Heroes, Sanctum.Villains]
+  ash_domains: [
+    Sanctum.Accounts,
+    Sanctum.Catalog,
+    Sanctum.Decks,
+    Sanctum.Games,
+    Sanctum.Heroes,
+    Sanctum.Villains
+  ]
 
 # Public base URL of the bucket that mirrors MarvelCDB card scans (see
 # `mix sanctum.sync_cards`). Dev and prod share the same public bucket.

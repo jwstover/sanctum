@@ -24,6 +24,8 @@ defmodule Sanctum.CardSync do
   Runs the sync. Options:
 
     * `:packs` — `:all` (default, one all-cards request) or a list of pack codes
+    * `:packs_meta?` — sync the product/pack catalog from `/packs/` + curated
+      overlay before card data (default true)
     * `:data?` — upsert cards/sides (default true)
     * `:images?` — mirror scans to the bucket (default true; needs AWS env vars)
     * `:dry_run?` — report counts without writing (default false)
@@ -31,7 +33,8 @@ defmodule Sanctum.CardSync do
     * `:progress_fun` — receives progress events (see below); defaults to
       printing CLI-style progress to stdout
 
-  Progress events: `{:data_started, %{entries, cards}}`,
+  Progress events: `{:packs_started, %{}}`, `{:packs_done, %{count, result}}`,
+  `{:data_started, %{entries, cards}}`,
   `{:card, %{index, total, base_code, name, ok?}}`, `{:data_done, %{synced,
   failures}}`, `{:images_started, %{total}}`, `{:image, %{index, total, file,
   result}}`, `{:images_done, %{uploaded, skipped, failures}}`, and
@@ -57,6 +60,10 @@ defmodule Sanctum.CardSync do
   end
 
   defp run_sync(entries, opts, progress) do
+    # Packs must sync before card data — the CardSet pre-pass in
+    # MarvelCdb.sync_entries/2 resolves Card FKs against synced packs.
+    if Keyword.get(opts, :packs_meta?, true), do: sync_packs(progress)
+
     data = if Keyword.get(opts, :data?, true), do: sync_data(entries, progress)
 
     images =
@@ -77,6 +84,14 @@ defmodule Sanctum.CardSync do
         err -> {:halt, err}
       end
     end)
+  end
+
+  defp sync_packs(progress) do
+    progress.({:packs_started, %{}})
+    result = MarvelCdb.sync_packs()
+    count = length(Sanctum.Catalog.list_packs!(authorize?: false))
+    progress.({:packs_done, %{count: count, result: result}})
+    result
   end
 
   defp sync_data(entries, progress) do
@@ -168,6 +183,11 @@ defmodule Sanctum.CardSync do
 
   # Default progress handler: CLI-style output for the mix task and release
   # eval. Plain IO so it shows in both contexts.
+  defp log_progress({:packs_started, _}), do: IO.puts("Syncing packs...")
+
+  defp log_progress({:packs_done, %{count: count}}),
+    do: IO.puts("Packs: #{count} products synced")
+
   defp log_progress({:data_started, %{entries: entries}}),
     do: IO.puts("Syncing card data for #{entries} entries...")
 

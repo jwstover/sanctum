@@ -122,6 +122,12 @@ defmodule Sanctum.CardSync.Server do
     }
   end
 
+  defp apply_event(sync, {:packs_started, _}),
+    do: %{sync | phase: :packs, index: 0, total: nil, current: "packs"}
+
+  defp apply_event(sync, {:packs_done, %{count: count}}),
+    do: %{sync | current: "#{count} products synced"}
+
   defp apply_event(sync, {:data_started, %{cards: cards}}),
     do: %{sync | phase: :data, index: 0, total: cards, current: nil}
 

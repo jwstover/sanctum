@@ -8,6 +8,7 @@ defmodule Mix.Tasks.Sanctum.SyncCards do
       mix sanctum.sync_cards                  # all cards + images
       mix sanctum.sync_cards --pack core      # one pack (repeatable)
       mix sanctum.sync_cards --skip-images    # card data only
+      mix sanctum.sync_cards --skip-packs     # don't refresh the pack catalog
       mix sanctum.sync_cards --images-only    # bucket mirror only
       mix sanctum.sync_cards --dry-run        # report counts, write nothing
       mix sanctum.sync_cards --force          # re-upload existing objects
@@ -29,6 +30,7 @@ defmodule Mix.Tasks.Sanctum.SyncCards do
     pack: :keep,
     images_only: :boolean,
     skip_images: :boolean,
+    skip_packs: :boolean,
     dry_run: :boolean,
     force: :boolean
   ]
@@ -46,6 +48,8 @@ defmodule Mix.Tasks.Sanctum.SyncCards do
     sync_opts = [
       packs: packs,
       data?: not Keyword.get(opts, :images_only, false),
+      packs_meta?:
+        not Keyword.get(opts, :images_only, false) and not Keyword.get(opts, :skip_packs, false),
       images?: not Keyword.get(opts, :skip_images, false),
       dry_run?: Keyword.get(opts, :dry_run, false),
       force?: Keyword.get(opts, :force, false)

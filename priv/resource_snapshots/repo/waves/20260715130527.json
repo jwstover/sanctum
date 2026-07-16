@@ -21,8 +21,8 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "name",
-      "type": "text"
+      "source": "number",
+      "type": "bigint"
     },
     {
       "allow_nil?": false,
@@ -33,28 +33,53 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "set_code",
+      "source": "name",
       "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inserted_at",
+      "type": "utc_datetime_usec"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "updated_at",
+      "type": "utc_datetime_usec"
     }
   ],
   "base_filter": null,
   "check_constraints": [],
+  "create_table_options": null,
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "A5CA42CC7ED3E7BF539D01FA3BE488A807DB8B67027309E85A220972C286A9E8",
+  "hash": "270E523B8AB1615602CC8663E53C4AC65C1C60C36EAEFD4A8F93A0CF82BE5931",
   "identities": [
     {
       "all_tenants?": false,
       "base_filter": null,
-      "index_name": "modular_sets_set_code_index",
+      "index_name": "waves_unique_number_index",
       "keys": [
         {
           "type": "atom",
-          "value": "set_code"
+          "value": "number"
         }
       ],
-      "name": "set_code",
+      "name": "unique_number",
       "nils_distinct?": true,
       "where": null
     }
@@ -66,5 +91,5 @@
   },
   "repo": "Elixir.Sanctum.Repo",
   "schema": null,
-  "table": "modular_sets"
+  "table": "waves"
 }
