@@ -23,6 +23,7 @@ defmodule Sanctum.Application do
          Application.fetch_env!(:sanctum, Oban)
        )},
       {Phoenix.PubSub, name: Sanctum.PubSub},
+      SanctumWeb.Presence,
       {Task.Supervisor, name: Sanctum.TaskSupervisor},
       Sanctum.CardSync.Server,
       Sanctum.DeckSync.Monitor,

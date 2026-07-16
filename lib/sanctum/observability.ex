@@ -17,7 +17,8 @@ defmodule Sanctum.Observability do
     [:sanctum, :deck, :user_import],
     [:sanctum, :game, :created],
     [:sanctum, :game, :action],
-    [:sanctum, :auth, :sign_in]
+    [:sanctum, :auth, :sign_in],
+    [:sanctum, :sessions, :active]
   ]
 
   @doc """
@@ -146,6 +147,11 @@ defmodule Sanctum.Observability do
 
   def handle_metric_event([:sanctum, :game, :action], m, meta, :ok) do
     Sentry.Metrics.count("game.action", m.count, attributes: %{action: to_string(meta.action)})
+  end
+
+  # Zero is meaningful for this gauge (nobody online), so it is always emitted.
+  def handle_metric_event([:sanctum, :sessions, :active], m, _meta, :ok) do
+    Sentry.Metrics.gauge("sessions.active", m.count, unit: "session")
   end
 
   def handle_metric_event([:sanctum, :auth, :sign_in], m, meta, :ok) do

@@ -40,7 +40,8 @@ defmodule SanctumWeb.Router do
   scope "/", SanctumWeb do
     pipe_through :browser
 
-    ash_authentication_live_session :authenticated_routes do
+    ash_authentication_live_session :authenticated_routes,
+      on_mount: [{SanctumWeb.Presence, :track}] do
       # in each liveview, add one of the following at the top of the module:
       #
       # If an authenticated user must be present:
@@ -75,7 +76,10 @@ defmodule SanctumWeb.Router do
     end
 
     ash_authentication_live_session :admin_routes,
-      on_mount: [{SanctumWeb.LiveUserAuth, :live_admin_required}] do
+      on_mount: [
+        {SanctumWeb.LiveUserAuth, :live_admin_required},
+        {SanctumWeb.Presence, :track}
+      ] do
       # Admin landing page — system health + links to admin surfaces.
       live "/admin", AdminLive.Index, :index
 

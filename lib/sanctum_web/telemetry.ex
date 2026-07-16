@@ -11,7 +11,16 @@ defmodule SanctumWeb.Telemetry do
     children = [
       # Telemetry poller will execute the given period measurements
       # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
-      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
+      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000},
+      # Active-sessions gauge on its own slower cadence — every emission is a
+      # metric row in Sentry, so once a minute is plenty. init_delay: this
+      # supervisor starts before Presence, and telemetry_poller permanently
+      # drops a measurement whose first run crashes.
+      {:telemetry_poller,
+       measurements: [{SanctumWeb.Presence, :emit_active_sessions, []}],
+       period: :timer.minutes(1),
+       init_delay: :timer.seconds(15),
+       name: :sanctum_sessions_poller}
       # Add reporters as children of your supervision tree.
       # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
     ]
