@@ -32,6 +32,26 @@ defmodule Sanctum.CardImages do
 
   def base_url, do: Application.fetch_env!(:sanctum, :card_image_base_url)
 
+  @doc """
+  Object key for a stored `image_url` (a full public bucket URL), or nil.
+
+  Inverse of `public_url/1`: strips the bucket base URL to recover the key.
+  Falls back to `cards/<basename>` for any other absolute path or bare name,
+  so an admin replacement always lands under the `cards/` prefix.
+  """
+  def key_from_url(nil), do: nil
+  def key_from_url(""), do: nil
+
+  def key_from_url(url) when is_binary(url) do
+    prefix = base_url() <> "/"
+
+    if String.starts_with?(url, prefix) do
+      String.replace_prefix(url, prefix, "")
+    else
+      object_key(url)
+    end
+  end
+
   @doc "Whether the object already exists in the bucket (unsigned HEAD on the public URL)."
   def exists?(key) when is_binary(key) do
     case Req.head(base_url() <> "/" <> key, retry: false) do
@@ -64,7 +84,7 @@ defmodule Sanctum.CardImages do
 
   defp download_and_upload(imagesrc, key) do
     with {:ok, body} <- download(imagesrc),
-         :ok <- upload(key, body) do
+         :ok <- put_object(key, body) do
       {:ok, :uploaded}
     end
   end
@@ -86,14 +106,21 @@ defmodule Sanctum.CardImages do
     end
   end
 
-  defp upload(key, body) do
+  @doc """
+  Uploads raw `body` bytes to the bucket at `key`, overwriting any existing
+  object. Needs the S3 env vars (see moduledoc). `content_type` defaults to a
+  value inferred from the key's extension.
+
+  Returns `:ok` or `{:error, reason}`.
+  """
+  def put_object(key, body, content_type \\ nil) do
     endpoint = System.fetch_env!("AWS_ENDPOINT_URL_S3")
     bucket = System.fetch_env!("BUCKET_NAME")
 
     "#{endpoint}/#{bucket}/#{key}"
     |> Req.put(
       body: body,
-      headers: [content_type: content_type(key)],
+      headers: [content_type: content_type || content_type(key)],
       aws_sigv4: [
         access_key_id: System.fetch_env!("AWS_ACCESS_KEY_ID"),
         secret_access_key: System.fetch_env!("AWS_SECRET_ACCESS_KEY"),
