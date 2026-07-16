@@ -1,3 +1,17 @@
+# [1.27.0](https://github.com/jwstover/sanctum/compare/v1.26.0...v1.27.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **deck-sync:** checkpoint cursor after each successful day ([297fec9](https://github.com/jwstover/sanctum/commit/297fec9002c11ab63878bc6a2e1569b0a83173ac))
+
+
+### Features
+
+* **decks:** render MarvelCDB writeups as safe themed HTML ([05fe9ec](https://github.com/jwstover/sanctum/commit/05fe9ec930b7a48c291aebbc9e9a0b6bd1ab36cb))
+
+
+
 # [1.26.0](https://github.com/jwstover/sanctum/compare/v1.25.5...v1.26.0) (2026-07-16)
 
 
@@ -32,15 +46,6 @@
 ### Bug Fixes
 
 * **observability:** move traces_sampler to runtime config to unbreak deploy ([9d0a289](https://github.com/jwstover/sanctum/commit/9d0a289af1ae4c71dff8335470ce25fec733eb7b)), closes [#143](https://github.com/jwstover/sanctum/issues/143)
-
-
-
-## [1.25.2](https://github.com/jwstover/sanctum/compare/v1.25.1...v1.25.2) (2026-07-15)
-
-
-### Bug Fixes
-
-* **observability:** stop background-noise transactions flooding Sentry ([41bd43d](https://github.com/jwstover/sanctum/commit/41bd43d8e4c7184ce3835a06ecb530002a89d7f3))
 
 
 
