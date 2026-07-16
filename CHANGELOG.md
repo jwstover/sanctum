@@ -1,3 +1,12 @@
+# [1.28.0](https://github.com/jwstover/sanctum/compare/v1.27.0...v1.28.0) (2026-07-16)
+
+
+### Features
+
+* **nav:** replace header links with daisyUI drawer sidebar ([bc9ce0c](https://github.com/jwstover/sanctum/commit/bc9ce0c2d01573093b78273068bbe2f16a25e10f))
+
+
+
 # [1.27.0](https://github.com/jwstover/sanctum/compare/v1.26.0...v1.27.0) (2026-07-16)
 
 
@@ -37,15 +46,6 @@
 ### Bug Fixes
 
 * **observability:** coerce span names to strings in traces_sampler ([5b96aa3](https://github.com/jwstover/sanctum/commit/5b96aa3e4c8558623d6aea4d0a6dee5e161323d0))
-
-
-
-## [1.25.3](https://github.com/jwstover/sanctum/compare/v1.25.2...v1.25.3) (2026-07-15)
-
-
-### Bug Fixes
-
-* **observability:** move traces_sampler to runtime config to unbreak deploy ([9d0a289](https://github.com/jwstover/sanctum/commit/9d0a289af1ae4c71dff8335470ce25fec733eb7b)), closes [#143](https://github.com/jwstover/sanctum/issues/143)
 
 
 
