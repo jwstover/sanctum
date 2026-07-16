@@ -1,3 +1,12 @@
+# [1.29.0](https://github.com/jwstover/sanctum/compare/v1.28.0...v1.29.0) (2026-07-16)
+
+
+### Features
+
+* **observability:** custom Sentry metrics via telemetry events ([3b5b436](https://github.com/jwstover/sanctum/commit/3b5b436df2843b2ecfebf0e94669a12fca5542ba))
+
+
+
 # [1.28.0](https://github.com/jwstover/sanctum/compare/v1.27.0...v1.28.0) (2026-07-16)
 
 
@@ -37,15 +46,6 @@
 ### Bug Fixes
 
 * **deck-sync:** treat MarvelCDB 500 as empty day when endpoint is healthy ([583d40a](https://github.com/jwstover/sanctum/commit/583d40a24d60ba334c330d1f2c52603800c82465))
-
-
-
-## [1.25.4](https://github.com/jwstover/sanctum/compare/v1.25.3...v1.25.4) (2026-07-15)
-
-
-### Bug Fixes
-
-* **observability:** coerce span names to strings in traces_sampler ([5b96aa3](https://github.com/jwstover/sanctum/commit/5b96aa3e4c8558623d6aea4d0a6dee5e161323d0))
 
 
 
