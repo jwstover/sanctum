@@ -44,3 +44,8 @@ config :phoenix_live_view,
 # Spans only go to Sentry in prod; stop the OTLP exporter from retrying
 # a nonexistent localhost collector.
 config :opentelemetry, traces_exporter: :none
+
+# The metrics telemetry handler is attached in every env; keep tests from
+# buffering metrics in Sentry's TelemetryProcessor (nothing sends without a
+# DSN, but there's no reason to accumulate them either).
+config :sentry, enable_metrics: false

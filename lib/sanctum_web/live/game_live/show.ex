@@ -10,6 +10,7 @@ defmodule SanctumWeb.GameLive.Show do
   alias Sanctum.Games.GamePlayer
   alias Sanctum.Games
   alias Sanctum.Games.Game
+  alias Sanctum.Observability
   alias SanctumWeb.Components.Card
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
@@ -109,6 +110,8 @@ defmodule SanctumWeb.GameLive.Show do
         actor: user
       )
 
+    Observability.game_action(:move)
+
     # Remove from source stream
     socket =
       case source_zone do
@@ -172,6 +175,8 @@ defmodule SanctumWeb.GameLive.Show do
         actor: socket.assigns.current_user
       )
 
+    Observability.game_action(:deal_encounter, length(cards))
+
     {:noreply, stream(socket, :facedown_encounters, cards)}
   end
 
@@ -179,6 +184,7 @@ defmodule SanctumWeb.GameLive.Show do
     game_player = socket.assigns.game_player
 
     Games.draw_cards(game_player.id, 1, actor: socket.assigns.current_user)
+    Observability.game_action(:draw)
 
     {:noreply,
      socket
@@ -195,6 +201,7 @@ defmodule SanctumWeb.GameLive.Show do
 
     if count > 0 do
       Games.draw_cards(game_player.id, count, actor: socket.assigns.current_user)
+      Observability.game_action(:draw, count)
 
       {:noreply,
        socket
@@ -210,6 +217,7 @@ defmodule SanctumWeb.GameLive.Show do
     game_player = socket.assigns.game_player
 
     Games.flip_identity(game_player)
+    Observability.game_action(:flip_identity)
 
     {:noreply, socket |> assign_game_player() |> assign_hand_sizes()}
   end
@@ -219,6 +227,7 @@ defmodule SanctumWeb.GameLive.Show do
     amount = String.to_integer(amount_str)
 
     Games.change_health(game_player, %{amount: amount}, actor: socket.assigns.current_user)
+    Observability.game_action(:change_health)
 
     {:noreply, socket |> assign_game_player()}
   end
@@ -231,6 +240,8 @@ defmodule SanctumWeb.GameLive.Show do
       actor: socket.assigns.current_user
     )
 
+    Observability.game_action(:change_villain_health)
+
     {:noreply, socket |> assign_game()}
   end
 
@@ -241,6 +252,8 @@ defmodule SanctumWeb.GameLive.Show do
         actor: socket.assigns.current_user
       )
       |> Games.flip_card()
+
+    Observability.game_action(:flip_card)
 
     zone =
       case card.zone do
@@ -282,6 +295,8 @@ defmodule SanctumWeb.GameLive.Show do
       |> Ash.Changeset.for_update(:update_counters, args)
       |> Ash.update!(actor: socket.assigns.current_user)
 
+    Observability.game_action(:update_counters)
+
     socket = maybe_update_selected_card(socket, card)
 
     zone =
@@ -299,6 +314,7 @@ defmodule SanctumWeb.GameLive.Show do
         %{"delta" => delta, "game_card_id" => game_card_id},
         socket
       ) do
+    Observability.game_action(:update_scheme_counters)
     {:noreply, update_scheme_counters(socket, game_card_id, %{threat_delta: delta})}
   end
 
@@ -307,6 +323,7 @@ defmodule SanctumWeb.GameLive.Show do
         %{"delta" => delta, "game_card_id" => game_card_id},
         socket
       ) do
+    Observability.game_action(:update_scheme_counters)
     {:noreply, update_scheme_counters(socket, game_card_id, %{counter_delta: delta})}
   end
 
@@ -314,6 +331,8 @@ defmodule SanctumWeb.GameLive.Show do
     {:ok, scheme} =
       Games.get_game_card!(game_card_id, actor: socket.assigns.current_user)
       |> Games.flip_scheme_card(load: [:active_side], actor: socket.assigns.current_user)
+
+    Observability.game_action(:flip_scheme)
 
     socket =
       socket

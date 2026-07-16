@@ -8,6 +8,7 @@ defmodule Sanctum.Application do
   @impl true
   def start(_type, _args) do
     setup_opentelemetry()
+    Sanctum.Observability.attach_metrics_handlers()
 
     children = [
       SanctumWeb.Telemetry,

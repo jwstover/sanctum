@@ -3,6 +3,7 @@ defmodule SanctumWeb.AuthController do
   use AshAuthentication.Phoenix.Controller
 
   def success(conn, activity, user, _token) do
+    Sanctum.Observability.auth_success(activity)
     return_to = get_session(conn, :return_to) || ~p"/"
 
     message =
@@ -22,7 +23,7 @@ defmodule SanctumWeb.AuthController do
   end
 
   def failure(conn, activity, reason) do
-    message =
+    {message, reason_tag} =
       case {activity, reason} do
         {_,
          %AshAuthentication.Errors.AuthenticationFailed{
@@ -30,14 +31,16 @@ defmodule SanctumWeb.AuthController do
              errors: [%AshAuthentication.Errors.CannotConfirmUnconfirmedUser{}]
            }
          }} ->
-          """
-          You have already signed in another way, but have not confirmed your account.
-          You can confirm your account using the link we sent to you, or by resetting your password.
-          """
+          {"""
+           You have already signed in another way, but have not confirmed your account.
+           You can confirm your account using the link we sent to you, or by resetting your password.
+           """, :unconfirmed_user}
 
         _ ->
-          "Incorrect email or password"
+          {"Incorrect email or password", :invalid_credentials}
       end
+
+    Sanctum.Observability.auth_failure(activity, reason_tag)
 
     conn
     |> put_flash(:error, message)
