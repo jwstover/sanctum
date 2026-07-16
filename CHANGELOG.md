@@ -1,3 +1,12 @@
+## [1.31.1](https://github.com/jwstover/sanctum/compare/v1.31.0...v1.31.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **heroes:** resolve hero_side has_one deterministically for dual-form heroes ([ce54e10](https://github.com/jwstover/sanctum/commit/ce54e10508840a6a71765b8d3ea359ba7f7c8d00))
+
+
+
 # [1.31.0](https://github.com/jwstover/sanctum/compare/v1.30.0...v1.31.0) (2026-07-16)
 
 
@@ -36,20 +45,6 @@
 ### Features
 
 * **nav:** replace header links with daisyUI drawer sidebar ([bc9ce0c](https://github.com/jwstover/sanctum/commit/bc9ce0c2d01573093b78273068bbe2f16a25e10f))
-
-
-
-# [1.27.0](https://github.com/jwstover/sanctum/compare/v1.26.0...v1.27.0) (2026-07-16)
-
-
-### Bug Fixes
-
-* **deck-sync:** checkpoint cursor after each successful day ([297fec9](https://github.com/jwstover/sanctum/commit/297fec9002c11ab63878bc6a2e1569b0a83173ac))
-
-
-### Features
-
-* **decks:** render MarvelCDB writeups as safe themed HTML ([05fe9ec](https://github.com/jwstover/sanctum/commit/05fe9ec930b7a48c291aebbc9e9a0b6bd1ab36cb))
 
 
 
