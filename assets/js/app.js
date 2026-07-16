@@ -51,6 +51,11 @@ const liveSocket = new LiveSocket("/live", Socket, {
   hooks: {...colocatedHooks, CardDrag, DragDrop, LayoutHand},
 })
 
+// Uncheck the daisyUI drawer toggle when a sidebar link is clicked, so the
+// mobile slideout closes across live navigation (checkbox state survives
+// LiveView DOM patches).
+window.addEventListener("sanctum:close-drawer", e => { e.target.checked = false })
+
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
