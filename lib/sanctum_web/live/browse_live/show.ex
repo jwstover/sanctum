@@ -29,7 +29,7 @@ defmodule SanctumWeb.BrowseLive.Show do
            load: [:wave, :card_total, card_sets: [cards: [:primary_side, :card_sides]]]
          ) do
       {:ok, %Catalog.Pack{} = pack} ->
-        hero_colors = load_hero_colors()
+        hero_colors = Sanctum.Heroes.hero_color_map()
 
         {:ok,
          socket
@@ -166,8 +166,9 @@ defmodule SanctumWeb.BrowseLive.Show do
       </div>
 
       <div class="flex flex-wrap gap-2.5">
-        <div
+        <.link
           :for={card <- @cards}
+          navigate={~p"/cards/#{card.card_id}"}
           class={
             [
               "h-[210px] flex-none border-2 border-neutral shadow-comic-sm",
@@ -190,7 +191,7 @@ defmodule SanctumWeb.BrowseLive.Show do
             size="md"
             show_cost={false}
           />
-        </div>
+        </.link>
       </div>
     </section>
     """
@@ -337,6 +338,7 @@ defmodule SanctumWeb.BrowseLive.Show do
         |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
 
       %{
+        card_id: card.id,
         code: side.code,
         # Keep a card's faces adjacent and primary-first, then order cards among
         # themselves by the canonical code.
@@ -358,12 +360,6 @@ defmodule SanctumWeb.BrowseLive.Show do
   end
 
   defp card_views(_card, _hero_colors), do: []
-
-  defp load_hero_colors do
-    Sanctum.Heroes.Hero
-    |> Ash.read!()
-    |> Map.new(fn h -> {h.set, {h.primary_color, h.secondary_color}} end)
-  end
 
   defp hero_gradient(set, hero_colors) do
     case Map.get(hero_colors, set) do
