@@ -61,8 +61,9 @@ defmodule SanctumWeb.Router do
       live "/browse", BrowseLive.Index, :index
       live "/browse/:pack", BrowseLive.Show, :show
 
-      # Public card pool (catalog reads are unauthenticated).
+      # Public card pool + card detail (catalog reads are unauthenticated).
       live "/cards", CardLive.Pool, :index
+      live "/cards/:id", CardLive.Detail, :show
 
       # Public deck browser + detail (deck reads are unauthenticated).
       live "/decks", DeckLive.Index, :index
