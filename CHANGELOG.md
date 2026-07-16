@@ -1,3 +1,12 @@
+# [1.34.0](https://github.com/jwstover/sanctum/compare/v1.33.0...v1.34.0) (2026-07-16)
+
+
+### Features
+
+* **browse:** show all card sides and render environments portrait ([0e7542a](https://github.com/jwstover/sanctum/commit/0e7542ad76d9267bb317683a53c519f870af8c0d))
+
+
+
 # [1.33.0](https://github.com/jwstover/sanctum/compare/v1.32.1...v1.33.0) (2026-07-16)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * **sync:** demote 'Not loading existing card' log to debug ([bb4570d](https://github.com/jwstover/sanctum/commit/bb4570deebfc09ee2333635763f89800135bf7a6))
-
-
-
-## [1.31.1](https://github.com/jwstover/sanctum/compare/v1.31.0...v1.31.1) (2026-07-16)
-
-
-### Bug Fixes
-
-* **heroes:** resolve hero_side has_one deterministically for dual-form heroes ([ce54e10](https://github.com/jwstover/sanctum/commit/ce54e10508840a6a71765b8d3ea359ba7f7c8d00))
 
 
 
