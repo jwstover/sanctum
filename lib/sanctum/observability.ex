@@ -10,6 +10,7 @@ defmodule Sanctum.Observability do
 
   @metric_events [
     [:sanctum, :deck_sync, :run, :stop],
+    [:sanctum, :deck_sync, :day, :stop],
     [:sanctum, :deck_sync, :empty_day],
     [:sanctum, :marvel_cdb, :request, :stop],
     [:sanctum, :card_sync, :run, :stop],
@@ -73,11 +74,11 @@ defmodule Sanctum.Observability do
   ## Telemetry -> Sentry.Metrics
 
   @doc false
+  # Run-level metrics only — the per-day counters (days_processed,
+  # decks_imported, decks_failed) are emitted from the `:day` event below so
+  # they land incrementally during long backfills.
   def handle_metric_event([:sanctum, :deck_sync, :run, :stop], m, meta, :ok) do
     Sentry.Metrics.distribution("deck_sync.run.duration", m.duration_ms, unit: "millisecond")
-    count_nonzero("deck_sync.days_processed", m.processed, "day")
-    count_nonzero("deck_sync.decks_imported", m.imported, "deck")
-    count_nonzero("deck_sync.decks_failed", m.failed, "deck")
 
     case meta.halted do
       %{date: date, reason: reason} ->
@@ -88,6 +89,12 @@ defmodule Sanctum.Observability do
       nil ->
         :ok
     end
+  end
+
+  def handle_metric_event([:sanctum, :deck_sync, :day, :stop], m, _meta, :ok) do
+    Sentry.Metrics.count("deck_sync.days_processed", 1, unit: "day")
+    count_nonzero("deck_sync.decks_imported", m.imported, "deck")
+    count_nonzero("deck_sync.decks_failed", m.failed, "deck")
   end
 
   def handle_metric_event([:sanctum, :deck_sync, :empty_day], m, meta, :ok) do
