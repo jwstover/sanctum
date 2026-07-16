@@ -1,3 +1,17 @@
+# [1.31.0](https://github.com/jwstover/sanctum/compare/v1.30.0...v1.31.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **decks:** stop similar-decks titles forcing horizontal scroll on mobile ([de89d81](https://github.com/jwstover/sanctum/commit/de89d8190bb110e121ead50f4612f11212209a79))
+
+
+### Features
+
+* **oban:** reset orphaned executing jobs on boot ([064ddf9](https://github.com/jwstover/sanctum/commit/064ddf90b7767e49396c2e34aa4f25001148391b))
+
+
+
 # [1.30.0](https://github.com/jwstover/sanctum/compare/v1.29.0...v1.30.0) (2026-07-16)
 
 
@@ -36,16 +50,6 @@
 ### Features
 
 * **decks:** render MarvelCDB writeups as safe themed HTML ([05fe9ec](https://github.com/jwstover/sanctum/commit/05fe9ec930b7a48c291aebbc9e9a0b6bd1ab36cb))
-
-
-
-# [1.26.0](https://github.com/jwstover/sanctum/compare/v1.25.5...v1.26.0) (2026-07-16)
-
-
-### Features
-
-* **browse:** product browser organized by wave ([454cf7c](https://github.com/jwstover/sanctum/commit/454cf7c7f4562e9b6c513ad675e4adc1307142fa))
-* **catalog:** first-class waves, packs, and card sets synced from MarvelCDB ([d3c08d7](https://github.com/jwstover/sanctum/commit/d3c08d7a1c7736d1f27469d6b0d8fc89ff7f80d6))
 
 
 
