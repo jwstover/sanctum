@@ -586,7 +586,7 @@ textarea::placeholder {
   }
 }
 
-/* /* Card fanning interaction effects */ */
+/* Card fanning interaction effects */
 /* .game-card:hover, */
 /* .game-card:focus { */
 /*   transform: var(--hover-transform, var(--original-transform)) !important; */
@@ -605,6 +605,18 @@ textarea::placeholder {
    Sanctum.Decks.Writeup). Author markup (headings, tables, blockquotes, images,
    card links) is mapped onto the comic-dossier design instead of inline styles.
    --------------------------------------------------------------------------- */
+/* HTML-heavy "art" writeups render inside a sandboxed iframe (see
+   Sanctum.Decks.Writeup). The frame can't self-report height without scripts, so
+   it gets a fixed viewport with internal scroll. */
+.deck-writeup-frame {
+  display: block;
+  width: 100%;
+  height: 600px;
+  border: 2px solid var(--color-neutral);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.85);
+  background: #0b0b0d;
+}
+
 .deck-writeup {
   font-family: 'Barlow', sans-serif;
   font-size: 15px;

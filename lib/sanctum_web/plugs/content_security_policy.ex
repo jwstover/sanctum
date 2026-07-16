@@ -26,16 +26,20 @@ defmodule SanctumWeb.Plugs.ContentSecurityPolicy do
         # resource pips, stat/health badges), which can't be hashed or nonced —
         # so style-src must allow 'unsafe-inline'. Without an explicit style-src,
         # it falls back to default-src 'self' and every inline style is blocked.
+        # frame-src 'self' permits the sandboxed srcdoc iframe used for
+        # HTML-heavy deck writeups (Sanctum.Decks.Writeup :rich mode).
         "default-src 'self';" <>
           "style-src 'self' 'unsafe-inline';" <>
           "connect-src wss://#{host} https://#{host}:*#{sentry_ingest_origin()};" <>
           "img-src 'self' blob: data: https: #{img_src_hosts()};" <>
+          "frame-src 'self';" <>
           "font-src 'self' data:;"
 
       _ ->
         "default-src 'self' 'unsafe-eval' 'unsafe-inline' #{host}:4007;" <>
           "connect-src * ws://#{host}:* http://#{host}:*;" <>
           "img-src 'self' blob: data: https: #{img_src_hosts()};" <>
+          "frame-src 'self';" <>
           "font-src 'self' data:;"
     end
   end

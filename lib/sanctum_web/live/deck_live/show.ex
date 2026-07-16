@@ -105,10 +105,21 @@ defmodule SanctumWeb.DeckLive.Show do
             <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
               Deck Notes
             </div>
-            <div :if={@writeup_html} class="deck-writeup">
-              {@writeup_html}
+            <div :if={@writeup} class="space-y-4">
+              <div :for={seg <- @writeup}>
+                <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
+                <iframe
+                  :if={seg.kind == :rich}
+                  title="Deck writeup"
+                  sandbox=""
+                  referrerpolicy="no-referrer"
+                  loading="lazy"
+                  class="deck-writeup-frame"
+                  srcdoc={seg.srcdoc}
+                ></iframe>
+              </div>
             </div>
-            <div :if={!@writeup_html} class="font-barlow text-[14px] italic text-base-content/45">
+            <div :if={!@writeup} class="font-barlow text-[14px] italic text-base-content/45">
               No writeup for this deck.
             </div>
           </.panel>
@@ -261,7 +272,7 @@ defmodule SanctumWeb.DeckLive.Show do
      |> assign(:cover, cover_view(deck, hero_gradient))
      |> assign(:groups, groups)
      |> assign(:similar, similar_views(deck))
-     |> assign(:writeup_html, Sanctum.Decks.Writeup.to_html(deck.description_md))}
+     |> assign(:writeup, Sanctum.Decks.Writeup.render(deck.description_md))}
   end
 
   # Same-hero decks that share the most chosen cards with this one.

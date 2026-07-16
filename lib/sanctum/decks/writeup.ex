@@ -4,18 +4,26 @@ defmodule Sanctum.Decks.Writeup do
   themed HTML for display.
 
   MarvelCDB writeups are a messy blend of Markdown, raw inline HTML (`<center>`,
-  styled `<span>`s), GFM tables, and BBCode-ish card links. This module:
+  styled `<span>`s), GFM tables, and BBCode-ish card links. Most are prose; a
+  minority mix in entire hand-built HTML blocks (full `<div>`/`<table>` layouts,
+  `<marquee>`, inline styles — "art" decklists). HTML blocks can't be rendered both
+  faithfully *and* safely inside our own DOM, so `render/1` splits a writeup into
+  ordered segments, each displayed one of two ways:
 
-    * rewrites MarvelCDB card links (`[Name](/card/30010)`) to our own
-      `/cards/:id` pages, resolving the code through `Card`/`CardAlt` in a single
-      batched pass; unresolved codes degrade to plain text.
-    * normalizes MarvelCDB's characteristically malformed "stat block" tables
-      (`| Player Type: || Johnny` — a stray `||` that pushes the value into a
-      nonexistent third column).
-    * renders with `MDEx` (CommonMark + GFM) preserving inline HTML, then
-      sanitizes the output (safe tag/attribute whitelist, `rel` on links,
-      http/https-only URLs) and strips author inline `style`/`class` so our
+    * **`:inline`** (the common case, and the prose between/around HTML blocks) —
+      themed HTML injected into our page. Rewrites MarvelCDB card links
+      (`[Name](/card/30010)`) to our own `/cards/:id` pages (batched `Card`/`CardAlt`
+      resolution; unresolved codes degrade to plain text), normalizes MarvelCDB's
+      malformed "stat block" tables (`| Player Type: || Johnny` — a stray `||` that
+      drops the value), then renders with `MDEx` (CommonMark + GFM) preserving inline
+      HTML and sanitizes the output, stripping author inline `style`/`class` so our
       `.deck-writeup` CSS governs appearance.
+
+    * **`:rich`** — a hand-built HTML block rendered into a **sandboxed iframe**
+      `srcdoc` instead. The author's styles/layout/`<marquee>` are preserved
+      (permissive sanitize keeps presentational tags/attrs, strips scripts), and
+      the sandbox (no `allow-scripts`, no `allow-same-origin`) isolates it from our
+      DOM, cookies, and origin. The frame carries its own restrictive CSP.
 
   Rendering happens at display time, so link resolution always reflects the
   current catalog and re-imports need no reprocessing.
@@ -31,30 +39,84 @@ defmodule Sanctum.Decks.Writeup do
   @sep_re ~r/^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/
   @table_row_re ~r/^\s*\|/
 
-  @doc """
-  Renders `description_md` to sanitized, themed HTML.
-
-  Returns a `t:Phoenix.HTML.safe/0` tuple, or `nil` when the description is blank
-  (so callers can show an empty state).
+  @typedoc """
+  One rendered piece of a writeup, in document order. `:inline` carries safe HTML
+  to inject into the page; `:rich` carries a complete HTML document for a sandboxed
+  iframe `srcdoc`.
   """
-  # sobelow_skip ["XSS.Raw"] — output is sanitized by MDEx (ammonia) in render/1.
-  @spec to_html(String.t() | nil) :: Phoenix.HTML.safe() | nil
-  def to_html(md) when is_binary(md) do
+  @type segment ::
+          %{kind: :inline, html: Phoenix.HTML.safe()}
+          | %{kind: :rich, srcdoc: String.t()}
+
+  @doc """
+  Renders `description_md` into an ordered list of display segments.
+
+  Prose writeups yield a single `:inline` segment. HTML-heavy ("art") writeups are
+  split so each hand-built HTML block becomes an isolated `:rich` segment while the
+  surrounding prose stays `:inline` and themed. Returns `nil` when the description
+  is blank (so callers can show an empty state).
+  """
+  @spec render(String.t() | nil) :: [segment()] | nil
+  def render(md) when is_binary(md) do
     case String.trim(md) do
       "" ->
         nil
 
-      _ ->
-        md
-        |> normalize_newlines()
-        |> rewrite_card_links()
-        |> fix_tables()
-        |> render()
-        |> Phoenix.HTML.raw()
+      trimmed ->
+        segments =
+          if rich_html?(trimmed) do
+            md |> segment() |> Enum.map(&render_segment/1) |> Enum.reject(&is_nil/1)
+          else
+            [%{kind: :inline, html: inline_html(md)}]
+          end
+
+        case segments do
+          [] -> nil
+          segs -> segs
+        end
+    end
+  end
+
+  def render(_), do: nil
+
+  @doc """
+  Renders `description_md` to sanitized, themed inline HTML only.
+
+  Returns a `t:Phoenix.HTML.safe/0` tuple, or `nil` when blank. Prefer `render/1`,
+  which also handles HTML-heavy writeups; this remains for callers that always
+  want inline output.
+  """
+  @spec to_html(String.t() | nil) :: Phoenix.HTML.safe() | nil
+  def to_html(md) when is_binary(md) do
+    case String.trim(md) do
+      "" -> nil
+      _ -> inline_html(md)
     end
   end
 
   def to_html(_), do: nil
+
+  defp render_segment({:md, text}) do
+    {:safe, iodata} = html = inline_html(text)
+
+    # A run that renders to nothing (e.g. only an HTML comment) is dropped so it
+    # doesn't leave an empty themed block.
+    if iodata |> IO.iodata_to_binary() |> String.trim() == "",
+      do: nil,
+      else: %{kind: :inline, html: html}
+  end
+
+  defp render_segment({:html, text}), do: %{kind: :rich, srcdoc: rich_srcdoc(text)}
+
+  # sobelow_skip ["XSS.Raw"] — sanitized by MDEx (ammonia) in render_markdown/1.
+  defp inline_html(md) do
+    md
+    |> normalize_newlines()
+    |> rewrite_card_links()
+    |> fix_tables()
+    |> render_markdown()
+    |> Phoenix.HTML.raw()
+  end
 
   defp normalize_newlines(md), do: String.replace(md, "\r\n", "\n")
 
@@ -133,7 +195,7 @@ defmodule Sanctum.Decks.Writeup do
     end)
   end
 
-  defp render(md) do
+  defp render_markdown(md) do
     MDEx.to_html!(md,
       extension: [table: true, strikethrough: true, autolink: true, tasklist: true],
       render: [unsafe: true],
@@ -146,6 +208,119 @@ defmodule Sanctum.Decks.Writeup do
             "pre" => ["style", "class"]
           }
         )
+    )
+  end
+
+  # Block-level structural/presentational tags signal a hand-built HTML document
+  # rather than prose with the occasional inline `<span>`/`<center>`. A handful of
+  # them is enough to route to the isolated iframe.
+  @rich_tag_re ~r/<\s*(div|table|tbody|thead|tr|td|th|marquee|font|section|article|iframe)\b/i
+
+  defp rich_html?(md) do
+    @rich_tag_re
+    |> Regex.scan(md)
+    |> length() >= 3
+  end
+
+  # Split a writeup into ordered `{:md, text}` / `{:html, text}` runs. Depth-scans
+  # block-container tags: a run of raw HTML starts when one opens at depth 0 and
+  # ends when it closes back to 0; everything else (prose, inline tags) is Markdown.
+  # So a hand-built HTML block is isolated while the prose around it stays themed.
+  @tag_re ~r/<!--.*?-->|<\/?[a-zA-Z][a-zA-Z0-9-]*\b[^>]*?>/s
+  @container_tags ~w(div table thead tbody tfoot tr td th section article aside
+                     header footer nav marquee form figure fieldset ul ol dl)
+
+  defp segment(md) do
+    {segs, type, buf, _depth} =
+      @tag_re
+      |> Regex.split(md, include_captures: true)
+      |> Enum.with_index()
+      |> Enum.reduce({[], :md, [], 0}, &segment_step/2)
+
+    segs |> flush_segment(type, buf) |> Enum.reverse()
+  end
+
+  # Even indices are text between tags; odd indices are the matched tags/comments.
+  defp segment_step({part, i}, {segs, type, buf, depth}) when rem(i, 2) == 0,
+    do: {segs, type, [buf, part], depth}
+
+  defp segment_step({part, _i}, {segs, type, buf, depth}) do
+    if String.starts_with?(part, "<!--") do
+      {segs, type, [buf, part], depth}
+    else
+      {name, closing?} = parse_tag(part)
+      block? = name in @container_tags
+
+      cond do
+        block? and not closing? and depth == 0 ->
+          {flush_segment(segs, type, buf), :html, [part], 1}
+
+        block? and not closing? ->
+          {segs, type, [buf, part], depth + 1}
+
+        block? and closing? and depth <= 1 ->
+          {flush_segment(segs, :html, [buf, part]), :md, [], 0}
+
+        block? and closing? ->
+          {segs, type, [buf, part], depth - 1}
+
+        true ->
+          {segs, type, [buf, part], depth}
+      end
+    end
+  end
+
+  defp flush_segment(segs, type, buf) do
+    text = IO.iodata_to_binary(buf)
+    if String.trim(text) == "", do: segs, else: [{type, text} | segs]
+  end
+
+  defp parse_tag(tag) do
+    name =
+      ~r/^<\/?\s*([a-zA-Z][a-zA-Z0-9-]*)/ |> Regex.run(tag) |> Enum.at(1) |> String.downcase()
+
+    {name, String.starts_with?(tag, "</")}
+  end
+
+  # Render an HTML block as a complete, self-contained document for a sandboxed
+  # iframe `srcdoc`. Card links are still resolved; the permissive sanitize keeps
+  # presentational markup but strips scripts. Isolation (sandbox + the frame's own
+  # CSP) is what makes keeping styles/marquees safe.
+  defp rich_srcdoc(html) do
+    body =
+      html
+      |> normalize_newlines()
+      |> rewrite_card_links()
+      |> MDEx.safe_html(sanitize: permissive_sanitize(), escape: [content: false])
+
+    """
+    <!doctype html>
+    <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; font-src https: data:;">
+    <base target="_blank">
+    <style>
+      html, body { margin: 0; }
+      body { padding: 14px; background: #0b0b0d; color: #f4f1ea; font-family: Verdana, Arial, sans-serif; overflow-wrap: anywhere; }
+      img { max-width: 100%; height: auto; }
+      a { color: #dbcb36; }
+      table { max-width: 100%; }
+    </style>
+    </head>
+    <body>#{body}</body>
+    </html>
+    """
+  end
+
+  # Permissive whitelist for iframe-isolated content: keep presentational tags and
+  # inline `style`, but ammonia still strips `<script>`/`<style>` content and any
+  # tag outside the whitelist (iframe/object/embed/form unwrap to their contents).
+  defp permissive_sanitize do
+    Keyword.merge(MDEx.Document.default_sanitize_options(),
+      add_tags: ["marquee", "font"],
+      add_generic_attributes: ~w(style align valign color bgcolor width height border
+           cellpadding cellspacing face size behavior direction scrollamount background)
     )
   end
 end
