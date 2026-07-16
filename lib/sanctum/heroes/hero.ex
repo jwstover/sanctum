@@ -61,10 +61,15 @@ defmodule Sanctum.Heroes.Hero do
       allow_nil? false
     end
 
+    # Size-changing heroes (Ant-Man, Wasp, Angel/Archangel) have two `:hero`
+    # sides — a primary form and an alternate form. Sort primary-first so this
+    # `has_one` resolves deterministically to the canonical hero side (and to
+    # satisfy Ash's `from_many?`/`sort` requirement for multi-match has_one).
     has_one :hero_side, Sanctum.Games.CardSide do
       source_attribute :card_id
       destination_attribute :card_id
       filter expr(type == :hero)
+      sort is_primary_side: :desc
     end
 
     has_one :alter_ego_side, Sanctum.Games.CardSide do
