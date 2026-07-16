@@ -1,3 +1,13 @@
+# [1.35.0](https://github.com/jwstover/sanctum/compare/v1.34.0...v1.35.0) (2026-07-16)
+
+
+### Features
+
+* **cards:** add public card detail page with shared dossier tile ([7189077](https://github.com/jwstover/sanctum/commit/7189077f5d75f07bfdecce95b899b5c3a8f78fe4))
+* **cards:** link card renders in pack library and decks to detail page ([7e18a1f](https://github.com/jwstover/sanctum/commit/7e18a1f9af3dc6fe3af124b4865e81b4b11bc992))
+
+
+
 # [1.34.0](https://github.com/jwstover/sanctum/compare/v1.33.0...v1.34.0) (2026-07-16)
 
 
@@ -36,15 +46,6 @@
 ### Features
 
 * **admin:** add ad-hoc deck sync button ([f26698e](https://github.com/jwstover/sanctum/commit/f26698e017724a21fa1fe22caff8675bd2a5a11c))
-
-
-
-## [1.31.2](https://github.com/jwstover/sanctum/compare/v1.31.1...v1.31.2) (2026-07-16)
-
-
-### Bug Fixes
-
-* **sync:** demote 'Not loading existing card' log to debug ([bb4570d](https://github.com/jwstover/sanctum/commit/bb4570deebfc09ee2333635763f89800135bf7a6))
 
 
 
