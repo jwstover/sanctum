@@ -95,6 +95,16 @@ defmodule Sanctum.DeckSync do
             # completed run's checkpoint.
             checkpoint_day(date, frontier)
 
+            # Emit counters per day (not once at run end) so a long backfill is
+            # visible in flight and an abrupt stop doesn't lose the whole run's
+            # counts — only the run-level duration/halted metrics wait for the
+            # end (see Observability).
+            :telemetry.execute(
+              [:sanctum, :deck_sync, :day, :stop],
+              %{imported: imported, failed: failed},
+              %{date: date}
+            )
+
             {:cont,
              %{
                acc
