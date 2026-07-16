@@ -66,6 +66,15 @@ if config_env() == :prod do
 
   config :sanctum, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  # Pin Oban's node identity to the Fly machine ID: it survives restarts *and*
+  # redeploys, unlike the BEAM node name (which embeds the per-deploy image
+  # ref). `Sanctum.Oban.BootRescue` relies on this stability to recognize jobs
+  # orphaned by this machine's previous incarnation in `attempted_by` — without
+  # clobbering jobs that are live on another machine.
+  if machine_id = System.get_env("FLY_MACHINE_ID") do
+    config :sanctum, Oban, node: machine_id
+  end
+
   # Let the node stop itself when idle (see `Sanctum.AutoShutdown`) so Fly can
   # scale the machine to zero. Fly's own proxy autostop is disabled in fly.toml
   # (`auto_stop_machines = "off"`) because it can't see in-flight Oban jobs.

@@ -18,8 +18,9 @@ config :sanctum, Oban,
     # Prune old completed/discarded jobs so the table doesn't grow unbounded.
     Oban.Plugins.Pruner,
     # Backstop for jobs orphaned in the `executing` state. The fast path is
-    # `Sanctum.Oban.BootRescue`, which resets orphans on the next boot; Lifeline
-    # only covers the (single-node) case of a node that stays up but somehow
+    # `Sanctum.Oban.BootRescue`, which resets a machine's own orphans when it
+    # boots; Lifeline covers what BootRescue can't — a machine that is
+    # destroyed and never boots again, or a node that stays up but somehow
     # dropped a job. `rescue_after` stays high so it never clobbers a genuinely
     # long-running job (it rescues purely on elapsed time, not liveness).
     {Oban.Plugins.Lifeline, rescue_after: :timer.hours(24)},
