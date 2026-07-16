@@ -183,10 +183,14 @@ defmodule Sanctum.Observability do
     * Bare `sanctum.repo.query:*` roots — queries with no surrounding trace
       (oban_met sampling, peer election, card/deck sync tasks). Queries inside
       request, LiveView, and Oban job traces are children and are unaffected.
+    * LiveView longpoll transport requests (`/live/longpoll`) — fallback-
+      transport polling fires every few seconds per client and each poll is
+      its own root trace. Matched via the root span's `url.path` attribute,
+      since opentelemetry_bandit names the span before routing (just `:GET`).
 
   Everything else (HTTP requests, LiveView, Oban jobs) is sampled at 100%.
   """
-  def traces_sampler(%{transaction_context: %{name: name}}) do
+  def traces_sampler(%{transaction_context: %{name: name} = transaction_context}) do
     # OTel span names are chardata, not necessarily binaries — e.g.
     # opentelemetry_bandit names HTTP request spans with atoms (:GET, :HTTP).
     # A crash here is worse than it looks: Sentry rescues sampler errors and
@@ -198,6 +202,12 @@ defmodule Sanctum.Observability do
 
     orphan_query? = String.starts_with?(name, "sanctum.repo.query")
 
-    if oban_plugin_tick? or orphan_query?, do: 0.0, else: 1.0
+    if oban_plugin_tick? or orphan_query? or longpoll?(transaction_context), do: 0.0, else: 1.0
   end
+
+  defp longpoll?(%{attributes: %{:"url.path" => path}}) when is_binary(path) do
+    String.starts_with?(path, "/live/longpoll")
+  end
+
+  defp longpoll?(_transaction_context), do: false
 end

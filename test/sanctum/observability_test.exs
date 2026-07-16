@@ -5,6 +5,12 @@ defmodule Sanctum.ObservabilityTest do
 
   defp sample(name), do: Observability.traces_sampler(%{transaction_context: %{name: name}})
 
+  defp sample(name, path) do
+    Observability.traces_sampler(%{
+      transaction_context: %{name: name, attributes: %{:"url.path" => path}}
+    })
+  end
+
   describe "traces_sampler/1" do
     test "drops Oban plugin ticks" do
       assert sample("Elixir.Oban.Stager process") == 0.0
@@ -23,6 +29,13 @@ defmodule Sanctum.ObservabilityTest do
       # opentelemetry_oban names job spans "process <queue>"
       assert sample("process default") == 1.0
       assert sample("SanctumWeb.GameLive.Show.mount") == 1.0
+    end
+
+    test "drops LiveView longpoll transport requests by url.path" do
+      assert sample(:GET, "/live/longpoll") == 0.0
+      assert sample(:POST, "/live/longpoll") == 0.0
+      assert sample(:GET, "/games/abc123") == 1.0
+      assert sample(:GET, "/live/websocket") == 1.0
     end
 
     test "handles non-binary span names (opentelemetry_bandit uses atoms)" do
