@@ -1,3 +1,13 @@
+# [1.26.0](https://github.com/jwstover/sanctum/compare/v1.25.5...v1.26.0) (2026-07-16)
+
+
+### Features
+
+* **browse:** product browser organized by wave ([454cf7c](https://github.com/jwstover/sanctum/commit/454cf7c7f4562e9b6c513ad675e4adc1307142fa))
+* **catalog:** first-class waves, packs, and card sets synced from MarvelCDB ([d3c08d7](https://github.com/jwstover/sanctum/commit/d3c08d7a1c7736d1f27469d6b0d8fc89ff7f80d6))
+
+
+
 ## [1.25.5](https://github.com/jwstover/sanctum/compare/v1.25.4...v1.25.5) (2026-07-15)
 
 
@@ -31,15 +41,6 @@
 ### Bug Fixes
 
 * **observability:** stop background-noise transactions flooding Sentry ([41bd43d](https://github.com/jwstover/sanctum/commit/41bd43d8e4c7184ce3835a06ecb530002a89d7f3))
-
-
-
-## [1.25.1](https://github.com/jwstover/sanctum/compare/v1.25.0...v1.25.1) (2026-07-15)
-
-
-### Bug Fixes
-
-* **deck-sync:** floor backfill at 2019-11-02 to skip MarvelCDB 500 ([#141](https://github.com/jwstover/sanctum/issues/141)) ([094e3fa](https://github.com/jwstover/sanctum/commit/094e3fa51bf670254c1842bb06239361baf7e51e)), closes [#1](https://github.com/jwstover/sanctum/issues/1)
 
 
 
