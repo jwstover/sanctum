@@ -1,3 +1,17 @@
+# [1.32.0](https://github.com/jwstover/sanctum/compare/v1.31.2...v1.32.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **oban:** scope boot rescue to this machine's own orphaned jobs ([533bb2b](https://github.com/jwstover/sanctum/commit/533bb2bda2fe5634fa45787b039d71ca2d4ea092))
+
+
+### Features
+
+* **admin:** add ad-hoc deck sync button ([f26698e](https://github.com/jwstover/sanctum/commit/f26698e017724a21fa1fe22caff8675bd2a5a11c))
+
+
+
 ## [1.31.2](https://github.com/jwstover/sanctum/compare/v1.31.1...v1.31.2) (2026-07-16)
 
 
@@ -36,15 +50,6 @@
 ### Features
 
 * **decks:** isolate HTML-heavy writeups in sandboxed iframes ([bac23de](https://github.com/jwstover/sanctum/commit/bac23de7edf3505a7c8af3ffde8d245993198334))
-
-
-
-# [1.29.0](https://github.com/jwstover/sanctum/compare/v1.28.0...v1.29.0) (2026-07-16)
-
-
-### Features
-
-* **observability:** custom Sentry metrics via telemetry events ([3b5b436](https://github.com/jwstover/sanctum/commit/3b5b436df2843b2ecfebf0e94669a12fca5542ba))
 
 
 
