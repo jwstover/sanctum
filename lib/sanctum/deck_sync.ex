@@ -8,12 +8,19 @@ defmodule Sanctum.DeckSync do
   run also re-scans a small trailing window to catch late-arriving decks before
   advancing the cursor.
 
-  The cursor is checkpointed at the last day fetched *successfully* — a 404 (no
-  decks that day) counts as success, but a transient fetch failure (timeout /
+  The cursor is checkpointed *after every day that succeeds* — a 404 (no decks
+  that day) counts as success, but a transient fetch failure (timeout /
   rate-limit / a 5xx that reflects a real outage) **halts the run** and leaves
   the cursor at the last good day. `run/1` then returns `{:error, summary}` so
   the caller (the Oban worker) can fail and retry, resuming from the checkpoint.
   This keeps a slow or flaky MarvelCDB from silently skipping days.
+
+  Checkpointing per day (rather than once at the end of the run) is what makes an
+  *abrupt* stop recoverable: an Oban timeout, a deploy restart, or an uncaught
+  crash bypasses any end-of-run bookkeeping, so a run that only persisted its
+  progress at the finish line would resume from where it *started*. Persisting
+  each successful day means a killed backfill resumes within one day of where it
+  died instead of re-walking years of history.
 
   One wrinkle: MarvelCDB answers `by_date` for a day with no decklists with an
   HTTP 500 rather than a 404. `sync_date/2` disambiguates that benign case from
@@ -68,19 +75,31 @@ defmodule Sanctum.DeckSync do
     dates = date_range(start_date, until)
     progress.({:started, %{from: start_date, to: until, days: length(dates)}})
 
-    initial = %{imported: 0, failed: 0, processed: 0, last_ok: nil, halted: nil}
+    initial = %{imported: 0, failed: 0, processed: 0, halted: nil}
+
+    # Snapshot the cursor once, up front. The worker's `unique` lock means no
+    # other run can move it underneath us, and days are walked in increasing
+    # order — so any day past this frontier is a genuine advance we checkpoint
+    # immediately, while a historical `--since` backfill of older days never
+    # rewinds it.
+    frontier = current_cursor()
 
     acc =
       Enum.reduce_while(dates, initial, fn date, acc ->
         case sync_date(date, progress) do
           {:ok, imported, failed} ->
+            # Persist the cursor the moment a day succeeds so an abrupt stop (an
+            # orphaned-then-rescued job, a deploy restart, an uncaught crash)
+            # resumes within a day of here instead of re-walking from the last
+            # completed run's checkpoint.
+            checkpoint_day(date, frontier)
+
             {:cont,
              %{
                acc
                | imported: acc.imported + imported,
                  failed: acc.failed + failed,
-                 processed: acc.processed + 1,
-                 last_ok: date
+                 processed: acc.processed + 1
              }}
 
           {:error, reason} ->
@@ -89,8 +108,6 @@ defmodule Sanctum.DeckSync do
             {:halt, %{acc | halted: %{date: date, reason: reason}}}
         end
       end)
-
-    checkpoint_cursor(acc.last_ok)
 
     summary = %{
       days: length(dates),
@@ -105,19 +122,15 @@ defmodule Sanctum.DeckSync do
     if acc.halted, do: {:error, summary}, else: {:ok, summary}
   end
 
-  # Advance the cursor to the last day we successfully fetched, but never rewind
-  # it: a halted run or a historical `--since` backfill of old dates must not
-  # drag the frontier backward. Nothing fetched (nil) leaves the cursor as-is.
-  defp checkpoint_cursor(nil), do: :ok
+  # Advance the cursor to a day we just fetched successfully, but never rewind
+  # it: a historical `--since` backfill of old dates (behind `frontier`) must not
+  # drag the frontier backward. `frontier` is the run-start cursor; a nil frontier
+  # means no cursor existed yet, so every synced day advances it.
+  defp checkpoint_day(%Date{} = date, frontier) do
+    if frontier == nil or Date.compare(date, frontier) == :gt do
+      {:ok, _state} = Decks.set_last_synced_date(date)
+    end
 
-  defp checkpoint_cursor(%Date{} = last_ok) do
-    advance? =
-      case current_cursor() do
-        %Date{} = cursor -> Date.compare(last_ok, cursor) == :gt
-        nil -> true
-      end
-
-    if advance?, do: {:ok, _state} = Decks.set_last_synced_date(last_ok)
     :ok
   end
 

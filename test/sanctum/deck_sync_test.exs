@@ -151,6 +151,25 @@ defmodule Sanctum.DeckSyncTest do
     assert cursor() == ~D[2024-01-11]
   end
 
+  test "checkpoints the cursor after each successful day, not just at the end" do
+    set_cursor(~D[2024-01-09])
+
+    # Assert the cursor is already at 2024-01-11 by the time 2024-01-12 is
+    # fetched — proving each day is persisted as it succeeds rather than in a
+    # single write once the whole run finishes. An abrupt stop after 2024-01-11
+    # would therefore still leave the cursor advanced.
+    Req.Test.stub(Sanctum.MarvelCdb, fn conn ->
+      date = conn.request_path |> String.split("/") |> List.last()
+
+      if date == "2024-01-12", do: assert(cursor() == ~D[2024-01-11])
+
+      Req.Test.json(conn, [])
+    end)
+
+    assert {:ok, _summary} = run(since: ~D[2024-01-10], until: ~D[2024-01-12])
+    assert cursor() == ~D[2024-01-12]
+  end
+
   test "never rewinds the cursor on a historical backfill of older dates" do
     set_cursor(~D[2024-06-01])
 
