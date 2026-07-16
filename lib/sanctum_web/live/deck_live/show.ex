@@ -101,7 +101,7 @@ defmodule SanctumWeb.DeckLive.Show do
 
         <!-- body: writeup + card list -->
         <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
-          <.panel class="p-5">
+          <.panel class="min-w-0 p-5">
             <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
               Deck Notes
             </div>
@@ -124,7 +124,7 @@ defmodule SanctumWeb.DeckLive.Show do
             </div>
           </.panel>
 
-          <div class="space-y-5">
+          <div class="min-w-0 space-y-5">
             <.panel class="p-4">
               <div class="mb-3 flex items-baseline gap-2 border-b-2 border-neutral pb-2">
                 <div class="font-anton text-[17px] uppercase tracking-[0.05em]">In This Deck</div>
