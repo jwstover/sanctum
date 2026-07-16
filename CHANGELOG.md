@@ -1,3 +1,12 @@
+# [1.36.0](https://github.com/jwstover/sanctum/compare/v1.35.0...v1.36.0) (2026-07-16)
+
+
+### Features
+
+* **observability:** emit deck sync counters per day instead of per run ([eca9305](https://github.com/jwstover/sanctum/commit/eca9305969812248fdc756489f2828439ccca9ed))
+
+
+
 # [1.35.0](https://github.com/jwstover/sanctum/compare/v1.34.0...v1.35.0) (2026-07-16)
 
 
@@ -32,20 +41,6 @@
 ### Bug Fixes
 
 * **observability:** drop LiveView longpoll traces from Sentry ([cae88a8](https://github.com/jwstover/sanctum/commit/cae88a828360569c8a241cdf0a1634a0843df959))
-
-
-
-# [1.32.0](https://github.com/jwstover/sanctum/compare/v1.31.2...v1.32.0) (2026-07-16)
-
-
-### Bug Fixes
-
-* **oban:** scope boot rescue to this machine's own orphaned jobs ([533bb2b](https://github.com/jwstover/sanctum/commit/533bb2bda2fe5634fa45787b039d71ca2d4ea092))
-
-
-### Features
-
-* **admin:** add ad-hoc deck sync button ([f26698e](https://github.com/jwstover/sanctum/commit/f26698e017724a21fa1fe22caff8675bd2a5a11c))
 
 
 
