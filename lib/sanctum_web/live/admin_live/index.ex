@@ -54,19 +54,30 @@ defmodule SanctumWeb.AdminLive.Index do
           Deck Sync
         </h2>
         <div class="border-[3px] border-neutral bg-base-300 p-4 space-y-4">
-          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span class={[
-              "inline-flex items-center border-2 px-3 py-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em]",
-              deck_status_class(@deck_sync.status)
-            ]}>
-              {deck_status_label(@deck_sync.status)}
-            </span>
-            <span :if={@deck_sync.started_at} class="font-ibm-mono text-xs text-base-content/55">
-              started {fmt_ts(@deck_sync.started_at)}
-            </span>
-            <span :if={@deck_sync.finished_at} class="font-ibm-mono text-xs text-base-content/55">
-              &middot; finished {fmt_ts(@deck_sync.finished_at)}
-            </span>
+          <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span class={[
+                "inline-flex items-center border-2 px-3 py-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em]",
+                deck_status_class(@deck_sync.status)
+              ]}>
+                {deck_status_label(@deck_sync.status)}
+              </span>
+              <span :if={@deck_sync.started_at} class="font-ibm-mono text-xs text-base-content/55">
+                started {fmt_ts(@deck_sync.started_at)}
+              </span>
+              <span :if={@deck_sync.finished_at} class="font-ibm-mono text-xs text-base-content/55">
+                &middot; finished {fmt_ts(@deck_sync.finished_at)}
+              </span>
+            </div>
+            <button
+              type="button"
+              phx-click="sync_decks"
+              disabled={@deck_sync.status == :running}
+              class="inline-flex -rotate-1 items-center gap-2 border-2 border-neutral bg-base-300 bg-halftone px-3 py-2 font-barlow-condensed text-[15px] font-bold uppercase tracking-[0.1em] text-primary shadow-comic-sm transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50 lg:px-2.5 lg:py-1.5 lg:text-[13px]"
+            >
+              <.icon name="hero-arrow-path" class="size-4" />
+              {if @deck_sync.status == :running, do: "Syncing…", else: "Sync now"}
+            </button>
           </div>
 
           <div :if={@deck_sync.status == :running} class="space-y-2">
@@ -272,6 +283,22 @@ defmodule SanctumWeb.AdminLive.Index do
      |> assign(:deck_sync, Sanctum.DeckSync.Monitor.status())
      |> assign(:deck_health, load_deck_health())
      |> assign(:deck_import, %{status: :idle, deck: nil, error: nil, url: ""})}
+  end
+
+  # Enqueue an ad-hoc deck sync instead of waiting for the hourly cron. The
+  # worker's `unique` constraint debounces this against an in-flight run, so a
+  # duplicate insert is surfaced as an informational flash rather than a second
+  # run.
+  @impl true
+  def handle_event("sync_decks", _params, socket) do
+    {:ok, job} = %{} |> Sanctum.Decks.DecklistSyncWorker.new() |> Oban.insert()
+
+    message =
+      if job.conflict?,
+        do: "A deck sync is already queued or running.",
+        else: "Deck sync enqueued."
+
+    {:noreply, put_flash(socket, :info, message)}
   end
 
   @impl true
