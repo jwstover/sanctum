@@ -1,3 +1,12 @@
+## [1.31.2](https://github.com/jwstover/sanctum/compare/v1.31.1...v1.31.2) (2026-07-16)
+
+
+### Bug Fixes
+
+* **sync:** demote 'Not loading existing card' log to debug ([bb4570d](https://github.com/jwstover/sanctum/commit/bb4570deebfc09ee2333635763f89800135bf7a6))
+
+
+
 ## [1.31.1](https://github.com/jwstover/sanctum/compare/v1.31.0...v1.31.1) (2026-07-16)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * **observability:** custom Sentry metrics via telemetry events ([3b5b436](https://github.com/jwstover/sanctum/commit/3b5b436df2843b2ecfebf0e94669a12fca5542ba))
-
-
-
-# [1.28.0](https://github.com/jwstover/sanctum/compare/v1.27.0...v1.28.0) (2026-07-16)
-
-
-### Features
-
-* **nav:** replace header links with daisyUI drawer sidebar ([bc9ce0c](https://github.com/jwstover/sanctum/commit/bc9ce0c2d01573093b78273068bbe2f16a25e10f))
 
 
 
