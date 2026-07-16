@@ -26,7 +26,7 @@ defmodule SanctumWeb.BrowseLive.Show do
   @impl true
   def mount(%{"pack" => code}, _session, socket) do
     case Catalog.get_pack_by_code(code,
-           load: [:wave, :card_total, card_sets: [cards: [:primary_side]]]
+           load: [:wave, :card_total, card_sets: [cards: [:primary_side, :card_sides]]]
          ) do
       {:ok, %Catalog.Pack{} = pack} ->
         hero_colors = load_hero_colors()
@@ -300,7 +300,7 @@ defmodule SanctumWeb.BrowseLive.Show do
     cards =
       Sanctum.Games.Card
       |> Ash.Query.filter(pack_id == ^pack.id and is_nil(card_set_id))
-      |> Ash.Query.load(:primary_side)
+      |> Ash.Query.load([:primary_side, :card_sides])
       |> Ash.read!()
 
     cards
@@ -313,42 +313,51 @@ defmodule SanctumWeb.BrowseLive.Show do
 
   defp view_cards(cards, hero_colors) do
     cards
-    |> Enum.map(&card_view(&1, hero_colors))
-    |> Enum.reject(&is_nil/1)
-    |> Enum.sort_by(& &1.code)
+    |> Enum.flat_map(&card_views(&1, hero_colors))
+    |> Enum.sort_by(& &1.sort_key)
   end
 
-  # Display map for one card's primary side.
-  defp card_view(%{primary_side: nil}, _hero_colors), do: nil
-
-  defp card_view(card, hero_colors) do
-    side = card.primary_side
+  # Display maps for every side of a card. Single-sided cards yield one view;
+  # multi-sided cards (identities, main schemes) yield one per face, primary
+  # side first, so the pack page shows front and back.
+  defp card_views(%{card_sides: sides} = card, hero_colors)
+       when is_list(sides) and sides != [] do
     {gradient_from, gradient_to} = hero_gradient(card.set, hero_colors)
 
-    resources =
-      [
-        energy: side.resource_energy_count,
-        mental: side.resource_mental_count,
-        physical: side.resource_physical_count,
-        wild: side.resource_wild_count
-      ]
-      |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
+    sides
+    |> Enum.sort_by(&{!&1.is_primary_side, &1.side_identifier || ""})
+    |> Enum.map(fn side ->
+      resources =
+        [
+          energy: side.resource_energy_count,
+          mental: side.resource_mental_count,
+          physical: side.resource_physical_count,
+          wild: side.resource_wild_count
+        ]
+        |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
 
-    %{
-      code: card.code,
-      name: side.name,
-      type: side.type,
-      aspect_key: display_aspect(side),
-      is_landscape: CardComponent.landscape_type?(side.type),
-      resources: resources,
-      # MarvelCDB's per-card `quantity` (copies in the product) is stored on
-      # Card.deck_limit; surface it as the mc_card ×N badge.
-      quantity: card.deck_limit || 1,
-      gradient_from: gradient_from,
-      gradient_to: gradient_to,
-      image_url: side.image_url
-    }
+      %{
+        code: side.code,
+        # Keep a card's faces adjacent and primary-first, then order cards among
+        # themselves by the canonical code.
+        sort_key: {card.code, (side.is_primary_side && 0) || 1, side.side_identifier || ""},
+        name: side.name,
+        type: side.type,
+        aspect_key: display_aspect(side),
+        is_landscape: CardComponent.landscape_type?(side.type),
+        resources: resources,
+        # MarvelCDB's per-card `quantity` (copies in the product) is stored on
+        # Card.deck_limit; show the ×N badge only on the primary face so a
+        # double-sided card isn't counted twice in the section total.
+        quantity: (side.is_primary_side && (card.deck_limit || 1)) || 0,
+        gradient_from: gradient_from,
+        gradient_to: gradient_to,
+        image_url: side.image_url
+      }
+    end)
   end
+
+  defp card_views(_card, _hero_colors), do: []
 
   defp load_hero_colors do
     Sanctum.Heroes.Hero
