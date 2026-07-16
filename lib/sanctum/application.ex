@@ -14,6 +14,9 @@ defmodule Sanctum.Application do
       SanctumWeb.Telemetry,
       Sanctum.Repo,
       {DNSCluster, query: Application.get_env(:sanctum, :dns_cluster_query) || :ignore},
+      # Must precede Oban: resets jobs orphaned `executing` by the prior boot
+      # before any queue starts producing (see Sanctum.Oban.BootRescue).
+      Sanctum.Oban.BootRescue,
       {Oban,
        AshOban.config(
          Application.fetch_env!(:sanctum, :ash_domains),
