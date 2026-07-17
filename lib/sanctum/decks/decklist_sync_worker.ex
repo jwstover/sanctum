@@ -12,7 +12,7 @@ defmodule Sanctum.Decks.DecklistSyncWorker do
 
   use Oban.Worker,
     queue: :default,
-    max_attempts: 3,
+    max_attempts: 5,
     unique: [period: :infinity, states: :incomplete]
 
   @impl Oban.Worker
