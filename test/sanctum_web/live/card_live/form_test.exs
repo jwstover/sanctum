@@ -42,7 +42,7 @@ defmodule SanctumWeb.CardLive.FormTest do
 
       unique_id = :rand.uniform(100_000)
 
-      {:ok, _view, html} =
+      {:ok, index_view, _html} =
         view
         |> form("#card-form", %{
           "card" => %{
@@ -53,8 +53,8 @@ defmodule SanctumWeb.CardLive.FormTest do
         |> render_submit()
         |> follow_redirect(conn)
 
-      # Verify card was created by checking it appears in the index
-      assert html =~ "test#{unique_id}"
+      # Verify card was created by checking it appears in the index (loaded async)
+      assert render_async(index_view) =~ "test#{unique_id}"
     end
 
     test "shows validation errors for invalid card data", %{conn: conn} do
@@ -130,7 +130,7 @@ defmodule SanctumWeb.CardLive.FormTest do
     test "updates existing card basic fields", %{conn: conn, card: card} do
       {:ok, view, _html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
-      {:ok, _view, html} =
+      {:ok, index_view, _html} =
         view
         |> form("#card-form", %{
           "card" => %{"set" => "updated_set"}
@@ -138,13 +138,13 @@ defmodule SanctumWeb.CardLive.FormTest do
         |> render_submit()
         |> follow_redirect(conn)
 
-      assert html =~ "updated_set"
+      assert render_async(index_view) =~ "updated_set"
     end
 
     test "updates card side fields", %{conn: conn, card: card} do
       {:ok, view, _html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
-      {:ok, _view, html} =
+      {:ok, index_view, _html} =
         view
         |> form("#card-form", %{
           "card" => %{
@@ -163,13 +163,13 @@ defmodule SanctumWeb.CardLive.FormTest do
         |> follow_redirect(conn)
 
       # Verify the card side was updated by checking it appears in the response
-      assert html =~ "Updated Card Side Name"
+      assert render_async(index_view) =~ "Updated Card Side Name"
     end
 
     test "updates card side traits", %{conn: conn, card: card} do
       {:ok, view, _html} = live(conn, ~p"/admin/cards/#{card.id}/edit")
 
-      {:ok, _view, html} =
+      {:ok, index_view, _html} =
         view
         |> form("#card-form", %{
           "card" => %{
@@ -184,7 +184,7 @@ defmodule SanctumWeb.CardLive.FormTest do
         |> follow_redirect(conn)
 
       # Verify traits were processed correctly
-      assert html =~ "Avenger, Spy, Guardian"
+      assert render_async(index_view) =~ "Avenger, Spy, Guardian"
     end
 
     test "handles validation errors on update", %{conn: conn, card: card} do
@@ -222,7 +222,7 @@ defmodule SanctumWeb.CardLive.FormTest do
 
       unique_id = :rand.uniform(100_000)
 
-      {:ok, _view, html} =
+      {:ok, index_view, _html} =
         view
         |> form("#card-form", %{
           "card" => %{
@@ -233,7 +233,7 @@ defmodule SanctumWeb.CardLive.FormTest do
         |> render_submit()
         |> follow_redirect(conn)
 
-      assert html =~ "nav#{unique_id}"
+      assert render_async(index_view) =~ "nav#{unique_id}"
     end
   end
 end

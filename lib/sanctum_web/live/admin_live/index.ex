@@ -23,7 +23,10 @@ defmodule SanctumWeb.AdminLive.Index do
         <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
           Catalog
         </h2>
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div :if={@stats == nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <.stat_skeleton :for={_ <- 1..8} />
+        </div>
+        <div :if={@stats != nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <.stat_tile label="Cards" value={@stats.cards} />
           <.stat_tile label="Card Sides" value={@stats.card_sides} />
           <.stat_tile label="Decks" value={@stats.decks} />
@@ -39,7 +42,10 @@ defmodule SanctumWeb.AdminLive.Index do
         <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
           Background Jobs
         </h2>
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div :if={@jobs == nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <.stat_skeleton :for={_ <- 1..6} />
+        </div>
+        <div :if={@jobs != nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <.stat_tile label="Available" value={@jobs.available} />
           <.stat_tile label="Executing" value={@jobs.executing} />
           <.stat_tile label="Scheduled" value={@jobs.scheduled} />
@@ -207,6 +213,15 @@ defmodule SanctumWeb.AdminLive.Index do
     """
   end
 
+  defp stat_skeleton(assigns) do
+    ~H"""
+    <div class="border-[3px] border-neutral bg-base-300 px-4 py-3">
+      <div class="h-8 w-10 animate-pulse bg-base-100"></div>
+      <div class="mt-2 h-2.5 w-16 animate-pulse bg-base-100"></div>
+    </div>
+    """
+  end
+
   attr :label, :string, required: true
   attr :value, :integer, required: true
   attr :accent, :boolean, default: false
@@ -274,16 +289,36 @@ defmodule SanctumWeb.AdminLive.Index do
   def mount(_params, _session, socket) do
     if connected?(socket), do: Sanctum.DeckSync.Monitor.subscribe()
 
-    {:ok,
-     socket
-     |> assign(:page_title, "Admin")
-     |> assign(:dev_routes?, Application.get_env(:sanctum, :dev_routes, false))
-     |> assign(:stats, load_stats())
-     |> assign(:jobs, load_job_counts())
-     |> assign(:deck_sync, Sanctum.DeckSync.Monitor.status())
-     |> assign(:deck_health, load_deck_health())
-     |> assign(:deck_import, %{status: :idle, deck: nil, error: nil, url: ""})}
+    socket =
+      socket
+      |> assign(:page_title, "Admin")
+      |> assign(:dev_routes?, Application.get_env(:sanctum, :dev_routes, false))
+      # nil until the async load lands — drives the stat-tile skeletons. The
+      # deck-sync Monitor status is in-memory, so it stays synchronous.
+      |> assign(:stats, nil)
+      |> assign(:jobs, nil)
+      |> assign(:deck_sync, Sanctum.DeckSync.Monitor.status())
+      |> assign(:deck_health, %{cursor: nil, last_run: nil})
+      |> assign(:deck_import, %{status: :idle, deck: nil, error: nil, url: ""})
+
+    # Skip the ~10 count/aggregate queries on the static render; load them
+    # asynchronously once the socket connects so the shell paints immediately.
+    socket =
+      if connected?(socket), do: start_async(socket, :load_admin, &load_admin/0), else: socket
+
+    {:ok, socket}
   end
+
+  # The health snapshot: catalog counts, Oban job tallies, and deck-sync health.
+  defp load_admin do
+    %{stats: load_stats(), jobs: load_job_counts(), deck_health: load_deck_health()}
+  end
+
+  defp zero_stats do
+    %{cards: 0, card_sides: 0, decks: 0, heroes: 0, villains: 0, scenarios: 0, users: 0, games: 0}
+  end
+
+  defp zero_jobs, do: Map.new(@job_states, &{&1, 0})
 
   # Enqueue an ad-hoc deck sync instead of waiting for the hourly cron. The
   # worker's `unique` constraint debounces this against an in-flight run, so a
@@ -323,6 +358,22 @@ defmodule SanctumWeb.AdminLive.Index do
   end
 
   @impl true
+  def handle_async(:load_admin, {:ok, data}, socket) do
+    {:noreply,
+     socket
+     |> assign(:stats, data.stats)
+     |> assign(:jobs, data.jobs)
+     |> assign(:deck_health, data.deck_health)}
+  end
+
+  def handle_async(:load_admin, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:stats, zero_stats())
+     |> assign(:jobs, zero_jobs())
+     |> put_flash(:error, "Couldn’t load admin stats: #{inspect(reason)}")}
+  end
+
   def handle_async(:import_deck, {:ok, result}, socket) do
     deck_import = socket.assigns.deck_import
 
