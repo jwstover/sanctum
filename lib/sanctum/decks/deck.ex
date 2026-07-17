@@ -62,8 +62,12 @@ defmodule Sanctum.Decks.Deck do
 
         query =
           if is_binary(search) and String.trim(search) != "" do
-            pattern = "%" <> String.trim(search) <> "%"
-            Ash.Query.filter(query, ilike(title, ^pattern) or ilike(hero.hero_name, ^pattern))
+            # Bare words search title/hero name; `field op value` terms filter
+            # any registered deck field (see Sanctum.Search.DeckFields).
+            case Sanctum.Search.compile(search, Sanctum.Search.DeckFields) do
+              %{expr: nil} -> query
+              %{expr: filter} -> Ash.Query.filter(query, ^filter)
+            end
           else
             query
           end

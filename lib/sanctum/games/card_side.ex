@@ -14,7 +14,8 @@ defmodule Sanctum.Games.CardSide do
     defaults [:read, :destroy]
 
     # Public card pool browsing: every card face — player *and* encounter —
-    # filtered by name/aspect/type. Each side is its own row so multi-sided
+    # filtered by an advanced search query (see Sanctum.Search) plus the
+    # aspect/type filter pills. Each side is its own row so multi-sided
     # cards surface every face, and searching an alternate title (e.g. "Peter
     # Parker") ranks that face first. Backs SanctumWeb.CardLive.Pool.
     read :browse do
@@ -40,8 +41,13 @@ defmodule Sanctum.Games.CardSide do
 
         query =
           if is_binary(search) and String.trim(search) != "" do
-            pattern = "%" <> String.trim(search) <> "%"
-            Ash.Query.filter(query, ilike(name, ^pattern))
+            # Bare words search name/subname; `field op value` terms filter
+            # any registered card field. Malformed input degrades gracefully
+            # (diagnostics are surfaced by the LiveView, not here).
+            case Sanctum.Search.compile(search, Sanctum.Search.CardFields) do
+              %{expr: nil} -> query
+              %{expr: filter} -> Ash.Query.filter(query, ^filter)
+            end
           else
             query
           end

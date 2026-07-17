@@ -8,6 +8,8 @@ defmodule SanctumWeb.DeckLive.Index do
 
   require Ash.Query
 
+  import SanctumWeb.Components.QueryInput
+
   alias SanctumWeb.Components.Card, as: CardComponent
 
   @page_size 24
@@ -45,18 +47,14 @@ defmodule SanctumWeb.DeckLive.Index do
 
       <!-- search + count -->
       <div class="mb-3 flex flex-wrap items-center gap-2.5">
-        <form id="deck-search" phx-change="search" class="relative min-w-[260px] flex-1">
-          <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[17px] text-base-content/40">
-            ⌕
-          </span>
-          <input
-            type="text"
-            name="query"
+        <form id="deck-search" phx-change="search" class="flex min-w-[260px] flex-1">
+          <.query_input
+            id="deck-query"
             value={@query}
-            phx-debounce="200"
-            autocomplete="off"
-            placeholder="Search decks or heroes…"
-            class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 pl-[38px] font-barlow text-base text-base-content outline-none focus:border-primary sm:text-[15px]"
+            name="query"
+            placeholder="Search decks — try hero:spider aspect:justice cards>=45"
+            registry={Sanctum.Search.DeckFields}
+            diagnostics={@search_diagnostics}
           />
         </form>
         <div class="flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
@@ -221,6 +219,7 @@ defmodule SanctumWeb.DeckLive.Index do
       socket
       |> assign(:page_title, "Browse Decks")
       |> assign(:query, "")
+      |> assign(:search_diagnostics, [])
       |> assign(:sort, "new")
       |> assign(:aspect, "all")
       |> assign(:hero_id, "all")
@@ -255,7 +254,14 @@ defmodule SanctumWeb.DeckLive.Index do
       query != socket.assigns.query or sort != socket.assigns.sort or
         aspect != socket.assigns.aspect or hero_id != socket.assigns.hero_id
 
-    socket = assign(socket, query: query, sort: sort, aspect: aspect, hero_id: hero_id)
+    socket =
+      assign(socket,
+        query: query,
+        sort: sort,
+        aspect: aspect,
+        hero_id: hero_id,
+        search_diagnostics: search_diagnostics(query)
+      )
 
     socket =
       if connected?(socket) and (changed? or socket.assigns.req_id == 0),
@@ -288,6 +294,15 @@ defmodule SanctumWeb.DeckLive.Index do
   def handle_event("search", %{"query" => query}, socket) do
     {:noreply, push_patch(socket, to: decks_path(socket.assigns, query: query), replace: true)}
   end
+
+  # Autocomplete for the query input: the QueryInput hook pushes the raw
+  # value + cursor and renders whatever we reply with.
+  def handle_event("suggest", %{"value" => value, "cursor" => cursor}, socket)
+      when is_binary(value) and is_integer(cursor) do
+    {:reply, Sanctum.Search.Suggest.suggest(value, cursor, Sanctum.Search.DeckFields), socket}
+  end
+
+  def handle_event("suggest", _params, socket), do: {:reply, %{items: []}, socket}
 
   def handle_event("sort", %{"key" => key}, socket) do
     {:noreply, push_patch(socket, to: decks_path(socket.assigns, sort: key))}
@@ -489,6 +504,14 @@ defmodule SanctumWeb.DeckLive.Index do
   defp filters(a) do
     %{query: a.query, aspect: a.aspect, hero_id: a.hero_id, sort: a.sort}
   end
+
+  # Advisory parse/compile problems shown under the query input ("unknown
+  # field…", "did you mean…"). The query still runs with the bad part dropped.
+  defp search_diagnostics(query) when is_binary(query) and query != "" do
+    Sanctum.Search.compile(query, Sanctum.Search.DeckFields).diagnostics
+  end
+
+  defp search_diagnostics(_query), do: []
 
   # Builds the row display map from a loaded Deck.
   defp deck_view(deck) do
