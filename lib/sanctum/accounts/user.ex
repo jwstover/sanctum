@@ -282,6 +282,33 @@ defmodule Sanctum.Accounts.User do
       end
     end
 
+    action :request_registration do
+      description """
+      Enumeration-safe registration: registers the email if it's free, or
+      notifies the address that it already has an account. Returns :ok either
+      way so callers can't probe which emails exist. See the implementation
+      module for the full contract. Called with authorize?: false — safe by
+      construction for anonymous use.
+      """
+
+      argument :email, :ci_string do
+        allow_nil? false
+      end
+
+      argument :password, :string do
+        allow_nil? false
+        constraints min_length: 8
+        sensitive? true
+      end
+
+      argument :password_confirmation, :string do
+        allow_nil? false
+        sensitive? true
+      end
+
+      run Sanctum.Accounts.User.Actions.RequestRegistration
+    end
+
     action :request_password_reset_token do
       description "Send password reset instructions to a user if they exist."
 

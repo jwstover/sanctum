@@ -42,6 +42,18 @@ defmodule SanctumWeb.AuthOverrides do
   @input_class @input_base <> " border-line focus:border-primary"
   @input_error_class @input_base <> " border-error focus:border-error"
 
+  # Public accessors so SanctumWeb.AuthSignInLive's hand-rolled register page
+  # (which bypasses the override system) stays pixel-identical to the stock
+  # auth surfaces styled above.
+  def page_class, do: @page_class
+  def panel_class, do: @panel_class
+  def heading_class, do: @heading_class
+  def field_label_class, do: @field_label_class
+  def input_class, do: @input_class
+  def input_error_class, do: @input_error_class
+  def button_primary, do: @button_primary
+  def button_ghost, do: @button_ghost
+
   override SignInLive do
     set :root_class, @page_class
   end

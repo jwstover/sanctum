@@ -131,10 +131,13 @@ defmodule SanctumWeb.Router do
                      AshAuthentication.Phoenix.Overrides.Default
                    ]
 
-    # Remove these if you'd like to use your own authentication views
+    # Custom live_view: /register is our enumeration-safe email-first flow
+    # (SanctumWeb.AuthSignInLive) instead of the stock create-or-error form;
+    # sign-in and reset render the stock component unchanged.
     sign_in_route register_path: "/register",
                   reset_path: "/reset",
                   auth_routes_prefix: "/auth",
+                  live_view: SanctumWeb.AuthSignInLive,
                   on_mount: [{SanctumWeb.LiveUserAuth, :live_no_user}],
                   overrides: [
                     SanctumWeb.AuthOverrides,
