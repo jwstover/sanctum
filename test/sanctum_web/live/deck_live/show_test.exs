@@ -77,7 +77,9 @@ defmodule SanctumWeb.DeckLive.ShowTest do
   test "an anonymous visitor can view a deck's cover, notes, and card list", %{conn: conn} do
     deck = make_deck_with_card()
 
-    {:ok, _view, html} = live(conn, ~p"/decks/#{deck.id}")
+    # The deck detail loads asynchronously after mount; await it.
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+    html = render_async(view)
 
     assert html =~ "Web Warrior"
     assert html =~ "Spider-Man"
@@ -95,7 +97,8 @@ defmodule SanctumWeb.DeckLive.ShowTest do
       deck.id
     ])
 
-    {:ok, _view, html} = live(conn, ~p"/decks/#{deck.id}")
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+    html = render_async(view)
 
     assert html =~ "Uniqueness"
     assert html =~ "92"
@@ -109,7 +112,8 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     deck_a = deck_with_hero("Amazing Build", hero, [ally])
     _deck_b = deck_with_hero("Spectacular Build", hero, [ally])
 
-    {:ok, _view, html} = live(conn, ~p"/decks/#{deck_a.id}")
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck_a.id}")
+    html = render_async(view)
 
     assert html =~ "Similar Decks"
     assert html =~ "Spectacular Build"

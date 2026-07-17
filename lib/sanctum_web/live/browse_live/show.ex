@@ -25,6 +25,58 @@ defmodule SanctumWeb.BrowseLive.Show do
 
   @impl true
   def mount(%{"pack" => code}, _session, socket) do
+    socket =
+      socket
+      |> assign(:page_title, "Browse")
+      # nil until the async load lands — drives the loading/skeleton UI.
+      |> assign(:pack, nil)
+      |> assign(:villain_groups, [])
+      |> assign(:encounter_groups, [])
+      |> assign(:sections, [])
+      |> assign(:modular_groups, [])
+      |> assign(:player_groups, [])
+
+    # Skip the (heavy) product load on the static render; it runs asynchronously
+    # once the socket connects so the shell paints immediately.
+    socket =
+      if connected?(socket),
+        do: start_async(socket, :load_pack, fn -> load_pack(code) end),
+        else: socket
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_async(:load_pack, {:ok, {:ok, data}}, socket) do
+    {:noreply,
+     socket
+     |> assign(:page_title, data.page_title)
+     |> assign(:pack, data.pack)
+     |> assign(:villain_groups, data.villain_groups)
+     |> assign(:encounter_groups, data.encounter_groups)
+     |> assign(:sections, data.sections)
+     |> assign(:modular_groups, data.modular_groups)
+     |> assign(:player_groups, data.player_groups)}
+  end
+
+  def handle_async(:load_pack, {:ok, {:error, code}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Unknown product “#{code}”.")
+     |> push_navigate(to: ~p"/browse")}
+  end
+
+  def handle_async(:load_pack, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Couldn’t load product: #{inspect(reason)}")
+     |> push_navigate(to: ~p"/browse")}
+  end
+
+  # The whole product view: the pack with its nested card sets/sides, plus every
+  # derived section grouping. Returns `{:error, code}` for an unknown code so
+  # handle_async can redirect.
+  defp load_pack(code) do
     case Catalog.get_pack_by_code(code,
            load: [:wave, :card_total, card_sets: [cards: [:primary_side, :card_sides]]]
          ) do
@@ -32,20 +84,18 @@ defmodule SanctumWeb.BrowseLive.Show do
         hero_colors = Sanctum.Heroes.hero_color_map()
 
         {:ok,
-         socket
-         |> assign(:page_title, pack.name || pack.code)
-         |> assign(:pack, pack)
-         |> assign(:villain_groups, villain_groups(pack, hero_colors))
-         |> assign(:encounter_groups, encounter_groups(pack, hero_colors))
-         |> assign(:sections, build_sections(pack, hero_colors))
-         |> assign(:modular_groups, modular_groups(pack, hero_colors))
-         |> assign(:player_groups, player_card_groups(pack, hero_colors))}
+         %{
+           page_title: pack.name || pack.code,
+           pack: pack,
+           villain_groups: villain_groups(pack, hero_colors),
+           encounter_groups: encounter_groups(pack, hero_colors),
+           sections: build_sections(pack, hero_colors),
+           modular_groups: modular_groups(pack, hero_colors),
+           player_groups: player_card_groups(pack, hero_colors)
+         }}
 
       _ ->
-        {:ok,
-         socket
-         |> put_flash(:error, "Unknown product “#{code}”.")
-         |> push_navigate(to: ~p"/browse")}
+        {:error, code}
     end
   end
 
@@ -53,65 +103,76 @@ defmodule SanctumWeb.BrowseLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:browse}>
-      <.header>
-        <.link navigate={~p"/browse"} class="text-base-content/45 hover:text-primary">Browse</.link>
-        <span class="text-base-content/30">/</span>
-        {@pack.name || @pack.code}
-        <:subtitle>
-          {product_type_label(@pack.product_type)}
-          <span :if={@pack.wave}>
-            · {@pack.wave.name}
-          </span><span :if={@pack.released_on}>
-            · {@pack.released_on.year}
-          </span>
-          · {@pack.card_total || 0} cards
-        </:subtitle>
-      </.header>
-
-      <div class="flex flex-col gap-9">
-        <.grouped_section
-          title="Villains"
-          description="Scenario villain sets included in this product."
-          groups={@villain_groups}
-        />
-
-        <.grouped_section
-          title="Encounter Sets"
-          description="Standard, expert, and leader encounter sets included in this product."
-          groups={@encounter_groups}
-        />
-
-        <.card_section
-          :for={section <- @sections}
-          title={section.title}
-          subtitle={section.subtitle}
-          cards={section.cards}
-        />
-
-        <.grouped_section
-          title="Player Cards"
-          description="Aspect and basic cards included in this product."
-          groups={@player_groups}
-        />
-
-        <.grouped_section
-          title="Modular Sets"
-          description="Encounter modules included in this product."
-          groups={@modular_groups}
-        />
+      <!-- first-load skeleton -->
+      <div :if={@pack == nil} class="flex flex-col gap-6">
+        <div class="h-9 w-1/2 max-w-md animate-pulse bg-base-300"></div>
+        <div class="h-4 w-1/3 max-w-xs animate-pulse bg-base-300"></div>
+        <.art_grid_skeleton count={8} />
       </div>
 
-      <.panel
-        :if={
-          @sections == [] and @villain_groups == [] and @encounter_groups == [] and
-            @player_groups == [] and @modular_groups == []
-        }
-        class="mt-2 p-6 text-center"
-      >
-        <p class="font-barlow-condensed text-lg text-base-content/60">
-          No cards have been synced for this product yet.
-        </p>
-      </.panel>
+      <div :if={@pack != nil}>
+        <.header>
+          <.link navigate={~p"/browse"} class="text-base-content/45 hover:text-primary">
+            Browse
+          </.link>
+          <span class="text-base-content/30">/</span>
+          {@pack.name || @pack.code}
+          <:subtitle>
+            {product_type_label(@pack.product_type)}
+            <span :if={@pack.wave}>
+              · {@pack.wave.name}
+            </span><span :if={@pack.released_on}>
+              · {@pack.released_on.year}
+            </span>
+            · {@pack.card_total || 0} cards
+          </:subtitle>
+        </.header>
+
+        <div class="flex flex-col gap-9">
+          <.grouped_section
+            title="Villains"
+            description="Scenario villain sets included in this product."
+            groups={@villain_groups}
+          />
+
+          <.grouped_section
+            title="Encounter Sets"
+            description="Standard, expert, and leader encounter sets included in this product."
+            groups={@encounter_groups}
+          />
+
+          <.card_section
+            :for={section <- @sections}
+            title={section.title}
+            subtitle={section.subtitle}
+            cards={section.cards}
+          />
+
+          <.grouped_section
+            title="Player Cards"
+            description="Aspect and basic cards included in this product."
+            groups={@player_groups}
+          />
+
+          <.grouped_section
+            title="Modular Sets"
+            description="Encounter modules included in this product."
+            groups={@modular_groups}
+          />
+        </div>
+
+        <.panel
+          :if={
+            @sections == [] and @villain_groups == [] and @encounter_groups == [] and
+              @player_groups == [] and @modular_groups == []
+          }
+          class="mt-2 p-6 text-center"
+        >
+          <p class="font-barlow-condensed text-lg text-base-content/60">
+            No cards have been synced for this product yet.
+          </p>
+        </.panel>
+      </div>
     </Layouts.app>
     """
   end

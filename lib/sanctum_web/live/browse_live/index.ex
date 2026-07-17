@@ -26,6 +26,41 @@ defmodule SanctumWeb.BrowseLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    socket =
+      socket
+      |> assign(:page_title, "Browse")
+      # nil until the async load lands — drives the loading/skeleton UI.
+      |> assign(:wave_sections, nil)
+      |> assign(:other_packs, [])
+      |> assign(:covers, %{})
+
+    # Skip every query on the static (disconnected) render; the taxonomy loads
+    # asynchronously once the socket connects so nothing blocks first paint.
+    socket =
+      if connected?(socket), do: start_async(socket, :load_browse, &load_browse/0), else: socket
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_async(:load_browse, {:ok, result}, socket) do
+    {:noreply,
+     socket
+     |> assign(:wave_sections, result.wave_sections)
+     |> assign(:other_packs, result.other_packs)
+     |> assign(:covers, result.covers)}
+  end
+
+  def handle_async(:load_browse, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:wave_sections, [])
+     |> put_flash(:error, "Couldn’t load the browser: #{inspect(reason)}")}
+  end
+
+  # The full release taxonomy: waves, their packs (with card totals), and one
+  # representative cover image per pack.
+  defp load_browse do
     waves = Ash.read!(Ash.Query.sort(Catalog.Wave, number: :asc))
 
     packs =
@@ -34,7 +69,6 @@ defmodule SanctumWeb.BrowseLive.Index do
       |> Ash.Query.sort(position: :asc)
       |> Ash.read!()
 
-    covers = pack_cover_images()
     by_wave = Enum.group_by(packs, & &1.wave_id)
 
     wave_sections =
@@ -42,15 +76,12 @@ defmodule SanctumWeb.BrowseLive.Index do
         %{wave: wave, packs: sort_packs(Map.get(by_wave, wave.id, []))}
       end)
 
-    # Packs with no wave (e.g. the standalone Ronan Modular Set) render last.
-    other_packs = sort_packs(Map.get(by_wave, nil, []))
-
-    {:ok,
-     socket
-     |> assign(:page_title, "Browse")
-     |> assign(:wave_sections, wave_sections)
-     |> assign(:other_packs, other_packs)
-     |> assign(:covers, covers)}
+    %{
+      wave_sections: wave_sections,
+      # Packs with no wave (e.g. the standalone Ronan Modular Set) render last.
+      other_packs: sort_packs(Map.get(by_wave, nil, [])),
+      covers: pack_cover_images()
+    }
   end
 
   @impl true
@@ -64,7 +95,21 @@ defmodule SanctumWeb.BrowseLive.Index do
         </:subtitle>
       </.header>
 
-      <div class="flex flex-col gap-10">
+      <!-- first-load skeletons -->
+      <div :if={@wave_sections == nil} class="flex flex-col gap-10">
+        <section :for={_ <- 1..2}>
+          <div class="mb-3.5 h-7 w-48 animate-pulse border-b-2 border-neutral bg-base-300 pb-2"></div>
+          <div class="grid grid-cols-2 gap-3.5 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+            <div
+              :for={_ <- 1..6}
+              class="aspect-[3/2] animate-pulse border-2 border-neutral bg-base-300 shadow-comic"
+            >
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div :if={@wave_sections != nil} class="flex flex-col gap-10">
         <section :for={section <- @wave_sections} :if={section.packs != []}>
           <.wave_heading wave={section.wave} packs={section.packs} />
           <.pack_grid packs={section.packs} covers={@covers} />

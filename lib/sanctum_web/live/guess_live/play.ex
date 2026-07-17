@@ -30,8 +30,17 @@ defmodule SanctumWeb.GuessLive.Play do
         </div>
       </.panel>
 
+      <.panel :if={@status == :loading} class="px-5 py-9 sm:px-6 sm:py-8">
+        <div class="animate-pulse space-y-4">
+          <div class="h-2.5 w-24 bg-base-300"></div>
+          <div class="mt-3 h-6 w-full bg-base-300"></div>
+          <div class="h-6 w-5/6 bg-base-300"></div>
+          <div class="h-6 w-2/3 bg-base-300"></div>
+        </div>
+      </.panel>
+
       <div
-        :if={@status != :empty}
+        :if={@status not in [:empty, :loading]}
         class={["mx-auto max-w-[720px]", @status == :playing && "pb-36 sm:pb-0"]}
       >
         <!-- flavor prompt — the hero of the round -->
@@ -170,7 +179,33 @@ defmodule SanctumWeb.GuessLive.Play do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket |> assign(:page_title, "Flavor Town") |> start_round()}
+    socket =
+      socket
+      |> assign(:page_title, "Flavor Town")
+      |> assign(:card, nil)
+      |> assign(:hints, [])
+      |> assign(:revealed_count, 0)
+      |> assign(:guesses, [])
+      # :loading until the async pick lands — drives the loading skeleton.
+      |> assign(:status, :loading)
+
+    # Skip the random-card pick on the static render; it runs asynchronously
+    # once the socket connects so the shell paints immediately.
+    socket = if connected?(socket), do: start_round(socket), else: socket
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_async(:load_round, {:ok, card}, socket) do
+    {:noreply, apply_round(socket, card)}
+  end
+
+  def handle_async(:load_round, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:status, :empty)
+     |> put_flash(:error, "Couldn’t start a round: #{inspect(reason)}")}
   end
 
   @impl true
@@ -209,24 +244,33 @@ defmodule SanctumWeb.GuessLive.Play do
     end
   end
 
+  # Kick off a fresh round: pick a random card off the socket so the guess UI
+  # never blocks on the DB. Resets the round state up front and shows the
+  # loading skeleton until `handle_async` delivers the card.
   defp start_round(socket) do
-    case CardGuess.random_guessable_card() do
-      nil ->
-        socket
-        |> assign(:card, nil)
-        |> assign(:hints, [])
-        |> assign(:revealed_count, 0)
-        |> assign(:guesses, [])
-        |> assign(:status, :empty)
+    socket
+    |> assign(:status, :loading)
+    |> assign(:revealed_count, 0)
+    |> assign(:guesses, [])
+    |> start_async(:load_round, fn -> CardGuess.random_guessable_card() end)
+  end
 
-      card ->
-        socket
-        |> assign(:card, card)
-        |> assign(:hints, CardGuess.build_hints(card))
-        |> assign(:revealed_count, 0)
-        |> assign(:guesses, [])
-        |> assign(:status, :playing)
-    end
+  defp apply_round(socket, nil) do
+    socket
+    |> assign(:card, nil)
+    |> assign(:hints, [])
+    |> assign(:revealed_count, 0)
+    |> assign(:guesses, [])
+    |> assign(:status, :empty)
+  end
+
+  defp apply_round(socket, card) do
+    socket
+    |> assign(:card, card)
+    |> assign(:hints, CardGuess.build_hints(card))
+    |> assign(:revealed_count, 0)
+    |> assign(:guesses, [])
+    |> assign(:status, :playing)
   end
 
   # Compact HUD counter shown beside the hint pips during play.
