@@ -33,6 +33,7 @@ defmodule SanctumWeb.BrowseLive.Index do
       |> assign(:wave_sections, nil)
       |> assign(:other_packs, [])
       |> assign(:covers, %{})
+      |> assign(:scroll_restore_pending?, false)
 
     # Skip every query on the static (disconnected) render; the taxonomy loads
     # asynchronously once the socket connects so nothing blocks first paint.
@@ -42,13 +43,36 @@ defmodule SanctumWeb.BrowseLive.Index do
     {:ok, socket}
   end
 
+  # Pushed by the ScrollRestore hook when the user arrives with a saved scroll
+  # position. The page renders asynchronously, so hold the confirmation until
+  # the taxonomy load lands and the content exists at its full height.
+  @impl true
+  def handle_event("restore-scroll", _params, socket) do
+    if socket.assigns.wave_sections do
+      {:noreply, push_event(socket, "sanctum:scroll-restore", %{})}
+    else
+      {:noreply, assign(socket, :scroll_restore_pending?, true)}
+    end
+  end
+
   @impl true
   def handle_async(:load_browse, {:ok, result}, socket) do
-    {:noreply,
-     socket
-     |> assign(:wave_sections, result.wave_sections)
-     |> assign(:other_packs, result.other_packs)
-     |> assign(:covers, result.covers)}
+    socket =
+      socket
+      |> assign(:wave_sections, result.wave_sections)
+      |> assign(:other_packs, result.other_packs)
+      |> assign(:covers, result.covers)
+
+    socket =
+      if socket.assigns.scroll_restore_pending? do
+        socket
+        |> assign(:scroll_restore_pending?, false)
+        |> push_event("sanctum:scroll-restore", %{})
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   def handle_async(:load_browse, {:exit, reason}, socket) do
@@ -88,6 +112,7 @@ defmodule SanctumWeb.BrowseLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:browse}>
+      <div id="scroll-restore" phx-hook="ScrollRestore"></div>
       <.header>
         Browse
         <:subtitle>

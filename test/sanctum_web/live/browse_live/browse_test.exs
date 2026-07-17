@@ -42,4 +42,26 @@ defmodule SanctumWeb.BrowseLiveTest do
     # The async load resolves to not-found and redirects to /browse.
     assert_redirect(view, ~p"/browse")
   end
+
+  test "the browser confirms restore-scroll once the taxonomy has loaded", %{conn: conn} do
+    make_pack("spdr", "SP//dr")
+
+    {:ok, view, _html} = live(conn, ~p"/browse")
+
+    render_hook(view, "restore-scroll", %{"offset" => 0})
+    render_async(view)
+
+    assert_push_event(view, "sanctum:scroll-restore", %{})
+  end
+
+  test "a product page confirms restore-scroll once the pack has loaded", %{conn: conn} do
+    make_pack("spdr", "SP//dr")
+
+    {:ok, view, _html} = live(conn, ~p"/browse/spdr")
+
+    render_hook(view, "restore-scroll", %{"offset" => 0})
+    render_async(view)
+
+    assert_push_event(view, "sanctum:scroll-restore", %{})
+  end
 end

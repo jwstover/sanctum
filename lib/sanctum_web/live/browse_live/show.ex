@@ -35,6 +35,7 @@ defmodule SanctumWeb.BrowseLive.Show do
       |> assign(:sections, [])
       |> assign(:modular_groups, [])
       |> assign(:player_groups, [])
+      |> assign(:scroll_restore_pending?, false)
 
     # Skip the (heavy) product load on the static render; it runs asynchronously
     # once the socket connects so the shell paints immediately.
@@ -46,17 +47,40 @@ defmodule SanctumWeb.BrowseLive.Show do
     {:ok, socket}
   end
 
+  # Pushed by the ScrollRestore hook when the user arrives with a saved scroll
+  # position. The page renders asynchronously, so hold the confirmation until
+  # the pack load lands and the content exists at its full height.
+  @impl true
+  def handle_event("restore-scroll", _params, socket) do
+    if socket.assigns.pack do
+      {:noreply, push_event(socket, "sanctum:scroll-restore", %{})}
+    else
+      {:noreply, assign(socket, :scroll_restore_pending?, true)}
+    end
+  end
+
   @impl true
   def handle_async(:load_pack, {:ok, {:ok, data}}, socket) do
-    {:noreply,
-     socket
-     |> assign(:page_title, data.page_title)
-     |> assign(:pack, data.pack)
-     |> assign(:villain_groups, data.villain_groups)
-     |> assign(:encounter_groups, data.encounter_groups)
-     |> assign(:sections, data.sections)
-     |> assign(:modular_groups, data.modular_groups)
-     |> assign(:player_groups, data.player_groups)}
+    socket =
+      socket
+      |> assign(:page_title, data.page_title)
+      |> assign(:pack, data.pack)
+      |> assign(:villain_groups, data.villain_groups)
+      |> assign(:encounter_groups, data.encounter_groups)
+      |> assign(:sections, data.sections)
+      |> assign(:modular_groups, data.modular_groups)
+      |> assign(:player_groups, data.player_groups)
+
+    socket =
+      if socket.assigns.scroll_restore_pending? do
+        socket
+        |> assign(:scroll_restore_pending?, false)
+        |> push_event("sanctum:scroll-restore", %{})
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   def handle_async(:load_pack, {:ok, {:error, code}}, socket) do
@@ -103,6 +127,7 @@ defmodule SanctumWeb.BrowseLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:browse}>
+      <div id="scroll-restore" phx-hook="ScrollRestore"></div>
       <!-- first-load skeleton -->
       <div :if={@pack == nil} class="flex flex-col gap-6">
         <div class="h-9 w-1/2 max-w-md animate-pulse bg-base-300"></div>
