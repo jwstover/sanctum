@@ -33,6 +33,7 @@ defmodule SanctumWeb.BrowseLive.Index do
       |> assign(:wave_sections, nil)
       |> assign(:other_packs, [])
       |> assign(:covers, %{})
+      |> assign(:query, "")
       |> assign(:scroll_restore_pending?, false)
 
     # Skip every query on the static (disconnected) render; the taxonomy loads
@@ -53,6 +54,12 @@ defmodule SanctumWeb.BrowseLive.Index do
     else
       {:noreply, assign(socket, :scroll_restore_pending?, true)}
     end
+  end
+
+  # Filter the loaded taxonomy in-memory by pack name or any of the pack's card
+  # set names. Everything is already in the socket, so this is a pure re-render.
+  def handle_event("search", %{"query" => query}, socket) do
+    {:noreply, assign(socket, :query, query)}
   end
 
   @impl true
@@ -89,7 +96,7 @@ defmodule SanctumWeb.BrowseLive.Index do
 
     packs =
       Catalog.Pack
-      |> Ash.Query.load([:wave, :card_total])
+      |> Ash.Query.load([:wave, :card_total, :card_sets])
       |> Ash.Query.sort(position: :asc)
       |> Ash.read!()
 
@@ -110,6 +117,11 @@ defmodule SanctumWeb.BrowseLive.Index do
 
   @impl true
   def render(assigns) do
+    assigns =
+      assigns
+      |> assign(:filtered_sections, filter_sections(assigns.wave_sections, assigns.query))
+      |> assign(:filtered_other, filter_packs(assigns.other_packs, assigns.query))
+
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:browse}>
       <div id="scroll-restore" phx-hook="ScrollRestore"></div>
@@ -119,6 +131,19 @@ defmodule SanctumWeb.BrowseLive.Index do
           Every product in the game, organized by release wave — campaign expansions, hero packs, and scenario packs. Pick a product to see everything inside it.
         </:subtitle>
       </.header>
+
+      <!-- search: matches product names and the names of the card sets inside them -->
+      <form id="browse-search" phx-change="search" class="mb-6 flex min-w-[260px]">
+        <input
+          type="search"
+          name="query"
+          value={@query}
+          autocomplete="off"
+          phx-debounce="150"
+          placeholder="Search products and sets — try “spider”, “kang”, or “bomb scare”"
+          class="min-h-[44px] w-full border-[2.5px] border-line bg-black px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.04em] text-base-content outline-none placeholder:normal-case placeholder:font-normal placeholder:text-base-content/40 focus:border-primary sm:min-h-0 sm:text-[14px]"
+        />
+      </form>
 
       <!-- first-load skeletons -->
       <div :if={@wave_sections == nil} class="flex flex-col gap-10">
@@ -135,15 +160,24 @@ defmodule SanctumWeb.BrowseLive.Index do
       </div>
 
       <div :if={@wave_sections != nil} class="flex flex-col gap-10">
-        <section :for={section <- @wave_sections} :if={section.packs != []}>
+        <section :for={section <- @filtered_sections}>
           <.wave_heading wave={section.wave} packs={section.packs} />
           <.pack_grid packs={section.packs} covers={@covers} />
         </section>
 
-        <section :if={@other_packs != []}>
+        <section :if={@filtered_other != []}>
           <h2 class="mb-3.5 font-anton text-[22px] uppercase tracking-[0.03em]">Other</h2>
-          <.pack_grid packs={@other_packs} covers={@covers} />
+          <.pack_grid packs={@filtered_other} covers={@covers} />
         </section>
+
+        <.panel
+          :if={@filtered_sections == [] and @filtered_other == []}
+          class="p-6 text-center"
+        >
+          <p class="font-barlow-condensed text-lg text-base-content/60">
+            No products or sets match “{@query}”.
+          </p>
+        </.panel>
       </div>
     </Layouts.app>
     """
@@ -203,6 +237,31 @@ defmodule SanctumWeb.BrowseLive.Index do
     </div>
     """
   end
+
+  # Drop packs that don't match the query, then drop any wave left with none.
+  defp filter_sections(nil, _query), do: nil
+
+  defp filter_sections(sections, query) do
+    needle = normalize(query)
+
+    sections
+    |> Enum.map(fn section -> %{section | packs: keep_matching(section.packs, needle)} end)
+    |> Enum.reject(&(&1.packs == []))
+  end
+
+  defp filter_packs(packs, query), do: keep_matching(packs, normalize(query))
+
+  defp keep_matching(packs, ""), do: packs
+  defp keep_matching(packs, needle), do: Enum.filter(packs, &pack_matches?(&1, needle))
+
+  # A pack matches when the needle is in its own name or in any of its card set
+  # names (so "bomb scare" finds the pack shipping that modular set).
+  defp pack_matches?(pack, needle) do
+    String.contains?(normalize(pack.name), needle) or
+      Enum.any?(pack.card_sets, &String.contains?(normalize(&1.name), needle))
+  end
+
+  defp normalize(value), do: value |> to_string() |> String.trim() |> String.downcase()
 
   # Sort tiles: product-type rank, then release position.
   defp sort_packs(packs) do
