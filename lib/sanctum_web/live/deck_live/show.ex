@@ -63,9 +63,7 @@ defmodule SanctumWeb.DeckLive.Show do
               >
                 <.icon name="hero-arrow-top-right-on-square" /> MarvelCDB
               </.button>
-              <.button navigate={~p"/decks"}>
-                <.icon name="hero-arrow-left" /> Decks
-              </.button>
+              <.back_button fallback={~p"/decks"} />
             </div>
           </div>
         </header>

@@ -133,6 +133,51 @@ defmodule SanctumWeb.CoreComponents do
   end
 
   @doc """
+  Renders a "← Back" button that returns the user to wherever they came from
+  (`history.back()`), so list pages restore their query/scroll state via the
+  ScrollRestore hook instead of landing at the top. When there's nothing
+  in-app to go back to (direct link, new tab), it navigates to `fallback`.
+
+  ## Examples
+
+      <.back_button fallback={~p"/cards"} />
+  """
+  attr :fallback, :string, required: true
+
+  def back_button(assigns) do
+    ~H"""
+    <.button type="button" id="back-nav" phx-hook=".BackNav" data-fallback={@fallback}>
+      <.icon name="hero-arrow-left" /> Back
+    </.button>
+    <script :type={Phoenix.LiveView.ColocatedHook} name=".BackNav">
+      // The Navigation API's canGoBack only counts same-origin entries, so it
+      // correctly rejects a new-tab page or an external referrer;
+      // history.length (the Firefox/Safari fallback) can't tell those apart
+      // and may step out of the app.
+      export default {
+        mounted() {
+          this.onClick = () => {
+            const canGoBack =
+              "navigation" in window ? window.navigation.canGoBack : window.history.length > 1
+
+            if (canGoBack) {
+              window.history.back()
+            } else {
+              window.location.assign(this.el.dataset.fallback || "/")
+            }
+          }
+          this.el.addEventListener("click", this.onClick)
+        },
+
+        destroyed() {
+          this.el.removeEventListener("click", this.onClick)
+        },
+      }
+    </script>
+    """
+  end
+
+  @doc """
   Renders a comic-dossier filter pill (aspect / type filters, sort toggles).
 
   ## Examples
