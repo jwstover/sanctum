@@ -3,6 +3,8 @@ defmodule SanctumWeb.CardLive.Show do
 
   require Ash.Query
 
+  alias Sanctum.CardImages
+  alias Sanctum.CardImages.Processor
   alias SanctumWeb.Components.Card, as: CardComponent
 
   @impl true
@@ -49,18 +51,26 @@ defmodule SanctumWeb.CardLive.Show do
 
         <!-- one panel per side -->
         <.panel :for={side <- @sides} class="flex flex-col gap-5 p-4 sm:flex-row sm:items-start">
-          <div class="h-[330px] w-[236px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start">
-            <.mc_card
-              name={side.name}
-              cost={side.cost}
-              type={side.type}
-              aspect={side.aspect_key}
-              resources={side.resources}
-              image_url={side.image_url}
-              gradient_from={side.gradient_from}
-              gradient_to={side.gradient_to}
-              size="lg"
-              show_cost={false}
+          <div class="flex flex-none flex-col items-center gap-2 self-center sm:self-start">
+            <div class="h-[330px] w-[236px] border-2 border-neutral shadow-comic">
+              <.mc_card
+                name={side.name}
+                cost={side.cost}
+                type={side.type}
+                aspect={side.aspect_key}
+                resources={side.resources}
+                image_url={versioned_url(side.image_url, @image_versions[side.id])}
+                gradient_from={side.gradient_from}
+                gradient_to={side.gradient_to}
+                size="lg"
+                show_cost={false}
+              />
+            </div>
+
+            <.image_upload
+              side={side}
+              upload={@uploads.card_image}
+              active={@upload_side_id == side.id}
             />
           </div>
 
@@ -197,6 +207,68 @@ defmodule SanctumWeb.CardLive.Show do
     """
   end
 
+  attr :side, :map, required: true
+  attr :upload, :map, required: true, doc: "the @uploads.card_image entry"
+  attr :active, :boolean, required: true
+
+  # Per-side image replacement. Collapsed to a single button until this side is
+  # the active target; expanded, it renders the file input, any entry, and the
+  # save/cancel actions. The uploaded bytes overwrite the side's existing bucket
+  # object (same key), so the stored URL is unchanged and normal card syncs skip
+  # it — the replacement survives.
+  defp image_upload(assigns) do
+    ~H"""
+    <div class="w-[236px]">
+      <button
+        :if={!@active}
+        type="button"
+        phx-click="start_replace"
+        phx-value-side={@side.id}
+        class="flex w-full items-center justify-center gap-1.5 border-2 border-neutral bg-black px-2 py-1.5 font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.08em] text-base-content/70 hover:text-primary"
+      >
+        <.icon name="hero-arrow-up-tray" class="size-3.5" /> Replace image
+      </button>
+
+      <form
+        :if={@active}
+        id={"upload-#{@side.id}"}
+        phx-change="validate_image"
+        phx-submit="save_image"
+        class="flex flex-col gap-2 border-2 border-primary bg-black p-2"
+      >
+        <.live_file_input upload={@upload} class="w-full text-[11px] text-base-content/70" />
+
+        <p :for={err <- upload_errors(@upload)} class="font-ibm-mono text-[10px] text-error">
+          {upload_error_to_string(err)}
+        </p>
+
+        <div :for={entry <- @upload.entries} class="flex flex-col gap-1">
+          <p :for={err <- upload_errors(@upload, entry)} class="font-ibm-mono text-[10px] text-error">
+            {upload_error_to_string(err)}
+          </p>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            type="submit"
+            disabled={@upload.entries == []}
+            class="flex-1 border-2 border-neutral bg-primary px-2 py-1 font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.08em] text-black disabled:opacity-40"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            phx-click="cancel_replace"
+            class="border-2 border-neutral bg-black px-2 py-1 font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.08em] text-base-content/70 hover:text-primary"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+    """
+  end
+
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     card =
@@ -226,8 +298,136 @@ defmodule SanctumWeb.CardLive.Show do
      |> assign(:card, card)
      |> assign(:title, title)
      |> assign(:sides, sides)
-     |> assign(:alts, alts)}
+     |> assign(:alts, alts)
+     |> assign(:upload_side_id, nil)
+     |> assign(:image_versions, %{})
+     |> allow_upload(:card_image,
+       accept: ~w(.png .jpg .jpeg .tif .tiff),
+       max_entries: 1,
+       max_file_size: 50_000_000
+     )}
   end
+
+  @impl true
+  def handle_event("start_replace", %{"side" => side_id}, socket) do
+    {:noreply,
+     socket
+     |> cancel_pending_entries()
+     |> assign(:upload_side_id, side_id)}
+  end
+
+  def handle_event("cancel_replace", _params, socket) do
+    {:noreply,
+     socket
+     |> cancel_pending_entries()
+     |> assign(:upload_side_id, nil)}
+  end
+
+  def handle_event("validate_image", _params, socket), do: {:noreply, socket}
+
+  def handle_event("save_image", _params, socket) do
+    side = Enum.find(socket.assigns.sides, &(&1.id == socket.assigns.upload_side_id))
+
+    case side && replace_image(socket, side) do
+      {:ok, socket} ->
+        {:noreply,
+         socket
+         |> assign(:upload_side_id, nil)
+         |> put_flash(:info, "Image replaced.")}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Could not save the image.")}
+    end
+  end
+
+  # Overwrites the side's bucket object with the uploaded bytes. Keeps the same
+  # object key so `image_url` (and thus future syncs) are unaffected; when a side
+  # had no image yet, derives a key from its code and persists the new URL.
+  defp replace_image(socket, side) do
+    key = side.object_key || "cards/#{side.code}.png"
+
+    case consume_uploaded_entries(socket, :card_image, &put_entry(&1, &2, key)) do
+      [:ok] -> {:ok, apply_replacement(socket, side, key)}
+      _ -> :error
+    end
+  end
+
+  # consume_uploaded_entries callback: read the temp file, normalize it
+  # (convert to the key's format, downscale), and push it to the bucket under
+  # `key`. Always consumes the entry (returns `{:ok, _}`); the per-entry
+  # outcome (`:ok | {:error, _}`) is inspected by the caller.
+  #
+  # The content type is derived from the key, never from the client — the
+  # upload may be a TIFF, but the stored object is always PNG or JPEG.
+  #
+  # `path` is a LiveView-owned temp-upload path, not user-controlled input, so
+  # Sobelow's Traversal.FileModule finding here is a false positive (the check
+  # is ignored project-wide in .sobelow-conf).
+  defp put_entry(%{path: path}, _entry, key) do
+    ext = target_ext(key)
+
+    outcome =
+      with {:ok, body} <- File.read(path),
+           {:ok, converted} <- Processor.normalize(body, ext) do
+        CardImages.put_object(key, converted, content_type_for(ext))
+      end
+
+    {:ok, outcome}
+  end
+
+  defp target_ext(key) do
+    case key |> Path.extname() |> String.downcase() do
+      ext when ext in [".jpg", ".jpeg"] -> ".jpg"
+      _ -> ".png"
+    end
+  end
+
+  defp content_type_for(".jpg"), do: "image/jpeg"
+  defp content_type_for(_ext), do: "image/png"
+
+  # Reflects a successful upload in the view: sets image_url if the side had none
+  # (persisting it), and bumps a per-side version token to bust the image cache.
+  defp apply_replacement(socket, side, key) do
+    url = side.image_url || CardImages.base_url() <> "/" <> key
+
+    if is_nil(side.image_url), do: persist_image_url(socket, side.id, url)
+
+    sides =
+      Enum.map(socket.assigns.sides, fn s ->
+        if s.id == side.id, do: %{s | image_url: url, object_key: key}, else: s
+      end)
+
+    versions = Map.put(socket.assigns.image_versions, side.id, System.unique_integer([:positive]))
+
+    socket
+    |> assign(:sides, sides)
+    |> assign(:image_versions, versions)
+  end
+
+  defp persist_image_url(socket, side_id, url) do
+    Sanctum.Games.CardSide
+    |> Ash.get!(side_id, actor: socket.assigns.current_user)
+    |> Ash.Changeset.for_update(:update, %{image_url: url}, actor: socket.assigns.current_user)
+    |> Ash.update!()
+  end
+
+  defp cancel_pending_entries(socket) do
+    Enum.reduce(socket.assigns.uploads.card_image.entries, socket, fn entry, acc ->
+      cancel_upload(acc, :card_image, entry.ref)
+    end)
+  end
+
+  defp versioned_url(nil, _version), do: nil
+  defp versioned_url(url, nil), do: url
+  defp versioned_url(url, version), do: url <> "?v=#{version}"
+
+  defp upload_error_to_string(:too_large), do: "File is too large (max 50 MB)."
+
+  defp upload_error_to_string(:not_accepted),
+    do: "Unsupported file type (use PNG, JPG, or TIFF)."
+
+  defp upload_error_to_string(:too_many_files), do: "Only one file at a time."
+  defp upload_error_to_string(_other), do: "Invalid file."
 
   # Builds the display map for one card side.
   defp side_view(side, hero_gradient) do
@@ -247,6 +447,8 @@ defmodule SanctumWeb.CardLive.Show do
 
     %{
       id: side.id,
+      code: side.code,
+      object_key: CardImages.key_from_url(side.image_url),
       name: side.name,
       subname: side.subname,
       cost: side.cost,
