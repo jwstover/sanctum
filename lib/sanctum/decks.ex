@@ -13,6 +13,7 @@ defmodule Sanctum.Decks do
       define :create_with_cards, action: :create_with_cards
       define :list_decks, action: :read
       define :get_deck_by_mcdb_id, action: :read, get_by: :mcdb_id, not_found_error?: false
+      define :set_deck_mcdb_dates, action: :set_mcdb_dates
     end
 
     resource Sanctum.Decks.DeckCard

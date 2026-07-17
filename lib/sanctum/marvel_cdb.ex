@@ -152,6 +152,10 @@ defmodule Sanctum.MarvelCdb do
       tags: presence(decklist["tags"]),
       description_md: presence(decklist["description_md"]),
       version: presence(decklist["version"]),
+      # ISO 8601 strings ("2024-01-15T00:10:13+00:00"); Ash casts them to
+      # :utc_datetime on the way in.
+      mcdb_date_creation: decklist["date_creation"],
+      mcdb_date_update: decklist["date_update"],
       slots: slots
     }
   end

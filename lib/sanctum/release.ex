@@ -66,6 +66,22 @@ defmodule Sanctum.Release do
     Sanctum.CardSync.run(Keyword.merge([packs: :all, images?: false], opts))
   end
 
+  @doc """
+  One-time backfill of MarvelCDB deck dates for decks imported before the
+  fields were captured (see `Sanctum.Decks.McdbDateBackfill`). If it halts on
+  a transient MarvelCDB failure, re-run with `since:` set to the reported day.
+
+      /app/bin/sanctum eval 'Sanctum.Release.backfill_deck_dates()'
+      /app/bin/sanctum eval 'Sanctum.Release.backfill_deck_dates(since: ~D[2024-01-15])'
+  """
+  def backfill_deck_dates(opts \\ []) do
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    with {:ok, _summary} <- Sanctum.Decks.McdbDateBackfill.run(opts) do
+      Sanctum.Decks.McdbDateBackfill.run_private()
+    end
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end
