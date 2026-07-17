@@ -106,6 +106,7 @@ defmodule Sanctum.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
+      {:nimble_parsec, "~> 1.4"},
       {:mdex, "~> 0.13"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
