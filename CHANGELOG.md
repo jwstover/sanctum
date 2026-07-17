@@ -1,3 +1,19 @@
+# [1.44.0](https://github.com/jwstover/sanctum/compare/v1.43.1...v1.44.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* **auth:** reset-flow feedback, sign-in redirect, and changed-password notice ([7f7f917](https://github.com/jwstover/sanctum/commit/7f7f9175d09f6f540ce50f509000aed2f839544d))
+
+
+### Features
+
+* **auth:** add email/password authentication with required confirmation ([04be5a1](https://github.com/jwstover/sanctum/commit/04be5a1a4a46ae01811fb30e0339291ba1cca775))
+* **auth:** make registration enumeration-safe (email-first flow) ([08ba99e](https://github.com/jwstover/sanctum/commit/08ba99ea634d440f8e3bd55732e16839063b01ac))
+* **auth:** rate limit the abuse-exposed auth surfaces ([985b9f1](https://github.com/jwstover/sanctum/commit/985b9f1e98a575553dec21288ffc8093fedde990))
+
+
+
 ## [1.43.1](https://github.com/jwstover/sanctum/compare/v1.43.0...v1.43.1) (2026-07-17)
 
 
@@ -37,16 +53,6 @@
 ### Features
 
 * **ux:** restore scroll position when navigating back ([#205](https://github.com/jwstover/sanctum/issues/205)) ([90b7b66](https://github.com/jwstover/sanctum/commit/90b7b66ccc5c7dfb7ec6f05cccb58b566eade309))
-
-
-
-# [1.40.0](https://github.com/jwstover/sanctum/compare/v1.39.0...v1.40.0) (2026-07-17)
-
-
-### Features
-
-* **decks:** add an image/list view toggle to the deck page ([#198](https://github.com/jwstover/sanctum/issues/198)) ([5180333](https://github.com/jwstover/sanctum/commit/5180333effbdbb3cadd5a81c32a08eba7659b2f0))
-* **decks:** extend decklist sync retries to 5 attempts ([#170](https://github.com/jwstover/sanctum/issues/170)) ([8d3e5ca](https://github.com/jwstover/sanctum/commit/8d3e5ca7f6513080ba2a53862197869336e0b277))
 
 
 
