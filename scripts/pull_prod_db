@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+#
+# Dump the production (Neon) database and restore it into the local dev
+# database (sanctum_dev), so dev works against an accurate copy of prod data.
+#
+# pg_dump/pg_restore/psql run inside the docker-compose `postgres` container
+# (Postgres 18) — nothing needs to be installed on the host.
+#
+# Usage:
+#   scripts/pull_prod_db              # fresh dump from prod, then restore
+#   scripts/pull_prod_db <dumpfile>   # restore an existing dump, skip pg_dump
+#
+# Dumps are kept in tmp/prod_dumps/ (gitignored via /tmp/).
+# Requires PROD_DATABASE_URL in .env.prod_local (see .env.prod_local.example).
+#
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+DEV_DB=sanctum_dev
+DUMP_DIR=tmp/prod_dumps
+
+pg() { docker compose exec -T postgres "$@"; }
+
+if [[ $# -ge 1 ]]; then
+  DUMP="$1"
+  if [[ ! -f "$DUMP" ]]; then
+    echo "error: dump file not found: $DUMP" >&2
+    exit 1
+  fi
+  echo "==> Restoring from existing dump: $DUMP"
+else
+  if [[ ! -f .env.prod_local ]]; then
+    echo "error: .env.prod_local not found." >&2
+    echo "Copy .env.prod_local.example to .env.prod_local and fill in PROD_DATABASE_URL." >&2
+    exit 1
+  fi
+  # shellcheck source=/dev/null
+  source .env.prod_local
+  : "${PROD_DATABASE_URL:?PROD_DATABASE_URL not set in .env.prod_local}"
+
+  # libpq wants a postgres:// scheme and TLS for Neon.
+  PROD_DATABASE_URL="${PROD_DATABASE_URL/#ecto:\/\//postgres://}"
+  if [[ "$PROD_DATABASE_URL" != *sslmode=* ]]; then
+    [[ "$PROD_DATABASE_URL" == *\?* ]] && PROD_DATABASE_URL+="&sslmode=require" \
+      || PROD_DATABASE_URL+="?sslmode=require"
+  fi
+
+  mkdir -p "$DUMP_DIR"
+  DUMP="$DUMP_DIR/prod-$(date +%Y%m%d-%H%M%S).dump"
+  echo "==> Dumping prod → $DUMP"
+  pg pg_dump --format=custom --no-owner --no-privileges "$PROD_DATABASE_URL" > "$DUMP"
+  echo "    $(du -h "$DUMP" | cut -f1) written"
+fi
+
+echo "==> Dropping and recreating $DEV_DB"
+pg psql -U postgres -v ON_ERROR_STOP=1 \
+  -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+      WHERE datname = '$DEV_DB' AND pid <> pg_backend_pid();" \
+  -c "DROP DATABASE IF EXISTS $DEV_DB;" \
+  -c "CREATE DATABASE $DEV_DB;" >/dev/null
+
+echo "==> Restoring into $DEV_DB"
+pg pg_restore --no-owner --no-privileges --exit-on-error -U postgres -d "$DEV_DB" < "$DUMP"
+
+echo "==> Done. $DEV_DB now mirrors prod as of this dump."
+echo "    If your branch has migrations prod doesn't have yet, run: mix ecto.migrate"

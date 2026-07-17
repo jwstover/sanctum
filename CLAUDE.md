@@ -124,11 +124,25 @@ mix ecto.reset               # drop + recreate database
 mix sanctum.sync_cards       # sync card catalog from MarvelCDB (dev)
 mix sanctum.sync_decks       # sync decks from MarvelCDB (dev)
 
+scripts/prod_local           # run locally AGAINST THE PROD DB (MIX_ENV=prod_local, port 4151)
+scripts/pull_prod_db         # dump prod (Neon) → restore into local sanctum_dev
+
 mix test                     # test suite (runs ash.setup quietly)
 mix ck                       # format + Credo + Sobelow (run before committing)
 mix format                   # format only
 mix dialyzer                 # static analysis (PLTs in priv/plts/)
 ```
+
+### prod_local env
+
+`MIX_ENV=prod_local` runs the app with full dev tooling but connected to the
+**production** Neon database. Credentials live in `.env.prod_local` (gitignored;
+template in `.env.prod_local.example`); always go through `scripts/prod_local`,
+which sources it. Safety rails: destructive mix tasks (`setup`, `ecto.*`,
+`ash.setup`/`ash.reset`/`ash.migrate`) are refused by alias guards in `mix.exs`,
+Oban queues/plugins are disabled, and `Oban.BootRescue` is skipped. To work on an
+accurate copy of prod data instead, use `scripts/pull_prod_db` — it dumps prod and
+replaces `sanctum_dev` (pg tools run inside the compose `postgres` container).
 
 ## Dev Dashboards
 

@@ -37,6 +37,9 @@ npm-debug.log
 /priv/plts/
 core-set.json
 
+# Prod database credentials for MIX_ENV=prod_local (template: .env.prod_local.example)
+.env.prod_local
+
 # Claude Code worktrees and local state
 .claude/*
 # ...but track the shared Marvel Champions rules skill
