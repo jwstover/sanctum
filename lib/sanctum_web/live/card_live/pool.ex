@@ -63,6 +63,7 @@ defmodule SanctumWeb.CardLive.Pool do
             placeholder="Search cards — try aspect:aggression cost<=2 type:ally"
             registry={Sanctum.Search.CardFields}
             diagnostics={@search_diagnostics}
+            help_path={~p"/search-help" <> "#cards"}
           />
         </form>
         <div class="flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
