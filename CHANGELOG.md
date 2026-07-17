@@ -1,3 +1,13 @@
+## [1.36.1](https://github.com/jwstover/sanctum/compare/v1.36.0...v1.36.1) (2026-07-17)
+
+
+### Performance Improvements
+
+* **decks:** index the deck-browser filter and sort columns ([36067de](https://github.com/jwstover/sanctum/commit/36067de97a27cc074a5dfcbef912f2704d4b645a))
+* **decks:** stop loading every deck to build the hero filter ([36b6981](https://github.com/jwstover/sanctum/commit/36b698135ab638da6032242fd10b19439ec32737))
+
+
+
 # [1.36.0](https://github.com/jwstover/sanctum/compare/v1.35.0...v1.36.0) (2026-07-16)
 
 
@@ -32,15 +42,6 @@
 ### Features
 
 * **observability:** track active sessions as a Sentry gauge ([c2e8683](https://github.com/jwstover/sanctum/commit/c2e86839fd1f276c69842a65f0ae44e93351396b))
-
-
-
-## [1.32.1](https://github.com/jwstover/sanctum/compare/v1.32.0...v1.32.1) (2026-07-16)
-
-
-### Bug Fixes
-
-* **observability:** drop LiveView longpoll traces from Sentry ([cae88a8](https://github.com/jwstover/sanctum/commit/cae88a828360569c8a241cdf0a1634a0843df959))
 
 
 
