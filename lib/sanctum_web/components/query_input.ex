@@ -22,6 +22,11 @@ defmodule SanctumWeb.Components.QueryInput do
   attr :value, :string, default: ""
   attr :name, :string, default: "query"
   attr :placeholder, :string, default: "Search…"
+
+  attr :placeholder_short, :string,
+    default: nil,
+    doc: "shorter placeholder swapped in below the `sm` breakpoint (ResponsivePlaceholder hook)"
+
   attr :registry, :atom, required: true, doc: "Sanctum.Search.Registry module"
   attr :diagnostics, :list, default: []
 
@@ -51,6 +56,7 @@ defmodule SanctumWeb.Components.QueryInput do
           </div>
           <input
             type="text"
+            id={@id <> "-input"}
             name={@name}
             value={@value}
             phx-debounce="200"
@@ -58,6 +64,8 @@ defmodule SanctumWeb.Components.QueryInput do
             spellcheck="false"
             autocapitalize="off"
             placeholder={@placeholder}
+            phx-hook={@placeholder_short && "ResponsivePlaceholder"}
+            data-placeholder-short={@placeholder_short}
             role="combobox"
             aria-expanded="false"
             aria-autocomplete="list"

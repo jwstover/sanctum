@@ -53,6 +53,7 @@ defmodule SanctumWeb.DeckLive.Index do
             value={@query}
             name="query"
             placeholder="Search decks — try hero:spider aspect:justice cards>=45"
+            placeholder_short="Search decks — try hero:spider"
             registry={Sanctum.Search.DeckFields}
             diagnostics={@search_diagnostics}
             help_path={~p"/search-help" <> "#decks"}
