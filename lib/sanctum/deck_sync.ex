@@ -51,8 +51,20 @@ defmodule Sanctum.DeckSync do
 
   # Brief yield between deck imports so a burst (a busy day, or a backfill)
   # doesn't monopolize the database — on Neon's small shared compute a
-  # back-to-back import stream visibly delays interactive queries.
+  # back-to-back import stream visibly delays interactive queries. Applies
+  # per import lane, so it paces each concurrent importer independently.
   @deck_pause_ms 50
+
+  # A day's decklists arrive in one HTTP payload, so importing them
+  # concurrently multiplies throughput without any extra MarvelCDB load —
+  # the cost is DB round-trips, which are mostly idle network latency.
+  # Kept well below the pool size (10) so interactive queries never starve.
+  @import_concurrency 4
+
+  # Generous per-deck ceiling: an import is normally sub-second, but a slot
+  # code missing from the catalog falls back to live MarvelCDB fetches
+  # (card + full pack listing, with retries), which can take tens of seconds.
+  @import_timeout_ms :timer.minutes(2)
 
   @doc """
   Runs the sync. Options:
@@ -85,9 +97,14 @@ defmodule Sanctum.DeckSync do
     # rewinds it.
     frontier = current_cursor()
 
+    # Run-scoped memo for hero/mcdb_user resolution (see import_decklist's
+    # `:cache`). Public so the concurrent import tasks share it; owned by this
+    # process, so it dies with the run.
+    cache = :ets.new(:deck_sync_cache, [:set, :public])
+
     acc =
       Enum.reduce_while(dates, initial, fn date, acc ->
-        case sync_date(date, progress) do
+        case sync_date(date, progress, cache) do
           {:ok, imported, failed} ->
             # Persist the cursor the moment a day succeeds so an abrupt stop (an
             # orphaned-then-rescued job, a deploy restart, an uncaught crash)
@@ -119,6 +136,8 @@ defmodule Sanctum.DeckSync do
             {:halt, %{acc | halted: %{date: date, reason: reason}}}
         end
       end)
+
+    :ets.delete(cache)
 
     summary = %{
       days: length(dates),
@@ -157,10 +176,10 @@ defmodule Sanctum.DeckSync do
     :ok
   end
 
-  defp sync_date(date, progress) do
+  defp sync_date(date, progress, cache) do
     case MarvelCdb.get_decklists_by_date(date) do
       {:ok, decklists} ->
-        result = import_decklists(decklists, date, progress)
+        result = import_decklists(decklists, date, progress, cache)
         progress.({:date, Map.put(result, :date, date)})
         Process.sleep(@download_pause_ms)
         {:ok, result.imported, result.failed}
@@ -205,28 +224,45 @@ defmodule Sanctum.DeckSync do
     end
   end
 
-  defp import_decklists(decklists, date, progress) do
-    Enum.reduce(decklists, %{imported: 0, failed: 0}, fn decklist, acc ->
-      Process.sleep(@deck_pause_ms)
+  # Imports run concurrently (the day's payload is already fetched, so
+  # parallelism costs only DB round-trips); results stream back here so
+  # progress events and counter updates stay in this process, in one place.
+  defp import_decklists(decklists, date, progress, cache) do
+    decklists
+    |> Task.async_stream(
+      fn decklist ->
+        Process.sleep(@deck_pause_ms)
+        {decklist, import_one(decklist, cache)}
+      end,
+      max_concurrency: @import_concurrency,
+      timeout: @import_timeout_ms,
+      on_timeout: :kill_task,
+      ordered: false
+    )
+    |> Enum.reduce(%{imported: 0, failed: 0}, fn
+      {:ok, {decklist, {:ok, _deck}}}, acc ->
+        progress.({:deck, %{date: date, name: decklist["name"], ok?: true}})
+        Map.update!(acc, :imported, &(&1 + 1))
 
-      case import_one(decklist) do
-        {:ok, _deck} ->
-          progress.({:deck, %{date: date, name: decklist["name"], ok?: true}})
-          Map.update!(acc, :imported, &(&1 + 1))
+      {:ok, {decklist, {:error, reason}}}, acc ->
+        Logger.warning("Failed to import decklist #{decklist["id"]}: #{inspect(reason)}")
+        progress.({:deck, %{date: date, name: decklist["name"], ok?: false}})
+        Map.update!(acc, :failed, &(&1 + 1))
 
-        {:error, reason} ->
-          Logger.warning("Failed to import decklist #{decklist["id"]}: #{inspect(reason)}")
-          progress.({:deck, %{date: date, name: decklist["name"], ok?: false}})
-          Map.update!(acc, :failed, &(&1 + 1))
-      end
+      # A task that blew the per-deck timeout was killed; its decklist isn't
+      # recoverable from the exit tuple, so log it against the day.
+      {:exit, reason}, acc ->
+        Logger.warning("Decklist import task for #{date} exited: #{inspect(reason)}")
+        progress.({:deck, %{date: date, name: nil, ok?: false}})
+        Map.update!(acc, :failed, &(&1 + 1))
     end)
   end
 
   # A single malformed deck must never abort the whole run: import_decklist can
   # raise (e.g. a hero_code whose card isn't in the catalog yet), not just return
   # `{:error, _}`, so rescue and treat any raise as a per-deck failure.
-  defp import_one(decklist) do
-    MarvelCdb.import_decklist(decklist, mcdb_type: :decklist)
+  defp import_one(decklist, cache) do
+    MarvelCdb.import_decklist(decklist, mcdb_type: :decklist, cache: cache)
   rescue
     exception ->
       Sentry.capture_exception(exception, stacktrace: __STACKTRACE__)

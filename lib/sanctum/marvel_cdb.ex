@@ -94,27 +94,47 @@ defmodule Sanctum.MarvelCdb do
 
     * `:mcdb_type` — `:decklist` (default) or `:deck`, stored to disambiguate
       the id space.
+    * `:cache` — a public ETS table used to memoize hero and mcdb_user
+      resolution across imports in one sync run (see `Sanctum.DeckSync`).
+      Without it every deck re-resolves its hero (several queries) even though
+      a run only ever touches a few dozen distinct heroes.
   """
   def import_decklist(decklist, opts \\ []) do
     decklist
-    |> prepare_deck_attrs(Keyword.get(opts, :mcdb_type, :decklist))
-    |> Decks.create_with_cards(load: [:cards, hero: [:hero_side, :alter_ego_side]])
+    |> prepare_deck_attrs(Keyword.get(opts, :mcdb_type, :decklist), Keyword.get(opts, :cache))
+    |> Decks.create_with_cards()
   end
 
-  defp prepare_deck_attrs(%{"slots" => cards_map} = decklist, mcdb_type) do
-    alter_ego_code =
-      decklist["hero_code"]
-      |> String.trim()
-      |> String.trim_trailing("a")
-      |> Kernel.<>("b")
+  defp prepare_deck_attrs(%{"slots" => cards_map} = decklist, mcdb_type, cache) do
+    hero =
+      cached(cache, {:hero, decklist["hero_code"]}, fn ->
+        alter_ego_code =
+          decklist["hero_code"]
+          |> String.trim()
+          |> String.trim_trailing("a")
+          |> Kernel.<>("b")
 
-    {:ok, hero_card} = load_card(decklist["hero_code"])
-    {:ok, alter_ego_card} = load_card(alter_ego_code)
+        {:ok, hero_card} = load_card(decklist["hero_code"])
+        # Ensure the alter-ego side's card is in the catalog too (load_card
+        # fetches it from MarvelCDB when missing); the Hero record itself is
+        # built from the hero card's sides.
+        {:ok, _alter_ego_card} = load_card(alter_ego_code)
 
-    # Create or find the Hero record
-    {:ok, hero} = create_or_find_hero(hero_card, alter_ego_card)
+        {:ok, hero} = create_or_find_hero(hero_card)
+        hero
+      end)
 
-    {:ok, mcdb_user} = create_or_find_mcdb_user(decklist["user_id"])
+    mcdb_user =
+      case decklist["user_id"] do
+        nil ->
+          nil
+
+        user_id ->
+          cached(cache, {:mcdb_user, user_id}, fn ->
+            {:ok, mcdb_user} = create_or_find_mcdb_user(user_id)
+            mcdb_user
+          end)
+      end
 
     meta = parse_meta(decklist["meta"])
 
@@ -208,13 +228,28 @@ defmodule Sanctum.MarvelCdb do
     end
   end
 
-  defp create_or_find_mcdb_user(nil), do: {:ok, nil}
+  # Memoize `fun` under `key` in a public ETS table; with no table (nil), just
+  # run it. A lost race on a miss only duplicates idempotent find-or-create
+  # work, so concurrent importers can share the table without coordination.
+  defp cached(nil, _key, fun), do: fun.()
+
+  defp cached(table, key, fun) do
+    case :ets.lookup(table, key) do
+      [{^key, value}] ->
+        value
+
+      [] ->
+        value = fun.()
+        :ets.insert(table, {key, value})
+        value
+    end
+  end
 
   defp create_or_find_mcdb_user(mcdb_user_id) when is_integer(mcdb_user_id) do
     Decks.find_or_create_mcdb_user(%{mcdb_user_id: mcdb_user_id})
   end
 
-  defp create_or_find_hero(hero_card, _alter_ego_card) do
+  defp create_or_find_hero(hero_card) do
     # Load the card with all its sides to get both hero and alter ego names
     card_loaded = Games.get_card!(hero_card.id, load: [:card_sides])
 

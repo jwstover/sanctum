@@ -114,6 +114,14 @@ defmodule Sanctum.Decks.Deck do
       accept [:*]
       argument :slots, {:array, :map}
 
+      # This action is only reached via MarvelCDB imports, where the hero_id
+      # comes from find_or_create_hero on the deck's own hero card — ValidateHero
+      # would re-fetch that hero (with card + sides) per deck only to confirm
+      # what the import just constructed. Skipping also stops rejecting heroes
+      # with no alter-ego flip side (e.g. SP//dr), which the validation requires
+      # but MarvelCDB legitimately publishes.
+      skip_global_validations? true
+
       change fn changeset, _context ->
         slots = Ash.Changeset.get_argument(changeset, :slots) || []
 
