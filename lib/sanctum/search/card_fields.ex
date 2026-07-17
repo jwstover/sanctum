@@ -123,6 +123,7 @@ defmodule Sanctum.Search.CardFields do
         kind: :text,
         example: "trait:avenger",
         hint: "card trait (Avenger, Skill, …)",
+        values_fun: &Sanctum.Search.Values.traits/0,
         build: &trait_build/2
       }
     ]
@@ -158,6 +159,7 @@ defmodule Sanctum.Search.CardFields do
         kind: :text,
         example: "set:spider_man",
         hint: "card set",
+        values_fun: &Sanctum.Search.Values.sets/0,
         build: text_build(fn pattern -> expr(ilike(card.set, ^pattern)) end)
       },
       %Field{
@@ -166,6 +168,7 @@ defmodule Sanctum.Search.CardFields do
         kind: :text,
         example: "pack:core",
         hint: "product/pack",
+        values_fun: &Sanctum.Search.Values.packs/0,
         build: text_build(fn pattern -> expr(ilike(card.pack, ^pattern)) end)
       },
       %Field{

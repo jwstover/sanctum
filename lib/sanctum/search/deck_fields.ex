@@ -36,6 +36,7 @@ defmodule Sanctum.Search.DeckFields do
         kind: :text,
         example: "hero:spider-man",
         hint: "hero or alter-ego name",
+        values_fun: &Sanctum.Search.Values.heroes/0,
         build:
           text_build(fn pattern ->
             expr(ilike(hero.hero_name, ^pattern) or ilike(hero.alter_ego_name, ^pattern))

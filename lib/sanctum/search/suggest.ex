@@ -143,11 +143,26 @@ defmodule Sanctum.Search.Suggest do
          true <- op_allowed?(field, op) do
       norm = Registry.normalize(prefix)
 
-      for value <- field.values, String.starts_with?(Registry.normalize(value), norm) do
-        %{label: value, detail: nil, insert: value, kind: "value"}
+      for value <- field.values ++ dynamic_values(field),
+          String.starts_with?(Registry.normalize(value), norm) do
+        %{label: value, detail: nil, insert: quote_if_needed(value), kind: "value"}
       end
     else
       _ -> []
+    end
+  end
+
+  defp dynamic_values(%Field{values_fun: nil}), do: []
+  defp dynamic_values(%Field{values_fun: fun}), do: fun.()
+
+  # Values containing word-breaking characters ("Accuser Corps",
+  # "Black Widow") must be inserted as quoted phrases or the lexer would
+  # split them into separate terms.
+  defp quote_if_needed(value) do
+    if String.match?(value, ~r/[\s"()|:<>=!]/) do
+      ~s(") <> String.replace(value, ~s("), "") <> ~s(")
+    else
+      value
     end
   end
 

@@ -6,7 +6,10 @@ defmodule Sanctum.Search.Field do
   * `aliases` — accepted shorthands (`["c"]`, MarvelCDB-style letters)
   * `kind` — drives autocomplete rendering and docs: `:text | :integer |
     :stat | :enum | :boolean | :flag`
-  * `values` — the completable values (enum fields and flags)
+  * `values` — the statically completable values (enum fields and flags)
+  * `values_fun` — optional zero-arity fun returning data-driven completable
+    values (distinct traits, hero names, …); called lazily at suggest time
+    and expected to be cheap (see `Sanctum.Search.Values` / `ValueCache`)
   * `ops` — operators this field accepts (`:eq :neq :lt :gt :lte :gte`)
   * `build` — `(op, raw_value) -> {:ok, ash_expr} | {:error, message}`;
     validation (enum coercion, integer parsing) happens here
@@ -20,6 +23,7 @@ defmodule Sanctum.Search.Field do
     :build,
     :example,
     :hint,
+    :values_fun,
     aliases: [],
     values: [],
     ops: [:eq, :neq]
@@ -33,6 +37,7 @@ defmodule Sanctum.Search.Field do
           build: (op(), String.t() -> {:ok, term()} | {:error, String.t()}),
           example: String.t() | nil,
           hint: String.t() | nil,
+          values_fun: (-> [String.t()]) | nil,
           aliases: [String.t()],
           values: [String.t()],
           ops: [op()]
