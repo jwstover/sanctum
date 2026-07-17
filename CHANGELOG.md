@@ -1,3 +1,17 @@
+# [1.50.0](https://github.com/jwstover/sanctum/compare/v1.49.0...v1.50.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* **ui:** swap in short search placeholders on mobile ([e4827ab](https://github.com/jwstover/sanctum/commit/e4827ab67fc4a3bddc60c7f0279973a3bb0d6376))
+
+
+### Features
+
+* **ui:** full-width search with counts below on deck index and card pool ([1bf887b](https://github.com/jwstover/sanctum/commit/1bf887b64def560b301e4d01947aa0e187e76240))
+
+
+
 # [1.49.0](https://github.com/jwstover/sanctum/compare/v1.48.0...v1.49.0) (2026-07-17)
 
 
@@ -32,20 +46,6 @@
 ### Features
 
 * **layout:** add a site-wide footer with attribution and fan-content disclaimer ([c4fcc0e](https://github.com/jwstover/sanctum/commit/c4fcc0ea3993f13aa790d61f8513ab63390df567))
-
-
-
-# [1.45.0](https://github.com/jwstover/sanctum/compare/v1.44.0...v1.45.0) (2026-07-17)
-
-
-### Features
-
-* **admin:** accept TIFF uploads and downscale card images on upload ([60c23d4](https://github.com/jwstover/sanctum/commit/60c23d47d302b0a5d108834b6a5bbc22fb98af2c))
-* **admin:** upload replacement card images from the card page ([946292a](https://github.com/jwstover/sanctum/commit/946292a9c620f5216a537c77b9a35a0f090a0df3))
-* **search:** add the advanced search query language core ([721f2f3](https://github.com/jwstover/sanctum/commit/721f2f38b3bb160249df175509232beee0ea8dc5))
-* **search:** compile browse queries through the query language ([da776dc](https://github.com/jwstover/sanctum/commit/da776dc75d521985cf40825badc539177d09e914))
-* **search:** data-driven autocomplete for traits, sets, packs, and heroes ([33bac76](https://github.com/jwstover/sanctum/commit/33bac7653b282bf7c7b3b25fafc91fa95e818066))
-* **search:** highlighted query input with server-driven autocomplete ([8d74145](https://github.com/jwstover/sanctum/commit/8d741455f456a937353a75eab6d9ed341e6e16a8))
 
 
 
