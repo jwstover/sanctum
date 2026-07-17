@@ -12,6 +12,22 @@ defmodule Sanctum.Decks.Deck do
   postgres do
     table "decks"
     repo Sanctum.Repo
+
+    # The public deck browser (`:browse`) filters by hero and aspect and sorts
+    # by recency / title / uniqueness over the whole table — at tens of
+    # thousands of decks each of those needs an index to avoid a full
+    # scan-and-sort per page load.
+    custom_indexes do
+      index [:hero_id]
+      index [:updated_at]
+      index [:title]
+      index [:aspects], using: "GIN"
+
+      # Matches the `:browse` action's `desc_nils_last` sort so top-N
+      # pagination can walk the index directly.
+      index ["uniqueness_percentile DESC NULLS LAST"],
+        name: "decks_uniqueness_percentile_index"
+    end
   end
 
   actions do
