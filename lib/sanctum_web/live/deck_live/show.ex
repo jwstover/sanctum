@@ -33,6 +33,14 @@ defmodule SanctumWeb.DeckLive.Show do
             {@cover.hero_name}<span :if={@cover.author}> · by {@cover.author}</span>
           </:subtitle>
           <:actions>
+            <.button
+              :if={mcdb_url(@deck)}
+              href={mcdb_url(@deck)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <.icon name="hero-arrow-top-right-on-square" /> MarvelCDB
+            </.button>
             <.button navigate={~p"/decks"}>
               <.icon name="hero-arrow-left" /> Decks
             </.button>
@@ -211,11 +219,20 @@ defmodule SanctumWeb.DeckLive.Show do
                 </div>
                 <div class="grid grid-cols-2 gap-x-6 gap-y-3">
                   <.meta label="Source" value={@cover.source_label} />
-                  <.meta
-                    :if={@deck.mcdb_id}
-                    label="MarvelCDB"
-                    value={"#{@deck.mcdb_type}/#{@deck.mcdb_id}"}
-                  />
+                  <div :if={mcdb_url(@deck)}>
+                    <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+                      MarvelCDB
+                    </div>
+                    <a
+                      href={mcdb_url(@deck)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="mt-0.5 inline-flex items-center gap-1 font-barlow-condensed text-[15px] font-semibold text-primary hover:underline"
+                    >
+                      {@deck.mcdb_type}/{@deck.mcdb_id}
+                      <.icon name="hero-arrow-top-right-on-square" class="size-3" />
+                    </a>
+                  </div>
                   <.meta :if={@deck.version} label="Version" value={@deck.version} />
                   <.meta :if={@deck.tags} label="Tags" value={@deck.tags} />
                 </div>
@@ -416,6 +433,16 @@ defmodule SanctumWeb.DeckLive.Show do
     ac = CardComponent.aspect_classes(aspect)
     %{label: label, text: ac.text, border: ac.border}
   end
+
+  # Public MarvelCDB URL for the source deck, when this deck came from there.
+  # `decklist` and `deck` are separate id spaces with distinct URL paths.
+  defp mcdb_url(%{mcdb_id: id, mcdb_type: :decklist}) when is_binary(id),
+    do: "https://marvelcdb.com/decklist/view/#{id}"
+
+  defp mcdb_url(%{mcdb_id: id, mcdb_type: :deck}) when is_binary(id),
+    do: "https://marvelcdb.com/deck/view/#{id}"
+
+  defp mcdb_url(_), do: nil
 
   defp source_label(:marvelcdb), do: "MarvelCDB"
   defp source_label(:native), do: "Native"
