@@ -20,14 +20,13 @@ defmodule Sanctum.Decks.DecklistSyncWorker do
     # Route progress into the Monitor so the admin dashboard can watch the run
     # live (and see its outcome afterward); the Monitor also handles logging.
     result = Sanctum.DeckSync.run(progress_fun: &Sanctum.DeckSync.Monitor.report/1)
-    summary = elem(result, 1)
 
-    # New decks shift their heroes' uniqueness rankings; recompute. Do this even
-    # for a halted run — partial progress still imports decks. `unique` on the
-    # worker debounces this against the nightly cron run.
-    if summary.imported > 0 do
-      Sanctum.Decks.ComputeUniquenessWorker.new(%{}) |> Oban.insert()
-    end
+    # Uniqueness recompute is left to the nightly ComputeUniquenessWorker cron:
+    # enqueueing it after every sync run meant the full-library sweep (a
+    # multi-million-row read plus an UPDATE over every deck) ran near-constantly
+    # during the backfill — every halted-and-retried hourly run with any imports
+    # triggered another sweep — saturating the shared database. Newly synced
+    # decks just show as unranked until the next nightly sweep.
 
     case result do
       {:ok, _summary} ->
