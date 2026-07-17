@@ -1,3 +1,12 @@
+## [1.36.3](https://github.com/jwstover/sanctum/compare/v1.36.2...v1.36.3) (2026-07-17)
+
+
+### Performance Improvements
+
+* **cards:** async-load the card pool off the connected mount ([c161976](https://github.com/jwstover/sanctum/commit/c161976d94d3de59bd3dc28ccff8752a66afaecd))
+
+
+
 ## [1.36.2](https://github.com/jwstover/sanctum/compare/v1.36.1...v1.36.2) (2026-07-17)
 
 
@@ -33,15 +42,6 @@
 
 * **cards:** add public card detail page with shared dossier tile ([7189077](https://github.com/jwstover/sanctum/commit/7189077f5d75f07bfdecce95b899b5c3a8f78fe4))
 * **cards:** link card renders in pack library and decks to detail page ([7e18a1f](https://github.com/jwstover/sanctum/commit/7e18a1f9af3dc6fe3af124b4865e81b4b11bc992))
-
-
-
-# [1.34.0](https://github.com/jwstover/sanctum/compare/v1.33.0...v1.34.0) (2026-07-16)
-
-
-### Features
-
-* **browse:** show all card sides and render environments portrait ([0e7542a](https://github.com/jwstover/sanctum/commit/0e7542ad76d9267bb317683a53c519f870af8c0d))
 
 
 
