@@ -94,11 +94,11 @@ defmodule SanctumWeb.GameLive.IndexTest do
     test "renders games index with existing game", %{conn: conn, user: user} do
       _game = create_test_game(user)
 
-      {:ok, _view, html} = live(conn, ~p"/")
+      {:ok, view, html} = live(conn, ~p"/")
 
-      # Check that the page loads and contains the game villain name
+      # The shell paints immediately; the games list loads asynchronously.
       assert html =~ "Sanctum"
-      assert html =~ "Test Villain"
+      assert render_async(view) =~ "Test Villain"
     end
 
     test "shows new game button", %{conn: conn} do
