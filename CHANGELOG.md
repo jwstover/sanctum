@@ -1,3 +1,12 @@
+# [1.51.0](https://github.com/jwstover/sanctum/compare/v1.50.0...v1.51.0) (2026-07-17)
+
+
+### Features
+
+* **ui:** back buttons return to where the user came from ([6b5d61d](https://github.com/jwstover/sanctum/commit/6b5d61d2f852f9cd56395f627db9f17f97084b6e))
+
+
+
 # [1.50.0](https://github.com/jwstover/sanctum/compare/v1.49.0...v1.50.0) (2026-07-17)
 
 
@@ -37,15 +46,6 @@
 
 * **browse:** search products and card sets on the pack browser ([da592a3](https://github.com/jwstover/sanctum/commit/da592a36e9215dc475ac9cf840e02b9404693337))
 * **search:** add a search-syntax help page linked from the query inputs ([709844c](https://github.com/jwstover/sanctum/commit/709844ce0b9fd7dbf8e6170655185dd7bfbb685e))
-
-
-
-# [1.46.0](https://github.com/jwstover/sanctum/compare/v1.45.0...v1.46.0) (2026-07-17)
-
-
-### Features
-
-* **layout:** add a site-wide footer with attribution and fan-content disclaimer ([c4fcc0e](https://github.com/jwstover/sanctum/commit/c4fcc0ea3993f13aa790d61f8513ab63390df567))
 
 
 
