@@ -61,6 +61,23 @@ jobs:
       - name: Run Dialyzer
         run: mix dialyzer --format github
 
+  gitleaks:
+    name: Scan for secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # Full history so gitleaks scans every commit, not just the checkout
+          fetch-depth: 0
+
+      # Uses .gitleaks.toml at the repo root (allowlists the known-benign
+      # Phoenix dev/test keys that live in history)
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   lint:
     name: Formatting, Credo, and Unused Deps
     runs-on: ubuntu-latest

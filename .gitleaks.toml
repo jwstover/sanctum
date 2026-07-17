@@ -1,0 +1,20 @@
+# Gitleaks config — extends the default ruleset.
+# CI runs this over the full git history (see the gitleaks job in ci.yml).
+
+[extend]
+useDefault = true
+
+# Known non-secret values that live permanently in git history: the
+# Phoenix-generated dev/test secret_key_base + token_signing_secret
+# (committed by convention, never used in prod — prod reads runtime.exs/env)
+# and the fixed local-dev deploy-notice token. Allowlisted by exact value so
+# the files themselves stay covered by future scans.
+[allowlist]
+description = "Phoenix dev/test keys and dev placeholder tokens"
+regexTarget = "secret"
+regexes = [
+  '''r6twl/k5iX61kat0T5NGGiBLyDLjrPl/bWxCdGF/ZvYveZAeqDd22krsvlKcXtIc''',
+  '''Wh7ljKd3a5as9YkJ5V6y4eOptlWGPAkJSsNN/rTVG0SoiRxhR3pAKYR4etZadVXc''',
+  '''Ng9tUOyxnipHxWoTtOyIQ2F/ZTJ45\+Vv''',
+  '''dev-deploy-notice-token''',
+]
