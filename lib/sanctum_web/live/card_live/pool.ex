@@ -54,8 +54,8 @@ defmodule SanctumWeb.CardLive.Pool do
       </.header>
 
       <!-- controls -->
-      <div class="mb-3.5 flex flex-wrap items-center gap-2.5">
-        <form id="card-search" phx-change="search" class="flex min-w-[260px] flex-1">
+      <div class="mb-3.5">
+        <form id="card-search" phx-change="search" class="flex w-full">
           <.query_input
             id="card-query"
             value={@query}
@@ -67,7 +67,7 @@ defmodule SanctumWeb.CardLive.Pool do
             help_path={~p"/search-help" <> "#cards"}
           />
         </form>
-        <div class="flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
+        <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
           <.icon
             :if={@loading?}
             name="hero-arrow-path"
