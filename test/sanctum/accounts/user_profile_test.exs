@@ -96,6 +96,78 @@ defmodule Sanctum.Accounts.UserProfileTest do
       assert user.username == existing.username
       assert user.avatar_url == "https://example.com/chosen.png"
     end
+
+    test "backfills avatar_url for an existing user without one" do
+      email = "google-#{System.unique_integer([:positive])}@example.com"
+      existing = user_fixture(email: email)
+      assert existing.avatar_url == nil
+
+      user =
+        register_with_google!(
+          google_user_info(email, %{"picture" => "https://lh3.googleusercontent.com/a/pic"})
+        )
+
+      assert user.id == existing.id
+      assert user.avatar_url == "https://lh3.googleusercontent.com/a/pic"
+    end
+  end
+
+  describe "register_with_discord" do
+    test "rejects an unverified Discord email" do
+      email = "discord-#{System.unique_integer([:positive])}@example.com"
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               register_with_discord(discord_user_info(email, %{"email_verified" => false}))
+    end
+
+    test "seeds avatar_url from the picture claim on first registration" do
+      email = "discord-#{System.unique_integer([:positive])}@example.com"
+
+      {:ok, user} =
+        register_with_discord(
+          discord_user_info(email, %{"picture" => "https://cdn.discordapp.com/avatars/1/abc"})
+        )
+
+      assert user.avatar_url == "https://cdn.discordapp.com/avatars/1/abc"
+    end
+
+    test "ignores the hashless picture URL of users without a custom avatar" do
+      email = "discord-#{System.unique_integer([:positive])}@example.com"
+
+      {:ok, user} =
+        register_with_discord(
+          discord_user_info(email, %{"picture" => "https://cdn.discordapp.com/avatars/1/"})
+        )
+
+      assert user.avatar_url == nil
+    end
+
+    test "backfills avatar_url for an existing user without one" do
+      email = "discord-#{System.unique_integer([:positive])}@example.com"
+      existing = user_fixture(email: email)
+      assert existing.avatar_url == nil
+
+      {:ok, user} =
+        register_with_discord(
+          discord_user_info(email, %{"picture" => "https://cdn.discordapp.com/avatars/1/abc"})
+        )
+
+      assert user.id == existing.id
+      assert user.avatar_url == "https://cdn.discordapp.com/avatars/1/abc"
+    end
+
+    test "never overwrites an existing avatar" do
+      email = "discord-#{System.unique_integer([:positive])}@example.com"
+      existing = user_fixture(email: email, avatar_url: "https://example.com/chosen.png")
+
+      {:ok, user} =
+        register_with_discord(
+          discord_user_info(email, %{"picture" => "https://cdn.discordapp.com/avatars/1/abc"})
+        )
+
+      assert user.id == existing.id
+      assert user.avatar_url == "https://example.com/chosen.png"
+    end
   end
 
   defp claim(user, username, opts) do
@@ -124,5 +196,28 @@ defmodule Sanctum.Accounts.UserProfileTest do
       oauth_tokens: %{"access_token" => "test-token"}
     })
     |> Ash.create!(authorize?: false)
+  end
+
+  # Assent-normalized Discord claims (Assent.Strategy.Discord.normalize/2
+  # maps Discord's raw `verified` field to the standard `email_verified`).
+  defp discord_user_info(email, extra) do
+    Map.merge(
+      %{
+        "sub" => "discord-sub-#{System.unique_integer([:positive])}",
+        "preferred_username" => "champ",
+        "email" => email,
+        "email_verified" => true
+      },
+      extra
+    )
+  end
+
+  defp register_with_discord(user_info) do
+    User
+    |> Ash.Changeset.for_create(:register_with_discord, %{
+      user_info: user_info,
+      oauth_tokens: %{"access_token" => "test-token"}
+    })
+    |> Ash.create(authorize?: false)
   end
 end

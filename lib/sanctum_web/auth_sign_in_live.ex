@@ -134,9 +134,19 @@ defmodule SanctumWeb.AuthSignInLive do
           </div>
 
           <div class="w-full mt-2 mb-2">
-            <a href={google_path(@auth_routes_prefix)} class={AuthOverrides.button_ghost()}>
+            <a href={oauth_path(@auth_routes_prefix, "google")} class={AuthOverrides.button_ghost()}>
               <Components.OAuth2.icon icon={:google} overrides={@overrides} icon_src={nil} />
               Sign in with Google
+            </a>
+          </div>
+
+          <div class="w-full mt-2 mb-2">
+            <a href={oauth_path(@auth_routes_prefix, "discord")} class={AuthOverrides.button_ghost()}>
+              <Components.OAuth2.icon
+                icon={:discord}
+                overrides={@overrides}
+                icon_src="/images/discord-mark.svg"
+              /> Sign in with Discord
             </a>
           </div>
         <% end %>
@@ -210,6 +220,6 @@ defmodule SanctumWeb.AuthSignInLive do
     """
   end
 
-  defp google_path(nil), do: "/auth/user/google"
-  defp google_path(prefix), do: prefix <> "/user/google"
+  defp oauth_path(nil, strategy), do: "/auth/user/" <> strategy
+  defp oauth_path(prefix, strategy), do: prefix <> "/user/" <> strategy
 end

@@ -177,6 +177,9 @@ defmodule SanctumWeb.AuthOverrides do
     set :root_class, "w-full mt-2 mb-2"
     set :link_class, @button_ghost
     set :icon_class, "size-5 shrink-0"
+    # The library has no built-in Discord icon SVG (it falls back to a generic
+    # padlock), so the stock sign-in page pulls it from a static asset.
+    set :icon_src, %{discord: "/images/discord-mark.svg"}
   end
 
   override Components.Flash do

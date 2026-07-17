@@ -22,7 +22,9 @@ end
 
 config :sanctum,
   google_client_id: System.get_env("GOOGLE_CLIENT_ID"),
-  google_client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
+  google_client_secret: System.get_env("GOOGLE_CLIENT_SECRET"),
+  discord_client_id: System.get_env("DISCORD_CLIENT_ID"),
+  discord_client_secret: System.get_env("DISCORD_CLIENT_SECRET")
 
 if config_env() == :prod do
   database_url =

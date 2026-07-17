@@ -4,7 +4,7 @@ defmodule Sanctum.Accounts.User do
     domain: Sanctum.Accounts,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
-    extensions: [AshAuthentication]
+    extensions: [AshAuthentication, Sanctum.Accounts.Strategies.Discord]
 
   authentication do
     add_ons do
@@ -28,6 +28,7 @@ defmodule Sanctum.Accounts.User do
         auto_confirm_actions [
           :create,
           :register_with_google,
+          :register_with_discord,
           :sign_in_with_magic_link,
           :reset_password_with_token
         ]
@@ -54,6 +55,13 @@ defmodule Sanctum.Accounts.User do
       # end
 
       google do
+        client_id Sanctum.Secrets
+        redirect_uri Sanctum.Secrets
+        client_secret Sanctum.Secrets
+        identity_resource Sanctum.Accounts.UserIdentity
+      end
+
+      discord do
         client_id Sanctum.Secrets
         redirect_uri Sanctum.Secrets
         client_secret Sanctum.Secrets
@@ -121,6 +129,11 @@ defmodule Sanctum.Accounts.User do
       accept [:admin]
     end
 
+    update :set_avatar do
+      description "System-only avatar writes (OAuth backfill). Callers use authorize?: false."
+      accept [:avatar_url]
+    end
+
     read :get_by_subject do
       description "Get a user by the subject claim in a JWT"
       argument :subject, :string, allow_nil?: false
@@ -185,6 +198,46 @@ defmodule Sanctum.Accounts.User do
         |> Ash.Changeset.change_attributes(Map.take(user_info, ["email"]))
         |> seed_avatar(user_info)
       end
+
+      change Sanctum.Accounts.User.Changes.BackfillAvatar
+
+      # Required if you're using the password & confirmation strategies
+      upsert_fields []
+      change set_attribute(:confirmed_at, &DateTime.utc_now/0)
+    end
+
+    create :register_with_discord do
+      argument :user_info, :map, allow_nil?: false
+      argument :oauth_tokens, :map, allow_nil?: false
+      upsert? true
+      upsert_identity :unique_email
+
+      change AshAuthentication.GenerateTokenChange
+
+      # Required if you have the `identity_resource` configuration enabled.
+      change AshAuthentication.Strategy.OAuth2.IdentityChange
+
+      change fn changeset, _ ->
+        user_info = Ash.Changeset.get_argument(changeset, :user_info)
+
+        # Discord allows unverified account emails. This action is
+        # auto-confirmed, so absorbing one into the unique_email upsert would
+        # hand out a confirmed account for an address the Discord user never
+        # proved they own — the same takeover shape #204 closed. (Assent
+        # normalizes Discord's `verified` field to `email_verified`.)
+        if user_info["email_verified"] do
+          changeset
+          |> Ash.Changeset.change_attributes(Map.take(user_info, ["email"]))
+          |> seed_avatar(discord_avatar_info(user_info))
+        else
+          Ash.Changeset.add_error(changeset,
+            field: :email,
+            message: "your Discord account's email address is not verified"
+          )
+        end
+      end
+
+      change Sanctum.Accounts.User.Changes.BackfillAvatar
 
       # Required if you're using the password & confirmation strategies
       upsert_fields []
@@ -463,14 +516,23 @@ defmodule Sanctum.Accounts.User do
     identity :unique_username, [:username]
   end
 
-  # Seeds avatar_url from Google's user_info on first registration only —
+  # Seeds avatar_url from the provider's user_info on first registration only —
   # `upsert_fields []` means nothing is written on conflict, so a re-login
-  # never clobbers an existing profile (and pre-existing users keep the
-  # gradient fallback).
+  # never clobbers an existing profile. Existing users *without* an avatar are
+  # handled separately by Changes.BackfillAvatar after the upsert resolves.
   defp seed_avatar(changeset, %{"picture" => picture})
        when is_binary(picture) and picture != "" do
     Ash.Changeset.change_attribute(changeset, :avatar_url, picture)
   end
 
   defp seed_avatar(changeset, _user_info), do: changeset
+
+  # Assent builds Discord's picture URL by interpolating the avatar hash, so a
+  # user without a custom avatar yields a URL ending in "/" — drop it so
+  # seed_avatar doesn't store a broken link.
+  defp discord_avatar_info(%{"picture" => picture} = user_info) when is_binary(picture) do
+    if String.ends_with?(picture, "/"), do: Map.delete(user_info, "picture"), else: user_info
+  end
+
+  defp discord_avatar_info(user_info), do: user_info
 end

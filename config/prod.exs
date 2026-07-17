@@ -1,6 +1,7 @@
 import Config
 
 config :sanctum, google_redirect_uri: "https://sanctummc.com/auth/user/google/callback"
+config :sanctum, discord_redirect_uri: "https://sanctummc.com/auth/user/discord/callback"
 
 # Note we also include the path to a cache manifest
 # containing the digested version of static files. This
