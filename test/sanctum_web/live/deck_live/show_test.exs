@@ -88,6 +88,17 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     assert html =~ "Thwart twice"
   end
 
+  test "restore-scroll confirms once the deck content has loaded", %{conn: conn} do
+    deck = make_deck_with_card()
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+
+    render_hook(view, "restore-scroll", %{"offset" => 0})
+    render_async(view)
+
+    assert_push_event(view, "sanctum:scroll-restore", %{})
+  end
+
   test "a scored deck shows its uniqueness meter", %{conn: conn} do
     deck = make_deck_with_card()
 

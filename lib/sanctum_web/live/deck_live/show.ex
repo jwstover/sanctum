@@ -20,6 +20,7 @@ defmodule SanctumWeb.DeckLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:decks}>
+      <div id="scroll-restore" phx-hook="ScrollRestore"></div>
       <div id="deck-card-view-pref" phx-hook=".CardViewPref"></div>
       <script :type={Phoenix.LiveView.ColocatedHook} name=".CardViewPref">
         const KEY = "sanctum:deck-card-view"
@@ -359,6 +360,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:similar, [])
       |> assign(:writeup, nil)
       |> assign(:card_view, "images")
+      |> assign(:scroll_restore_pending?, false)
 
     actor = socket.assigns[:current_user]
 
@@ -387,16 +389,38 @@ defmodule SanctumWeb.DeckLive.Show do
     {:noreply, assign(socket, :card_view, view)}
   end
 
+  # Pushed by the ScrollRestore hook when the user arrives with a saved scroll
+  # position. The page renders asynchronously, so hold the confirmation until
+  # the deck load lands and the content exists at its full height.
+  def handle_event("restore-scroll", _params, socket) do
+    if socket.assigns.deck do
+      {:noreply, push_event(socket, "sanctum:scroll-restore", %{})}
+    else
+      {:noreply, assign(socket, :scroll_restore_pending?, true)}
+    end
+  end
+
   @impl true
   def handle_async(:load_deck, {:ok, {:ok, data}}, socket) do
-    {:noreply,
-     socket
-     |> assign(:page_title, data.deck.title)
-     |> assign(:deck, data.deck)
-     |> assign(:cover, data.cover)
-     |> assign(:groups, data.groups)
-     |> assign(:similar, data.similar)
-     |> assign(:writeup, data.writeup)}
+    socket =
+      socket
+      |> assign(:page_title, data.deck.title)
+      |> assign(:deck, data.deck)
+      |> assign(:cover, data.cover)
+      |> assign(:groups, data.groups)
+      |> assign(:similar, data.similar)
+      |> assign(:writeup, data.writeup)
+
+    socket =
+      if socket.assigns.scroll_restore_pending? do
+        socket
+        |> assign(:scroll_restore_pending?, false)
+        |> push_event("sanctum:scroll-restore", %{})
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   def handle_async(:load_deck, {:ok, :not_found}, socket) do
