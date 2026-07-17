@@ -16,7 +16,7 @@ kill_timeout = 30
   release_command = '/app/bin/migrate'
 
 [env]
-  PHX_HOST = 'sanctum.fly.dev'
+  PHX_HOST = 'sanctummc.com'
   PORT = '8080'
 
 [http_service]

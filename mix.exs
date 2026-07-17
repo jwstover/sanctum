@@ -88,6 +88,7 @@ defmodule Sanctum.MixProject do
        compile: false,
        depth: 1},
       {:swoosh, "~> 1.16"},
+      {:resend, "~> 1.0.0-rc.3"},
       {:req, "~> 0.5"},
       {:sentry, "~> 13.3"},
       {:finch, "~> 0.21"},

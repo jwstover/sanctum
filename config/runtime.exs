@@ -95,6 +95,10 @@ if config_env() == :prod do
 
   config :sanctum, SanctumWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    # The fly.dev hostname stays accepted so the app remains usable there
+    # while the custom domain rolls out (check_origin otherwise allows only
+    # the PHX_HOST-derived origin, breaking LiveView websockets on fly.dev).
+    check_origin: ["https://" <> host, "https://sanctum.fly.dev"],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -142,21 +146,13 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # ## Configuring the mailer
-  #
-  # In production you need to configure the mailer to use a different adapter.
-  # Here is an example configuration for Mailgun:
-  #
-  #     config :sanctum, Sanctum.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
-  #
-  # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
-  # and Finch out-of-the-box. This configuration is typically done at
-  # compile-time in your config/prod.exs:
-  #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Req
-  #
-  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+  # Outbound email goes through Resend from the verified mail.sanctummc.com
+  # sending domain. Guarded on the key so a machine without it still boots
+  # (falling back to the no-op Local adapter from config.exs) — auth email
+  # simply won't send until RESEND_API_KEY reaches the environment via Doppler.
+  if resend_api_key = System.get_env("RESEND_API_KEY") do
+    config :sanctum, Sanctum.Mailer,
+      adapter: Resend.Swoosh.Adapter,
+      api_key: resend_api_key
+  end
 end
