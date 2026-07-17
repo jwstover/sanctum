@@ -10,6 +10,12 @@ defmodule SanctumWeb.AuthSignInLive do
 
   use SanctumWeb, :live_view
 
+  # The stock auth components emit flash as a {:put_flash, ...} message to
+  # their parent LiveView; this hook (which the stock SignInLive gets from
+  # AshAuthentication.Phoenix.Web) turns it into real flash. Without it the
+  # reset form's "check your email" feedback silently vanishes.
+  on_mount AshAuthentication.Phoenix.Utils.Flash
+
   alias AshAuthentication.Phoenix.Components
   alias SanctumWeb.AuthOverrides
 
@@ -73,6 +79,7 @@ defmodule SanctumWeb.AuthSignInLive do
   def render(%{live_action: :register} = assigns) do
     ~H"""
     <div class={AuthOverrides.page_class()}>
+      <Layouts.flash_group flash={@flash} />
       <div class={AuthOverrides.panel_class()}>
         <div class="w-full pb-6 mb-6 border-b-2 border-neutral text-center">
           <.link navigate="/" class="font-bangers text-[40px] leading-none tracking-wide text-primary">
@@ -141,6 +148,7 @@ defmodule SanctumWeb.AuthSignInLive do
   def render(assigns) do
     ~H"""
     <div class={AuthOverrides.page_class()}>
+      <Layouts.flash_group flash={@flash} />
       <.live_component
         module={Components.SignIn}
         otp_app={@otp_app}

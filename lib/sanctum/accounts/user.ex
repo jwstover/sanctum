@@ -188,6 +188,7 @@ defmodule Sanctum.Accounts.User do
                 strategy_name: :password, password_argument: :current_password}
 
       change {AshAuthentication.Strategy.Password.HashPasswordChange, strategy_name: :password}
+      change Sanctum.Accounts.User.Changes.NotifyPasswordChanged
     end
 
     read :sign_in_with_password do
@@ -321,6 +322,10 @@ defmodule Sanctum.Accounts.User do
     end
 
     update :reset_password_with_token do
+      # NotifyPasswordChanged adds an after_action hook, which can't run
+      # atomically.
+      require_atomic? false
+
       argument :reset_token, :string do
         allow_nil? false
         sensitive? true
@@ -350,6 +355,9 @@ defmodule Sanctum.Accounts.User do
 
       # Generates an authentication token for the user
       change AshAuthentication.GenerateTokenChange
+
+      # Security notification: the owner learns their password changed
+      change Sanctum.Accounts.User.Changes.NotifyPasswordChanged
     end
   end
 
