@@ -61,6 +61,7 @@ defmodule SanctumWeb.CardLive.Pool do
             value={@query}
             name="query"
             placeholder="Search cards — try aspect:aggression cost<=2 type:ally"
+            placeholder_short="Search cards — try cost<=2"
             registry={Sanctum.Search.CardFields}
             diagnostics={@search_diagnostics}
             help_path={~p"/search-help" <> "#cards"}

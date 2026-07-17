@@ -136,11 +136,14 @@ defmodule SanctumWeb.BrowseLive.Index do
       <form id="browse-search" phx-change="search" class="mb-6 flex min-w-[260px]">
         <input
           type="search"
+          id="browse-search-input"
           name="query"
           value={@query}
           autocomplete="off"
           phx-debounce="150"
           placeholder="Search products and sets — try “spider”, “kang”, or “bomb scare”"
+          phx-hook="ResponsivePlaceholder"
+          data-placeholder-short="Search products and sets — try “kang”"
           class="min-h-[44px] w-full border-[2.5px] border-line bg-black px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.04em] text-base-content outline-none placeholder:normal-case placeholder:font-normal placeholder:text-base-content/40 focus:border-primary sm:min-h-0 sm:text-[14px]"
         />
       </form>
