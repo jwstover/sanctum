@@ -215,16 +215,12 @@ defmodule SanctumWeb.DeckLive.Index do
      |> load_page(0, reset: true)}
   end
 
-  # {id, hero_name} for every hero that has at least one deck, sorted by name.
-  # TODO: optimize with a distinct query if the deck count grows large.
+  # {id, hero_name} for every hero, sorted by name.
   defp load_hero_options do
-    Sanctum.Decks.Deck
-    |> Ash.Query.load(:hero)
+    Sanctum.Heroes.Hero
+    |> Ash.Query.select([:id, :hero_name])
+    |> Ash.Query.sort(hero_name: :asc)
     |> Ash.read!()
-    |> Enum.map(& &1.hero)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.uniq_by(& &1.id)
-    |> Enum.sort_by(& &1.hero_name)
     |> Enum.map(&{&1.id, &1.hero_name})
   end
 
