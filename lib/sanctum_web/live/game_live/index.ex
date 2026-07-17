@@ -8,26 +8,51 @@ defmodule SanctumWeb.GameLive.Index do
   alias Sanctum.Games
 
   def mount(_params, _session, socket) do
-    {:ok, socket |> assign(:page_title, "Games") |> assign_games()}
+    # nil until loaded — drives the loading skeleton. Anonymous visitors have no
+    # games and need no query, so they resolve to an empty list immediately.
+    socket = socket |> assign(:page_title, "Games") |> assign(:games, nil)
+
+    socket =
+      cond do
+        is_nil(socket.assigns.current_user) ->
+          assign(socket, :games, [])
+
+        # Skip the query on the static render; load asynchronously once connected.
+        connected?(socket) ->
+          user = socket.assigns.current_user
+          start_async(socket, :load_games, fn -> load_games(user) end)
+
+        true ->
+          socket
+      end
+
+    {:ok, socket}
   end
 
   def handle_event("new-game", _params, socket) do
     {:noreply, push_navigate(socket, to: ~p"/games/new")}
   end
 
-  def assign_games(socket) do
-    if socket.assigns.current_user do
-      {:ok, games} =
-        Games.list_games(socket.assigns.current_user.id,
-          query: [sort: [inserted_at: :desc]],
-          load: [game_villain: [:villain]],
-          actor: socket.assigns.current_user
-        )
+  def handle_async(:load_games, {:ok, games}, socket) do
+    {:noreply, assign(socket, :games, games)}
+  end
 
-      assign(socket, :games, games)
-    else
-      assign(socket, :games, [])
-    end
+  def handle_async(:load_games, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:games, [])
+     |> put_flash(:error, "Couldn’t load games: #{inspect(reason)}")}
+  end
+
+  defp load_games(user) do
+    {:ok, games} =
+      Games.list_games(user.id,
+        query: [sort: [inserted_at: :desc]],
+        load: [game_villain: [:villain]],
+        actor: user
+      )
+
+    games
   end
 
   def render(assigns) do
@@ -35,9 +60,17 @@ defmodule SanctumWeb.GameLive.Index do
     <Layouts.app current_user={@current_user} flash={@flash}>
       <.button :if={@current_user} variant="primary" phx-click="new-game">New Game</.button>
 
+      <div :if={@games == nil} class="mt-2 flex flex-col gap-2">
+        <div
+          :for={_ <- 1..3}
+          class="h-12 animate-pulse rounded border-b-4 border-l-1 border-r-4 border-t-2 border-black bg-base-300"
+        >
+        </div>
+      </div>
+
       <div class="flex flex-col gap-2 mt-2 font-elektra">
         <div
-          :for={game <- @games}
+          :for={game <- @games || []}
           :if={game.game_villain}
           class="px-4 py-2 border-b-4 border-t-2 border-l-1 border-r-4 border-black rounded skew-x-6 grid grid-cols-3 gap-4 items-center"
         >
