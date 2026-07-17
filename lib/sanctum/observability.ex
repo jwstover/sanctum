@@ -19,6 +19,9 @@ defmodule Sanctum.Observability do
     [:sanctum, :game, :created],
     [:sanctum, :game, :action],
     [:sanctum, :auth, :sign_in],
+    [:sanctum, :auth, :password_attempt],
+    [:sanctum, :auth, :rate_limited],
+    [:sanctum, :auth, :email_sent],
     [:sanctum, :sessions, :active]
   ]
 
@@ -69,6 +72,26 @@ defmodule Sanctum.Observability do
       %{count: 1},
       %{result: :failure, activity: activity, reason: reason}
     )
+  end
+
+  @doc """
+  Counts every password sign-in *attempt*, successful or not. The
+  `auth.sign_in` metric only sees flows that pass through `AuthController`;
+  LiveView-validated password failures never reach it, so attempts are the
+  denominator that makes brute-force activity visible.
+  """
+  def auth_password_attempt do
+    :telemetry.execute([:sanctum, :auth, :password_attempt], %{count: 1}, %{})
+  end
+
+  @doc "Counts an auth rate-limit trip (`kind` tags which limiter fired)."
+  def auth_rate_limited(kind) do
+    :telemetry.execute([:sanctum, :auth, :rate_limited], %{count: 1}, %{kind: kind})
+  end
+
+  @doc "Counts an auth email actually handed to the mailer."
+  def auth_email_sent(kind) do
+    :telemetry.execute([:sanctum, :auth, :email_sent], %{count: 1}, %{kind: kind})
   end
 
   ## Telemetry -> Sentry.Metrics
@@ -168,6 +191,20 @@ defmodule Sanctum.Observability do
       if meta.reason, do: Map.put(attributes, :reason, to_string(meta.reason)), else: attributes
 
     Sentry.Metrics.count("auth.sign_in", m.count, attributes: attributes)
+  end
+
+  def handle_metric_event([:sanctum, :auth, :password_attempt], m, _meta, :ok) do
+    Sentry.Metrics.count("auth.password_attempt", m.count)
+  end
+
+  def handle_metric_event([:sanctum, :auth, :rate_limited], m, meta, :ok) do
+    Sentry.Metrics.count("auth.rate_limited", m.count,
+      attributes: %{kind: safe_string(meta.kind)}
+    )
+  end
+
+  def handle_metric_event([:sanctum, :auth, :email_sent], m, meta, :ok) do
+    Sentry.Metrics.count("auth.email_sent", m.count, attributes: %{kind: safe_string(meta.kind)})
   end
 
   # A zero-valued counter is pure noise (counters aggregate by sum) — only the

@@ -12,19 +12,22 @@ defmodule Sanctum.Accounts.User.Senders.SendNewUserConfirmationEmail do
 
   @impl true
   def send(user, token, opts) do
-    email =
-      new()
-      |> from({"Sanctum", "noreply@mail.sanctummc.com"})
-      |> to(to_string(user.email))
-      |> subject(subject(opts))
-      |> html_body(body(token, opts))
+    with :ok <- Sanctum.Accounts.AuthLimits.check_email(:confirmation, user.email) do
+      email =
+        new()
+        |> from({"Sanctum", "noreply@mail.sanctummc.com"})
+        |> to(to_string(user.email))
+        |> subject(subject(opts))
+        |> html_body(body(token, opts))
 
-    # Deliver off the request path so response timing never depends on
-    # whether an email actually went out (and a slow email API can't stall
-    # the auth LiveView).
-    Task.Supervisor.start_child(Sanctum.TaskSupervisor, fn ->
-      Mailer.deliver!(email)
-    end)
+      # Deliver off the request path so response timing never depends on
+      # whether an email actually went out (and a slow email API can't stall
+      # the auth LiveView).
+      Task.Supervisor.start_child(Sanctum.TaskSupervisor, fn ->
+        Mailer.deliver!(email)
+        Sanctum.Observability.auth_email_sent(:confirmation)
+      end)
+    end
 
     :ok
   end

@@ -23,7 +23,10 @@ defmodule Sanctum.Accounts.User do
         # the add-on's hijack filter still applies to its upsert: it cannot
         # absorb an existing *unconfirmed* password registration for the same
         # email, and auto-confirmation is what writes confirmed_at on conflict.
+        # :create is the system-only action (fixtures, seeds, bootstrap) —
+        # without it here, creating a user emails them a confirmation link.
         auto_confirm_actions [
+          :create,
           :register_with_google,
           :sign_in_with_magic_link,
           :reset_password_with_token
@@ -201,6 +204,9 @@ defmodule Sanctum.Accounts.User do
         allow_nil? false
         sensitive? true
       end
+
+      # Rate limit before the bcrypt check runs (see the preparation's docs).
+      prepare Sanctum.Accounts.Preparations.RateLimitSignIn
 
       # validates the provided email and password and generates a token
       prepare AshAuthentication.Strategy.Password.SignInPreparation
