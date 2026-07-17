@@ -1,3 +1,13 @@
+# [1.47.0](https://github.com/jwstover/sanctum/compare/v1.46.0...v1.47.0) (2026-07-17)
+
+
+### Features
+
+* **browse:** search products and card sets on the pack browser ([da592a3](https://github.com/jwstover/sanctum/commit/da592a36e9215dc475ac9cf840e02b9404693337))
+* **search:** add a search-syntax help page linked from the query inputs ([709844c](https://github.com/jwstover/sanctum/commit/709844ce0b9fd7dbf8e6170655185dd7bfbb685e))
+
+
+
 # [1.46.0](https://github.com/jwstover/sanctum/compare/v1.45.0...v1.46.0) (2026-07-17)
 
 
@@ -43,15 +53,6 @@
 ### Bug Fixes
 
 * **decks:** keep the deck-browser total unfiltered ([4bb89e4](https://github.com/jwstover/sanctum/commit/4bb89e4566b891f795679119735f8e93768dcda4))
-
-
-
-# [1.43.0](https://github.com/jwstover/sanctum/compare/v1.42.0...v1.43.0) (2026-07-17)
-
-
-### Features
-
-* **browse:** restore scroll position on the pack browser and pack pages ([#213](https://github.com/jwstover/sanctum/issues/213)) ([218dfff](https://github.com/jwstover/sanctum/commit/218dfff8e3718764fbe13f16922c37a4d737499d))
 
 
 
