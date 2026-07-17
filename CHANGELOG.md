@@ -1,3 +1,12 @@
+## [1.36.2](https://github.com/jwstover/sanctum/compare/v1.36.1...v1.36.2) (2026-07-17)
+
+
+### Performance Improvements
+
+* **decks:** stop starving the DB during deck sync and parallelize imports ([ec599f6](https://github.com/jwstover/sanctum/commit/ec599f6b740e63f00f5108619edf1276090219f0))
+
+
+
 ## [1.36.1](https://github.com/jwstover/sanctum/compare/v1.36.0...v1.36.1) (2026-07-17)
 
 
@@ -33,15 +42,6 @@
 ### Features
 
 * **browse:** show all card sides and render environments portrait ([0e7542a](https://github.com/jwstover/sanctum/commit/0e7542ad76d9267bb317683a53c519f870af8c0d))
-
-
-
-# [1.33.0](https://github.com/jwstover/sanctum/compare/v1.32.1...v1.33.0) (2026-07-16)
-
-
-### Features
-
-* **observability:** track active sessions as a Sentry gauge ([c2e8683](https://github.com/jwstover/sanctum/commit/c2e86839fd1f276c69842a65f0ae44e93351396b))
 
 
 
