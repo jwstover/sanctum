@@ -1,3 +1,12 @@
+# [1.37.0](https://github.com/jwstover/sanctum/compare/v1.36.3...v1.37.0) (2026-07-17)
+
+
+### Features
+
+* **auth:** theme the auth pages with the comic-dossier design ([b852c61](https://github.com/jwstover/sanctum/commit/b852c61a75c24e4741c19661e2f3272189d24a2e))
+
+
+
 ## [1.36.3](https://github.com/jwstover/sanctum/compare/v1.36.2...v1.36.3) (2026-07-17)
 
 
@@ -32,16 +41,6 @@
 ### Features
 
 * **observability:** emit deck sync counters per day instead of per run ([eca9305](https://github.com/jwstover/sanctum/commit/eca9305969812248fdc756489f2828439ccca9ed))
-
-
-
-# [1.35.0](https://github.com/jwstover/sanctum/compare/v1.34.0...v1.35.0) (2026-07-16)
-
-
-### Features
-
-* **cards:** add public card detail page with shared dossier tile ([7189077](https://github.com/jwstover/sanctum/commit/7189077f5d75f07bfdecce95b899b5c3a8f78fe4))
-* **cards:** link card renders in pack library and decks to detail page ([7e18a1f](https://github.com/jwstover/sanctum/commit/7e18a1f9af3dc6fe3af124b4865e81b4b11bc992))
 
 
 
