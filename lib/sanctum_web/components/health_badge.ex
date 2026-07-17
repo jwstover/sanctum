@@ -88,9 +88,9 @@ defmodule SanctumWeb.Components.HealthBadge do
     # inside the disc.
     font_size =
       case value |> IO.iodata_to_binary() |> String.length() do
-        n when n <= 1 -> 170
-        2 -> 135
-        _ -> 110
+        n when n <= 1 -> 180
+        2 -> 145
+        _ -> 120
       end
 
     assigns =
@@ -132,7 +132,7 @@ defmodule SanctumWeb.Components.HealthBadge do
 
       <text
         x={if @player, do: "156", else: "160"}
-        y="122"
+        y="135"
         text-anchor="middle"
         dominant-baseline="central"
         fill="#fff"
