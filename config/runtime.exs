@@ -66,6 +66,10 @@ if config_env() == :prod do
 
   config :sanctum, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  # Shared secret for the CI deploy-notice webhook (POST /internal/deploy-notice).
+  # Unset ⇒ the endpoint responds 404 to everything.
+  config :sanctum, :deploy_notice_token, System.get_env("DEPLOY_NOTICE_TOKEN")
+
   # Pin Oban's node identity to the Fly machine ID: it survives restarts *and*
   # redeploys, unlike the BEAM node name (which embeds the per-deploy image
   # ref). `Sanctum.Oban.BootRescue` relies on this stability to recognize jobs

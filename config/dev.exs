@@ -69,6 +69,11 @@ config :sanctum, SanctumWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :sanctum, dev_routes: true, token_signing_secret: "Ng9tUOyxnipHxWoTtOyIQ2F/ZTJ45+Vv"
 
+# Fixed token so the deploy-notice webhook can be exercised locally:
+#   curl -X POST localhost:4150/internal/deploy-notice \
+#     -H "Authorization: Bearer dev-deploy-notice-token"
+config :sanctum, :deploy_notice_token, "dev-deploy-notice-token"
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
 

@@ -9,6 +9,7 @@ config :ex_unit, assert_receive_timeout: 2000
 config :sanctum, Oban, testing: :manual
 config :sanctum, :marvel_cdb_req_options, plug: {Req.Test, Sanctum.MarvelCdb}
 config :sanctum, token_signing_secret: "/oZ9ck2w3h4oPYA4x7ZebHnqCh1MKXIp"
+config :sanctum, :deploy_notice_token, "test-deploy-notice-token"
 config :bcrypt_elixir, log_rounds: 1
 config :ash, policies: [show_policy_breakdowns?: true]
 

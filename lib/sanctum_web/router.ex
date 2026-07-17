@@ -37,11 +37,20 @@ defmodule SanctumWeb.Router do
     plug :put_oban_csp
   end
 
+  # Minimal stack for CI-driven webhooks — token auth happens in the
+  # controller, so no session/auth plugs are needed.
+  pipeline :deploy_hooks do
+    plug :accepts, ["json"]
+  end
+
   scope "/", SanctumWeb do
     pipe_through :browser
 
     ash_authentication_live_session :authenticated_routes,
-      on_mount: [{SanctumWeb.Presence, :track}] do
+      on_mount: [
+        {SanctumWeb.Presence, :track},
+        {SanctumWeb.DeployNotice, :notify}
+      ] do
       # in each liveview, add one of the following at the top of the module:
       #
       # If an authenticated user must be present:
@@ -79,7 +88,8 @@ defmodule SanctumWeb.Router do
     ash_authentication_live_session :admin_routes,
       on_mount: [
         {SanctumWeb.LiveUserAuth, :live_admin_required},
-        {SanctumWeb.Presence, :track}
+        {SanctumWeb.Presence, :track},
+        {SanctumWeb.DeployNotice, :notify}
       ] do
       # Admin landing page — system health + links to admin surfaces.
       live "/admin", AdminLive.Index, :index
@@ -151,6 +161,14 @@ defmodule SanctumWeb.Router do
   # scope "/api", SanctumWeb do
   #   pipe_through :api
   # end
+
+  # CI-only webhook: announces an imminent deploy to connected users
+  # (bearer-token guarded; see SanctumWeb.DeployNoticeController).
+  scope "/internal", SanctumWeb do
+    pipe_through :deploy_hooks
+
+    post "/deploy-notice", DeployNoticeController, :create
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:sanctum, :dev_routes) do
