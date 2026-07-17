@@ -34,9 +34,7 @@ defmodule SanctumWeb.CardLive.Detail do
           </:subtitle>
 
           <:actions>
-            <.button navigate={~p"/cards"}>
-              <.icon name="hero-arrow-left" /> Card Pool
-            </.button>
+            <.back_button fallback={~p"/cards"} />
             <.button
               :if={@current_user && @current_user.admin}
               variant="primary"
