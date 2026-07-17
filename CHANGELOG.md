@@ -1,3 +1,12 @@
+# [1.49.0](https://github.com/jwstover/sanctum/compare/v1.48.0...v1.49.0) (2026-07-17)
+
+
+### Features
+
+* **accounts:** Discord OAuth sign-in ([76f1cbf](https://github.com/jwstover/sanctum/commit/76f1cbf6184d84b6432ef2506fe915b81e9016d2)), closes [#204](https://github.com/jwstover/sanctum/issues/204)
+
+
+
 # [1.48.0](https://github.com/jwstover/sanctum/compare/v1.47.0...v1.48.0) (2026-07-17)
 
 
@@ -37,22 +46,6 @@
 * **search:** compile browse queries through the query language ([da776dc](https://github.com/jwstover/sanctum/commit/da776dc75d521985cf40825badc539177d09e914))
 * **search:** data-driven autocomplete for traits, sets, packs, and heroes ([33bac76](https://github.com/jwstover/sanctum/commit/33bac7653b282bf7c7b3b25fafc91fa95e818066))
 * **search:** highlighted query input with server-driven autocomplete ([8d74145](https://github.com/jwstover/sanctum/commit/8d741455f456a937353a75eab6d9ed341e6e16a8))
-
-
-
-# [1.44.0](https://github.com/jwstover/sanctum/compare/v1.43.1...v1.44.0) (2026-07-17)
-
-
-### Bug Fixes
-
-* **auth:** reset-flow feedback, sign-in redirect, and changed-password notice ([7f7f917](https://github.com/jwstover/sanctum/commit/7f7f9175d09f6f540ce50f509000aed2f839544d))
-
-
-### Features
-
-* **auth:** add email/password authentication with required confirmation ([04be5a1](https://github.com/jwstover/sanctum/commit/04be5a1a4a46ae01811fb30e0339291ba1cca775))
-* **auth:** make registration enumeration-safe (email-first flow) ([08ba99e](https://github.com/jwstover/sanctum/commit/08ba99ea634d440f8e3bd55732e16839063b01ac))
-* **auth:** rate limit the abuse-exposed auth surfaces ([985b9f1](https://github.com/jwstover/sanctum/commit/985b9f1e98a575553dec21288ffc8093fedde990))
 
 
 
