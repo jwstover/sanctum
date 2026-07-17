@@ -340,7 +340,14 @@ defmodule SanctumWeb.DeckLive.Index do
 
   @impl true
   def handle_async(:load_decks, {:ok, result}, socket) do
-    %{req: req, offset: offset, reset?: reset?, page: page, hero_options: hero_options} = result
+    %{
+      req: req,
+      offset: offset,
+      reset?: reset?,
+      page: page,
+      hero_options: hero_options,
+      total: total
+    } = result
 
     # A newer filter/search/page request has since fired; drop these stale
     # results so out-of-order completions can't clobber the current view.
@@ -351,6 +358,7 @@ defmodule SanctumWeb.DeckLive.Index do
         |> assign(:end_of_timeline?, !page.more?)
         |> assign(:loading?, false)
         |> maybe_assign_hero_options(hero_options)
+        |> maybe_assign_total(total)
         |> maybe_assign_count(reset?, page.count)
         |> stream(:decks, Enum.map(page.results, &deck_view/1), reset: reset?)
 
@@ -395,6 +403,10 @@ defmodule SanctumWeb.DeckLive.Index do
     filters = filters(socket.assigns)
     actor = socket.assigns[:current_user]
     fetch_heroes? = socket.assigns.hero_options == []
+    # `total` is the full unfiltered catalog size. It's fetched independently
+    # (not read off the first page's count) so it stays accurate even when the
+    # LiveView first loads with filters already applied in the URL.
+    fetch_total? = is_nil(socket.assigns.total)
 
     socket
     |> assign(:req_id, req)
@@ -406,9 +418,24 @@ defmodule SanctumWeb.DeckLive.Index do
         |> Ash.read!(page: [limit: limit, offset: query_offset, count: reset?])
 
       hero_options = if fetch_heroes?, do: load_hero_options(), else: nil
+      total = if fetch_total?, do: load_total(actor), else: nil
 
-      %{req: req, offset: offset, reset?: reset?, page: page, hero_options: hero_options}
+      %{
+        req: req,
+        offset: offset,
+        reset?: reset?,
+        page: page,
+        hero_options: hero_options,
+        total: total
+      }
     end)
+  end
+
+  # Full unfiltered catalog size for the "/ N decks" denominator.
+  defp load_total(actor) do
+    Sanctum.Decks.Deck
+    |> Ash.Query.for_read(:browse, %{}, actor: actor)
+    |> Ash.count!()
   end
 
   defp confirm_scroll_restore(socket) do
@@ -449,16 +476,15 @@ defmodule SanctumWeb.DeckLive.Index do
   defp maybe_assign_hero_options(socket, nil), do: socket
   defp maybe_assign_hero_options(socket, options), do: assign(socket, :hero_options, options)
 
-  # `page.count` is only queried on reset loads (count: reset?). `total` is the
-  # full unfiltered catalog size — set once from the first load (mount always
-  # runs unfiltered) and left untouched as filters narrow the visible count.
-  defp maybe_assign_count(socket, false, _count), do: socket
+  # `total` (the unfiltered catalog size) is fetched once via `load_total/1` and
+  # then left untouched. nil means this load didn't refetch it.
+  defp maybe_assign_total(socket, nil), do: socket
+  defp maybe_assign_total(socket, total), do: assign(socket, :total, total)
 
-  defp maybe_assign_count(socket, true, count) do
-    socket
-    |> assign(:count, count)
-    |> then(fn s -> if is_nil(s.assigns.total), do: assign(s, :total, count), else: s end)
-  end
+  # `page.count` is only queried on reset loads (count: reset?) — it's the
+  # filtered visible count, distinct from the unfiltered `total`.
+  defp maybe_assign_count(socket, false, _count), do: socket
+  defp maybe_assign_count(socket, true, count), do: assign(socket, :count, count)
 
   defp filters(a) do
     %{query: a.query, aspect: a.aspect, hero_id: a.hero_id, sort: a.sort}
