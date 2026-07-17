@@ -1,3 +1,18 @@
+# [1.42.0](https://github.com/jwstover/sanctum/compare/v1.41.0...v1.42.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* **decks:** stack deck header buttons above the title on mobile ([#209](https://github.com/jwstover/sanctum/issues/209)) ([c58a49e](https://github.com/jwstover/sanctum/commit/c58a49e61ae0812f7478cd147d38543aea962340))
+
+
+### Features
+
+* **decks:** restore scroll position on the deck detail page ([#206](https://github.com/jwstover/sanctum/issues/206)) ([4689af7](https://github.com/jwstover/sanctum/commit/4689af72b6616a834c3631f14c4ac2369229c0d2))
+* **deploy:** warn connected users before a deploy restarts the app ([#210](https://github.com/jwstover/sanctum/issues/210)) ([b436d71](https://github.com/jwstover/sanctum/commit/b436d71fead425225474973c5bae38ccea01e362))
+
+
+
 # [1.41.0](https://github.com/jwstover/sanctum/compare/v1.40.0...v1.41.0) (2026-07-17)
 
 
@@ -32,17 +47,6 @@
 ### Features
 
 * **decks:** link out to MarvelCDB from the deck detail page ([#199](https://github.com/jwstover/sanctum/issues/199)) ([bacd5c2](https://github.com/jwstover/sanctum/commit/bacd5c2f5f141a833084aa074d210884a6ddf7f2))
-
-
-
-## [1.37.1](https://github.com/jwstover/sanctum/compare/v1.37.0...v1.37.1) (2026-07-17)
-
-
-### Performance Improvements
-
-* **admin:** async-load the admin landing and card table off the connected mount ([82bbb38](https://github.com/jwstover/sanctum/commit/82bbb38b3692be08a7ddd612c47ac61a45fd88da))
-* **games:** async-load the games list off the connected mount ([f0c5561](https://github.com/jwstover/sanctum/commit/f0c556189c179711eadcee2d8a2a21ff2728c302))
-* **web:** async-load the public catalog LiveViews off the connected mount ([4914ce4](https://github.com/jwstover/sanctum/commit/4914ce414a110697fbf02eafe98fa39ee42aa916))
 
 
 
