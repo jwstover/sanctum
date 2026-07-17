@@ -1,3 +1,12 @@
+# [1.38.0](https://github.com/jwstover/sanctum/compare/v1.37.1...v1.38.0) (2026-07-17)
+
+
+### Features
+
+* **decks:** link out to MarvelCDB from the deck detail page ([#199](https://github.com/jwstover/sanctum/issues/199)) ([bacd5c2](https://github.com/jwstover/sanctum/commit/bacd5c2f5f141a833084aa074d210884a6ddf7f2))
+
+
+
 ## [1.37.1](https://github.com/jwstover/sanctum/compare/v1.37.0...v1.37.1) (2026-07-17)
 
 
@@ -33,16 +42,6 @@
 ### Performance Improvements
 
 * **decks:** stop starving the DB during deck sync and parallelize imports ([ec599f6](https://github.com/jwstover/sanctum/commit/ec599f6b740e63f00f5108619edf1276090219f0))
-
-
-
-## [1.36.1](https://github.com/jwstover/sanctum/compare/v1.36.0...v1.36.1) (2026-07-17)
-
-
-### Performance Improvements
-
-* **decks:** index the deck-browser filter and sort columns ([36067de](https://github.com/jwstover/sanctum/commit/36067de97a27cc074a5dfcbef912f2704d4b645a))
-* **decks:** stop loading every deck to build the hero filter ([36b6981](https://github.com/jwstover/sanctum/commit/36b698135ab638da6032242fd10b19439ec32737))
 
 
 
