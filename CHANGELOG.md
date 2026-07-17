@@ -1,3 +1,14 @@
+## [1.37.1](https://github.com/jwstover/sanctum/compare/v1.37.0...v1.37.1) (2026-07-17)
+
+
+### Performance Improvements
+
+* **admin:** async-load the admin landing and card table off the connected mount ([82bbb38](https://github.com/jwstover/sanctum/commit/82bbb38b3692be08a7ddd612c47ac61a45fd88da))
+* **games:** async-load the games list off the connected mount ([f0c5561](https://github.com/jwstover/sanctum/commit/f0c556189c179711eadcee2d8a2a21ff2728c302))
+* **web:** async-load the public catalog LiveViews off the connected mount ([4914ce4](https://github.com/jwstover/sanctum/commit/4914ce414a110697fbf02eafe98fa39ee42aa916))
+
+
+
 # [1.37.0](https://github.com/jwstover/sanctum/compare/v1.36.3...v1.37.0) (2026-07-17)
 
 
@@ -32,15 +43,6 @@
 
 * **decks:** index the deck-browser filter and sort columns ([36067de](https://github.com/jwstover/sanctum/commit/36067de97a27cc074a5dfcbef912f2704d4b645a))
 * **decks:** stop loading every deck to build the hero filter ([36b6981](https://github.com/jwstover/sanctum/commit/36b698135ab638da6032242fd10b19439ec32737))
-
-
-
-# [1.36.0](https://github.com/jwstover/sanctum/compare/v1.35.0...v1.36.0) (2026-07-16)
-
-
-### Features
-
-* **observability:** emit deck sync counters per day instead of per run ([eca9305](https://github.com/jwstover/sanctum/commit/eca9305969812248fdc756489f2828439ccca9ed))
 
 
 
