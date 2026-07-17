@@ -1,3 +1,12 @@
+# [1.41.0](https://github.com/jwstover/sanctum/compare/v1.40.0...v1.41.0) (2026-07-17)
+
+
+### Features
+
+* **ux:** restore scroll position when navigating back ([#205](https://github.com/jwstover/sanctum/issues/205)) ([90b7b66](https://github.com/jwstover/sanctum/commit/90b7b66ccc5c7dfb7ec6f05cccb58b566eade309))
+
+
+
 # [1.40.0](https://github.com/jwstover/sanctum/compare/v1.39.0...v1.40.0) (2026-07-17)
 
 
@@ -34,15 +43,6 @@
 * **admin:** async-load the admin landing and card table off the connected mount ([82bbb38](https://github.com/jwstover/sanctum/commit/82bbb38b3692be08a7ddd612c47ac61a45fd88da))
 * **games:** async-load the games list off the connected mount ([f0c5561](https://github.com/jwstover/sanctum/commit/f0c556189c179711eadcee2d8a2a21ff2728c302))
 * **web:** async-load the public catalog LiveViews off the connected mount ([4914ce4](https://github.com/jwstover/sanctum/commit/4914ce414a110697fbf02eafe98fa39ee42aa916))
-
-
-
-# [1.37.0](https://github.com/jwstover/sanctum/compare/v1.36.3...v1.37.0) (2026-07-17)
-
-
-### Features
-
-* **auth:** theme the auth pages with the comic-dossier design ([b852c61](https://github.com/jwstover/sanctum/commit/b852c61a75c24e4741c19661e2f3272189d24a2e))
 
 
 
