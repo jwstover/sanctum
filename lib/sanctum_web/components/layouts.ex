@@ -117,8 +117,6 @@ defmodule SanctumWeb.Layouts do
         <main class="relative z-10 mx-auto w-full max-w-[1480px] flex-1 px-4 pb-24 pt-7 sm:px-6">
           {render_slot(@inner_block)}
         </main>
-
-        <.site_footer />
       </div>
 
       <!-- sidebar: fixed on lg+, slideout drawer below -->
@@ -193,6 +191,8 @@ defmodule SanctumWeb.Layouts do
       </div>
     </div>
 
+    <.site_footer />
+
     <.flash_group flash={@flash} />
     """
   end
@@ -236,7 +236,7 @@ defmodule SanctumWeb.Layouts do
   # disclaimer that fan sites (MarvelCDB, mc4db) surface.
   defp site_footer(assigns) do
     ~H"""
-    <footer class="relative z-10 mt-auto border-t-[3px] border-neutral bg-base-100/80">
+    <footer class="relative border-t-[3px] border-neutral bg-base-100/80">
       <div class="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
           <div class="flex items-baseline gap-3">
