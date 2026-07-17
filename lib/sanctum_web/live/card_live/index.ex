@@ -17,7 +17,11 @@ defmodule SanctumWeb.CardLive.Index do
         </:actions>
       </.header>
 
-      <div class="w-full overflow-auto">
+      <div :if={!@loaded?} class="mt-4 space-y-2">
+        <div :for={_ <- 1..8} class="h-14 animate-pulse bg-base-300"></div>
+      </div>
+
+      <div :if={@loaded?} class="w-full overflow-auto">
         <.table
           id="cards"
           rows={@streams.cards}
@@ -92,20 +96,29 @@ defmodule SanctumWeb.CardLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok,
-     socket
-     |> assign(:page_title, "Manage Cards")
-     |> assign(:offset, 0)
-     |> assign(:end_of_timeline?, false)
-     |> paginate_cards(0)}
+    socket =
+      socket
+      |> assign(:page_title, "Manage Cards")
+      |> assign(:offset, 0)
+      |> assign(:end_of_timeline?, false)
+      # loaded? gates the skeleton → table swap once the first page arrives.
+      |> assign(:loaded?, false)
+      |> assign(:loading?, true)
+      |> stream(:cards, [])
+
+    # Skip the first-page query on the static render; load asynchronously once
+    # the socket connects so the shell paints immediately.
+    socket = if connected?(socket), do: start_load(socket, 0), else: socket
+
+    {:ok, socket}
   end
 
   @impl true
   def handle_event("next-page", _params, socket) do
-    if socket.assigns.end_of_timeline? do
+    if socket.assigns.end_of_timeline? or socket.assigns.loading? do
       {:noreply, socket}
     else
-      {:noreply, paginate_cards(socket, socket.assigns.offset + @page_size)}
+      {:noreply, start_load(socket, socket.assigns.offset + @page_size)}
     end
   end
 
@@ -116,18 +129,40 @@ defmodule SanctumWeb.CardLive.Index do
     {:noreply, stream_delete(socket, :cards, card)}
   end
 
-  defp paginate_cards(socket, offset) do
-    page =
-      Sanctum.Games.list_cards!(
-        actor: socket.assigns[:current_user],
-        load: [:primary_side, :card_sides],
-        query: [sort: [base_code: :asc]],
-        page: [limit: @page_size, offset: offset]
-      )
+  @impl true
+  def handle_async(:load_cards, {:ok, %{page: page, offset: offset}}, socket) do
+    {:noreply,
+     socket
+     |> assign(:offset, offset)
+     |> assign(:end_of_timeline?, !page.more?)
+     |> assign(:loading?, false)
+     |> assign(:loaded?, true)
+     |> stream(:cards, page.results, at: -1)}
+  end
+
+  def handle_async(:load_cards, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:loading?, false)
+     |> assign(:loaded?, true)
+     |> put_flash(:error, "Couldn’t load cards: #{inspect(reason)}")}
+  end
+
+  defp start_load(socket, offset) do
+    actor = socket.assigns[:current_user]
 
     socket
-    |> assign(:offset, offset)
-    |> assign(:end_of_timeline?, !page.more?)
-    |> stream(:cards, page.results, at: -1)
+    |> assign(:loading?, true)
+    |> start_async(:load_cards, fn ->
+      page =
+        Sanctum.Games.list_cards!(
+          actor: actor,
+          load: [:primary_side, :card_sides],
+          query: [sort: [base_code: :asc]],
+          page: [limit: @page_size, offset: offset]
+        )
+
+      %{page: page, offset: offset}
+    end)
   end
 end
