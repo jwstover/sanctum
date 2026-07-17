@@ -1,3 +1,12 @@
+# [1.48.0](https://github.com/jwstover/sanctum/compare/v1.47.0...v1.48.0) (2026-07-17)
+
+
+### Features
+
+* **accounts:** user profiles — username claim, avatars, scoped User reads ([426732c](https://github.com/jwstover/sanctum/commit/426732cd13d2ecf8242f36d105c4239e93cf05b5))
+
+
+
 # [1.47.0](https://github.com/jwstover/sanctum/compare/v1.46.0...v1.47.0) (2026-07-17)
 
 
@@ -44,15 +53,6 @@
 * **auth:** add email/password authentication with required confirmation ([04be5a1](https://github.com/jwstover/sanctum/commit/04be5a1a4a46ae01811fb30e0339291ba1cca775))
 * **auth:** make registration enumeration-safe (email-first flow) ([08ba99e](https://github.com/jwstover/sanctum/commit/08ba99ea634d440f8e3bd55732e16839063b01ac))
 * **auth:** rate limit the abuse-exposed auth surfaces ([985b9f1](https://github.com/jwstover/sanctum/commit/985b9f1e98a575553dec21288ffc8093fedde990))
-
-
-
-## [1.43.1](https://github.com/jwstover/sanctum/compare/v1.43.0...v1.43.1) (2026-07-17)
-
-
-### Bug Fixes
-
-* **decks:** keep the deck-browser total unfiltered ([4bb89e4](https://github.com/jwstover/sanctum/commit/4bb89e4566b891f795679119735f8e93768dcda4))
 
 
 
