@@ -44,7 +44,9 @@ defmodule SanctumWeb.CardLive.DetailTest do
   test "renders every side of a card for anonymous visitors", %{conn: conn} do
     {card, _hero, _alter_ego} = make_card()
 
-    {:ok, _lv, html} = live(conn, ~p"/cards/#{card.id}")
+    # The card detail loads asynchronously after mount; await it.
+    {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+    html = render_async(lv)
 
     assert html =~ "Spider-Man"
     assert html =~ "Peter Parker"
@@ -72,7 +74,8 @@ defmodule SanctumWeb.CardLive.DetailTest do
     |> Ash.Changeset.for_update(:update, %{pack_id: pack.id})
     |> Ash.update!(authorize?: false)
 
-    {:ok, _lv, html} = live(conn, ~p"/cards/#{card.id}")
+    {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+    html = render_async(lv)
 
     assert html =~ "Card File"
     assert html =~ "Core Set"
@@ -97,7 +100,8 @@ defmodule SanctumWeb.CardLive.DetailTest do
       |> Ash.create!(authorize?: false)
     end
 
-    {:ok, _lv, html} = live(conn, ~p"/cards/#{card.id}")
+    {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+    html = render_async(lv)
 
     assert html =~ "Alternate Printings (2)"
     assert html =~ "https://img.example/02001a.png"

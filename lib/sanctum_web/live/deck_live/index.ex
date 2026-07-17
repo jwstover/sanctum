@@ -51,8 +51,16 @@ defmodule SanctumWeb.DeckLive.Index do
             class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 pl-[38px] font-barlow text-base text-base-content outline-none focus:border-primary sm:text-[15px]"
           />
         </form>
-        <div class="whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
-          {@count} <span class="text-base-content/45">/ {@total} decks</span>
+        <div class="flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
+          <.icon
+            :if={@loading?}
+            name="hero-arrow-path"
+            class="size-4 animate-spin text-base-content/45"
+          />
+          <span :if={@count == nil} class="text-base-content/45">Loading…</span>
+          <span :if={@count != nil}>
+            {@count} <span class="text-base-content/45">/ {@total} decks</span>
+          </span>
         </div>
       </div>
 
@@ -98,12 +106,18 @@ defmodule SanctumWeb.DeckLive.Index do
         </.filter_pill>
       </div>
 
+      <!-- first-load skeletons: shown until the async load delivers a count -->
+      <.deck_tile_skeleton_grid :if={@count == nil} />
+
       <!-- feed -->
       <div
         id="deck-feed"
         phx-update="stream"
         phx-viewport-bottom={!@end_of_timeline? && "next-page"}
-        class="grid grid-cols-1 items-start gap-3 sm:grid-cols-[repeat(auto-fill,minmax(520px,1fr))]"
+        class={[
+          "grid grid-cols-1 items-start gap-3 sm:grid-cols-[repeat(auto-fill,minmax(520px,1fr))]",
+          @loading? && @count != nil && "opacity-60 transition-opacity"
+        ]}
       >
         <.link
           :for={{dom_id, deck} <- @streams.decks}
@@ -195,24 +209,31 @@ defmodule SanctumWeb.DeckLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    total = count_decks(socket, %{})
+    socket =
+      socket
+      |> assign(:page_title, "Browse Decks")
+      |> assign(:query, "")
+      |> assign(:sort, "new")
+      |> assign(:aspect, "all")
+      |> assign(:hero_id, "all")
+      # nil until the first async load lands — drives the loading/skeleton UI.
+      |> assign(:total, nil)
+      |> assign(:count, nil)
+      |> assign(:aspect_options, @aspects)
+      |> assign(:sort_options, @sorts)
+      |> assign(:hero_options, [])
+      |> assign(:offset, 0)
+      |> assign(:end_of_timeline?, false)
+      |> assign(:req_id, 0)
+      |> assign(:loading?, true)
+      |> stream(:decks, [])
 
-    {:ok,
-     socket
-     |> assign(:page_title, "Browse Decks")
-     |> assign(:query, "")
-     |> assign(:sort, "new")
-     |> assign(:aspect, "all")
-     |> assign(:hero_id, "all")
-     |> assign(:total, total)
-     |> assign(:count, total)
-     |> assign(:aspect_options, @aspects)
-     |> assign(:sort_options, @sorts)
-     |> assign(:hero_options, load_hero_options())
-     |> assign(:offset, 0)
-     |> assign(:end_of_timeline?, false)
-     |> stream(:decks, [])
-     |> load_page(0, reset: true)}
+    # Skip every query on the static (disconnected) render — it exists only to
+    # paint the shell fast. The real data loads asynchronously once the socket
+    # connects, so nothing blocks time-to-first-paint.
+    socket = if connected?(socket), do: start_load(socket, 0, reset: true), else: socket
+
+    {:ok, socket}
   end
 
   # {id, hero_name} for every hero, sorted by name.
@@ -248,40 +269,84 @@ defmodule SanctumWeb.DeckLive.Index do
      |> reset_and_load()}
   end
 
+  # Ignore the viewport trigger while a page is already in flight so a burst of
+  # scroll events can't fan out into overlapping loads.
   def handle_event("next-page", _params, socket) do
-    if socket.assigns.end_of_timeline? do
+    if socket.assigns.end_of_timeline? or socket.assigns.loading? do
       {:noreply, socket}
     else
-      {:noreply, load_page(socket, socket.assigns.offset + @page_size)}
+      {:noreply, start_load(socket, socket.assigns.offset + @page_size)}
     end
   end
 
-  defp reset_and_load(socket), do: load_page(socket, 0, reset: true)
+  @impl true
+  def handle_async(:load_decks, {:ok, result}, socket) do
+    %{req: req, offset: offset, reset?: reset?, page: page, hero_options: hero_options} = result
 
-  defp load_page(socket, offset, opts \\ []) do
-    reset? = Keyword.get(opts, :reset, false)
+    # A newer filter/search/page request has since fired; drop these stale
+    # results so out-of-order completions can't clobber the current view.
+    if req == socket.assigns.req_id do
+      socket =
+        socket
+        |> assign(:offset, offset)
+        |> assign(:end_of_timeline?, !page.more?)
+        |> assign(:loading?, false)
+        |> maybe_assign_hero_options(hero_options)
+        |> maybe_assign_count(reset?, page.count)
+        |> stream(:decks, Enum.map(page.results, &deck_view/1), reset: reset?)
 
-    page =
-      Sanctum.Decks.Deck
-      |> Ash.Query.for_read(:browse, filters(socket.assigns),
-        actor: socket.assigns[:current_user]
-      )
-      |> Ash.read!(page: [limit: @page_size, offset: offset, count: reset?])
-
-    socket
-    |> assign(:offset, offset)
-    |> assign(:end_of_timeline?, !page.more?)
-    |> then(fn s -> if reset?, do: assign(s, :count, page.count), else: s end)
-    |> stream(:decks, Enum.map(page.results, &deck_view/1), reset: reset?)
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 
-  defp count_decks(socket, extra) do
-    Sanctum.Decks.Deck
-    |> Ash.Query.for_read(:browse, Map.merge(%{sort: "new"}, extra),
-      actor: socket.assigns[:current_user]
-    )
-    |> Ash.read!(page: [limit: 1, offset: 0, count: true])
-    |> Map.get(:count)
+  def handle_async(:load_decks, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:loading?, false)
+     |> put_flash(:error, "Couldn’t load decks: #{inspect(reason)}")}
+  end
+
+  defp reset_and_load(socket), do: start_load(socket, 0, reset: true)
+
+  # Kick off the browse read off the socket so the connected mount returns the
+  # shell immediately. `hero_options` is fetched only once per LiveView (a
+  # static hero list) and reused across every subsequent load.
+  defp start_load(socket, offset, opts \\ []) do
+    reset? = Keyword.get(opts, :reset, false)
+    req = socket.assigns.req_id + 1
+    filters = filters(socket.assigns)
+    actor = socket.assigns[:current_user]
+    fetch_heroes? = socket.assigns.hero_options == []
+
+    socket
+    |> assign(:req_id, req)
+    |> assign(:loading?, true)
+    |> start_async(:load_decks, fn ->
+      page =
+        Sanctum.Decks.Deck
+        |> Ash.Query.for_read(:browse, filters, actor: actor)
+        |> Ash.read!(page: [limit: @page_size, offset: offset, count: reset?])
+
+      hero_options = if fetch_heroes?, do: load_hero_options(), else: nil
+
+      %{req: req, offset: offset, reset?: reset?, page: page, hero_options: hero_options}
+    end)
+  end
+
+  defp maybe_assign_hero_options(socket, nil), do: socket
+  defp maybe_assign_hero_options(socket, options), do: assign(socket, :hero_options, options)
+
+  # `page.count` is only queried on reset loads (count: reset?). `total` is the
+  # full unfiltered catalog size — set once from the first load (mount always
+  # runs unfiltered) and left untouched as filters narrow the visible count.
+  defp maybe_assign_count(socket, false, _count), do: socket
+
+  defp maybe_assign_count(socket, true, count) do
+    socket
+    |> assign(:count, count)
+    |> then(fn s -> if is_nil(s.assigns.total), do: assign(s, :total, count), else: s end)
   end
 
   defp filters(a) do

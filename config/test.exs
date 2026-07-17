@@ -1,4 +1,11 @@
 import Config
+
+# LiveView pages load their data in start_async, and `render_async/1` waits up
+# to :assert_receive_timeout (ExUnit default 100ms) for it. The heavier pages
+# (e.g. the deck detail's nested load + similarity query) can exceed that on a
+# cold CI runner, so give async loads generous headroom.
+config :ex_unit, assert_receive_timeout: 2000
+
 config :sanctum, Oban, testing: :manual
 config :sanctum, :marvel_cdb_req_options, plug: {Req.Test, Sanctum.MarvelCdb}
 config :sanctum, token_signing_secret: "/oZ9ck2w3h4oPYA4x7ZebHnqCh1MKXIp"

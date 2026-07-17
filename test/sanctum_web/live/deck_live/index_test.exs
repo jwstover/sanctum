@@ -59,9 +59,12 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
     make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression])
 
-    {:ok, _view, html} = live(conn, ~p"/decks")
+    {:ok, view, html} = live(conn, ~p"/decks")
 
+    # The header paints on the shell; the deck feed loads asynchronously.
     assert html =~ "Browse Decks"
+
+    html = render_async(view)
     assert html =~ "Web Warrior"
     assert html =~ "Cosmic Blast"
   end
@@ -71,12 +74,13 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression])
 
     {:ok, view, _html} = live(conn, ~p"/decks")
+    render_async(view)
 
-    html =
-      view
-      |> form("form[phx-change=search]", %{query: "cosmic"})
-      |> render_change()
+    view
+    |> form("#deck-search", %{query: "cosmic"})
+    |> render_change()
 
+    html = render_async(view)
     assert html =~ "Cosmic Blast"
     refute html =~ "Web Warrior"
   end
@@ -94,7 +98,8 @@ defmodule SanctumWeb.DeckLive.IndexTest do
       scored.id
     ])
 
-    {:ok, _view, html} = live(conn, ~p"/decks")
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    html = render_async(view)
 
     assert html =~ "Uniqueness"
     assert html =~ "87"

@@ -35,9 +35,11 @@ defmodule SanctumWeb.GuessLive.PlayTest do
   test "shows the flavor text and no answer up front", %{conn: conn} do
     seed_card("Nick Fury", "The ultimate spy.")
 
-    {:ok, _view, html} = live(conn, ~p"/flavor-town")
-
+    # The round's random card is picked asynchronously after mount.
+    {:ok, view, html} = live(conn, ~p"/flavor-town")
     assert html =~ "Flavor Town"
+
+    html = render_async(view)
     assert html =~ "The ultimate spy."
     refute html =~ "You got it!"
   end
@@ -46,6 +48,7 @@ defmodule SanctumWeb.GuessLive.PlayTest do
     seed_card("Nick Fury", "The ultimate spy.")
 
     {:ok, view, _html} = live(conn, ~p"/flavor-town")
+    render_async(view)
 
     html = view |> form("form", %{guess: "Definitely Wrong"}) |> render_submit()
 
@@ -58,6 +61,7 @@ defmodule SanctumWeb.GuessLive.PlayTest do
     seed_card("Nick Fury", "The ultimate spy.")
 
     {:ok, view, _html} = live(conn, ~p"/flavor-town")
+    render_async(view)
 
     html = view |> form("form", %{guess: "nick fury"}) |> render_submit()
 

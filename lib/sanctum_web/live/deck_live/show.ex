@@ -20,199 +20,207 @@ defmodule SanctumWeb.DeckLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:decks}>
-      <.header>
-        {@deck.title}
-        <:subtitle>
-          {@cover.hero_name}<span :if={@cover.author}> · by {@cover.author}</span>
-        </:subtitle>
-        <:actions>
-          <.button navigate={~p"/decks"}>
-            <.icon name="hero-arrow-left" /> Decks
-          </.button>
-        </:actions>
-      </.header>
+      <!-- first-load skeleton -->
+      <div :if={@deck == nil}>
+        <div class="mb-6 h-9 w-1/2 max-w-md animate-pulse bg-base-300"></div>
+        <.detail_skeleton />
+      </div>
 
-      <div class="space-y-5">
-        <!-- cover -->
-        <.panel class="relative flex flex-col gap-5 overflow-hidden p-4 sm:flex-row sm:items-start">
-          <div
-            class="h-[330px] w-[236px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start"
-            style="transform:rotate(-1.5deg);"
-          >
-            <.mc_card
-              name={@cover.hero_name}
-              aspect={:hero}
-              image_url={@cover.identity_image}
-              gradient_from={@cover.gradient_from}
-              gradient_to={@cover.gradient_to}
-              size="lg"
-              show_cost={false}
-            />
-          </div>
+      <div :if={@deck != nil}>
+        <.header>
+          {@deck.title}
+          <:subtitle>
+            {@cover.hero_name}<span :if={@cover.author}> · by {@cover.author}</span>
+          </:subtitle>
+          <:actions>
+            <.button navigate={~p"/decks"}>
+              <.icon name="hero-arrow-left" /> Decks
+            </.button>
+          </:actions>
+        </.header>
 
-          <div class="flex min-w-0 flex-1 flex-col">
-            <div class="font-ibm-mono text-[11px] uppercase tracking-[0.25em] text-primary">
-              {@cover.source_label} · {@cover.hero_name}
-            </div>
-            <h1 class="mt-1.5 font-anton text-[34px] uppercase leading-[0.9] [text-wrap:balance] sm:text-[46px] sm:leading-[0.88]">
-              {@deck.title}
-            </h1>
-
-            <div class="mt-3 flex flex-wrap items-center gap-1.5">
-              <span
-                :for={a <- @cover.aspects}
-                class={[
-                  "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]",
-                  a.text,
-                  a.border
-                ]}
-              >
-                {a.label}
-              </span>
+        <div class="space-y-5">
+          <!-- cover -->
+          <.panel class="relative flex flex-col gap-5 overflow-hidden p-4 sm:flex-row sm:items-start">
+            <div
+              class="h-[330px] w-[236px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start"
+              style="transform:rotate(-1.5deg);"
+            >
+              <.mc_card
+                name={@cover.hero_name}
+                aspect={:hero}
+                image_url={@cover.identity_image}
+                gradient_from={@cover.gradient_from}
+                gradient_to={@cover.gradient_to}
+                size="lg"
+                show_cost={false}
+              />
             </div>
 
-            <div class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
-              <div>
-                <div class="font-anton text-[30px] leading-none">{@cover.total_cards}</div>
-                <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
-                  Cards
-                </div>
+            <div class="flex min-w-0 flex-1 flex-col">
+              <div class="font-ibm-mono text-[11px] uppercase tracking-[0.25em] text-primary">
+                {@cover.source_label} · {@cover.hero_name}
               </div>
-              <div>
-                <div class="font-anton text-[30px] leading-none">{@cover.unique_cards}</div>
-                <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
-                  Unique
-                </div>
-              </div>
-              <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
-              <div :if={@cover.author} class="flex items-center gap-2 self-center">
-                <span class="flex size-[28px] items-center justify-center rounded-full border-2 border-neutral bg-primary font-bangers text-sm text-primary-content">
-                  {@cover.author_initial}
-                </span>
-                <span class="font-barlow-condensed text-[13px] font-bold text-primary">
-                  {@cover.author}
+              <h1 class="mt-1.5 font-anton text-[34px] uppercase leading-[0.9] [text-wrap:balance] sm:text-[46px] sm:leading-[0.88]">
+                {@deck.title}
+              </h1>
+
+              <div class="mt-3 flex flex-wrap items-center gap-1.5">
+                <span
+                  :for={a <- @cover.aspects}
+                  class={[
+                    "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]",
+                    a.text,
+                    a.border
+                  ]}
+                >
+                  {a.label}
                 </span>
               </div>
-            </div>
-          </div>
-          <div class="absolute inset-x-0 bottom-0 h-1.5" style={"background:#{@cover.gradient_to};"}>
-          </div>
-        </.panel>
 
-        <!-- body: writeup + card list -->
-        <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
-          <.panel class="min-w-0 p-5">
-            <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
-              Deck Notes
-            </div>
-            <div :if={@writeup} class="space-y-4">
-              <div :for={seg <- @writeup}>
-                <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
-                <iframe
-                  :if={seg.kind == :rich}
-                  title="Deck writeup"
-                  sandbox=""
-                  referrerpolicy="no-referrer"
-                  loading="lazy"
-                  class="deck-writeup-frame"
-                  srcdoc={seg.srcdoc}
-                ></iframe>
+              <div class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
+                <div>
+                  <div class="font-anton text-[30px] leading-none">{@cover.total_cards}</div>
+                  <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
+                    Cards
+                  </div>
+                </div>
+                <div>
+                  <div class="font-anton text-[30px] leading-none">{@cover.unique_cards}</div>
+                  <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
+                    Unique
+                  </div>
+                </div>
+                <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
+                <div :if={@cover.author} class="flex items-center gap-2 self-center">
+                  <span class="flex size-[28px] items-center justify-center rounded-full border-2 border-neutral bg-primary font-bangers text-sm text-primary-content">
+                    {@cover.author_initial}
+                  </span>
+                  <span class="font-barlow-condensed text-[13px] font-bold text-primary">
+                    {@cover.author}
+                  </span>
+                </div>
               </div>
             </div>
-            <div :if={!@writeup} class="font-barlow text-[14px] italic text-base-content/45">
-              No writeup for this deck.
+            <div class="absolute inset-x-0 bottom-0 h-1.5" style={"background:#{@cover.gradient_to};"}>
             </div>
           </.panel>
 
-          <div class="min-w-0 space-y-5">
-            <.panel class="p-4">
-              <div class="mb-3 flex items-baseline gap-2 border-b-2 border-neutral pb-2">
-                <div class="font-anton text-[17px] uppercase tracking-[0.05em]">In This Deck</div>
-                <div class="ml-auto font-ibm-mono text-[11px] text-base-content/45">
-                  {@cover.total_cards} cards
+          <!-- body: writeup + card list -->
+          <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
+            <.panel class="min-w-0 p-5">
+              <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+                Deck Notes
+              </div>
+              <div :if={@writeup} class="space-y-4">
+                <div :for={seg <- @writeup}>
+                  <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
+                  <iframe
+                    :if={seg.kind == :rich}
+                    title="Deck writeup"
+                    sandbox=""
+                    referrerpolicy="no-referrer"
+                    loading="lazy"
+                    class="deck-writeup-frame"
+                    srcdoc={seg.srcdoc}
+                  ></iframe>
                 </div>
               </div>
+              <div :if={!@writeup} class="font-barlow text-[14px] italic text-base-content/45">
+                No writeup for this deck.
+              </div>
+            </.panel>
 
-              <div :for={g <- @groups} class="mb-4 last:mb-0">
-                <div class="mb-2 font-anton text-[12px] uppercase tracking-[0.06em] text-primary">
-                  {g.name} · {g.count}
+            <div class="min-w-0 space-y-5">
+              <.panel class="p-4">
+                <div class="mb-3 flex items-baseline gap-2 border-b-2 border-neutral pb-2">
+                  <div class="font-anton text-[17px] uppercase tracking-[0.05em]">In This Deck</div>
+                  <div class="ml-auto font-ibm-mono text-[11px] text-base-content/45">
+                    {@cover.total_cards} cards
+                  </div>
                 </div>
-                <div class="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2">
+
+                <div :for={g <- @groups} class="mb-4 last:mb-0">
+                  <div class="mb-2 font-anton text-[12px] uppercase tracking-[0.06em] text-primary">
+                    {g.name} · {g.count}
+                  </div>
+                  <div class="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2">
+                    <.link
+                      :for={c <- g.cards}
+                      navigate={~p"/cards/#{c.card_id}"}
+                      class="h-[101px] border-2 border-neutral shadow-comic-sm"
+                    >
+                      <.mc_card
+                        name={c.name}
+                        cost={c.cost}
+                        aspect={c.aspect_key}
+                        image_url={c.image_url}
+                        gradient_from={c.gradient_from}
+                        gradient_to={c.gradient_to}
+                        qty={c.qty}
+                        size="sm"
+                        show_cost={false}
+                      />
+                    </.link>
+                  </div>
+                </div>
+              </.panel>
+
+              <!-- similar decks -->
+              <.panel :if={@similar != []} class="p-4">
+                <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+                  Similar Decks
+                </div>
+                <div class="space-y-2">
                   <.link
-                    :for={c <- g.cards}
-                    navigate={~p"/cards/#{c.card_id}"}
-                    class="h-[101px] border-2 border-neutral shadow-comic-sm"
+                    :for={s <- @similar}
+                    navigate={~p"/decks/#{s.id}"}
+                    class="mc-tile flex items-center gap-3 border-2 border-neutral bg-black p-2.5 shadow-comic-sm"
                   >
-                    <.mc_card
-                      name={c.name}
-                      cost={c.cost}
-                      aspect={c.aspect_key}
-                      image_url={c.image_url}
-                      gradient_from={c.gradient_from}
-                      gradient_to={c.gradient_to}
-                      qty={c.qty}
-                      size="sm"
-                      show_cost={false}
-                    />
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate font-anton text-[16px] uppercase leading-tight">
+                        {s.title}
+                      </div>
+                      <div class="mt-1 flex flex-wrap gap-1">
+                        <span
+                          :for={a <- s.aspects}
+                          class={[
+                            "border bg-base-200 px-1.5 font-barlow-condensed text-[10px] font-bold uppercase tracking-[0.06em]",
+                            a.text,
+                            a.border
+                          ]}
+                        >
+                          {a.label}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex-none text-right">
+                      <div class="font-anton text-[20px] leading-none text-primary">{s.match}%</div>
+                      <div class="font-barlow-condensed text-[10px] font-bold uppercase tracking-[0.1em] text-base-content/45">
+                        Match
+                      </div>
+                    </div>
                   </.link>
                 </div>
-              </div>
-            </.panel>
+              </.panel>
 
-            <!-- similar decks -->
-            <.panel :if={@similar != []} class="p-4">
-              <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
-                Similar Decks
-              </div>
-              <div class="space-y-2">
-                <.link
-                  :for={s <- @similar}
-                  navigate={~p"/decks/#{s.id}"}
-                  class="mc-tile flex items-center gap-3 border-2 border-neutral bg-black p-2.5 shadow-comic-sm"
-                >
-                  <div class="min-w-0 flex-1">
-                    <div class="truncate font-anton text-[16px] uppercase leading-tight">
-                      {s.title}
-                    </div>
-                    <div class="mt-1 flex flex-wrap gap-1">
-                      <span
-                        :for={a <- s.aspects}
-                        class={[
-                          "border bg-base-200 px-1.5 font-barlow-condensed text-[10px] font-bold uppercase tracking-[0.06em]",
-                          a.text,
-                          a.border
-                        ]}
-                      >
-                        {a.label}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="flex-none text-right">
-                    <div class="font-anton text-[20px] leading-none text-primary">{s.match}%</div>
-                    <div class="font-barlow-condensed text-[10px] font-bold uppercase tracking-[0.1em] text-base-content/45">
-                      Match
-                    </div>
-                  </div>
-                </.link>
-              </div>
-            </.panel>
-
-            <!-- details -->
-            <.panel class="p-4">
-              <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
-                Details
-              </div>
-              <div class="grid grid-cols-2 gap-x-6 gap-y-3">
-                <.meta label="Source" value={@cover.source_label} />
-                <.meta
-                  :if={@deck.mcdb_id}
-                  label="MarvelCDB"
-                  value={"#{@deck.mcdb_type}/#{@deck.mcdb_id}"}
-                />
-                <.meta :if={@deck.version} label="Version" value={@deck.version} />
-                <.meta :if={@deck.tags} label="Tags" value={@deck.tags} />
-              </div>
-            </.panel>
+              <!-- details -->
+              <.panel class="p-4">
+                <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+                  Details
+                </div>
+                <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                  <.meta label="Source" value={@cover.source_label} />
+                  <.meta
+                    :if={@deck.mcdb_id}
+                    label="MarvelCDB"
+                    value={"#{@deck.mcdb_type}/#{@deck.mcdb_id}"}
+                  />
+                  <.meta :if={@deck.version} label="Version" value={@deck.version} />
+                  <.meta :if={@deck.tags} label="Tags" value={@deck.tags} />
+                </div>
+              </.panel>
+            </div>
           </div>
         </div>
       </div>
@@ -236,43 +244,98 @@ defmodule SanctumWeb.DeckLive.Show do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    deck =
-      Sanctum.Decks.get_deck!(id,
-        actor: socket.assigns[:current_user],
-        load: [
-          :card_row_count,
-          :total_card_count,
-          :mcdb_user,
-          :owner,
-          hero: [:hero_side, card: [:primary_side]],
-          deck_cards: [card: [:primary_side]]
-        ]
-      )
+    socket =
+      socket
+      |> assign(:page_title, "Deck")
+      # nil until the async load lands — drives the loading/skeleton UI.
+      |> assign(:deck, nil)
+      |> assign(:cover, nil)
+      |> assign(:groups, [])
+      |> assign(:similar, [])
+      |> assign(:writeup, nil)
 
-    hero_gradient = hero_gradient(deck.hero)
+    actor = socket.assigns[:current_user]
 
-    groups =
-      deck.deck_cards
-      |> Enum.map(&card_view(&1, hero_gradient))
-      |> Enum.group_by(& &1.type)
-      |> Enum.map(fn {type, cards} ->
-        %{
-          type: type,
-          name: type_plural(type),
-          count: Enum.sum(Enum.map(cards, & &1.qty)),
-          cards: Enum.sort_by(cards, &{&1.cost || 99, &1.name})
-        }
-      end)
-      |> Enum.sort_by(&type_rank(&1.type))
+    # Skip the (heavy) deck load on the static render; it runs asynchronously
+    # once the socket connects so the shell paints immediately.
+    socket =
+      if connected?(socket),
+        do: start_async(socket, :load_deck, fn -> load_deck(id, actor) end),
+        else: socket
 
-    {:ok,
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_async(:load_deck, {:ok, {:ok, data}}, socket) do
+    {:noreply,
      socket
-     |> assign(:page_title, deck.title)
-     |> assign(:deck, deck)
-     |> assign(:cover, cover_view(deck, hero_gradient))
-     |> assign(:groups, groups)
-     |> assign(:similar, similar_views(deck))
-     |> assign(:writeup, Sanctum.Decks.Writeup.render(deck.description_md))}
+     |> assign(:page_title, data.deck.title)
+     |> assign(:deck, data.deck)
+     |> assign(:cover, data.cover)
+     |> assign(:groups, data.groups)
+     |> assign(:similar, data.similar)
+     |> assign(:writeup, data.writeup)}
+  end
+
+  def handle_async(:load_deck, {:ok, :not_found}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Deck not found.")
+     |> push_navigate(to: ~p"/decks")}
+  end
+
+  def handle_async(:load_deck, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Couldn’t load deck: #{inspect(reason)}")
+     |> push_navigate(to: ~p"/decks")}
+  end
+
+  # Load the deck with its cards and derive the cover, grouped card list, similar
+  # decks, and rendered writeup. Returns `:not_found` for an unknown id so
+  # handle_async can redirect rather than crash the LiveView.
+  defp load_deck(id, actor) do
+    case Sanctum.Decks.get_deck(id,
+           actor: actor,
+           load: [
+             :card_row_count,
+             :total_card_count,
+             :mcdb_user,
+             :owner,
+             hero: [:hero_side, card: [:primary_side]],
+             deck_cards: [card: [:primary_side]]
+           ]
+         ) do
+      {:ok, deck} ->
+        hero_gradient = hero_gradient(deck.hero)
+
+        groups =
+          deck.deck_cards
+          |> Enum.map(&card_view(&1, hero_gradient))
+          |> Enum.group_by(& &1.type)
+          |> Enum.map(fn {type, cards} ->
+            %{
+              type: type,
+              name: type_plural(type),
+              count: Enum.sum(Enum.map(cards, & &1.qty)),
+              cards: Enum.sort_by(cards, &{&1.cost || 99, &1.name})
+            }
+          end)
+          |> Enum.sort_by(&type_rank(&1.type))
+
+        {:ok,
+         %{
+           deck: deck,
+           cover: cover_view(deck, hero_gradient),
+           groups: groups,
+           similar: similar_views(deck),
+           writeup: Sanctum.Decks.Writeup.render(deck.description_md)
+         }}
+
+      {:error, _} ->
+        :not_found
+    end
   end
 
   # Same-hero decks that share the most chosen cards with this one.
