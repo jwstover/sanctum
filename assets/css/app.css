@@ -835,3 +835,33 @@ textarea::placeholder {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Search-syntax help page tables (SearchHelpLive) */
+.qh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+}
+.qh-table th,
+.qh-table td {
+  border: 1px solid var(--color-line);
+  padding: 0.45rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+.qh-table td:first-child {
+  white-space: nowrap;
+}
+.qh-table thead th {
+  background: var(--color-base-300);
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
+}
+.qh-table tbody td {
+  color: color-mix(in srgb, var(--color-base-content) 80%, transparent);
+}

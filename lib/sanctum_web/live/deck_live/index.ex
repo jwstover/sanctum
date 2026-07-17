@@ -55,6 +55,7 @@ defmodule SanctumWeb.DeckLive.Index do
             placeholder="Search decks — try hero:spider aspect:justice cards>=45"
             registry={Sanctum.Search.DeckFields}
             diagnostics={@search_diagnostics}
+            help_path={~p"/search-help" <> "#decks"}
           />
         </form>
         <div class="flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">

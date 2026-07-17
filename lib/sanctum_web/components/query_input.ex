@@ -25,9 +25,16 @@ defmodule SanctumWeb.Components.QueryInput do
   attr :registry, :atom, required: true, doc: "Sanctum.Search.Registry module"
   attr :diagnostics, :list, default: []
 
+  attr :help_path, :string,
+    default: nil,
+    doc: "when set, renders a “?” link to the search-syntax reference"
+
   def query_input(assigns) do
     assigns = assign(assigns, :field_names, field_names(assigns.registry))
 
+    # The mirror div must keep identical padding to the input or the
+    # highlight overlay drifts out of alignment — pr-9 on both reserves room
+    # for the help link.
     ~H"""
     <div class="relative min-w-[260px] flex-1">
       <div id={@id} phx-hook="QueryInput" data-fields={Jason.encode!(@field_names)}>
@@ -39,7 +46,7 @@ defmodule SanctumWeb.Components.QueryInput do
             id={@id <> "-mirror"}
             phx-update="ignore"
             aria-hidden="true"
-            class="qi-mirror pointer-events-none absolute inset-0 overflow-hidden whitespace-pre px-3.5 py-2.5 pl-[38px] font-barlow text-base text-base-content sm:text-[15px]"
+            class="qi-mirror pointer-events-none absolute inset-0 overflow-hidden whitespace-pre py-2.5 pl-[38px] pr-9 font-barlow text-base text-base-content sm:text-[15px]"
           >
           </div>
           <input
@@ -55,8 +62,17 @@ defmodule SanctumWeb.Components.QueryInput do
             aria-expanded="false"
             aria-autocomplete="list"
             aria-controls={@id <> "-listbox"}
-            class="relative z-10 w-full bg-transparent px-3.5 py-2.5 pl-[38px] font-barlow text-base text-transparent caret-primary outline-none placeholder:text-base-content/35 sm:text-[15px]"
+            class="relative z-10 w-full bg-transparent py-2.5 pl-[38px] pr-9 font-barlow text-base text-transparent caret-primary outline-none placeholder:text-base-content/35 sm:text-[15px]"
           />
+          <.link
+            :if={@help_path}
+            navigate={@help_path}
+            title="Search syntax help"
+            aria-label="Search syntax help"
+            class="absolute right-2.5 top-1/2 z-20 grid size-[18px] -translate-y-1/2 place-items-center rounded-full border border-base-content/30 font-barlow text-[11px] font-bold text-base-content/45 hover:border-primary hover:text-primary"
+          >
+            ?
+          </.link>
         </div>
         <div
           id={@id <> "-listbox"}

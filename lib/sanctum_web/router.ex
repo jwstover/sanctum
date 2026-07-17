@@ -78,6 +78,9 @@ defmodule SanctumWeb.Router do
       live "/decks", DeckLive.Index, :index
       live "/decks/:id", DeckLive.Show, :show
 
+      # Reference page for the card/deck search query language.
+      live "/search-help", SearchHelpLive, :index
+
       # Public "Flavor Town" flavor-text guessing mini-game.
       live "/flavor-town", GuessLive.Play, :index
 
