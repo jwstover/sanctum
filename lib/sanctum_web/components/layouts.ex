@@ -45,7 +45,7 @@ defmodule SanctumWeb.Layouts do
     <div class="drawer min-h-screen bg-base-100 text-base-content font-barlow-condensed lg:drawer-open">
       <input id="app-drawer" type="checkbox" class="drawer-toggle" />
 
-      <div class="drawer-content relative min-h-screen">
+      <div class="drawer-content relative flex min-h-screen flex-col">
         <div class="pointer-events-none fixed inset-0 z-0 bg-halftone"></div>
 
         <!-- slim top bar (mobile only) -->
@@ -64,9 +64,11 @@ defmodule SanctumWeb.Layouts do
           </div>
         </header>
 
-        <main class="relative z-10 mx-auto max-w-[1480px] px-4 pb-24 pt-7 sm:px-6">
+        <main class="relative z-10 mx-auto w-full max-w-[1480px] flex-1 px-4 pb-24 pt-7 sm:px-6">
           {render_slot(@inner_block)}
         </main>
+
+        <.site_footer />
       </div>
 
       <!-- sidebar: fixed on lg+, slideout drawer below -->
@@ -169,6 +171,49 @@ defmodule SanctumWeb.Layouts do
     >
       {render_slot(@inner_block)}
     </.link>
+    """
+  end
+
+  # Site-wide footer for the standard app shell. Carries the MarvelCDB data
+  # attribution and the mandatory Fantasy Flight Games / Marvel copyright
+  # disclaimer that fan sites (MarvelCDB, mc4db) surface.
+  defp site_footer(assigns) do
+    ~H"""
+    <footer class="relative z-10 mt-auto border-t-[3px] border-neutral bg-base-100/80">
+      <div class="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
+          <div class="flex items-baseline gap-3">
+            <span class="font-bangers text-2xl leading-none tracking-wide text-primary">
+              SANCTUM
+            </span>
+            <span class="font-ibm-mono text-xs text-base-content/40">
+              v{Application.spec(:sanctum, :vsn)}
+            </span>
+          </div>
+          <p class="font-ibm-mono text-xs text-base-content/45">
+            Much of the card data &amp; imagery is courtesy of <a
+              href="https://marvelcdb.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-base-content/70 underline decoration-dotted underline-offset-2 transition-colors hover:text-primary"
+            >
+              MarvelCDB
+            </a>.
+          </p>
+        </div>
+
+        <p class="mt-6 max-w-3xl font-barlow-condensed text-[13px] leading-relaxed text-base-content/40">
+          Sanctum is an unofficial, fan-made project. The information presented on this site about
+          Marvel Champions: The Card Game, both literal and graphical, is copyrighted by Fantasy
+          Flight Games and/or Marvel. This website is not produced, endorsed, supported, or
+          affiliated with Fantasy Flight Games or Marvel.
+        </p>
+
+        <p class="mt-4 font-ibm-mono text-[11px] uppercase tracking-[0.18em] text-base-content/30">
+          © {Date.utc_today().year} Sanctum · Built for the table
+        </p>
+      </div>
+    </footer>
     """
   end
 
