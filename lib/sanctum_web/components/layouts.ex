@@ -121,6 +121,14 @@ defmodule SanctumWeb.Layouts do
             >
               Sign In
             </.button>
+            <.button
+              :if={@current_user}
+              variant="ghost"
+              navigate={~p"/sign-out"}
+              phx-click={close_drawer()}
+            >
+              Sign Out
+            </.button>
           </div>
         </aside>
       </div>
