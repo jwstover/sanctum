@@ -9,7 +9,9 @@ defmodule Sanctum.AccountsFixtures do
 
     attrs = %{
       email: email,
-      confirmed_at: attrs[:confirmed_at] || DateTime.utc_now()
+      confirmed_at: attrs[:confirmed_at] || DateTime.utc_now(),
+      username: attrs[:username],
+      avatar_url: attrs[:avatar_url]
     }
 
     # Skip authorization for test fixtures

@@ -35,13 +35,63 @@ defmodule SanctumWeb.Layouts do
 
   attr :active_tab, :atom,
     default: nil,
-    values: [nil, :browse, :cards, :guess, :decks, :admin],
+    values: [nil, :browse, :cards, :guess, :decks, :profile, :admin],
     doc: "which top-nav tab to highlight"
 
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
+    <!-- profile prompt: signed-in users without a username. Sits above the
+         drawer so it spans the full viewport (sidebar included). Hidden by
+         default; the hook flags <html> (which LiveView never patches, so the
+         flag survives DOM updates) unless this browser dismissed the banner
+         before (localStorage, keyed per user). -->
+    <div
+      :if={@current_user && !@current_user.username}
+      id="update-profile-banner"
+      phx-hook=".ProfileBanner"
+      data-user-id={@current_user.id}
+      class="relative z-20 hidden border-b-[3px] border-neutral bg-base-300 bg-halftone font-barlow-condensed text-base-content [html[data-show-profile-banner]_&]:block"
+    >
+      <div class="mx-auto flex w-full max-w-[1480px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
+        <span class="font-bangers text-lg leading-none tracking-wide text-primary">
+          Update your profile!
+        </span>
+        <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60">
+          Pick a username to get credit on your decks
+        </span>
+        <.link
+          navigate={~p"/profile"}
+          class="ml-auto border-2 border-neutral bg-primary px-3 py-1 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.1em] text-primary-content shadow-comic-sm"
+        >
+          Go to profile
+        </.link>
+        <button
+          type="button"
+          data-dismiss
+          aria-label="Dismiss"
+          class="flex size-8 cursor-pointer items-center justify-center border-2 border-neutral bg-base-100 text-base-content/70 transition-colors hover:text-white"
+        >
+          <.icon name="hero-x-mark" class="size-4" />
+        </button>
+      </div>
+      <script :type={Phoenix.LiveView.ColocatedHook} name=".ProfileBanner">
+        export default {
+          mounted() {
+            this.key = `sanctum:profile-banner-dismissed:${this.el.dataset.userId}`
+            if (!localStorage.getItem(this.key)) {
+              document.documentElement.setAttribute("data-show-profile-banner", "")
+            }
+            this.el.querySelector("[data-dismiss]").addEventListener("click", () => {
+              localStorage.setItem(this.key, "1")
+              document.documentElement.removeAttribute("data-show-profile-banner")
+            })
+          }
+        }
+      </script>
+    </div>
+
     <div class="drawer min-h-screen bg-base-100 text-base-content font-barlow-condensed lg:drawer-open">
       <input id="app-drawer" type="checkbox" class="drawer-toggle" />
 
@@ -102,6 +152,13 @@ defmodule SanctumWeb.Layouts do
             </.sidebar_link>
             <.sidebar_link navigate={~p"/flavor-town"} active={@active_tab == :guess}>
               Flavor Town
+            </.sidebar_link>
+            <.sidebar_link
+              :if={@current_user}
+              navigate={~p"/profile"}
+              active={@active_tab == :profile}
+            >
+              Profile
             </.sidebar_link>
             <.sidebar_link
               :if={@current_user && @current_user.admin}

@@ -174,9 +174,7 @@ defmodule SanctumWeb.DeckLive.Index do
               </div>
 
               <div :if={deck.author} class="mt-auto flex items-center gap-2 pt-3">
-                <span class="flex size-[26px] items-center justify-center rounded-full border-2 border-neutral bg-primary font-bangers text-sm text-primary-content">
-                  {deck.author_initial}
-                </span>
+                <.avatar name={deck.author} url={deck.author_avatar} />
                 <span class="font-barlow-condensed text-[13px] font-bold text-primary">
                   {deck.author}
                 </span>
@@ -529,8 +527,8 @@ defmodule SanctumWeb.DeckLive.Index do
       aspects: aspect_badges(deck.aspects),
       source_label: source_label(deck.source),
       tagline: excerpt(deck.description_md),
-      author: author,
-      author_initial: author_initial(author),
+      author: author && author.name,
+      author_avatar: author && author.avatar,
       total_card_count: deck.total_card_count || 0,
       card_row_count: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
@@ -556,17 +554,19 @@ defmodule SanctumWeb.DeckLive.Index do
   defp source_label(:native), do: "Native"
   defp source_label(other), do: other |> to_string() |> String.capitalize()
 
+  # Attribution: imported decks credit the MarvelCDB author; native decks
+  # credit the owner's claimed username (never their email — the field is
+  # policy-hidden). Owners without a username get no attribution row.
   defp author(%{mcdb_user: %{username: username}}) when is_binary(username) and username != "",
-    do: "@" <> username
+    do: %{name: "@" <> username, avatar: nil}
 
-  defp author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id), do: "mcdb ##{id}"
-  defp author(%{owner: %{email: email}}) when is_binary(email), do: email
+  defp author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id),
+    do: %{name: "mcdb ##{id}", avatar: nil}
+
+  defp author(%{owner: %{username: %Ash.CiString{} = username, avatar_url: avatar}}),
+    do: %{name: "@" <> to_string(username), avatar: avatar}
+
   defp author(_), do: nil
-
-  defp author_initial(nil), do: "?"
-
-  defp author_initial(author),
-    do: author |> String.trim_leading("@") |> String.first() |> String.upcase()
 
   # Turn description markdown into a short plain-text teaser.
   defp excerpt(md) when is_binary(md) and md != "" do

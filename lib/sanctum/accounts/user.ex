@@ -86,12 +86,34 @@ defmodule Sanctum.Accounts.User do
     repo Sanctum.Repo
   end
 
+  field_policies do
+    # Cover `admin`/`hashed_password` (public? false) too — with reads open,
+    # the default (:show) would return them on any authorized read.
+    private_fields :include
+
+    # AshAuthentication's own reads (sign-in preparations, session hydration
+    # via get_by_subject) run with a nil actor but must see every field —
+    # the policy-level bypass above does not extend to field policies.
+    field_policy_bypass :* do
+      authorize_if AshAuthentication.Checks.AshAuthenticationInteraction
+    end
+
+    field_policy [:email, :confirmed_at, :admin, :hashed_password] do
+      authorize_if expr(id == ^actor(:id))
+      authorize_if actor_attribute_equals(:admin, true)
+    end
+
+    field_policy :* do
+      authorize_if always()
+    end
+  end
+
   actions do
     defaults [:read]
 
     create :create do
       primary? true
-      accept [:email, :confirmed_at]
+      accept [:email, :confirmed_at, :username, :avatar_url]
     end
 
     update :set_admin do
@@ -159,12 +181,26 @@ defmodule Sanctum.Accounts.User do
       change fn changeset, _ ->
         user_info = Ash.Changeset.get_argument(changeset, :user_info)
 
-        Ash.Changeset.change_attributes(changeset, Map.take(user_info, ["email"]))
+        changeset
+        |> Ash.Changeset.change_attributes(Map.take(user_info, ["email"]))
+        |> seed_avatar(user_info)
       end
 
       # Required if you're using the password & confirmation strategies
       upsert_fields []
       change set_attribute(:confirmed_at, &DateTime.utc_now/0)
+    end
+
+    update :update_profile do
+      description "Self-service profile edits (username claim). Avatar editing lands with the settings page."
+
+      # The username match validation can't run atomically.
+      require_atomic? false
+      accept [:username]
+
+      validate match(:username, ~r/^[a-zA-Z0-9_]{3,20}$/) do
+        message "3–20 characters: letters, numbers, and underscores only"
+      end
     end
 
     update :change_password do
@@ -366,9 +402,20 @@ defmodule Sanctum.Accounts.User do
       authorize_if always()
     end
 
-    policy always() do
-      forbid_if always()
+    # Public profile reads: anonymous deck browsing loads deck.owner for
+    # attribution. The field policies below keep everything but the public
+    # profile fields (username/avatar_url) scoped to self/admin.
+    policy action_type(:read) do
+      authorize_if always()
     end
+
+    policy action(:update_profile) do
+      authorize_if expr(id == ^actor(:id))
+    end
+
+    # No catch-all: anything not covered above (creates, other updates,
+    # destroys) is forbidden by default. Auth flows ride the bypass; system
+    # writes (fixtures, seeds, promote_admin) use authorize?: false.
   end
 
   attributes do
@@ -380,6 +427,21 @@ defmodule Sanctum.Accounts.User do
     end
 
     attribute :confirmed_at, :utc_datetime, public?: true, allow_nil?: true
+
+    # Public handle shown on deck/game attribution. Claimed after signup
+    # (never required at registration), so nil until the user picks one.
+    # Format is enforced by :update_profile (the only user-facing write).
+    attribute :username, :ci_string do
+      allow_nil? true
+      public? true
+    end
+
+    # Seeded from Google's `picture` on first OAuth registration; users
+    # without one get a deterministic initials-on-gradient fallback in the UI.
+    attribute :avatar_url, :string do
+      allow_nil? true
+      public? true
+    end
 
     # Gates the /cards/* admin pages and Card/CardSide mutations. Not public:
     # never accepted from forms/params, only via the :set_admin action.
@@ -398,5 +460,17 @@ defmodule Sanctum.Accounts.User do
 
   identities do
     identity :unique_email, [:email]
+    identity :unique_username, [:username]
   end
+
+  # Seeds avatar_url from Google's user_info on first registration only —
+  # `upsert_fields []` means nothing is written on conflict, so a re-login
+  # never clobbers an existing profile (and pre-existing users keep the
+  # gradient fallback).
+  defp seed_avatar(changeset, %{"picture" => picture})
+       when is_binary(picture) and picture != "" do
+    Ash.Changeset.change_attribute(changeset, :avatar_url, picture)
+  end
+
+  defp seed_avatar(changeset, _user_info), do: changeset
 end
