@@ -20,6 +20,22 @@ defmodule SanctumWeb.DeckLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:decks}>
+      <div id="deck-card-view-pref" phx-hook=".CardViewPref"></div>
+      <script :type={Phoenix.LiveView.ColocatedHook} name=".CardViewPref">
+        const KEY = "sanctum:deck-card-view"
+
+        export default {
+          mounted() {
+            const stored = localStorage.getItem(KEY)
+            if (stored === "list" || stored === "images") {
+              this.pushEvent("restore_card_view", {view: stored})
+            }
+            this.handleEvent("store_card_view", ({view}) => {
+              localStorage.setItem(KEY, view)
+            })
+          }
+        }
+      </script>
       <!-- first-load skeleton -->
       <div :if={@deck == nil}>
         <div class="mb-6 h-9 w-1/2 max-w-md animate-pulse bg-base-300"></div>
@@ -141,10 +157,24 @@ defmodule SanctumWeb.DeckLive.Show do
 
             <div class="min-w-0 space-y-5">
               <.panel class="p-4">
-                <div class="mb-3 flex items-baseline gap-2 border-b-2 border-neutral pb-2">
+                <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
                   <div class="font-anton text-[17px] uppercase tracking-[0.05em]">In This Deck</div>
                   <div class="ml-auto font-ibm-mono text-[11px] text-base-content/45">
                     {@cover.total_cards} cards
+                  </div>
+                  <div class="flex border-2 border-neutral" role="group" aria-label="Card display">
+                    <.view_toggle_button
+                      view="images"
+                      icon="hero-squares-2x2"
+                      label="Image view"
+                      active={@card_view == "images"}
+                    />
+                    <.view_toggle_button
+                      view="list"
+                      icon="hero-list-bullet"
+                      label="List view"
+                      active={@card_view == "list"}
+                    />
                   </div>
                 </div>
 
@@ -152,7 +182,10 @@ defmodule SanctumWeb.DeckLive.Show do
                   <div class="mb-2 font-anton text-[12px] uppercase tracking-[0.06em] text-primary">
                     {g.name} · {g.count}
                   </div>
-                  <div class="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2">
+                  <div
+                    :if={@card_view == "images"}
+                    class="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2"
+                  >
                     <.link
                       :for={c <- g.cards}
                       navigate={~p"/cards/#{c.card_id}"}
@@ -169,6 +202,34 @@ defmodule SanctumWeb.DeckLive.Show do
                         size="sm"
                         show_cost={false}
                       />
+                    </.link>
+                  </div>
+                  <div :if={@card_view == "list"} class="divide-y divide-neutral/50">
+                    <.link
+                      :for={c <- g.cards}
+                      navigate={~p"/cards/#{c.card_id}"}
+                      class="flex items-center gap-2 px-1 py-1 hover:bg-base-200"
+                    >
+                      <span class="w-6 flex-none font-ibm-mono text-[11px] text-base-content/50">
+                        {c.qty}×
+                      </span>
+                      <.icon
+                        :if={c.aspect_key == :hero}
+                        name="hero-user-solid"
+                        class="size-3 flex-none text-aspect-hero"
+                      />
+                      <span :if={c.aspect_key != :hero} class={["size-2.5 flex-none", c.aspect_bg]}></span>
+                      <span class="truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85">
+                        {c.name}
+                      </span>
+                      <span :if={c.pips != []} class="ml-auto flex flex-none items-center gap-1">
+                        <span
+                          :for={{color_class, glyph} <- c.pips}
+                          class={["font-champions text-[14px] leading-none", color_class]}
+                        >
+                          {glyph}
+                        </span>
+                      </span>
                     </.link>
                   </div>
                 </div>
@@ -245,6 +306,33 @@ defmodule SanctumWeb.DeckLive.Show do
     """
   end
 
+  attr :view, :string, required: true
+  attr :icon, :string, required: true
+  attr :label, :string, required: true
+  attr :active, :boolean, required: true
+
+  defp view_toggle_button(assigns) do
+    ~H"""
+    <button
+      type="button"
+      phx-click="set_card_view"
+      phx-value-view={@view}
+      aria-label={@label}
+      aria-pressed={to_string(@active)}
+      title={@label}
+      class={[
+        "flex size-7 items-center justify-center transition-colors",
+        if(@active,
+          do: "bg-primary text-primary-content",
+          else: "text-base-content/50 hover:bg-base-200 hover:text-base-content"
+        )
+      ]}
+    >
+      <.icon name={@icon} class="size-4" />
+    </button>
+    """
+  end
+
   attr :label, :string, required: true
   attr :value, :any, required: true
 
@@ -270,6 +358,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:groups, [])
       |> assign(:similar, [])
       |> assign(:writeup, nil)
+      |> assign(:card_view, "images")
 
     actor = socket.assigns[:current_user]
 
@@ -281,6 +370,21 @@ defmodule SanctumWeb.DeckLive.Show do
         else: socket
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("set_card_view", %{"view" => view}, socket) when view in ~w(images list) do
+    {:noreply,
+     socket
+     |> assign(:card_view, view)
+     |> push_event("store_card_view", %{view: view})}
+  end
+
+  # Pushed by the CardViewPref hook on connect with the preference stored in
+  # localStorage (if any).
+  def handle_event("restore_card_view", %{"view" => view}, socket)
+      when view in ~w(images list) do
+    {:noreply, assign(socket, :card_view, view)}
   end
 
   @impl true
@@ -336,7 +440,7 @@ defmodule SanctumWeb.DeckLive.Show do
               type: type,
               name: type_plural(type),
               count: Enum.sum(Enum.map(cards, & &1.qty)),
-              cards: Enum.sort_by(cards, &{&1.cost || 99, &1.name})
+              cards: Enum.sort_by(cards, &String.downcase(&1.name))
             }
           end)
           |> Enum.sort_by(&type_rank(&1.type))
@@ -394,6 +498,15 @@ defmodule SanctumWeb.DeckLive.Show do
     aspect_key = display_aspect(side)
     {gf, gt} = if aspect_key == :hero, do: hero_gradient, else: {nil, nil}
 
+    resources =
+      [
+        energy: side.resource_energy_count,
+        mental: side.resource_mental_count,
+        physical: side.resource_physical_count,
+        wild: side.resource_wild_count
+      ]
+      |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
+
     %{
       card_id: dc.card.id,
       qty: dc.quantity,
@@ -401,6 +514,8 @@ defmodule SanctumWeb.DeckLive.Show do
       cost: side.cost,
       type: side.type,
       aspect_key: aspect_key,
+      aspect_bg: CardComponent.aspect_classes(aspect_key).bg,
+      pips: CardComponent.resource_pips(resources),
       image_url: side.image_url,
       gradient_from: gf,
       gradient_to: gt
