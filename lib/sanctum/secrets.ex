@@ -31,4 +31,31 @@ defmodule Sanctum.Secrets do
       ) do
     Application.fetch_env(:sanctum, :google_redirect_uri)
   end
+
+  def secret_for(
+        [:authentication, :strategies, :discord, :client_id],
+        Sanctum.Accounts.User,
+        _,
+        _
+      ) do
+    Application.fetch_env(:sanctum, :discord_client_id)
+  end
+
+  def secret_for(
+        [:authentication, :strategies, :discord, :client_secret],
+        Sanctum.Accounts.User,
+        _,
+        _
+      ) do
+    Application.fetch_env(:sanctum, :discord_client_secret)
+  end
+
+  def secret_for(
+        [:authentication, :strategies, :discord, :redirect_uri],
+        Sanctum.Accounts.User,
+        _,
+        _
+      ) do
+    Application.fetch_env(:sanctum, :discord_redirect_uri)
+  end
 end
