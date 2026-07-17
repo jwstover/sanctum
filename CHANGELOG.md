@@ -1,3 +1,12 @@
+# [1.39.0](https://github.com/jwstover/sanctum/compare/v1.38.0...v1.39.0) (2026-07-17)
+
+
+### Features
+
+* **infra:** serve the app at sanctummc.com and send email via Resend ([#197](https://github.com/jwstover/sanctum/issues/197)) ([4761318](https://github.com/jwstover/sanctum/commit/4761318d03a0757946579f776c92f704657b5146))
+
+
+
 # [1.38.0](https://github.com/jwstover/sanctum/compare/v1.37.1...v1.38.0) (2026-07-17)
 
 
@@ -33,15 +42,6 @@
 ### Performance Improvements
 
 * **cards:** async-load the card pool off the connected mount ([c161976](https://github.com/jwstover/sanctum/commit/c161976d94d3de59bd3dc28ccff8752a66afaecd))
-
-
-
-## [1.36.2](https://github.com/jwstover/sanctum/compare/v1.36.1...v1.36.2) (2026-07-17)
-
-
-### Performance Improvements
-
-* **decks:** stop starving the DB during deck sync and parallelize imports ([ec599f6](https://github.com/jwstover/sanctum/commit/ec599f6b740e63f00f5108619edf1276090219f0))
 
 
 
