@@ -1,3 +1,13 @@
+# [1.40.0](https://github.com/jwstover/sanctum/compare/v1.39.0...v1.40.0) (2026-07-17)
+
+
+### Features
+
+* **decks:** add an image/list view toggle to the deck page ([#198](https://github.com/jwstover/sanctum/issues/198)) ([5180333](https://github.com/jwstover/sanctum/commit/5180333effbdbb3cadd5a81c32a08eba7659b2f0))
+* **decks:** extend decklist sync retries to 5 attempts ([#170](https://github.com/jwstover/sanctum/issues/170)) ([8d3e5ca](https://github.com/jwstover/sanctum/commit/8d3e5ca7f6513080ba2a53862197869336e0b277))
+
+
+
 # [1.39.0](https://github.com/jwstover/sanctum/compare/v1.38.0...v1.39.0) (2026-07-17)
 
 
@@ -33,15 +43,6 @@
 ### Features
 
 * **auth:** theme the auth pages with the comic-dossier design ([b852c61](https://github.com/jwstover/sanctum/commit/b852c61a75c24e4741c19661e2f3272189d24a2e))
-
-
-
-## [1.36.3](https://github.com/jwstover/sanctum/compare/v1.36.2...v1.36.3) (2026-07-17)
-
-
-### Performance Improvements
-
-* **cards:** async-load the card pool off the connected mount ([c161976](https://github.com/jwstover/sanctum/commit/c161976d94d3de59bd3dc28ccff8752a66afaecd))
 
 
 
