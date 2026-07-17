@@ -764,3 +764,74 @@ textarea::placeholder {
 }
 
 /* This file is for your main application CSS */
+
+/* ── Advanced-search query input (QueryInput hook) ────────────────────
+   Token colors for the syntax-highlighting mirror and the autocomplete
+   listbox. Colors alias existing theme tokens so the query bar reads as
+   part of the comic-dossier palette. */
+.qi-field {
+  color: var(--color-primary);
+}
+.qi-unknown {
+  text-decoration: underline wavy var(--color-error);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.qi-op {
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+}
+.qi-paren {
+  color: color-mix(in srgb, var(--color-base-content) 65%, transparent);
+}
+.qi-value {
+  color: var(--color-info);
+}
+.qi-number {
+  color: var(--color-aspect-encounter);
+}
+.qi-string {
+  color: var(--color-aspect-protection);
+}
+.qi-keyword {
+  color: var(--color-aspect-pool);
+  font-weight: 600;
+}
+
+.qi-option {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  font-family: var(--font-barlow, 'Barlow Condensed', sans-serif);
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--color-line);
+}
+.qi-option:last-child {
+  border-bottom: none;
+}
+.qi-option.qi-active {
+  background: var(--color-base-300);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+.qi-option-label {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.qi-kind-field {
+  color: var(--color-primary);
+}
+.qi-kind-value {
+  color: var(--color-info);
+}
+.qi-kind-keyword {
+  color: var(--color-aspect-pool);
+}
+.qi-option-detail {
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+  font-size: 0.8rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

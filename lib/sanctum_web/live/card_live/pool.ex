@@ -9,6 +9,7 @@ defmodule SanctumWeb.CardLive.Pool do
   require Ash.Query
 
   import SanctumWeb.Components.CardSideTile
+  import SanctumWeb.Components.QueryInput
 
   @page_size 24
 
@@ -54,18 +55,14 @@ defmodule SanctumWeb.CardLive.Pool do
 
       <!-- controls -->
       <div class="mb-3.5 flex flex-wrap items-center gap-2.5">
-        <form id="card-search" phx-change="search" class="relative min-w-[260px] flex-1">
-          <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[17px] text-base-content/40">
-            ⌕
-          </span>
-          <input
-            type="text"
-            name="query"
+        <form id="card-search" phx-change="search" class="flex min-w-[260px] flex-1">
+          <.query_input
+            id="card-query"
             value={@query}
-            phx-debounce="200"
-            autocomplete="off"
-            placeholder="Search cards by name…"
-            class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 pl-[38px] font-barlow text-base text-base-content outline-none focus:border-primary sm:text-[15px]"
+            name="query"
+            placeholder="Search cards — try aspect:aggression cost<=2 type:ally"
+            registry={Sanctum.Search.CardFields}
+            diagnostics={@search_diagnostics}
           />
         </form>
         <div class="flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
@@ -170,6 +167,7 @@ defmodule SanctumWeb.CardLive.Pool do
       socket
       |> assign(:page_title, "Card Pool")
       |> assign(:query, "")
+      |> assign(:search_diagnostics, [])
       |> assign(:aspect, "all")
       |> assign(:type, "all")
       # nil until the first async load lands — drives the loading/skeleton UI.
@@ -202,7 +200,13 @@ defmodule SanctumWeb.CardLive.Pool do
       query != socket.assigns.query or aspect != socket.assigns.aspect or
         type != socket.assigns.type
 
-    socket = assign(socket, query: query, aspect: aspect, type: type)
+    socket =
+      assign(socket,
+        query: query,
+        aspect: aspect,
+        type: type,
+        search_diagnostics: search_diagnostics(query)
+      )
 
     socket =
       if connected?(socket) and (changed? or socket.assigns.req_id == 0),
@@ -217,6 +221,15 @@ defmodule SanctumWeb.CardLive.Pool do
   def handle_event("search", %{"query" => query}, socket) do
     {:noreply, push_patch(socket, to: pool_path(socket.assigns, query: query), replace: true)}
   end
+
+  # Autocomplete for the query input: the QueryInput hook pushes the raw
+  # value + cursor and renders whatever we reply with.
+  def handle_event("suggest", %{"value" => value, "cursor" => cursor}, socket)
+      when is_binary(value) and is_integer(cursor) do
+    {:reply, Sanctum.Search.Suggest.suggest(value, cursor, Sanctum.Search.CardFields), socket}
+  end
+
+  def handle_event("suggest", _params, socket), do: {:reply, %{items: []}, socket}
 
   def handle_event("filter_aspect", %{"key" => key}, socket) do
     {:noreply, push_patch(socket, to: pool_path(socket.assigns, aspect: key))}
@@ -385,4 +398,12 @@ defmodule SanctumWeb.CardLive.Pool do
   defp filters(assigns) do
     %{query: assigns.query, aspect: assigns.aspect, type: assigns.type}
   end
+
+  # Advisory parse/compile problems shown under the query input ("unknown
+  # field…", "did you mean…"). The query still runs with the bad part dropped.
+  defp search_diagnostics(query) when is_binary(query) and query != "" do
+    Sanctum.Search.compile(query, Sanctum.Search.CardFields).diagnostics
+  end
+
+  defp search_diagnostics(_query), do: []
 end
