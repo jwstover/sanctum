@@ -70,4 +70,52 @@ defmodule SanctumWeb.CardLive.PoolTest do
     assert html =~ "Spider-Man"
     refute html =~ "Iron Man"
   end
+
+  test "search patches the query into the URL", %{conn: conn} do
+    make_card(%{code: "01001a", name: "Spider-Man", type: :hero})
+
+    {:ok, lv, _html} = live(conn, ~p"/cards")
+    render_async(lv)
+
+    lv |> form("#card-search", query: "spider") |> render_change()
+
+    assert_patch(lv, ~p"/cards?query=spider")
+  end
+
+  test "mounting with filter params applies them", %{conn: conn} do
+    make_card(%{code: "01001a", name: "Spider-Man", type: :hero})
+    make_card(%{code: "01003a", name: "Web Kick", type: :event, ownership: :hero})
+
+    {:ok, lv, _html} = live(conn, ~p"/cards?query=web")
+
+    html = render_async(lv)
+
+    assert html =~ "Web Kick"
+    refute html =~ "Spider-Man"
+  end
+
+  test "unknown filter params fall back to defaults", %{conn: conn} do
+    make_card(%{code: "01001a", name: "Spider-Man", type: :hero})
+
+    {:ok, lv, _html} = live(conn, ~p"/cards?aspect=bogus&type=nope")
+
+    html = render_async(lv)
+
+    assert html =~ "Spider-Man"
+  end
+
+  test "restore-scroll reloads through the saved offset and confirms", %{conn: conn} do
+    make_card(%{code: "01001a", name: "Spider-Man", type: :hero})
+    make_card(%{code: "01002a", name: "Iron Man", type: :hero})
+
+    {:ok, lv, _html} = live(conn, ~p"/cards")
+    render_async(lv)
+
+    render_hook(lv, "restore-scroll", %{"offset" => 24})
+    html = render_async(lv)
+
+    assert_push_event(lv, "sanctum:scroll-restore", %{})
+    assert html =~ "Spider-Man"
+    assert html =~ "Iron Man"
+  end
 end

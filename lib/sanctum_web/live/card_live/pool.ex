@@ -33,10 +33,18 @@ defmodule SanctumWeb.CardLive.Pool do
     {"player_side_scheme", "Side Scheme"}
   ]
 
+  @aspect_keys Enum.map(@aspects, &elem(&1, 0))
+  @type_keys Enum.map(@types, &elem(&1, 0))
+
+  # Deepest infinite-scroll offset a scroll restore will refetch in one query
+  # (limit = offset + page size must stay within Ash's 250 max page size).
+  @max_restore_offset @page_size * 9
+
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:cards}>
+      <div id="scroll-restore" phx-hook="ScrollRestore" data-offset={@offset}></div>
       <.header>
         Card Pool
         <:subtitle>
@@ -173,35 +181,76 @@ defmodule SanctumWeb.CardLive.Pool do
       |> assign(:end_of_timeline?, false)
       |> assign(:req_id, 0)
       |> assign(:loading?, true)
+      |> assign(:scroll_restore_pending?, false)
       |> assign(:hero_colors, %{})
       |> stream(:cards, [])
-
-    # Skip every query on the static (disconnected) render — it exists only to
-    # paint the shell fast. The real data loads asynchronously once the socket
-    # connects, so nothing blocks time-to-first-paint.
-    socket = if connected?(socket), do: start_load(socket, 0, reset: true), else: socket
 
     {:ok, socket}
   end
 
+  # Filters live in the URL (filter events push_patch here) so back/forward
+  # and shared links restore them. The initial data load also starts here —
+  # only on the connected mount (req_id == 0 guards the first pass); the
+  # static render just paints the shell.
+  @impl true
+  def handle_params(params, _uri, socket) do
+    query = params["query"] || ""
+    aspect = if params["aspect"] in @aspect_keys, do: params["aspect"], else: "all"
+    type = if params["type"] in @type_keys, do: params["type"], else: "all"
+
+    changed? =
+      query != socket.assigns.query or aspect != socket.assigns.aspect or
+        type != socket.assigns.type
+
+    socket = assign(socket, query: query, aspect: aspect, type: type)
+
+    socket =
+      if connected?(socket) and (changed? or socket.assigns.req_id == 0),
+        do: reset_and_load(socket),
+        else: socket
+
+    {:noreply, socket}
+  end
+
+  # `replace: true` so typing doesn't spam a history entry per keystroke.
   @impl true
   def handle_event("search", %{"query" => query}, socket) do
-    {:noreply, socket |> assign(:query, query) |> reset_and_load()}
+    {:noreply, push_patch(socket, to: pool_path(socket.assigns, query: query), replace: true)}
   end
 
   def handle_event("filter_aspect", %{"key" => key}, socket) do
-    {:noreply, socket |> assign(:aspect, key) |> reset_and_load()}
+    {:noreply, push_patch(socket, to: pool_path(socket.assigns, aspect: key))}
   end
 
   def handle_event("filter_type", %{"key" => key}, socket) do
-    {:noreply, socket |> assign(:type, key) |> reset_and_load()}
+    {:noreply, push_patch(socket, to: pool_path(socket.assigns, type: key))}
   end
 
   def handle_event("clear", _params, socket) do
-    {:noreply,
-     socket
-     |> assign(query: "", aspect: "all", type: "all")
-     |> reset_and_load()}
+    {:noreply, push_patch(socket, to: ~p"/cards")}
+  end
+
+  # Pushed by the ScrollRestore hook when the user arrives with a saved scroll
+  # position: refetch everything through the saved infinite-scroll offset in
+  # one query, then confirm so the hook can restore the scroll position.
+  def handle_event("restore-scroll", %{"offset" => offset}, socket) do
+    offset = sanitize_offset(offset)
+
+    socket =
+      cond do
+        offset > 0 ->
+          socket
+          |> assign(:scroll_restore_pending?, true)
+          |> start_load(offset, reset: true, restore: true)
+
+        socket.assigns.loading? ->
+          assign(socket, :scroll_restore_pending?, true)
+
+        true ->
+          confirm_scroll_restore(socket)
+      end
+
+    {:noreply, socket}
   end
 
   # Ignore the viewport trigger while a page is already in flight so a burst of
@@ -236,6 +285,11 @@ defmodule SanctumWeb.CardLive.Pool do
           reset: reset?
         )
 
+      socket =
+        if socket.assigns.scroll_restore_pending?,
+          do: confirm_scroll_restore(socket),
+          else: socket
+
       {:noreply, socket}
     else
       {:noreply, socket}
@@ -249,13 +303,25 @@ defmodule SanctumWeb.CardLive.Pool do
      |> put_flash(:error, "Couldn’t load cards: #{inspect(reason)}")}
   end
 
-  defp reset_and_load(socket), do: start_load(socket, 0, reset: true)
+  # A user-initiated reset (filter/search change) cancels any in-flight scroll
+  # restore — the saved position belongs to the previous result set.
+  defp reset_and_load(socket) do
+    socket
+    |> assign(:scroll_restore_pending?, false)
+    |> start_load(0, reset: true)
+  end
 
   # Kick off the browse read off the socket so the connected mount returns the
   # shell immediately. `hero_colors` is fetched only once per LiveView (it's a
   # static per-set palette map) and reused across every subsequent load.
+  #
+  # `restore: true` refetches pages 0..offset in one query (for scroll
+  # restoration) while keeping `offset` as the logical last-page offset so
+  # subsequent viewport loads continue from the right place.
   defp start_load(socket, offset, opts \\ []) do
     reset? = Keyword.get(opts, :reset, false)
+    restore? = Keyword.get(opts, :restore, false)
+    {query_offset, limit} = if restore?, do: {0, offset + @page_size}, else: {offset, @page_size}
     req = socket.assigns.req_id + 1
     filters = filters(socket.assigns)
     actor = socket.assigns[:current_user]
@@ -268,12 +334,41 @@ defmodule SanctumWeb.CardLive.Pool do
       page =
         Sanctum.Games.CardSide
         |> Ash.Query.for_read(:browse, filters, actor: actor)
-        |> Ash.read!(page: [limit: @page_size, offset: offset, count: reset?])
+        |> Ash.read!(page: [limit: limit, offset: query_offset, count: reset?])
 
       colors = if fetch_colors?, do: Sanctum.Heroes.hero_color_map(), else: nil
 
       %{req: req, offset: offset, reset?: reset?, page: page, colors: colors}
     end)
+  end
+
+  defp confirm_scroll_restore(socket) do
+    socket
+    |> assign(:scroll_restore_pending?, false)
+    |> push_event("sanctum:scroll-restore", %{})
+  end
+
+  # Clamp a client-supplied offset to a sane page-aligned value.
+  defp sanitize_offset(offset) when is_integer(offset) do
+    offset
+    |> max(0)
+    |> min(@max_restore_offset)
+    |> then(&(&1 - rem(&1, @page_size)))
+  end
+
+  defp sanitize_offset(_), do: 0
+
+  # /cards path carrying the current (or overridden) filters, omitting defaults.
+  defp pool_path(assigns, overrides) do
+    f = Map.merge(filters(assigns), Map.new(overrides))
+
+    params =
+      Enum.reject(
+        [query: f.query, aspect: f.aspect, type: f.type],
+        fn {k, v} -> if k == :query, do: v == "", else: v == "all" end
+      )
+
+    ~p"/cards?#{params}"
   end
 
   # `page.count` is only queried on reset loads (count: reset?). `total` is the

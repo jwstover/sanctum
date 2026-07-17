@@ -151,6 +151,10 @@ defmodule SanctumWeb.Layouts do
   # Block-level nav link used inside the sidebar / slideout drawer. Inactive
   # links are quiet text rows; the active one becomes a comic "caption box" —
   # halftone cardstock, hard offset shadow, and a slight tilt.
+  #
+  # data-scroll-reset marks these as fresh entry points: the ScrollRestore
+  # hook clears any saved scroll position for the target path, so section
+  # links always land at the top (browser back still restores).
   defp sidebar_link(assigns) do
     ~H"""
     <.link
@@ -160,6 +164,7 @@ defmodule SanctumWeb.Layouts do
           "border-transparent text-base-content/55 hover:text-white"
       ]}
       phx-click={close_drawer()}
+      data-scroll-reset
       {@rest}
     >
       {render_slot(@inner_block)}

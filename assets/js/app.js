@@ -28,6 +28,7 @@ import topbar from "../vendor/topbar"
 import CardDrag from "./hooks/card-drag";
 import DragDrop from "./hooks/drag-drop";
 import LayoutHand from "./hooks/layout-hand";
+import ScrollRestore from "./hooks/scroll-restore";
 
 // Sentry config arrives via meta tags rendered only when a DSN is configured
 // (prod). Kept out of an inline <script> so the prod CSP can leave script-src
@@ -48,7 +49,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, CardDrag, DragDrop, LayoutHand},
+  hooks: {...colocatedHooks, CardDrag, DragDrop, LayoutHand, ScrollRestore},
 })
 
 // Uncheck the daisyUI drawer toggle when a sidebar link is clicked, so the
