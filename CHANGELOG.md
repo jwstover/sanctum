@@ -1,3 +1,12 @@
+# [1.46.0](https://github.com/jwstover/sanctum/compare/v1.45.0...v1.46.0) (2026-07-17)
+
+
+### Features
+
+* **layout:** add a site-wide footer with attribution and fan-content disclaimer ([c4fcc0e](https://github.com/jwstover/sanctum/commit/c4fcc0ea3993f13aa790d61f8513ab63390df567))
+
+
+
 # [1.45.0](https://github.com/jwstover/sanctum/compare/v1.44.0...v1.45.0) (2026-07-17)
 
 
@@ -43,21 +52,6 @@
 ### Features
 
 * **browse:** restore scroll position on the pack browser and pack pages ([#213](https://github.com/jwstover/sanctum/issues/213)) ([218dfff](https://github.com/jwstover/sanctum/commit/218dfff8e3718764fbe13f16922c37a4d737499d))
-
-
-
-# [1.42.0](https://github.com/jwstover/sanctum/compare/v1.41.0...v1.42.0) (2026-07-17)
-
-
-### Bug Fixes
-
-* **decks:** stack deck header buttons above the title on mobile ([#209](https://github.com/jwstover/sanctum/issues/209)) ([c58a49e](https://github.com/jwstover/sanctum/commit/c58a49e61ae0812f7478cd147d38543aea962340))
-
-
-### Features
-
-* **decks:** restore scroll position on the deck detail page ([#206](https://github.com/jwstover/sanctum/issues/206)) ([4689af7](https://github.com/jwstover/sanctum/commit/4689af72b6616a834c3631f14c4ac2369229c0d2))
-* **deploy:** warn connected users before a deploy restarts the app ([#210](https://github.com/jwstover/sanctum/issues/210)) ([b436d71](https://github.com/jwstover/sanctum/commit/b436d71fead425225474973c5bae38ccea01e362))
 
 
 
