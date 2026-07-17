@@ -108,8 +108,10 @@ defmodule SanctumWeb.CardLive.DetailTest do
   test "card pool tiles link to the card detail page", %{conn: conn} do
     {card, _hero, _alter_ego} = make_card()
 
-    {:ok, _lv, html} = live(conn, ~p"/cards")
+    # The pool loads its cards asynchronously after mount, so wait for the
+    # async read to settle before asserting the tile is present.
+    {:ok, lv, _html} = live(conn, ~p"/cards")
 
-    assert html =~ ~p"/cards/#{card.id}"
+    assert render_async(lv) =~ ~p"/cards/#{card.id}"
   end
 end

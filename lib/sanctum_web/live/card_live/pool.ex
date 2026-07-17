@@ -46,7 +46,7 @@ defmodule SanctumWeb.CardLive.Pool do
 
       <!-- controls -->
       <div class="mb-3.5 flex flex-wrap items-center gap-2.5">
-        <form phx-change="search" class="relative min-w-[260px] flex-1">
+        <form id="card-search" phx-change="search" class="relative min-w-[260px] flex-1">
           <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[17px] text-base-content/40">
             ⌕
           </span>
@@ -60,8 +60,16 @@ defmodule SanctumWeb.CardLive.Pool do
             class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 pl-[38px] font-barlow text-base text-base-content outline-none focus:border-primary sm:text-[15px]"
           />
         </form>
-        <div class="whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
-          {@count} <span class="text-base-content/45">/ {@total} cards</span>
+        <div class="flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
+          <.icon
+            :if={@loading?}
+            name="hero-arrow-path"
+            class="size-4 animate-spin text-base-content/45"
+          />
+          <span :if={@count == nil} class="text-base-content/45">Loading…</span>
+          <span :if={@count != nil}>
+            {@count} <span class="text-base-content/45">/ {@total} cards</span>
+          </span>
         </div>
       </div>
 
@@ -90,12 +98,23 @@ defmodule SanctumWeb.CardLive.Pool do
         </.filter_pill>
       </div>
 
+      <!-- first-load skeletons: shown until the async load delivers a count -->
+      <div
+        :if={@count == nil}
+        class="grid grid-cols-1 items-start gap-[18px] sm:grid-cols-[repeat(auto-fill,minmax(452px,1fr))]"
+      >
+        <.card_skeleton :for={_ <- 1..6} />
+      </div>
+
       <!-- dossier grid -->
       <div
         id="card-pool"
         phx-update="stream"
         phx-viewport-bottom={!@end_of_timeline? && "next-page"}
-        class="grid grid-cols-1 items-start gap-[18px] sm:grid-cols-[repeat(auto-fill,minmax(452px,1fr))]"
+        class={[
+          "grid grid-cols-1 items-start gap-[18px] sm:grid-cols-[repeat(auto-fill,minmax(452px,1fr))]",
+          @loading? && @count != nil && "opacity-60 transition-opacity"
+        ]}
       >
         <.card_side_tile
           :for={{dom_id, side} <- @streams.cards}
@@ -120,25 +139,49 @@ defmodule SanctumWeb.CardLive.Pool do
     """
   end
 
+  # Placeholder tile matching the card grid's footprint, shown while the first
+  # page loads so the layout doesn't jump when real tiles stream in.
+  defp card_skeleton(assigns) do
+    ~H"""
+    <div class="flex animate-pulse gap-[13px] border-2 border-neutral bg-base-200 p-2 shadow-comic">
+      <div class="h-[180px] w-[128px] flex-none border-2 border-neutral bg-base-300"></div>
+      <div class="flex min-w-0 flex-1 flex-col gap-2 py-1">
+        <div class="h-2 w-1/3 bg-base-300"></div>
+        <div class="h-5 w-2/3 bg-base-300"></div>
+        <div class="mt-2 h-3 w-full bg-base-300"></div>
+        <div class="h-3 w-5/6 bg-base-300"></div>
+        <div class="h-3 w-4/6 bg-base-300"></div>
+      </div>
+    </div>
+    """
+  end
+
   @impl true
   def mount(_params, _session, socket) do
-    total = count_cards(socket, %{})
+    socket =
+      socket
+      |> assign(:page_title, "Card Pool")
+      |> assign(:query, "")
+      |> assign(:aspect, "all")
+      |> assign(:type, "all")
+      # nil until the first async load lands — drives the loading/skeleton UI.
+      |> assign(:total, nil)
+      |> assign(:count, nil)
+      |> assign(:aspect_options, @aspects)
+      |> assign(:type_options, @types)
+      |> assign(:offset, 0)
+      |> assign(:end_of_timeline?, false)
+      |> assign(:req_id, 0)
+      |> assign(:loading?, true)
+      |> assign(:hero_colors, %{})
+      |> stream(:cards, [])
 
-    {:ok,
-     socket
-     |> assign(:page_title, "Card Pool")
-     |> assign(:query, "")
-     |> assign(:aspect, "all")
-     |> assign(:type, "all")
-     |> assign(:total, total)
-     |> assign(:count, total)
-     |> assign(:aspect_options, @aspects)
-     |> assign(:type_options, @types)
-     |> assign(:offset, 0)
-     |> assign(:end_of_timeline?, false)
-     |> assign(:hero_colors, Sanctum.Heroes.hero_color_map())
-     |> stream(:cards, [])
-     |> load_page(0, reset: true)}
+    # Skip every query on the static (disconnected) render — it exists only to
+    # paint the shell fast. The real data loads asynchronously once the socket
+    # connects, so nothing blocks time-to-first-paint.
+    socket = if connected?(socket), do: start_load(socket, 0, reset: true), else: socket
+
+    {:ok, socket}
   end
 
   @impl true
@@ -161,44 +204,87 @@ defmodule SanctumWeb.CardLive.Pool do
      |> reset_and_load()}
   end
 
+  # Ignore the viewport trigger while a page is already in flight so a burst of
+  # scroll events can't fan out into overlapping loads.
   def handle_event("next-page", _params, socket) do
-    if socket.assigns.end_of_timeline? do
+    if socket.assigns.end_of_timeline? or socket.assigns.loading? do
       {:noreply, socket}
     else
-      {:noreply, load_page(socket, socket.assigns.offset + @page_size)}
+      {:noreply, start_load(socket, socket.assigns.offset + @page_size)}
     end
   end
 
-  defp reset_and_load(socket), do: load_page(socket, 0, reset: true)
+  @impl true
+  def handle_async(:load_cards, {:ok, result}, socket) do
+    %{req: req, offset: offset, reset?: reset?, page: page, colors: colors} = result
 
-  defp load_page(socket, offset, opts \\ []) do
-    reset? = Keyword.get(opts, :reset, false)
+    # A newer filter/search/page request has since fired; drop these stale
+    # results so out-of-order completions can't clobber the current view.
+    if req == socket.assigns.req_id do
+      hero_colors = colors || socket.assigns.hero_colors
 
-    page =
-      Sanctum.Games.CardSide
-      |> Ash.Query.for_read(:browse, filters(socket.assigns),
-        actor: socket.assigns[:current_user]
-      )
-      |> Ash.read!(page: [limit: @page_size, offset: offset, count: reset?])
+      socket =
+        socket
+        |> assign(:hero_colors, hero_colors)
+        |> assign(:offset, offset)
+        |> assign(:end_of_timeline?, !page.more?)
+        |> assign(:loading?, false)
+        |> maybe_assign_count(reset?, page.count)
+        |> stream(
+          :cards,
+          Enum.map(page.results, &side_view(&1, hero_colors)),
+          reset: reset?
+        )
 
-    socket
-    |> assign(:offset, offset)
-    |> assign(:end_of_timeline?, !page.more?)
-    |> then(fn s -> if reset?, do: assign(s, :count, page.count), else: s end)
-    |> stream(
-      :cards,
-      Enum.map(page.results, &side_view(&1, socket.assigns.hero_colors)),
-      reset: reset?
-    )
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 
-  defp count_cards(socket, extra_filters) do
-    Sanctum.Games.CardSide
-    |> Ash.Query.for_read(:browse, Map.merge(%{aspect: "all", type: "all"}, extra_filters),
-      actor: socket.assigns[:current_user]
-    )
-    |> Ash.read!(page: [limit: 1, offset: 0, count: true])
-    |> Map.get(:count)
+  def handle_async(:load_cards, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:loading?, false)
+     |> put_flash(:error, "Couldn’t load cards: #{inspect(reason)}")}
+  end
+
+  defp reset_and_load(socket), do: start_load(socket, 0, reset: true)
+
+  # Kick off the browse read off the socket so the connected mount returns the
+  # shell immediately. `hero_colors` is fetched only once per LiveView (it's a
+  # static per-set palette map) and reused across every subsequent load.
+  defp start_load(socket, offset, opts \\ []) do
+    reset? = Keyword.get(opts, :reset, false)
+    req = socket.assigns.req_id + 1
+    filters = filters(socket.assigns)
+    actor = socket.assigns[:current_user]
+    fetch_colors? = socket.assigns.hero_colors == %{}
+
+    socket
+    |> assign(:req_id, req)
+    |> assign(:loading?, true)
+    |> start_async(:load_cards, fn ->
+      page =
+        Sanctum.Games.CardSide
+        |> Ash.Query.for_read(:browse, filters, actor: actor)
+        |> Ash.read!(page: [limit: @page_size, offset: offset, count: reset?])
+
+      colors = if fetch_colors?, do: Sanctum.Heroes.hero_color_map(), else: nil
+
+      %{req: req, offset: offset, reset?: reset?, page: page, colors: colors}
+    end)
+  end
+
+  # `page.count` is only queried on reset loads (count: reset?). `total` is the
+  # full unfiltered catalog size — set once from the first load (mount always
+  # runs unfiltered) and left untouched as filters narrow the visible count.
+  defp maybe_assign_count(socket, false, _count), do: socket
+
+  defp maybe_assign_count(socket, true, count) do
+    socket
+    |> assign(:count, count)
+    |> then(fn s -> if is_nil(s.assigns.total), do: assign(s, :total, count), else: s end)
   end
 
   defp filters(assigns) do
