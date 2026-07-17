@@ -2,6 +2,18 @@ defmodule SanctumWeb.AuthController do
   use SanctumWeb, :controller
   use AshAuthentication.Phoenix.Controller
 
+  # A completed password reset intentionally does NOT start a session: the
+  # log_out_everywhere add-on (apply_on_password_change?) revokes every token
+  # the moment the password changes, so "signed in" here would be a half-state
+  # the next request drops anyway. Land on sign-in with the new password ready.
+  def success(conn, {:password, :reset} = activity, _user, _token) do
+    Sanctum.Observability.auth_success(activity)
+
+    conn
+    |> put_flash(:info, "Your password has been reset. Sign in with your new password.")
+    |> redirect(to: ~p"/sign-in")
+  end
+
   def success(conn, activity, user, _token) do
     Sanctum.Observability.auth_success(activity)
     return_to = get_session(conn, :return_to) || ~p"/"
@@ -9,7 +21,6 @@ defmodule SanctumWeb.AuthController do
     message =
       case activity do
         {:confirm_new_user, :confirm} -> "Your email address has now been confirmed"
-        {:password, :reset} -> "Your password has successfully been reset"
         _ -> "You are now signed in"
       end
 

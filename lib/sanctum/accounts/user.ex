@@ -188,6 +188,7 @@ defmodule Sanctum.Accounts.User do
                 strategy_name: :password, password_argument: :current_password}
 
       change {AshAuthentication.Strategy.Password.HashPasswordChange, strategy_name: :password}
+      change Sanctum.Accounts.User.Changes.NotifyPasswordChanged
     end
 
     read :sign_in_with_password do
@@ -282,6 +283,33 @@ defmodule Sanctum.Accounts.User do
       end
     end
 
+    action :request_registration do
+      description """
+      Enumeration-safe registration: registers the email if it's free, or
+      notifies the address that it already has an account. Returns :ok either
+      way so callers can't probe which emails exist. See the implementation
+      module for the full contract. Called with authorize?: false — safe by
+      construction for anonymous use.
+      """
+
+      argument :email, :ci_string do
+        allow_nil? false
+      end
+
+      argument :password, :string do
+        allow_nil? false
+        constraints min_length: 8
+        sensitive? true
+      end
+
+      argument :password_confirmation, :string do
+        allow_nil? false
+        sensitive? true
+      end
+
+      run Sanctum.Accounts.User.Actions.RequestRegistration
+    end
+
     action :request_password_reset_token do
       description "Send password reset instructions to a user if they exist."
 
@@ -294,6 +322,10 @@ defmodule Sanctum.Accounts.User do
     end
 
     update :reset_password_with_token do
+      # NotifyPasswordChanged adds an after_action hook, which can't run
+      # atomically.
+      require_atomic? false
+
       argument :reset_token, :string do
         allow_nil? false
         sensitive? true
@@ -323,6 +355,9 @@ defmodule Sanctum.Accounts.User do
 
       # Generates an authentication token for the user
       change AshAuthentication.GenerateTokenChange
+
+      # Security notification: the owner learns their password changed
+      change Sanctum.Accounts.User.Changes.NotifyPasswordChanged
     end
   end
 
