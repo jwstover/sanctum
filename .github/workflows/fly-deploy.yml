@@ -14,6 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # Tell connected users a deploy is on the way (flash message via PubSub —
+      # see SanctumWeb.DeployNotice). Runs before the image build so people get
+      # a few minutes of lead time before machines restart. Never fails the
+      # deploy: the app may be scaled to zero or the token unset, and deploying
+      # is more important than warning.
+      - name: Warn connected users
+        run: |
+          curl -fsS -m 15 -X POST "https://sanctummc.com/internal/deploy-notice" \
+            -H "Authorization: Bearer $DEPLOY_NOTICE_TOKEN" \
+            || echo "::warning::deploy notice failed; deploying without warning users"
+        env:
+          DEPLOY_NOTICE_TOKEN: ${{ secrets.DEPLOY_NOTICE_TOKEN }}
+
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
