@@ -1,3 +1,12 @@
+## [1.43.1](https://github.com/jwstover/sanctum/compare/v1.43.0...v1.43.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **decks:** keep the deck-browser total unfiltered ([4bb89e4](https://github.com/jwstover/sanctum/commit/4bb89e4566b891f795679119735f8e93768dcda4))
+
+
+
 # [1.43.0](https://github.com/jwstover/sanctum/compare/v1.42.0...v1.43.0) (2026-07-17)
 
 
@@ -38,15 +47,6 @@
 
 * **decks:** add an image/list view toggle to the deck page ([#198](https://github.com/jwstover/sanctum/issues/198)) ([5180333](https://github.com/jwstover/sanctum/commit/5180333effbdbb3cadd5a81c32a08eba7659b2f0))
 * **decks:** extend decklist sync retries to 5 attempts ([#170](https://github.com/jwstover/sanctum/issues/170)) ([8d3e5ca](https://github.com/jwstover/sanctum/commit/8d3e5ca7f6513080ba2a53862197869336e0b277))
-
-
-
-# [1.39.0](https://github.com/jwstover/sanctum/compare/v1.38.0...v1.39.0) (2026-07-17)
-
-
-### Features
-
-* **infra:** serve the app at sanctummc.com and send email via Resend ([#197](https://github.com/jwstover/sanctum/issues/197)) ([4761318](https://github.com/jwstover/sanctum/commit/4761318d03a0757946579f776c92f704657b5146))
 
 
 
