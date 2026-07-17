@@ -4,6 +4,7 @@ defmodule SanctumWeb.CardLive.Show do
   require Ash.Query
 
   alias Sanctum.CardImages
+  alias Sanctum.CardImages.Processor
   alias SanctumWeb.Components.Card, as: CardComponent
 
   @impl true
@@ -301,9 +302,9 @@ defmodule SanctumWeb.CardLive.Show do
      |> assign(:upload_side_id, nil)
      |> assign(:image_versions, %{})
      |> allow_upload(:card_image,
-       accept: ~w(.png .jpg .jpeg),
+       accept: ~w(.png .jpg .jpeg .tif .tiff),
        max_entries: 1,
-       max_file_size: 15_000_000
+       max_file_size: 50_000_000
      )}
   end
 
@@ -351,21 +352,38 @@ defmodule SanctumWeb.CardLive.Show do
     end
   end
 
-  # consume_uploaded_entries callback: read the temp file and push it to the
-  # bucket under `key`. Always consumes the entry (returns `{:ok, _}`); the
-  # per-entry outcome (`:ok | {:error, _}`) is inspected by the caller.
+  # consume_uploaded_entries callback: read the temp file, normalize it
+  # (convert to the key's format, downscale), and push it to the bucket under
+  # `key`. Always consumes the entry (returns `{:ok, _}`); the per-entry
+  # outcome (`:ok | {:error, _}`) is inspected by the caller.
+  #
+  # The content type is derived from the key, never from the client — the
+  # upload may be a TIFF, but the stored object is always PNG or JPEG.
   #
   # `path` is a LiveView-owned temp-upload path, not user-controlled input, so
   # Sobelow's Traversal.FileModule finding here is a false positive (the check
   # is ignored project-wide in .sobelow-conf).
-  defp put_entry(%{path: path}, entry, key) do
+  defp put_entry(%{path: path}, _entry, key) do
+    ext = target_ext(key)
+
     outcome =
-      with {:ok, body} <- File.read(path) do
-        CardImages.put_object(key, body, entry.client_type)
+      with {:ok, body} <- File.read(path),
+           {:ok, converted} <- Processor.normalize(body, ext) do
+        CardImages.put_object(key, converted, content_type_for(ext))
       end
 
     {:ok, outcome}
   end
+
+  defp target_ext(key) do
+    case key |> Path.extname() |> String.downcase() do
+      ext when ext in [".jpg", ".jpeg"] -> ".jpg"
+      _ -> ".png"
+    end
+  end
+
+  defp content_type_for(".jpg"), do: "image/jpeg"
+  defp content_type_for(_ext), do: "image/png"
 
   # Reflects a successful upload in the view: sets image_url if the side had none
   # (persisting it), and bumps a per-side version token to bust the image cache.
@@ -403,8 +421,11 @@ defmodule SanctumWeb.CardLive.Show do
   defp versioned_url(url, nil), do: url
   defp versioned_url(url, version), do: url <> "?v=#{version}"
 
-  defp upload_error_to_string(:too_large), do: "File is too large (max 15 MB)."
-  defp upload_error_to_string(:not_accepted), do: "Unsupported file type (use PNG or JPG)."
+  defp upload_error_to_string(:too_large), do: "File is too large (max 50 MB)."
+
+  defp upload_error_to_string(:not_accepted),
+    do: "Unsupported file type (use PNG, JPG, or TIFF)."
+
   defp upload_error_to_string(:too_many_files), do: "Only one file at a time."
   defp upload_error_to_string(_other), do: "Invalid file."
 
