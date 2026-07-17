@@ -25,6 +25,7 @@ defmodule Sanctum.Application do
       {Phoenix.PubSub, name: Sanctum.PubSub},
       SanctumWeb.Presence,
       {Task.Supervisor, name: Sanctum.TaskSupervisor},
+      {Sanctum.RateLimit, clean_period: :timer.minutes(10)},
       Sanctum.CardSync.Server,
       Sanctum.DeckSync.Monitor,
       {Sanctum.AutoShutdown, enabled?: Application.get_env(:sanctum, :auto_stop, false)},
