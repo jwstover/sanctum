@@ -124,9 +124,7 @@ defmodule SanctumWeb.DeckLive.Show do
                 </div>
                 <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
                 <div :if={@cover.author} class="flex items-center gap-2 self-center">
-                  <span class="flex size-[28px] items-center justify-center rounded-full border-2 border-neutral bg-primary font-bangers text-sm text-primary-content">
-                    {@cover.author_initial}
-                  </span>
+                  <.avatar name={@cover.author} url={@cover.author_avatar} size="md" />
                   <span class="font-barlow-condensed text-[13px] font-bold text-primary">
                     {@cover.author}
                   </span>
@@ -518,8 +516,8 @@ defmodule SanctumWeb.DeckLive.Show do
       total_cards: deck.total_card_count || 0,
       unique_cards: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
-      author: author,
-      author_initial: author_initial(author)
+      author: author && author.name,
+      author_avatar: author && author.avatar
     }
   end
 
@@ -593,17 +591,19 @@ defmodule SanctumWeb.DeckLive.Show do
   defp source_label(:native), do: "Native"
   defp source_label(other), do: other |> to_string() |> String.capitalize()
 
+  # Attribution: imported decks credit the MarvelCDB author; native decks
+  # credit the owner's claimed username (never their email — the field is
+  # policy-hidden). Owners without a username get no attribution row.
   defp author(%{mcdb_user: %{username: username}}) when is_binary(username) and username != "",
-    do: "@" <> username
+    do: %{name: "@" <> username, avatar: nil}
 
-  defp author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id), do: "mcdb ##{id}"
-  defp author(%{owner: %{email: email}}) when is_binary(email), do: email
+  defp author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id),
+    do: %{name: "mcdb ##{id}", avatar: nil}
+
+  defp author(%{owner: %{username: %Ash.CiString{} = username, avatar_url: avatar}}),
+    do: %{name: "@" <> to_string(username), avatar: avatar}
+
   defp author(_), do: nil
-
-  defp author_initial(nil), do: "?"
-
-  defp author_initial(author),
-    do: author |> String.trim_leading("@") |> String.first() |> String.upcase()
 
   defp type_plural(type),
     do: Map.get(@type_plural, type, type |> to_string() |> String.capitalize())

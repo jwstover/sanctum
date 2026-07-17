@@ -66,6 +66,9 @@ defmodule SanctumWeb.Router do
       live "/games/new", GameLive.New, :new
       live "/games/:id", GameLive.Show, :show
 
+      # Signed-in user's profile (username claim; settings stack here later).
+      live "/profile", ProfileLive.Index, :index
+
       # Public content browser — waves → products → card sets → cards.
       live "/browse", BrowseLive.Index, :index
       live "/browse/:pack", BrowseLive.Show, :show

@@ -7,7 +7,7 @@ defmodule SanctumWeb.DeckLive.IndexTest do
   import Sanctum.Factory
 
   # Builds a valid deck (hero with both hero + alter-ego sides on one card).
-  defp make_deck(title, set, base_code, hero_name, aspects) do
+  defp make_deck(title, set, base_code, hero_name, aspects, deck_attrs \\ %{}) do
     card =
       create(Sanctum.Games.Card, attrs: %{base_code: base_code, code: base_code <> "a", set: set})
 
@@ -44,12 +44,13 @@ defmodule SanctumWeb.DeckLive.IndexTest do
 
     {:ok, deck} =
       Sanctum.Decks.Deck
-      |> Ash.Changeset.for_create(:create, %{
-        title: title,
-        hero_id: hero.id,
-        aspects: aspects,
-        source: :native
-      })
+      |> Ash.Changeset.for_create(
+        :create,
+        Map.merge(
+          %{title: title, hero_id: hero.id, aspects: aspects, source: :native},
+          deck_attrs
+        )
+      )
       |> Ash.create()
 
     deck
@@ -83,6 +84,34 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     html = render_async(view)
     assert html =~ "Cosmic Blast"
     refute html =~ "Web Warrior"
+  end
+
+  test "a native deck credits its owner's username, never their email", %{conn: conn} do
+    owner = user_fixture(username: "deck_smith")
+
+    make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice], %{
+      owner_id: owner.id
+    })
+
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    html = render_async(view)
+
+    assert html =~ "@deck_smith"
+    refute html =~ to_string(owner.email)
+  end
+
+  test "an owned deck without a claimed username shows no attribution", %{conn: conn} do
+    owner = user_fixture()
+
+    make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice], %{
+      owner_id: owner.id
+    })
+
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    html = render_async(view)
+
+    assert html =~ "Web Warrior"
+    refute html =~ to_string(owner.email)
   end
 
   test "a scored deck shows its uniqueness meter; an unscored one doesn't", %{conn: conn} do

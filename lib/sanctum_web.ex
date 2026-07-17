@@ -86,6 +86,7 @@ defmodule SanctumWeb do
       import Phoenix.HTML
       # Core UI components
       import SanctumWeb.CoreComponents
+      import SanctumWeb.Components.Avatar
       import SanctumWeb.Components.Card
       import SanctumWeb.Components.Skeleton
 
