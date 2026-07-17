@@ -1,3 +1,17 @@
+# [1.45.0](https://github.com/jwstover/sanctum/compare/v1.44.0...v1.45.0) (2026-07-17)
+
+
+### Features
+
+* **admin:** accept TIFF uploads and downscale card images on upload ([60c23d4](https://github.com/jwstover/sanctum/commit/60c23d47d302b0a5d108834b6a5bbc22fb98af2c))
+* **admin:** upload replacement card images from the card page ([946292a](https://github.com/jwstover/sanctum/commit/946292a9c620f5216a537c77b9a35a0f090a0df3))
+* **search:** add the advanced search query language core ([721f2f3](https://github.com/jwstover/sanctum/commit/721f2f38b3bb160249df175509232beee0ea8dc5))
+* **search:** compile browse queries through the query language ([da776dc](https://github.com/jwstover/sanctum/commit/da776dc75d521985cf40825badc539177d09e914))
+* **search:** data-driven autocomplete for traits, sets, packs, and heroes ([33bac76](https://github.com/jwstover/sanctum/commit/33bac7653b282bf7c7b3b25fafc91fa95e818066))
+* **search:** highlighted query input with server-driven autocomplete ([8d74145](https://github.com/jwstover/sanctum/commit/8d741455f456a937353a75eab6d9ed341e6e16a8))
+
+
+
 # [1.44.0](https://github.com/jwstover/sanctum/compare/v1.43.1...v1.44.0) (2026-07-17)
 
 
@@ -44,15 +58,6 @@
 
 * **decks:** restore scroll position on the deck detail page ([#206](https://github.com/jwstover/sanctum/issues/206)) ([4689af7](https://github.com/jwstover/sanctum/commit/4689af72b6616a834c3631f14c4ac2369229c0d2))
 * **deploy:** warn connected users before a deploy restarts the app ([#210](https://github.com/jwstover/sanctum/issues/210)) ([b436d71](https://github.com/jwstover/sanctum/commit/b436d71fead425225474973c5bae38ccea01e362))
-
-
-
-# [1.41.0](https://github.com/jwstover/sanctum/compare/v1.40.0...v1.41.0) (2026-07-17)
-
-
-### Features
-
-* **ux:** restore scroll position when navigating back ([#205](https://github.com/jwstover/sanctum/issues/205)) ([90b7b66](https://github.com/jwstover/sanctum/commit/90b7b66ccc5c7dfb7ec6f05cccb58b566eade309))
 
 
 
