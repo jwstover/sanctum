@@ -1,3 +1,12 @@
+# [1.43.0](https://github.com/jwstover/sanctum/compare/v1.42.0...v1.43.0) (2026-07-17)
+
+
+### Features
+
+* **browse:** restore scroll position on the pack browser and pack pages ([#213](https://github.com/jwstover/sanctum/issues/213)) ([218dfff](https://github.com/jwstover/sanctum/commit/218dfff8e3718764fbe13f16922c37a4d737499d))
+
+
+
 # [1.42.0](https://github.com/jwstover/sanctum/compare/v1.41.0...v1.42.0) (2026-07-17)
 
 
@@ -38,15 +47,6 @@
 ### Features
 
 * **infra:** serve the app at sanctummc.com and send email via Resend ([#197](https://github.com/jwstover/sanctum/issues/197)) ([4761318](https://github.com/jwstover/sanctum/commit/4761318d03a0757946579f776c92f704657b5146))
-
-
-
-# [1.38.0](https://github.com/jwstover/sanctum/compare/v1.37.1...v1.38.0) (2026-07-17)
-
-
-### Features
-
-* **decks:** link out to MarvelCDB from the deck detail page ([#199](https://github.com/jwstover/sanctum/issues/199)) ([bacd5c2](https://github.com/jwstover/sanctum/commit/bacd5c2f5f141a833084aa074d210884a6ddf7f2))
 
 
 
