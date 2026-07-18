@@ -113,6 +113,26 @@ defmodule Sanctum.Decks.Deck do
       require_atomic? false
     end
 
+    update :set_mcdb_dates do
+      description "Backfills the MarvelCDB provenance dates on an already-imported deck."
+      accept [:mcdb_date_creation, :mcdb_date_update]
+      require_atomic? false
+
+      # ValidateHero re-fetches the hero (card + sides) per row and rejects
+      # heroes without an alter-ego side (e.g. SP//dr) — both wrong for a
+      # provenance-only repair of decks that already imported successfully.
+      skip_global_validations? true
+
+      # This isn't a local sync: keep updated_at untouched so a backfill
+      # doesn't reshuffle the deck browser's recency sort. Force-changing it to
+      # its current value doesn't work (Ash prunes equal-value changes, then
+      # update_timestamp stamps it anyway); an atomic self-assignment counts as
+      # "changing" and so blocks the timestamp while writing a no-op.
+      change fn changeset, _context ->
+        Ash.Changeset.atomic_update(changeset, :updated_at, Ash.Expr.ref(:updated_at))
+      end
+    end
+
     create :create_with_cards do
       description "Upserts an imported deck and replaces its card list. Each slot is %{card_id, quantity, ignore_deck_limit}."
       accept [:*]

@@ -162,6 +162,55 @@ defmodule Sanctum.MarvelCdbTest do
     end
   end
 
+  describe "import_decklist/2" do
+    # All referenced codes are pre-seeded in the catalog, so the import runs
+    # entirely offline — no Req stub needed.
+    test "captures MarvelCDB's date_creation/date_update as mcdb dates" do
+      hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "42001", code: "42001"})
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          name: "Import Hero",
+          type: :hero,
+          code: "42001a",
+          side_identifier: "A",
+          is_primary_side: true
+        }
+      )
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          name: "Import Alter Ego",
+          type: :alter_ego,
+          code: "42001b",
+          side_identifier: "B",
+          is_primary_side: false
+        }
+      )
+
+      slot_card = create(Sanctum.Games.Card, attrs: %{base_code: "42002", code: "42002"})
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{card_id: slot_card.id, code: "42002", side_identifier: "A"}
+      )
+
+      payload = %{
+        "id" => 35_109,
+        "name" => "Dated deck",
+        "hero_code" => "42001a",
+        "slots" => %{"42002" => 2},
+        "date_creation" => "2024-01-15T00:10:13+00:00",
+        "date_update" => "2024-01-21T16:02:07+00:00"
+      }
+
+      assert {:ok, deck} = MarvelCdb.import_decklist(payload)
+      assert deck.mcdb_date_creation == ~U[2024-01-15 00:10:13Z]
+      assert deck.mcdb_date_update == ~U[2024-01-21 16:02:07Z]
+    end
+  end
+
   describe "helper functions" do
     test "extract_base_code/1" do
       assert MarvelCdb.extract_base_code("01001a") == "01001"
