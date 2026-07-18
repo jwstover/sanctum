@@ -1,3 +1,12 @@
+## [1.51.1](https://github.com/jwstover/sanctum/compare/v1.51.0...v1.51.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* **ui:** keep guess bar above the site footer ([136f671](https://github.com/jwstover/sanctum/commit/136f6714b549f54fbdba1372bb242f8f899d976f))
+
+
+
 # [1.51.0](https://github.com/jwstover/sanctum/compare/v1.50.0...v1.51.0) (2026-07-17)
 
 
@@ -36,16 +45,6 @@
 ### Features
 
 * **accounts:** user profiles — username claim, avatars, scoped User reads ([426732c](https://github.com/jwstover/sanctum/commit/426732cd13d2ecf8242f36d105c4239e93cf05b5))
-
-
-
-# [1.47.0](https://github.com/jwstover/sanctum/compare/v1.46.0...v1.47.0) (2026-07-17)
-
-
-### Features
-
-* **browse:** search products and card sets on the pack browser ([da592a3](https://github.com/jwstover/sanctum/commit/da592a36e9215dc475ac9cf840e02b9404693337))
-* **search:** add a search-syntax help page linked from the query inputs ([709844c](https://github.com/jwstover/sanctum/commit/709844ce0b9fd7dbf8e6170655185dd7bfbb685e))
 
 
 
