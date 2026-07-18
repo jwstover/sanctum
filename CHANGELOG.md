@@ -1,3 +1,12 @@
+## [1.51.2](https://github.com/jwstover/sanctum/compare/v1.51.1...v1.51.2) (2026-07-18)
+
+
+### Bug Fixes
+
+* **decks:** capture MarvelCDB deck dates and backfill existing decks ([3894175](https://github.com/jwstover/sanctum/commit/38941757489c33f1abcae4d416fd49d37b624fb8))
+
+
+
 ## [1.51.1](https://github.com/jwstover/sanctum/compare/v1.51.0...v1.51.1) (2026-07-18)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * **accounts:** Discord OAuth sign-in ([76f1cbf](https://github.com/jwstover/sanctum/commit/76f1cbf6184d84b6432ef2506fe915b81e9016d2)), closes [#204](https://github.com/jwstover/sanctum/issues/204)
-
-
-
-# [1.48.0](https://github.com/jwstover/sanctum/compare/v1.47.0...v1.48.0) (2026-07-17)
-
-
-### Features
-
-* **accounts:** user profiles — username claim, avatars, scoped User reads ([426732c](https://github.com/jwstover/sanctum/commit/426732cd13d2ecf8242f36d105c4239e93cf05b5))
 
 
 
