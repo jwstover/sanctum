@@ -45,14 +45,21 @@ defmodule Sanctum.Search.Values do
   end
 
   @doc """
-  Hero and alter-ego names, merged and sorted — the deck `hero:` field
-  matches either, so both complete.
+  Hero display names and alter-ego names, merged and sorted — the deck
+  `hero:` field matches either, so both complete. Display names (via the
+  Hero `display_name` calculation) carry the alter ego for same-named
+  heroes, so "Black Panther (T'Challa)" and "Black Panther (Shuri)"
+  suggest separately.
   """
   @spec heroes() :: [String.t()]
   def heroes do
     ValueCache.fetch(:heroes, fn ->
-      Sanctum.Repo.query!("SELECT hero_name, alter_ego_name FROM heroes")
-      |> clean_rows()
+      Sanctum.Heroes.Hero
+      |> Ash.Query.select([:alter_ego_name])
+      |> Ash.Query.load(:display_name)
+      |> Ash.read!()
+      |> Enum.flat_map(&[&1.display_name, &1.alter_ego_name])
+      |> Enum.reject(&(&1 in [nil, ""]))
       |> Enum.uniq()
       |> Enum.sort()
     end)
