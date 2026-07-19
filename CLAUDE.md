@@ -130,6 +130,30 @@ mix format                   # format only
 mix dialyzer                 # static analysis (PLTs in priv/plts/)
 ```
 
+## Running MarvelCDB Locally
+
+MarvelCDB's source ([zzorba/marvelsdb](https://github.com/zzorba/marvelsdb), PHP
+7.4/Symfony 3.4) is cloned at `~/code/marvelsdb` with a dockerized dev setup we
+built (fork: `jwstover/marvelsdb`). Useful for testing sync behavior against a
+local instance or preparing upstream API fixes.
+
+```bash
+cd ~/code/marvelsdb
+git switch feat/docker-dev-setup                 # branch with the docker env
+docker compose up                                # http://localhost:8000; first run imports the card catalog
+docker compose exec app php bin/console app:seed:dev   # fake users/decklists/votes/comments (branch feat/dev-seed-command)
+```
+
+Gotchas learned setting it up: the card importer needs `memory_limit=1G`; the
+`website_url` parameter is a bare i18n routing hostname (`localhost`), not a URL;
+requires Composer 1 and MySQL 8.0. `docker compose down -v` resets the database.
+
+Upstream fix branches on the fork (PRs not yet opened): `feat/decklist-api-social-counts`
+(adds `like_count`/`favorite_count`/`comment_count` to the decklist API — the public
+API doesn't expose likes otherwise), `fix/by-date-empty-500` (the `by_date` 500 on
+empty days that `decklists_endpoint_healthy?` in `lib/sanctum/marvel_cdb.ex` works
+around), `feat/dev-seed-command`, and `feat/docker-dev-setup`.
+
 ## Dev Dashboards
 
 - `/dev/dashboard` — Phoenix LiveDashboard (dev only)
