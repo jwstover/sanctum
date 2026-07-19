@@ -9,8 +9,7 @@ defmodule SanctumWeb.StatsLive.Index do
   on_mount {SanctumWeb.LiveUserAuth, :live_user_optional}
 
   alias Sanctum.Decks.Stats
-
-  @hero_limit 15
+  alias SanctumWeb.Components.Card, as: CardComponent
 
   # Design tokens (assets/css/app.css) the chart options reference directly —
   # ECharts renders to canvas, so CSS variables can't reach it.
@@ -62,7 +61,7 @@ defmodule SanctumWeb.StatsLive.Index do
           title="Decks added over time"
           subtitle="New decks per month, by their MarvelCDB publish date."
           option={by_month_option(@stats.by_month)}
-          height="h-80"
+          height="320px"
         >
           <:table_head>
             <th class="pr-6 text-left">Month</th>
@@ -77,18 +76,18 @@ defmodule SanctumWeb.StatsLive.Index do
         <.chart_panel
           :if={@stats.totals.decks > 0}
           id="decks-per-hero"
-          title={"Top #{length(@stats.per_hero)} heroes"}
-          subtitle={"Heroes with the most decks in the vault, of #{@stats.totals.heroes} heroes built."}
+          title="Decks per hero"
+          subtitle={"Every hero with a deck in the vault — all #{@stats.totals.heroes} of them, each bar in the hero's own colors."}
           option={per_hero_option(@stats.per_hero)}
-          height="h-[560px]"
+          height={"#{length(@stats.per_hero) * 24 + 70}px"}
         >
           <:table_head>
             <th class="pr-6 text-left">Hero</th>
             <th class="text-right">Decks</th>
           </:table_head>
-          <tr :for={{name, count} <- @stats.per_hero}>
-            <td class="pr-6">{name}</td>
-            <td class="text-right tabular-nums">{count}</td>
+          <tr :for={row <- @stats.per_hero}>
+            <td class="pr-6">{row.name}</td>
+            <td class="text-right tabular-nums">{row.count}</td>
           </tr>
         </.chart_panel>
 
@@ -98,7 +97,7 @@ defmodule SanctumWeb.StatsLive.Index do
           title="Decks by aspect"
           subtitle="Multi-aspect decks count once under each aspect; basic decks run no aspect."
           option={by_aspect_option(@stats.by_aspect)}
-          height="h-72"
+          height="288px"
         >
           <:table_head>
             <th class="pr-6 text-left">Aspect</th>
@@ -138,7 +137,8 @@ defmodule SanctumWeb.StatsLive.Index do
         phx-hook="Chart"
         phx-update="ignore"
         data-option={Jason.encode!(@option)}
-        class={["w-full", @height]}
+        class="w-full"
+        style={"height: #{@height}"}
         role="img"
         aria-label={"#{@title} chart — the same data is in the table below."}
       >
@@ -227,12 +227,12 @@ defmodule SanctumWeb.StatsLive.Index do
     %{
       totals: Stats.totals(),
       by_month: Stats.by_month(),
-      per_hero: Stats.per_hero(@hero_limit),
+      per_hero: Stats.per_hero(),
       by_aspect: Stats.by_aspect()
     }
   end
 
-  defp top_hero_name([{name, _count} | _]), do: name
+  defp top_hero_name([%{name: name} | _]), do: name
   defp top_hero_name([]), do: "—"
 
   defp aspect_label(key) do
@@ -280,18 +280,93 @@ defmodule SanctumWeb.StatsLive.Index do
       grid: %{left: 8, right: 40, top: 8, bottom: 8, containLabel: true},
       tooltip: %{trigger: "item"},
       xAxis: %{type: "value", minInterval: 1},
-      yAxis: %{type: "category", data: Enum.map(rows, &elem(&1, 0))},
+      yAxis: %{
+        type: "category",
+        data: Enum.map(rows, & &1.name),
+        # Never skip hero names — the axis label is each bar's identity.
+        axisLabel: %{interval: 0}
+      },
       series: [
         %{
           name: "Decks",
           type: "bar",
-          data: Enum.map(rows, &elem(&1, 1)),
-          barWidth: 16,
-          itemStyle: %{color: @gold, borderRadius: [0, 4, 4, 0]},
+          data:
+            Enum.map(rows, fn row ->
+              {from, to} = hero_gradient(row)
+
+              %{
+                value: row.count,
+                itemStyle: %{
+                  color: %{
+                    type: "linear",
+                    x: 0,
+                    y: 0,
+                    x2: 1,
+                    y2: 0,
+                    colorStops: [
+                      %{offset: 0, color: from},
+                      %{offset: 1, color: to}
+                    ]
+                  }
+                }
+              }
+            end),
+          barWidth: 14,
+          itemStyle: %{borderRadius: [0, 4, 4, 0]},
           label: %{show: true, position: "right", color: @muted, fontSize: 12}
         }
       ]
     }
+  end
+
+  # The hero's brand gradient (the deck browser's convention), with each hex
+  # endpoint lightened until it clears a minimum contrast against the panel —
+  # several heroes' palettes are near-black (Black Widow: #140b09) and would
+  # otherwise paint an invisible bar. hsl() fallback gradients are already
+  # mid-lightness and pass through untouched.
+  defp hero_gradient(%{primary: from, secondary: to})
+       when is_binary(from) and is_binary(to) do
+    {visible_on_surface(from), visible_on_surface(to)}
+  end
+
+  defp hero_gradient(%{set: set}), do: CardComponent.fallback_gradient(set)
+
+  @min_bar_contrast 1.8
+
+  defp visible_on_surface(<<"#", _::binary-size(6)>> = hex) do
+    if contrast_vs_surface(hex) >= @min_bar_contrast do
+      hex
+    else
+      hex |> lighten(0.12) |> visible_on_surface()
+    end
+  end
+
+  defp visible_on_surface(_other), do: @gold
+
+  defp contrast_vs_surface(hex) do
+    {l1, l2} = {rel_luminance(hex), rel_luminance(@surface)}
+    (max(l1, l2) + 0.05) / (min(l1, l2) + 0.05)
+  end
+
+  defp rel_luminance(hex) do
+    [r, g, b] =
+      hex
+      |> rgb()
+      |> Enum.map(fn c ->
+        v = c / 255
+        if v <= 0.04045, do: v / 12.92, else: ((v + 0.055) / 1.055) ** 2.4
+      end)
+
+    0.2126 * r + 0.7152 * g + 0.0722 * b
+  end
+
+  defp lighten(hex, amount) do
+    [r, g, b] = hex |> rgb() |> Enum.map(&round(&1 + (255 - &1) * amount))
+    "#" <> Base.encode16(<<r, g, b>>, case: :lower)
+  end
+
+  defp rgb(<<"#", r::binary-2, g::binary-2, b::binary-2>>) do
+    Enum.map([r, g, b], &String.to_integer(&1, 16))
   end
 
   defp by_aspect_option(rows) do

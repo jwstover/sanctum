@@ -66,32 +66,46 @@ defmodule Sanctum.Decks.Stats do
   end
 
   @doc """
-  Top `limit` heroes by deck count, as `{display_name, deck_count}`. Heroes
-  that share a hero name (the Spider-Men, notably) get their alter ego
-  appended so the rows stay distinguishable.
+  Every hero with at least one deck, by deck count descending, with the
+  hero's brand colors (`primary`/`secondary`, nilable) and `set` for the
+  gradient fallback. Heroes that share a hero name (the Spider-Men, notably)
+  get their alter ego appended so the rows stay distinguishable.
   """
-  def per_hero(limit \\ 15) do
+  def per_hero do
     rows =
       Repo.all(
         from d in "decks",
           join: h in "heroes",
           on: h.id == d.hero_id,
-          group_by: [h.id, h.hero_name, h.alter_ego_name],
+          group_by: [
+            h.id,
+            h.hero_name,
+            h.alter_ego_name,
+            h.primary_color,
+            h.secondary_color,
+            h.set
+          ],
           order_by: [desc: count(d.id), asc: h.hero_name],
-          limit: ^limit,
-          select: {h.hero_name, h.alter_ego_name, count(d.id)}
+          select: %{
+            name: h.hero_name,
+            alter_ego: h.alter_ego_name,
+            primary: h.primary_color,
+            secondary: h.secondary_color,
+            set: h.set,
+            count: count(d.id)
+          }
       )
 
     dupes =
       rows
-      |> Enum.frequencies_by(fn {name, _, _} -> name end)
+      |> Enum.frequencies_by(& &1.name)
       |> Map.filter(fn {_, n} -> n > 1 end)
 
-    Enum.map(rows, fn {name, alter_ego, count} ->
-      if Map.has_key?(dupes, name) and is_binary(alter_ego) do
-        {"#{name} (#{alter_ego})", count}
+    Enum.map(rows, fn row ->
+      if Map.has_key?(dupes, row.name) and is_binary(row.alter_ego) do
+        %{row | name: "#{row.name} (#{row.alter_ego})"}
       else
-        {name, count}
+        row
       end
     end)
   end
