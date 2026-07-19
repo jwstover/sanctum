@@ -254,6 +254,11 @@ defmodule Sanctum.MarvelCdb do
   end
 
   defp create_or_find_hero(hero_card) do
+    # A decklist's hero_code can point at any of a hero's hero-sided cards
+    # (Ironheart decks can be built on any suit version) — resolve to the
+    # set's canonical card so one hero never mints multiple Hero rows.
+    hero_card = canonical_hero_card(hero_card)
+
     # Load the card with all its sides to get both hero and alter ego names
     card_loaded = Games.get_card!(hero_card.id, load: [:card_sides])
 
@@ -271,6 +276,19 @@ defmodule Sanctum.MarvelCdb do
     }
 
     Heroes.find_or_create_hero(hero_attrs)
+  end
+
+  # The canonical hero card for a card's set: the lowest-base_code card with a
+  # `:hero` side. Falls back to the given card when its set isn't in the
+  # catalog yet (a lone non-canonical fetch on a fresh database) — the Hero's
+  # `[:set]` upsert identity heals the row once the canonical card syncs.
+  defp canonical_hero_card(%Games.Card{set: nil} = card), do: card
+
+  defp canonical_hero_card(%Games.Card{} = card) do
+    case Games.canonical_hero_card(card.set) do
+      {:ok, %Games.Card{} = canonical} -> canonical
+      _ -> card
+    end
   end
 
   defp create_or_find_villain(card, side) when side.type == :villain do
@@ -695,9 +713,14 @@ defmodule Sanctum.MarvelCdb do
   # Hero identity groups carry the hero's color palette in the identity card's
   # `meta.colors`. Upsert a Hero (keyed by set) with that palette so the Hero
   # table is complete and colors are available regardless of deck imports.
+  # Non-canonical hero cards (Ironheart's Version 2/3 suits) are skipped so
+  # they never mint a second Hero row for the set.
   defp maybe_upsert_hero(card, entries) do
+    card_id = card.id
+
     with hero_entry when is_map(hero_entry) <-
-           Enum.find(entries, &(&1["type_code"] == "hero")) do
+           Enum.find(entries, &(&1["type_code"] == "hero")),
+         %Games.Card{id: ^card_id} <- canonical_hero_card(card) do
       alter_ego = Enum.find(entries, &(&1["type_code"] == "alter_ego"))
       colors = get_in(hero_entry, ["meta", "colors"])
       {primary, secondary} = pick_gradient(colors)

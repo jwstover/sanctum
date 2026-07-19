@@ -11,6 +11,7 @@ defmodule Sanctum.Games do
       define :get_card, get_by: :id, action: :read
       define :get_card_by_code, args: [:code], get?: true, action: :by_code
       define :get_cards_by_set, args: [:set], action: :by_set
+      define :canonical_hero_card, args: [:set], get?: true, action: :canonical_hero
       define :list_cards, action: :read
     end
 

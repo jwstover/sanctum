@@ -209,6 +209,69 @@ defmodule Sanctum.MarvelCdbTest do
       assert deck.mcdb_date_creation == ~U[2024-01-15 00:10:13Z]
       assert deck.mcdb_date_update == ~U[2024-01-21 16:02:07Z]
     end
+
+    # Ironheart's shape: several hero-sided cards (suit versions) in one set.
+    # Decks can be built on any version; all of them must resolve to a single
+    # Hero keyed on the set's canonical (lowest base_code) card.
+    test "decks built on different hero versions share one canonical Hero" do
+      for version <- ["91001", "91002", "91003"] do
+        card =
+          create(Sanctum.Games.Card,
+            attrs: %{base_code: version, code: version, set: "test_ironheart"}
+          )
+
+        create(Sanctum.Games.CardSide,
+          attrs: %{
+            card_id: card.id,
+            name: "Test Ironheart",
+            type: :hero,
+            code: "#{version}a",
+            side_identifier: "A",
+            is_primary_side: true
+          }
+        )
+
+        create(Sanctum.Games.CardSide,
+          attrs: %{
+            card_id: card.id,
+            name: "Test Riri",
+            type: :alter_ego,
+            code: "#{version}b",
+            side_identifier: "B",
+            is_primary_side: false
+          }
+        )
+      end
+
+      slot_card =
+        create(Sanctum.Games.Card,
+          attrs: %{base_code: "91004", code: "91004", set: "test_ironheart"}
+        )
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{card_id: slot_card.id, code: "91004", side_identifier: "A", type: :upgrade}
+      )
+
+      import_deck = fn id, hero_code ->
+        assert {:ok, deck} =
+                 MarvelCdb.import_decklist(%{
+                   "id" => id,
+                   "name" => "Deck on #{hero_code}",
+                   "hero_code" => hero_code,
+                   "slots" => %{"91004" => 2}
+                 })
+
+        deck
+      end
+
+      deck_v1 = import_deck.(90_001, "91001a")
+      deck_v3 = import_deck.(90_002, "91003a")
+
+      assert deck_v1.hero_id == deck_v3.hero_id
+
+      hero = Ash.get!(Sanctum.Heroes.Hero, deck_v1.hero_id, authorize?: false)
+      assert hero.base_code == "91001"
+    end
   end
 
   describe "helper functions" do
