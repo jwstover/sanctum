@@ -1,3 +1,13 @@
+# [1.53.0](https://github.com/jwstover/sanctum/compare/v1.52.0...v1.53.0) (2026-07-19)
+
+
+### Features
+
+* **dev:** add prod_local env and prod→dev database pull ([64bf72d](https://github.com/jwstover/sanctum/commit/64bf72d68deac4e6c9d957a5b534b63945ec4891))
+* **heroes:** disambiguate same-named heroes with alter ego ([607f9ea](https://github.com/jwstover/sanctum/commit/607f9ead83223e4f4afeeb848723252749eccdf5))
+
+
+
 # [1.52.0](https://github.com/jwstover/sanctum/compare/v1.51.3...v1.52.0) (2026-07-19)
 
 
@@ -31,15 +41,6 @@
 ### Bug Fixes
 
 * **ui:** keep guess bar above the site footer ([136f671](https://github.com/jwstover/sanctum/commit/136f6714b549f54fbdba1372bb242f8f899d976f))
-
-
-
-# [1.51.0](https://github.com/jwstover/sanctum/compare/v1.50.0...v1.51.0) (2026-07-17)
-
-
-### Features
-
-* **ui:** back buttons return to where the user came from ([6b5d61d](https://github.com/jwstover/sanctum/commit/6b5d61d2f852f9cd56395f627db9f17f97084b6e))
 
 
 
