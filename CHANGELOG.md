@@ -1,3 +1,12 @@
+## [1.51.3](https://github.com/jwstover/sanctum/compare/v1.51.2...v1.51.3) (2026-07-19)
+
+
+### Bug Fixes
+
+* **heroes:** canonicalize Ironheart suit versions to one Hero ([320b392](https://github.com/jwstover/sanctum/commit/320b392e2f866bdb6a3b03c8967d8a701957896a))
+
+
+
 ## [1.51.2](https://github.com/jwstover/sanctum/compare/v1.51.1...v1.51.2) (2026-07-18)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * **ui:** full-width search with counts below on deck index and card pool ([1bf887b](https://github.com/jwstover/sanctum/commit/1bf887b64def560b301e4d01947aa0e187e76240))
-
-
-
-# [1.49.0](https://github.com/jwstover/sanctum/compare/v1.48.0...v1.49.0) (2026-07-17)
-
-
-### Features
-
-* **accounts:** Discord OAuth sign-in ([76f1cbf](https://github.com/jwstover/sanctum/commit/76f1cbf6184d84b6432ef2506fe915b81e9016d2)), closes [#204](https://github.com/jwstover/sanctum/issues/204)
 
 
 

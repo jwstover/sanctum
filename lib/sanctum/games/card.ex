@@ -71,6 +71,18 @@ defmodule Sanctum.Games.Card do
       filter expr(set == ^arg(:set))
     end
 
+    # The set's canonical hero card. Almost every hero set has exactly one
+    # hero-sided card; Ironheart's three suit versions are three separate
+    # hero-sided cards in one set, so the lowest base_code (the starting
+    # suit) is the canonical one.
+    read :canonical_hero do
+      argument :set, :string, allow_nil?: false
+
+      filter expr(set == ^arg(:set) and exists(card_sides, type == :hero))
+
+      prepare build(sort: [base_code: :asc], limit: 1)
+    end
+
     read :by_code do
       argument :code, :string, allow_nil?: false
       filter expr(base_code == ^arg(:code))

@@ -35,6 +35,11 @@ defmodule Sanctum.Decks.Writeup do
   # relative form MarvelCDB emits (`/card/30010`) and absolute marvelcdb.com URLs.
   @card_link_re ~r/\[([^\]]*)\]\((?:https?:\/\/(?:www\.)?marvelcdb\.com)?\/card\/([0-9A-Za-z-]+)\)/
 
+  # Some writeups link cards with raw HTML anchors instead of Markdown:
+  # `<a href="https://marvelcdb.com/card/41008">`. Only absolute marvelcdb.com
+  # URLs appear in this form.
+  @card_href_re ~r/href=(["'])https?:\/\/(?:www\.)?marvelcdb\.com\/card\/([0-9A-Za-z-]+)\/?\1/
+
   # A GFM delimiter row (e.g. `|-|-|`, `| :--- | ---: |`).
   @sep_re ~r/^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/
   @table_row_re ~r/^\s*\|/
@@ -121,22 +126,35 @@ defmodule Sanctum.Decks.Writeup do
   defp normalize_newlines(md), do: String.replace(md, "\r\n", "\n")
 
   # Resolve every distinct card code once, then splice results back in. Resolved
-  # codes become links to our card page; unresolved ones keep only the link text.
+  # codes become links to our card page. Unresolved Markdown links keep only the
+  # link text (a relative `/card/…` would 404 here); unresolved HTML anchors keep
+  # their absolute marvelcdb.com URL, which still works.
   defp rewrite_card_links(md) do
     codes =
-      @card_link_re
-      |> Regex.scan(md, capture: :all_but_first)
-      |> Enum.map(fn [_name, code] -> code end)
+      [@card_link_re, @card_href_re]
+      |> Enum.flat_map(&Regex.scan(&1, md, capture: :all_but_first))
+      |> Enum.map(fn [_, code] -> code end)
       |> Enum.uniq()
 
     ids = resolve_codes(codes)
 
-    Regex.replace(@card_link_re, md, fn _full, name, code ->
-      case Map.get(ids, code) do
-        nil -> name
-        id -> "[#{name}](/cards/#{id})"
-      end
-    end)
+    md
+    |> then(
+      &Regex.replace(@card_link_re, &1, fn _full, name, code ->
+        case Map.get(ids, code) do
+          nil -> name
+          id -> "[#{name}](/cards/#{id})"
+        end
+      end)
+    )
+    |> then(
+      &Regex.replace(@card_href_re, &1, fn full, quote, code ->
+        case Map.get(ids, code) do
+          nil -> full
+          id -> "href=#{quote}/cards/#{id}#{quote}"
+        end
+      end)
+    )
   end
 
   # code => card_id, from a single Card read (by base_code) plus a single CardAlt
