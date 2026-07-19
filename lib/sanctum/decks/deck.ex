@@ -57,7 +57,7 @@ defmodule Sanctum.Decks.Deck do
             :total_card_count,
             :mcdb_user,
             :owner,
-            hero: [:hero_side, card: [:primary_side]]
+            hero: [:display_name, :hero_side, card: [:primary_side]]
           ])
 
         query =

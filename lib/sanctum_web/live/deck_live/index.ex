@@ -280,13 +280,15 @@ defmodule SanctumWeb.DeckLive.Index do
 
   defp valid_hero_id(_), do: "all"
 
-  # {id, hero_name} for every hero, sorted by name.
+  # {id, display_name} for every hero, sorted by name. `display_name` carries
+  # the alter ego for same-named heroes (the Black Panthers, the Spider-Men).
   defp load_hero_options do
     Sanctum.Heroes.Hero
     |> Ash.Query.select([:id, :hero_name])
-    |> Ash.Query.sort(hero_name: :asc)
+    |> Ash.Query.load(:display_name)
     |> Ash.read!()
-    |> Enum.map(&{&1.id, &1.hero_name})
+    |> Enum.map(&{&1.id, &1.display_name})
+    |> Enum.sort_by(fn {_id, name} -> name end)
   end
 
   # `replace: true` so typing doesn't spam a history entry per keystroke.
@@ -521,7 +523,7 @@ defmodule SanctumWeb.DeckLive.Index do
     %{
       id: deck.id,
       title: deck.title,
-      hero_name: hero.hero_name,
+      hero_name: hero.display_name,
       identity_image: identity_image(hero),
       gradient_from: hero.primary_color || elem(CardComponent.fallback_gradient(hero.set), 0),
       gradient_to: hero.secondary_color || elem(CardComponent.fallback_gradient(hero.set), 1),

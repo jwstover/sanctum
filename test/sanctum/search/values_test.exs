@@ -93,4 +93,29 @@ defmodule Sanctum.Search.ValuesTest do
     result2 = Suggest.suggest("hero:nat", 8, DeckFields)
     assert [%{label: "Natasha Romanoff"}] = result2.items
   end
+
+  test "same-named heroes suggest with their alter ego appended" do
+    for {alter_ego, set, base_code} <- [
+          {"T'Challa", "black_panther", "01040"},
+          {"Shuri", "black_panther_shuri", "51001"}
+        ] do
+      card = create(Card, attrs: %{set: set})
+
+      Sanctum.Heroes.Hero
+      |> Ash.Changeset.for_create(:create, %{
+        hero_name: "Black Panther",
+        alter_ego_name: alter_ego,
+        set: set,
+        base_code: base_code,
+        card_id: card.id
+      })
+      |> Ash.create!(authorize?: false)
+    end
+
+    result = Suggest.suggest("hero:black", 10, DeckFields)
+    labels = Enum.map(result.items, & &1.label)
+    assert "Black Panther (Shuri)" in labels
+    assert "Black Panther (T'Challa)" in labels
+    refute "Black Panther" in labels
+  end
 end

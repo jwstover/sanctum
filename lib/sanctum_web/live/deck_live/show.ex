@@ -450,7 +450,7 @@ defmodule SanctumWeb.DeckLive.Show do
              :total_card_count,
              :mcdb_user,
              :owner,
-             hero: [:hero_side, card: [:primary_side]],
+             hero: [:display_name, :hero_side, card: [:primary_side]],
              deck_cards: [card: [:primary_side]]
            ]
          ) do
@@ -505,7 +505,7 @@ defmodule SanctumWeb.DeckLive.Show do
     author = author(deck)
 
     %{
-      hero_name: hero.hero_name,
+      hero_name: hero.display_name,
       identity_image: identity_image(hero),
       gradient_from: gradient_from,
       gradient_to: gradient_to,

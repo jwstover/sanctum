@@ -39,7 +39,10 @@ defmodule Sanctum.Search.DeckFields do
         values_fun: &Sanctum.Search.Values.heroes/0,
         build:
           text_build(fn pattern ->
-            expr(ilike(hero.hero_name, ^pattern) or ilike(hero.alter_ego_name, ^pattern))
+            # display_name always contains hero_name, so it subsumes a
+            # hero_name match while also matching the disambiguated
+            # "Black Panther (T'Challa)" suggestions.
+            expr(ilike(hero.display_name, ^pattern) or ilike(hero.alter_ego_name, ^pattern))
           end)
       },
       %Field{

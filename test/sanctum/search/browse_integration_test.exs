@@ -133,6 +133,58 @@ defmodule Sanctum.Search.BrowseIntegrationTest do
   end
 
   describe "deck :browse with advanced queries" do
+    defp insert_hero_deck(hero_name, alter_ego, set, base_code) do
+      card = insert_card(%{base_code: base_code, set: set})
+
+      for {name, type, side_id} <- [{hero_name, :hero, "A"}, {alter_ego, :alter_ego, "B"}] do
+        CardSide
+        |> Ash.Changeset.for_create(
+          :create,
+          Map.merge(card_side_factory(), %{
+            card_id: card.id,
+            code: Faker.Util.format("%6da"),
+            name: name,
+            type: type,
+            side_identifier: side_id,
+            is_primary_side: side_id == "A"
+          })
+        )
+        |> Ash.create!(authorize?: false)
+      end
+
+      {:ok, hero} =
+        Sanctum.Heroes.find_or_create_hero(%{
+          hero_name: hero_name,
+          alter_ego_name: alter_ego,
+          set: set,
+          base_code: base_code,
+          card_id: card.id
+        })
+
+      Sanctum.Decks.Deck
+      |> Ash.Changeset.for_create(:create, %{title: "#{alter_ego} deck", hero_id: hero.id})
+      |> Ash.create!(authorize?: false)
+    end
+
+    defp deck_titles(query_string) do
+      Sanctum.Decks.Deck
+      |> Ash.Query.for_read(:browse, %{query: query_string})
+      |> Ash.read!(authorize?: false)
+      |> Enum.map(& &1.title)
+      |> Enum.sort()
+    end
+
+    test "hero search by display name disambiguates same-named heroes" do
+      insert_hero_deck("Black Panther", "T'Challa", "black_panther", "01040")
+      insert_hero_deck("Black Panther", "Shuri", "black_panther_shuri", "51001")
+
+      assert deck_titles(~s{hero:"black panther (shuri)"}) == ["Shuri deck"]
+      assert deck_titles(~s{hero:"black panther (t'challa)"}) == ["T'Challa deck"]
+      assert deck_titles("hero:shuri") == ["Shuri deck"]
+      # The bare hero name still matches both.
+      assert deck_titles(~s{hero:"black panther"}) == ["Shuri deck", "T'Challa deck"]
+    end
+
     test "hero, aspect, and containment queries run" do
       # No decks in the sandbox — just prove the filters execute (no SQL errors).
       for q <- [

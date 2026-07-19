@@ -85,6 +85,35 @@ defmodule Sanctum.Heroes.Hero do
     end
   end
 
+  calculations do
+    # Heroes that share a printed hero name (the two Black Panthers, the two
+    # Spider-Men) get their alter ego appended — "Black Panther (T'Challa)" —
+    # so listings stay distinguishable. Same-name heroes with the same alter
+    # ego (Ironheart's three forms) stay plain.
+    calculate :display_name,
+              :string,
+              expr(
+                fragment(
+                  """
+                  CASE
+                    WHEN ? IS NOT NULL AND EXISTS (
+                      SELECT 1 FROM heroes h2
+                      WHERE h2.hero_name = ? AND h2.alter_ego_name IS DISTINCT FROM ?
+                    )
+                    THEN ? || ' (' || ? || ')'
+                    ELSE ?
+                  END
+                  """,
+                  alter_ego_name,
+                  hero_name,
+                  alter_ego_name,
+                  hero_name,
+                  alter_ego_name,
+                  hero_name
+                )
+              )
+  end
+
   identities do
     # A set contains exactly one hero identity, so `set` alone is the key.
     # Ironheart's three suit versions are three hero-sided cards in one set;
