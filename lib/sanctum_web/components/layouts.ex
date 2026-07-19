@@ -138,7 +138,7 @@ defmodule SanctumWeb.Layouts do
               <.icon name="hero-x-mark" class="size-6" />
             </label>
           </div>
-          <nav class="mt-6 flex flex-col gap-1.5 lg:mt-4 lg:gap-1">
+          <nav class="mt-6 flex flex-col flex-1 gap-1.5 lg:mt-4 lg:gap-1">
             <.sidebar_link navigate={~p"/browse"} active={@active_tab == :browse}>
               Packs
             </.sidebar_link>
@@ -154,19 +154,24 @@ defmodule SanctumWeb.Layouts do
             <.sidebar_link navigate={~p"/stats"} active={@active_tab == :stats}>
               Stats
             </.sidebar_link>
+            <div class="flex-1"></div>
             <.sidebar_link
               :if={@current_user}
               navigate={~p"/profile"}
               active={@active_tab == :profile}
             >
-              Profile
+              <div class="flex items-center gap-2">
+                <.icon name="hero-user-solid" /> Profile
+              </div>
             </.sidebar_link>
             <.sidebar_link
               :if={@current_user && @current_user.admin}
               navigate={~p"/admin"}
               active={@active_tab == :admin}
             >
-              Admin
+              <div class="flex items-center gap-2">
+                <.icon name="hero-cog-solid" /> Admin
+              </div>
             </.sidebar_link>
           </nav>
           <div class="mt-auto flex items-center justify-between border-t-2 border-neutral pt-4">
@@ -270,7 +275,7 @@ defmodule SanctumWeb.Layouts do
         </p>
 
         <p class="mt-4 font-ibm-mono text-[11px] uppercase tracking-[0.18em] text-base-content/30">
-          © {Date.utc_today().year} Sanctum · Built for the table
+          © {Date.utc_today().year} Sanctum · Go play some Champs
         </p>
       </div>
     </footer>
