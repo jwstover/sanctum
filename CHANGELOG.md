@@ -1,3 +1,12 @@
+# [1.52.0](https://github.com/jwstover/sanctum/compare/v1.51.3...v1.52.0) (2026-07-19)
+
+
+### Features
+
+* **decks:** rewrite HTML anchor card links in deck writeups ([a9629ca](https://github.com/jwstover/sanctum/commit/a9629caf1401d5e8196e7d2d6dcb3fca02a00d77))
+
+
+
 ## [1.51.3](https://github.com/jwstover/sanctum/compare/v1.51.2...v1.51.3) (2026-07-19)
 
 
@@ -31,20 +40,6 @@
 ### Features
 
 * **ui:** back buttons return to where the user came from ([6b5d61d](https://github.com/jwstover/sanctum/commit/6b5d61d2f852f9cd56395f627db9f17f97084b6e))
-
-
-
-# [1.50.0](https://github.com/jwstover/sanctum/compare/v1.49.0...v1.50.0) (2026-07-17)
-
-
-### Bug Fixes
-
-* **ui:** swap in short search placeholders on mobile ([e4827ab](https://github.com/jwstover/sanctum/commit/e4827ab67fc4a3bddc60c7f0279973a3bb0d6376))
-
-
-### Features
-
-* **ui:** full-width search with counts below on deck index and card pool ([1bf887b](https://github.com/jwstover/sanctum/commit/1bf887b64def560b301e4d01947aa0e187e76240))
 
 
 
