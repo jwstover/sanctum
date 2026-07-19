@@ -65,7 +65,7 @@ defmodule SanctumWeb.StatsLive.Index do
             color="text-aspect-encounter"
           />
           <.stat_tile
-            label="Added this month"
+            label="Decks Added this Month"
             value={@stats.totals.this_month}
             color="text-success"
           />
