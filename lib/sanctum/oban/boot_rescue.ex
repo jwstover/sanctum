@@ -58,7 +58,10 @@ defmodule Sanctum.Oban.BootRescue do
   def run do
     # Skipped in test: the app boots outside any Ecto sandbox ownership, so a
     # boot-time write would fail. Tests exercise `rescue_orphans/1` directly.
-    if Application.get_env(:sanctum, :env) != :test do
+    # Skipped in prod_local: that env points at the production database, and a
+    # local node has no business writing to prod's job table (its node identity
+    # would never match a Fly machine ID anyway — this is belt and suspenders).
+    if Application.get_env(:sanctum, :env) not in [:test, :prod_local] do
       rescue_orphans()
     end
 

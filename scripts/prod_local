@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# Run a command under MIX_ENV=prod_local — the app connects to the PRODUCTION
+# database (see config/prod_local.exs). Sources .env.prod_local for
+# PROD_DATABASE_URL.
+#
+# Usage:
+#   scripts/prod_local                    # iex -S mix phx.server on port 4151
+#   scripts/prod_local mix run script.exs # any other command
+#
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if [[ ! -f .env.prod_local ]]; then
+  echo "error: .env.prod_local not found." >&2
+  echo "Copy .env.prod_local.example to .env.prod_local and fill in PROD_DATABASE_URL." >&2
+  exit 1
+fi
+
+set -a
+# shellcheck source=/dev/null
+source .env.prod_local
+set +a
+
+export MIX_ENV=prod_local
+
+if [[ $# -eq 0 ]]; then
+  exec iex -S mix phx.server
+else
+  exec "$@"
+fi

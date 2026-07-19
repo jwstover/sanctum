@@ -12,7 +12,7 @@ defmodule Sanctum.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      consolidate_protocols: Mix.env() != :dev,
+      consolidate_protocols: Mix.env() not in [:dev, :prod_local],
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
@@ -58,8 +58,8 @@ defmodule Sanctum.MixProject do
       {:sourceror, "~> 1.8"},
       {:oban, "~> 2.0"},
       {:ash_ai, "~> 0.2"},
-      {:tidewave, "~> 0.2", only: [:dev]},
-      {:live_debugger, "~> 1.0", only: [:dev]},
+      {:tidewave, "~> 0.2", only: [:dev, :prod_local]},
+      {:live_debugger, "~> 1.0", only: [:dev, :prod_local]},
       {:ash_events, "~> 0.4"},
       {:ash_state_machine, "~> 0.2"},
       {:oban_web, "~> 2.0"},
@@ -76,12 +76,12 @@ defmodule Sanctum.MixProject do
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 4.1"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:phoenix_live_reload, "~> 1.2", only: [:dev, :prod_local]},
       {:phoenix_live_view, "~> 1.2"},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
+      {:esbuild, "~> 0.10", runtime: Mix.env() in [:dev, :prod_local]},
+      {:tailwind, "~> 0.3", runtime: Mix.env() in [:dev, :prod_local]},
       {:heroicons,
        github: "tailwindlabs/heroicons",
        tag: "v2.2.0",
@@ -122,24 +122,54 @@ defmodule Sanctum.MixProject do
   #
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
-    [
-      ck: [
-        "compile --warnings-as-errors",
-        "format",
-        "credo suggest --min-priority=normal",
-        "sobelow --config --exit"
-      ],
-      setup: ["deps.get", "ash.setup", "assets.setup", "assets.build", "run priv/repo/seeds.exs"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ash.setup --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind sanctum", "esbuild sanctum"],
-      "assets.deploy": [
-        "tailwind sanctum --minify",
-        "esbuild sanctum --minify",
-        "phx.digest"
+    prod_local_guards() ++
+      [
+        ck: [
+          "compile --warnings-as-errors",
+          "format",
+          "credo suggest --min-priority=normal",
+          "sobelow --config --exit"
+        ],
+        setup: [
+          "deps.get",
+          "ash.setup",
+          "assets.setup",
+          "assets.build",
+          "run priv/repo/seeds.exs"
+        ],
+        "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+        "ecto.reset": ["ecto.drop", "ecto.setup"],
+        test: ["ash.setup --quiet", "test"],
+        "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
+        "assets.build": ["tailwind sanctum", "esbuild sanctum"],
+        "assets.deploy": [
+          "tailwind sanctum --minify",
+          "esbuild sanctum --minify",
+          "phx.digest"
+        ]
       ]
-    ]
+  end
+
+  # MIX_ENV=prod_local points Sanctum.Repo at the PRODUCTION database
+  # (see config/prod_local.exs). Any task that creates, drops, migrates, or
+  # seeds the database must never run there, so these guards shadow them.
+  # Aliases are looked up first-match, so prepending wins over the real ones.
+  defp prod_local_guards do
+    if Mix.env() == :prod_local do
+      for task <- ~w(setup ecto.setup ecto.reset ecto.create ecto.drop ecto.migrate
+                     ecto.rollback ash.setup ash.reset ash.migrate) do
+        {String.to_atom(task),
+         [
+           fn _ ->
+             Mix.raise(
+               "Refusing to run `mix #{task}` under MIX_ENV=prod_local — " <>
+                 "it targets the PRODUCTION database. Run it in :dev instead."
+             )
+           end
+         ]}
+      end
+    else
+      []
+    end
   end
 end
