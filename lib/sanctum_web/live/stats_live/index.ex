@@ -50,12 +50,12 @@ defmodule SanctumWeb.StatsLive.Index do
         </:subtitle>
       </.header>
 
-      <div :if={@stats == nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <div :for={_ <- 1..6} class="h-20 animate-pulse border-[3px] border-neutral bg-base-300" />
+      <div :if={@stats == nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div :for={_ <- 1..5} class="h-20 animate-pulse border-[3px] border-neutral bg-base-300" />
       </div>
 
       <div :if={@stats != nil} class="flex flex-col gap-6">
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <.stat_tile label="Decks" value={@stats.totals.decks} color="text-primary" />
           <.stat_tile label="Unique cards" value={@stats.totals.cards} color="text-secondary" />
           <.stat_tile label="Heroes" value={@stats.totals.heroes} color="text-aspect-hero" />
@@ -69,15 +69,14 @@ defmodule SanctumWeb.StatsLive.Index do
             value={@stats.totals.this_month}
             color="text-success"
           />
-          <.text_tile label="Most built hero" value={top_hero_name(@stats.per_hero)} />
         </div>
 
         <.chart_panel
           :if={@stats.totals.decks > 0}
           id="decks-by-month"
           title="Decks added over time"
-          subtitle="New decks per month, by their MarvelCDB publish date."
-          option={by_month_option(@stats.by_month)}
+          subtitle="New decks per month, by their MarvelCDB publish date. Lines mark big-box set releases; diamonds along the baseline are hero packs (hover for names)."
+          option={by_month_option(@stats.by_month, @stats.pack_releases)}
           height="320px"
         >
           <:table_head>
@@ -92,6 +91,24 @@ defmodule SanctumWeb.StatsLive.Index do
 
         <.chart_panel
           :if={@stats.totals.decks > 0}
+          id="decks-by-aspect"
+          title="Decks by aspect"
+          subtitle="Multi-aspect decks count once under each aspect, so slices sum to more than the deck total; basic decks run no aspect."
+          option={aspect_pie_option(@stats.by_aspect)}
+          height="320px"
+        >
+          <:table_head>
+            <th class="pr-6 text-left">Aspect</th>
+            <th class="text-right">Decks</th>
+          </:table_head>
+          <tr :for={{aspect, count} <- @stats.by_aspect}>
+            <td class="pr-6">{aspect_label(aspect)}</td>
+            <td class="text-right tabular-nums">{count}</td>
+          </tr>
+        </.chart_panel>
+
+        <.chart_panel
+          :if={@stats.totals.decks > 0}
           id="decks-per-hero"
           title={@hero_panel.title}
           subtitle={@hero_panel.subtitle}
@@ -100,8 +117,8 @@ defmodule SanctumWeb.StatsLive.Index do
           click_event={@hero_panel.click_event}
         >
           <:action :if={@hero_panel.back}>
-            <.button phx-click="drill_back">
-              <.icon name="hero-arrow-left" class="size-4" /> {@hero_panel.back}
+            <.button patch={@hero_panel.back.patch}>
+              <.icon name="hero-arrow-left" class="size-4" /> {@hero_panel.back.label}
             </.button>
           </:action>
           <:table_head>
@@ -110,24 +127,6 @@ defmodule SanctumWeb.StatsLive.Index do
           </:table_head>
           <tr :for={{label, count} <- @hero_panel.rows}>
             <td class="pr-6">{label}</td>
-            <td class="text-right tabular-nums">{count}</td>
-          </tr>
-        </.chart_panel>
-
-        <.chart_panel
-          :if={@stats.totals.decks > 0}
-          id="decks-by-aspect"
-          title="Decks by aspect"
-          subtitle="Multi-aspect decks count once under each aspect; basic decks run no aspect."
-          option={by_aspect_option(@stats.by_aspect)}
-          height="288px"
-        >
-          <:table_head>
-            <th class="pr-6 text-left">Aspect</th>
-            <th class="text-right">Decks</th>
-          </:table_head>
-          <tr :for={{aspect, count} <- @stats.by_aspect}>
-            <td class="pr-6">{aspect_label(aspect)}</td>
             <td class="text-right tabular-nums">{count}</td>
           </tr>
         </.chart_panel>
@@ -218,22 +217,6 @@ defmodule SanctumWeb.StatsLive.Index do
     |> String.replace(~r/(?<=\d)(?=(\d{3})+$)/, ",")
   end
 
-  attr :label, :string, required: true
-  attr :value, :string, required: true
-
-  defp text_tile(assigns) do
-    ~H"""
-    <div class="border-[3px] border-neutral bg-base-300 px-4 py-3">
-      <div class="truncate font-barlow-condensed text-xl font-bold leading-none text-primary">
-        {@value}
-      </div>
-      <div class="mt-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/55">
-        {@label}
-      </div>
-    </div>
-    """
-  end
-
   @impl true
   def mount(_params, _session, socket) do
     socket =
@@ -241,7 +224,8 @@ defmodule SanctumWeb.StatsLive.Index do
         page_title: "Vault Stats",
         stats: nil,
         hero_drill: nil,
-        aspect_drill: nil
+        aspect_drill: nil,
+        drill_params: %{hero: nil, aspect: nil}
       )
 
     # Defer the rollup queries past the static render so the shell paints
@@ -252,18 +236,23 @@ defmodule SanctumWeb.StatsLive.Index do
     {:ok, socket}
   end
 
+  # The drill level lives in the URL (?hero=<id>&aspect=<key>), so browser
+  # back/forward walks the levels and returning from a card detail page
+  # restores the view. Clicks only patch the URL; handle_params derives the
+  # actual drill state.
   @impl true
-  def handle_event("hero_bar_clicked", %{"heroId" => hero_id, "name" => name}, socket) do
-    case Ecto.UUID.cast(hero_id) do
-      {:ok, id} ->
-        {:noreply,
-         assign(socket,
-           hero_drill: %{id: id, name: name, rows: Stats.by_aspect(id)},
-           aspect_drill: nil
-         )}
+  def handle_params(params, _uri, socket) do
+    socket =
+      assign(socket, :drill_params, %{hero: params["hero"], aspect: params["aspect"]})
 
-      :error ->
-        {:noreply, socket}
+    {:noreply, derive_drills(socket)}
+  end
+
+  @impl true
+  def handle_event("hero_bar_clicked", %{"heroId" => hero_id}, socket) do
+    case Ecto.UUID.cast(hero_id) do
+      {:ok, id} -> {:noreply, push_patch(socket, to: ~p"/stats?hero=#{id}")}
+      :error -> {:noreply, socket}
     end
   end
 
@@ -271,24 +260,24 @@ defmodule SanctumWeb.StatsLive.Index do
     hero = socket.assigns.hero_drill
 
     if hero && List.keymember?(@aspect_colors, key, 0) do
-      {:noreply, assign(socket, :aspect_drill, %{key: key, rows: Stats.top_cards(hero.id, key)})}
+      {:noreply, push_patch(socket, to: ~p"/stats?hero=#{hero.id}&aspect=#{key}")}
     else
       {:noreply, socket}
     end
   end
 
-  # Pops one drill level: top cards → aspect split → all heroes.
-  def handle_event("drill_back", _params, socket) do
-    if socket.assigns.aspect_drill do
-      {:noreply, assign(socket, :aspect_drill, nil)}
-    else
-      {:noreply, assign(socket, :hero_drill, nil)}
+  def handle_event("card_bar_clicked", %{"cardId" => card_id}, socket) do
+    case Ecto.UUID.cast(card_id) do
+      {:ok, id} -> {:noreply, push_navigate(socket, to: ~p"/cards/#{id}")}
+      :error -> {:noreply, socket}
     end
   end
 
   @impl true
   def handle_async(:load_stats, {:ok, stats}, socket) do
-    {:noreply, assign(socket, :stats, stats)}
+    # Re-derive drill state now that the data to resolve it exists — this is
+    # what restores a deep-linked ?hero=…&aspect=… view after a fresh mount.
+    {:noreply, socket |> assign(:stats, stats) |> derive_drills()}
   end
 
   def handle_async(:load_stats, {:exit, reason}, socket) do
@@ -308,12 +297,49 @@ defmodule SanctumWeb.StatsLive.Index do
       totals: Stats.totals(),
       by_month: Stats.by_month(),
       per_hero: Stats.per_hero(),
-      by_aspect: Stats.by_aspect()
+      by_aspect: Stats.by_aspect(),
+      pack_releases: Stats.pack_releases()
     }
   end
 
-  defp top_hero_name([%{name: name} | _]), do: name
-  defp top_hero_name([]), do: "—"
+  # Resolve ?hero/?aspect params into drill state. Unknown or malformed
+  # params quietly resolve to a shallower level. Rows already loaded for the
+  # same hero/aspect are reused, so patch navigation between levels only
+  # queries what actually changed. No-op until the stats load lands.
+  defp derive_drills(%{assigns: %{stats: nil}} = socket), do: socket
+
+  defp derive_drills(socket) do
+    hero_drill = derive_hero_drill(socket, socket.assigns.drill_params.hero)
+    aspect_drill = derive_aspect_drill(socket, hero_drill, socket.assigns.drill_params.aspect)
+
+    assign(socket, hero_drill: hero_drill, aspect_drill: aspect_drill)
+  end
+
+  defp derive_hero_drill(_socket, nil), do: nil
+
+  defp derive_hero_drill(socket, id_param) do
+    with {:ok, id} <- Ecto.UUID.cast(id_param),
+         %{name: name} <- Enum.find(socket.assigns.stats.per_hero, &(&1.id == id)) do
+      case socket.assigns.hero_drill do
+        %{id: ^id} = current -> current
+        _ -> %{id: id, name: name, rows: Stats.by_aspect(id)}
+      end
+    else
+      _ -> nil
+    end
+  end
+
+  defp derive_aspect_drill(_socket, nil = _hero, _key), do: nil
+  defp derive_aspect_drill(_socket, _hero, nil = _key), do: nil
+
+  defp derive_aspect_drill(socket, hero, key) do
+    if List.keymember?(@aspect_colors, key, 0) do
+      case {socket.assigns.hero_drill, socket.assigns.aspect_drill} do
+        {%{id: hero_id}, %{key: ^key} = current} when hero_id == hero.id -> current
+        _ -> %{key: key, rows: Stats.top_cards(hero.id, key)}
+      end
+    end
+  end
 
   # Everything the hero drill-down panel needs for its current level:
   # all heroes → one hero's aspect split → one aspect's most-used cards.
@@ -340,7 +366,7 @@ defmodule SanctumWeb.StatsLive.Index do
       option: by_aspect_option(hero.rows, drill_from: hero.id, clickable: true),
       height: "260px",
       click_event: "aspect_bar_clicked",
-      back: "All heroes",
+      back: %{label: "All heroes", patch: ~p"/stats"},
       col: "Aspect",
       rows: Enum.map(hero.rows, fn {key, count} -> {aspect_label(key), count} end)
     }
@@ -351,18 +377,20 @@ defmodule SanctumWeb.StatsLive.Index do
 
     subtitle =
       if aspect.key == "basic",
-        do: "The basic cards appearing in the most of #{hero.name}'s aspect-less decks.",
-        else: "The #{label} cards appearing in the most of #{hero.name}'s #{label} decks."
+        do:
+          "The basic cards appearing in the most of #{hero.name}'s aspect-less decks. Click a bar to open the card.",
+        else:
+          "The #{label} cards appearing in the most of #{hero.name}'s #{label} decks. Click a bar to open the card."
 
     %{
       title: "#{hero.name} — top #{label} cards",
       subtitle: subtitle,
       option: top_cards_option(aspect.rows, aspect.key),
       height: "#{max(length(aspect.rows), 1) * 30 + 70}px",
-      click_event: nil,
-      back: "#{hero.name} aspects",
+      click_event: "card_bar_clicked",
+      back: %{label: "#{hero.name} aspects", patch: ~p"/stats?hero=#{hero.id}"},
       col: "Card",
-      rows: aspect.rows
+      rows: Enum.map(aspect.rows, fn {_id, name, count} -> {name, count} end)
     }
   end
 
@@ -380,7 +408,23 @@ defmodule SanctumWeb.StatsLive.Index do
   # Chrome (axis hairlines, text, tooltip surface) lives in the hook's
   # registered theme; these carry data and per-chart geometry.
 
-  defp by_month_option(rows) do
+  defp by_month_option(rows, pack_releases) do
+    {big_boxes, hero_packs} =
+      Enum.split_with(pack_releases, fn {_name, type, _date} -> type != "hero_pack" end)
+
+    # A dozen release days ship two hero packs at once — one marker per date,
+    # names joined, so diamonds never stack and the hover label names both.
+    hero_pack_markers =
+      hero_packs
+      |> Enum.group_by(fn {_name, _type, date} -> date end)
+      |> Enum.sort_by(fn {date, _packs} -> date end, Date)
+      |> Enum.map(fn {date, packs} ->
+        %{
+          name: Enum.map_join(packs, " · ", fn {name, _type, _date} -> name end),
+          coord: [Date.to_iso8601(date), 0]
+        }
+      end)
+
     %{
       grid: %{left: 8, right: 16, top: 16, bottom: 8},
       tooltip: %{trigger: "axis", axisPointer: %{type: "line", lineStyle: %{color: @hairline}}},
@@ -397,7 +441,42 @@ defmodule SanctumWeb.StatsLive.Index do
           symbolSize: 8,
           showSymbol: false,
           itemStyle: %{color: @gold, borderColor: @surface, borderWidth: 2},
-          areaStyle: %{color: @gold, opacity: 0.1}
+          areaStyle: %{color: @gold, opacity: 0.1},
+          # Big-box set releases as vertical markers — one step brighter than
+          # the grid so they read as annotations, not gridlines.
+          markLine: %{
+            symbol: "none",
+            lineStyle: %{color: "rgba(244, 241, 234, 0.25)", width: 1, type: "solid"},
+            label: %{
+              formatter: "{b}",
+              rotate: 90,
+              position: "insideEndTop",
+              color: @muted,
+              fontSize: 10
+            },
+            data:
+              Enum.map(big_boxes, fn {name, _type, date} ->
+                %{name: name, xAxis: Date.to_iso8601(date)}
+              end)
+          },
+          # Hero packs are too many for labeled lines (42 and counting) —
+          # they ride the baseline as diamonds, name(s) on hover.
+          markPoint: %{
+            symbol: "diamond",
+            symbolSize: 12,
+            itemStyle: %{color: @muted, borderColor: @surface, borderWidth: 2},
+            label: %{show: false},
+            emphasis: %{
+              label: %{
+                show: true,
+                formatter: "{b}",
+                position: "top",
+                color: "#f4f1ea",
+                fontSize: 11
+              }
+            },
+            data: hero_pack_markers
+          }
         }
       ]
     }
@@ -428,27 +507,13 @@ defmodule SanctumWeb.StatsLive.Index do
           universalTransition: %{enabled: true, divideShape: "clone"},
           data:
             Enum.map(rows, fn row ->
-              {from, to} = hero_gradient(row)
-
               %{
                 value: row.count,
                 # groupId ties each bar to its drill-down series; drill is
                 # our own payload, pushed back on click by the Chart hook.
                 groupId: row.id,
                 drill: %{heroId: row.id},
-                itemStyle: %{
-                  color: %{
-                    type: "linear",
-                    x: 0,
-                    y: 0,
-                    x2: 1,
-                    y2: 0,
-                    colorStops: [
-                      %{offset: 0, color: from},
-                      %{offset: 1, color: to}
-                    ]
-                  }
-                }
+                itemStyle: %{color: hero_color(row)}
               }
             end),
           barWidth: 14,
@@ -459,17 +524,20 @@ defmodule SanctumWeb.StatsLive.Index do
     }
   end
 
-  # The hero's brand gradient (the deck browser's convention), with each hex
-  # endpoint lightened until it clears a minimum contrast against the panel —
-  # several heroes' palettes are near-black (Black Widow: #140b09) and would
-  # otherwise paint an invisible bar. hsl() fallback gradients are already
-  # mid-lightness and pass through untouched.
-  defp hero_gradient(%{primary: from, secondary: to})
-       when is_binary(from) and is_binary(to) do
-    {visible_on_surface(from), visible_on_surface(to)}
+  # One color per hero: whichever of the hero's brand pair reads better
+  # against the panel — several primaries are near-black (Black Widow:
+  # #140b09), and her red secondary is the recognizable choice. The winner is
+  # then lightened until it clears the minimum contrast. Heroes without
+  # stored colors use the deck browser's set-hash fallback (hsl, already
+  # mid-lightness).
+  defp hero_color(%{primary: primary, secondary: secondary})
+       when is_binary(primary) and is_binary(secondary) do
+    [primary, secondary]
+    |> Enum.max_by(&contrast_vs_surface/1)
+    |> visible_on_surface()
   end
 
-  defp hero_gradient(%{set: set}), do: CardComponent.fallback_gradient(set)
+  defp hero_color(%{set: set}), do: CardComponent.fallback_gradient(set) |> elem(0)
 
   @min_bar_contrast 1.8
 
@@ -509,7 +577,7 @@ defmodule SanctumWeb.StatsLive.Index do
     Enum.map([r, g, b], &String.to_integer(&1, 16))
   end
 
-  defp by_aspect_option(rows, opts \\ []) do
+  defp by_aspect_option(rows, opts) do
     rows = Enum.reverse(rows)
     drill_from = Keyword.get(opts, :drill_from)
 
@@ -550,6 +618,34 @@ defmodule SanctumWeb.StatsLive.Index do
     }
   end
 
+  # The standalone aspect split as a donut. Segments keep the canonical
+  # aspect order (the order the palette's adjacency was validated in) and a
+  # 2px surface-colored border does the separating.
+  defp aspect_pie_option(rows) do
+    %{
+      tooltip: %{trigger: "item"},
+      series: [
+        %{
+          name: "Decks",
+          type: "pie",
+          radius: ["45%", "72%"],
+          data:
+            Enum.map(rows, fn {key, count} ->
+              %{
+                name: aspect_label(key),
+                value: count,
+                itemStyle: %{color: aspect_color(key)}
+              }
+            end),
+          itemStyle: %{borderColor: @surface, borderWidth: 2, borderRadius: 4},
+          label: %{color: @muted, fontSize: 12, formatter: "{b}  {c} ({d}%)"},
+          labelLine: %{lineStyle: %{color: @hairline}},
+          emphasis: %{scaleSize: 4}
+        }
+      ]
+    }
+  end
+
   defp top_cards_option(rows, aspect_key) do
     rows = Enum.reverse(rows)
 
@@ -559,7 +655,7 @@ defmodule SanctumWeb.StatsLive.Index do
       xAxis: %{type: "value", minInterval: 1},
       yAxis: %{
         type: "category",
-        data: Enum.map(rows, &elem(&1, 0)),
+        data: Enum.map(rows, fn {_id, name, _count} -> name end),
         axisLabel: %{interval: 0}
       },
       series: [
@@ -570,8 +666,11 @@ defmodule SanctumWeb.StatsLive.Index do
           universalTransition: %{enabled: true, divideShape: "clone"},
           # Morph out of (and back into) the aspect bar that was clicked.
           dataGroupId: aspect_key,
-          cursor: "default",
-          data: Enum.map(rows, &elem(&1, 1)),
+          data:
+            Enum.map(rows, fn {id, _name, count} ->
+              # Clicking a card bar navigates to its detail page.
+              %{value: count, drill: %{cardId: id}}
+            end),
           barWidth: 16,
           itemStyle: %{color: aspect_color(aspect_key), borderRadius: [0, 4, 4, 0]},
           label: %{show: true, position: "right", color: @muted, fontSize: 12}

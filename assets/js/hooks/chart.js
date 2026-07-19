@@ -4,12 +4,22 @@
 // changes. The element carries phx-update="ignore" so LiveView never patches
 // the DOM ECharts owns — attribute updates still fire updated().
 import * as echarts from "echarts/core"
-import {BarChart, LineChart} from "echarts/charts"
-import {GridComponent, TooltipComponent} from "echarts/components"
+import {BarChart, LineChart, PieChart} from "echarts/charts"
+import {GridComponent, MarkLineComponent, MarkPointComponent, TooltipComponent} from "echarts/components"
 import {CanvasRenderer} from "echarts/renderers"
 import {UniversalTransition} from "echarts/features"
 
-echarts.use([BarChart, LineChart, GridComponent, TooltipComponent, CanvasRenderer, UniversalTransition])
+echarts.use([
+  BarChart,
+  LineChart,
+  PieChart,
+  GridComponent,
+  MarkLineComponent,
+  MarkPointComponent,
+  TooltipComponent,
+  CanvasRenderer,
+  UniversalTransition,
+])
 
 const INK = "#f4f1ea"
 const MUTED = "rgba(244, 241, 234, 0.55)"

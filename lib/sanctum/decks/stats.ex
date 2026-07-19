@@ -168,16 +168,17 @@ defmodule Sanctum.Decks.Stats do
 
   @doc """
   The `aspect` cards appearing in the most of the hero's decks that run that
-  aspect, as `{card_name, deck_count}`. `"basic"` instead counts
-  basic-ownership cards across the hero's aspect-less decks. Raises on an
-  unknown aspect — validate untrusted input before calling.
+  aspect, as `{card_id, card_name, deck_count}` (id as a UUID string, for
+  linking to the card detail page). `"basic"` instead counts basic-ownership
+  cards across the hero's aspect-less decks. Raises on an unknown aspect —
+  validate untrusted input before calling.
   """
   def top_cards(hero_id, aspect, limit \\ 10)
 
   def top_cards(hero_id, "basic", limit) do
     Repo.query!(
       """
-      SELECT cs.name, count(DISTINCT dc.deck_id) AS decks
+      SELECT c.id, cs.name, count(DISTINCT dc.deck_id) AS decks
       FROM deck_cards dc
       JOIN decks d ON d.id = dc.deck_id
       JOIN cards c ON c.id = dc.card_id
@@ -191,13 +192,13 @@ defmodule Sanctum.Decks.Stats do
       """,
       [Ecto.UUID.dump!(hero_id), limit]
     ).rows
-    |> Enum.map(fn [name, n] -> {name, n} end)
+    |> Enum.map(&load_card_row/1)
   end
 
   def top_cards(hero_id, aspect, limit) when aspect in @canonical_aspects do
     Repo.query!(
       """
-      SELECT cs.name, count(DISTINCT dc.deck_id) AS decks
+      SELECT c.id, cs.name, count(DISTINCT dc.deck_id) AS decks
       FROM deck_cards dc
       JOIN decks d ON d.id = dc.deck_id
       JOIN cards c ON c.id = dc.card_id
@@ -211,7 +212,25 @@ defmodule Sanctum.Decks.Stats do
       """,
       [Ecto.UUID.dump!(hero_id), aspect, limit]
     ).rows
-    |> Enum.map(fn [name, n] -> {name, n} end)
+    |> Enum.map(&load_card_row/1)
+  end
+
+  defp load_card_row([id, name, n]), do: {Ecto.UUID.load!(id), name, n}
+
+  @doc """
+  Pack releases for timeline annotation, as `{name, product_type,
+  released_on}`, oldest first: big boxes (core + campaign expansions) and
+  hero packs.
+  """
+  def pack_releases do
+    Repo.all(
+      from p in "packs",
+        where:
+          p.product_type in ["core", "campaign_expansion", "hero_pack"] and
+            not is_nil(p.released_on),
+        order_by: p.released_on,
+        select: {p.name, p.product_type, p.released_on}
+    )
   end
 
   defp fill_months([]), do: []
