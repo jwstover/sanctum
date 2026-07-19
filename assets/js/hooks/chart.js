@@ -7,8 +7,9 @@ import * as echarts from "echarts/core"
 import {BarChart, LineChart} from "echarts/charts"
 import {GridComponent, TooltipComponent} from "echarts/components"
 import {CanvasRenderer} from "echarts/renderers"
+import {UniversalTransition} from "echarts/features"
 
-echarts.use([BarChart, LineChart, GridComponent, TooltipComponent, CanvasRenderer])
+echarts.use([BarChart, LineChart, GridComponent, TooltipComponent, CanvasRenderer, UniversalTransition])
 
 const INK = "#f4f1ea"
 const MUTED = "rgba(244, 241, 234, 0.55)"
@@ -47,8 +48,29 @@ const Chart = {
   mounted() {
     this.chart = echarts.init(this.el, "sanctum", {renderer: "canvas"})
     this.apply()
-    this.resizeObserver = new ResizeObserver(() => this.chart.resize())
+    // apply() already resizes for server-driven height changes; only react to
+    // sizes the chart doesn't know yet (viewport changes), so we never
+    // re-layout mid-transition.
+    this.resizeObserver = new ResizeObserver(() => {
+      if (
+        this.el.clientWidth !== this.chart.getWidth() ||
+        this.el.clientHeight !== this.chart.getHeight()
+      ) {
+        this.chart.resize()
+      }
+    })
     this.resizeObserver.observe(this.el)
+
+    // Drill-down: when the server tags the element with data-click-event,
+    // clicking a mark whose data item carries a `drill` payload pushes that
+    // event with the payload. The attribute is read per click, so the server
+    // can swap or disable it (e.g. per drill level) without re-mounting.
+    this.chart.on("click", (params) => {
+      const event = this.el.dataset.clickEvent
+      if (event && params.data && params.data.drill) {
+        this.pushEvent(event, {...params.data.drill, name: params.name})
+      }
+    })
   },
 
   updated() {
@@ -61,6 +83,13 @@ const Chart = {
   },
 
   apply() {
+    // phx-update="ignore" only lets data-* attributes through on updates, so
+    // the server sends height as data-height and we apply it here. Resize
+    // BEFORE setOption: resizing mid-transition corrupts the morph layout.
+    if (this.el.dataset.height) {
+      this.el.style.height = this.el.dataset.height
+      this.chart.resize()
+    }
     const option = JSON.parse(this.el.dataset.option || "{}")
     this.chart.setOption(option, {notMerge: true})
   },
