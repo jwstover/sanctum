@@ -86,6 +86,10 @@ defmodule Sanctum.Heroes.Hero do
   end
 
   identities do
-    identity :unique_hero_set, [:base_code, :set]
+    # A set contains exactly one hero identity, so `set` alone is the key.
+    # Ironheart's three suit versions are three hero-sided cards in one set;
+    # both hero-creation paths canonicalize to the lowest base_code
+    # (MarvelCdb.canonical_hero_card/1) before upserting on this identity.
+    identity :unique_hero_set, [:set]
   end
 end
