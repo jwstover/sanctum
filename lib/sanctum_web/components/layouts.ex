@@ -35,7 +35,7 @@ defmodule SanctumWeb.Layouts do
 
   attr :active_tab, :atom,
     default: nil,
-    values: [nil, :browse, :cards, :guess, :decks, :profile, :admin],
+    values: [nil, :browse, :cards, :guess, :decks, :stats, :profile, :admin],
     doc: "which top-nav tab to highlight"
 
   slot :inner_block, required: true
@@ -150,6 +150,9 @@ defmodule SanctumWeb.Layouts do
             </.sidebar_link>
             <.sidebar_link navigate={~p"/flavor-town"} active={@active_tab == :guess}>
               Flavor Town
+            </.sidebar_link>
+            <.sidebar_link navigate={~p"/stats"} active={@active_tab == :stats}>
+              Stats
             </.sidebar_link>
             <.sidebar_link
               :if={@current_user}

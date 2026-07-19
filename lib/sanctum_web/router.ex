@@ -87,6 +87,9 @@ defmodule SanctumWeb.Router do
       # Public "Flavor Town" flavor-text guessing mini-game.
       live "/flavor-town", GuessLive.Play, :index
 
+      # Public deck-collection stats.
+      live "/stats", StatsLive.Index, :index
+
       # Dev playground for refining the comic stat badges.
       live "/dev/stat-badges", DevLive.StatBadges, :index
     end

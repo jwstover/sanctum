@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@sentry/browser": "^10.65.0",
+    "echarts": "^6.1.0",
     "interactjs": "^1.10.27"
   }
 }
