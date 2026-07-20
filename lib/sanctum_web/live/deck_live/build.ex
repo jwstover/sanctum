@@ -992,7 +992,11 @@ defmodule SanctumWeb.DeckLive.Build do
                 {glyph}
               </span>
             </span>
-            <span :if={row.hero?} class="ml-auto flex-none" title="Locked to the hero set">
+            <span
+              :if={row.hero?}
+              class={["flex-none", row.pips == [] && "ml-auto"]}
+              title="Locked to the hero set"
+            >
               <.icon name="hero-lock-closed" class="size-3 text-base-content/35" />
             </span>
             <span
