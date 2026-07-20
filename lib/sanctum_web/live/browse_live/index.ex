@@ -35,11 +35,21 @@ defmodule SanctumWeb.BrowseLive.Index do
       |> assign(:covers, %{})
       |> assign(:query, "")
       |> assign(:scroll_restore_pending?, false)
+      |> assign(:owned_pack_ids, MapSet.new())
 
     # Skip every query on the static (disconnected) render; the taxonomy loads
     # asynchronously once the socket connects so nothing blocks first paint.
     socket =
-      if connected?(socket), do: start_async(socket, :load_browse, &load_browse/0), else: socket
+      if connected?(socket) do
+        socket
+        |> start_async(:load_browse, &load_browse/0)
+        |> assign(
+          :owned_pack_ids,
+          Sanctum.Collections.owned_pack_ids(socket.assigns[:current_user])
+        )
+      else
+        socket
+      end
 
     {:ok, socket}
   end
@@ -165,12 +175,12 @@ defmodule SanctumWeb.BrowseLive.Index do
       <div :if={@wave_sections != nil} class="flex flex-col gap-10">
         <section :for={section <- @filtered_sections}>
           <.wave_heading wave={section.wave} packs={section.packs} />
-          <.pack_grid packs={section.packs} covers={@covers} />
+          <.pack_grid packs={section.packs} covers={@covers} owned_pack_ids={@owned_pack_ids} />
         </section>
 
         <section :if={@filtered_other != []}>
           <h2 class="mb-3.5 font-anton text-[22px] uppercase tracking-[0.03em]">Other</h2>
-          <.pack_grid packs={@filtered_other} covers={@covers} />
+          <.pack_grid packs={@filtered_other} covers={@covers} owned_pack_ids={@owned_pack_ids} />
         </section>
 
         <.panel
@@ -206,6 +216,7 @@ defmodule SanctumWeb.BrowseLive.Index do
 
   attr :packs, :list, required: true
   attr :covers, :map, required: true
+  attr :owned_pack_ids, :any, required: true
 
   defp pack_grid(assigns) do
     ~H"""
@@ -227,6 +238,10 @@ defmodule SanctumWeb.BrowseLive.Index do
           <span class="absolute left-1.5 top-1.5 border border-neutral bg-base-100/90 px-1.5 py-0.5 font-ibm-mono text-[10px] uppercase tracking-wide text-base-content/70">
             {type_label(pack.product_type)}
           </span>
+          <.owned_badge
+            :if={MapSet.member?(@owned_pack_ids, pack.id)}
+            class="absolute right-1.5 top-1.5 bg-base-100/90"
+          />
         </div>
         <div class="flex flex-1 flex-col gap-1 p-2.5">
           <span class="font-anton text-[15px] uppercase leading-tight tracking-[0.02em] group-hover:text-primary">

@@ -36,12 +36,18 @@ defmodule SanctumWeb.BrowseLive.Show do
       |> assign(:modular_groups, [])
       |> assign(:player_groups, [])
       |> assign(:scroll_restore_pending?, false)
+      # nil owned_ids = anonymous; no collection UI renders at all.
+      |> assign(:owned_ids, nil)
+      |> assign(:total_cards, 0)
+      |> assign(:pack_owned, false)
+
+    actor = socket.assigns[:current_user]
 
     # Skip the (heavy) product load on the static render; it runs asynchronously
     # once the socket connects so the shell paints immediately.
     socket =
       if connected?(socket),
-        do: start_async(socket, :load_pack, fn -> load_pack(code) end),
+        do: start_async(socket, :load_pack, fn -> load_pack(code, actor) end),
         else: socket
 
     {:ok, socket}
@@ -59,6 +65,40 @@ defmodule SanctumWeb.BrowseLive.Show do
     end
   end
 
+  def handle_event("toggle_pack_owned", _params, %{assigns: %{current_user: user}} = socket)
+      when not is_nil(user) do
+    pack = socket.assigns.pack
+
+    if socket.assigns.pack_owned,
+      do: Sanctum.Collections.remove_pack(pack.id, user),
+      else: Sanctum.Collections.add_pack!(pack.id, actor: user)
+
+    # Pack membership changes every card's derived state; re-derive the page.
+    {owned_ids, total_cards, pack_owned} = collection_state(pack, user)
+
+    {:noreply,
+     socket
+     |> assign(:owned_ids, owned_ids)
+     |> assign(:total_cards, total_cards)
+     |> assign(:pack_owned, pack_owned)}
+  end
+
+  def handle_event(
+        "toggle_card_owned",
+        %{"id" => card_id},
+        %{assigns: %{current_user: user}} = socket
+      )
+      when not is_nil(user) do
+    owned_ids =
+      if Sanctum.Collections.toggle_card(card_id, user),
+        do: MapSet.put(socket.assigns.owned_ids, card_id),
+        else: MapSet.delete(socket.assigns.owned_ids, card_id)
+
+    {:noreply, assign(socket, :owned_ids, owned_ids)}
+  end
+
+  def handle_event("toggle_" <> _, _params, socket), do: {:noreply, socket}
+
   @impl true
   def handle_async(:load_pack, {:ok, {:ok, data}}, socket) do
     socket =
@@ -70,6 +110,9 @@ defmodule SanctumWeb.BrowseLive.Show do
       |> assign(:sections, data.sections)
       |> assign(:modular_groups, data.modular_groups)
       |> assign(:player_groups, data.player_groups)
+      |> assign(:owned_ids, data.owned_ids)
+      |> assign(:total_cards, data.total_cards)
+      |> assign(:pack_owned, data.pack_owned)
 
     socket =
       if socket.assigns.scroll_restore_pending? do
@@ -100,12 +143,13 @@ defmodule SanctumWeb.BrowseLive.Show do
   # The whole product view: the pack with its nested card sets/sides, plus every
   # derived section grouping. Returns `{:error, code}` for an unknown code so
   # handle_async can redirect.
-  defp load_pack(code) do
+  defp load_pack(code, actor) do
     case Catalog.get_pack_by_code(code,
            load: [:wave, :card_total, card_sets: [cards: [:primary_side, :card_sides]]]
          ) do
       {:ok, %Catalog.Pack{} = pack} ->
         hero_colors = Sanctum.Heroes.hero_color_map()
+        {owned_ids, total_cards, pack_owned} = collection_state(pack, actor)
 
         {:ok,
          %{
@@ -115,12 +159,32 @@ defmodule SanctumWeb.BrowseLive.Show do
            encounter_groups: encounter_groups(pack, hero_colors),
            sections: build_sections(pack, hero_colors),
            modular_groups: modular_groups(pack, hero_colors),
-           player_groups: player_card_groups(pack, hero_colors)
+           player_groups: player_card_groups(pack, hero_colors),
+           owned_ids: owned_ids,
+           total_cards: total_cards,
+           pack_owned: pack_owned
          }}
 
       _ ->
         {:error, code}
     end
+  end
+
+  # One query for the whole page: which of this pack's cards the user owns
+  # (per-card overrides and reprints included via the :owned calc), plus the
+  # distinct card count for the "X / Y owned" progress line.
+  defp collection_state(_pack, nil), do: {nil, 0, false}
+
+  defp collection_state(pack, actor) do
+    cards =
+      Sanctum.Games.Card
+      |> Ash.Query.filter(pack_id == ^pack.id)
+      |> Ash.Query.load(:owned)
+      |> Ash.read!(actor: actor)
+
+    owned_ids = cards |> Enum.filter(& &1.owned) |> MapSet.new(& &1.id)
+
+    {owned_ids, length(cards), Sanctum.Collections.pack_owned?(pack.id, actor)}
   end
 
   @impl true
@@ -150,7 +214,14 @@ defmodule SanctumWeb.BrowseLive.Show do
               · {@pack.released_on.year}
             </span>
             · {@pack.card_total || 0} cards
+            <span :if={@owned_ids} class="text-primary">
+              · {MapSet.size(@owned_ids)} / {@total_cards} owned
+            </span>
           </:subtitle>
+
+          <:actions :if={@current_user}>
+            <.collection_toggle owned={@pack_owned} event="toggle_pack_owned" id={@pack.id} />
+          </:actions>
         </.header>
 
         <div class="flex flex-col gap-9">
@@ -158,12 +229,14 @@ defmodule SanctumWeb.BrowseLive.Show do
             title="Villains"
             description="Scenario villain sets included in this product."
             groups={@villain_groups}
+            owned_ids={@owned_ids}
           />
 
           <.grouped_section
             title="Encounter Sets"
             description="Standard, expert, and leader encounter sets included in this product."
             groups={@encounter_groups}
+            owned_ids={@owned_ids}
           />
 
           <.card_section
@@ -171,18 +244,21 @@ defmodule SanctumWeb.BrowseLive.Show do
             title={section.title}
             subtitle={section.subtitle}
             cards={section.cards}
+            owned_ids={@owned_ids}
           />
 
           <.grouped_section
             title="Player Cards"
             description="Aspect and basic cards included in this product."
             groups={@player_groups}
+            owned_ids={@owned_ids}
           />
 
           <.grouped_section
             title="Modular Sets"
             description="Encounter modules included in this product."
             groups={@modular_groups}
+            owned_ids={@owned_ids}
           />
         </div>
 
@@ -207,6 +283,7 @@ defmodule SanctumWeb.BrowseLive.Show do
   attr :title, :string, required: true
   attr :description, :string, default: nil
   attr :groups, :list, required: true
+  attr :owned_ids, :any, default: nil
 
   defp grouped_section(assigns) do
     ~H"""
@@ -221,7 +298,13 @@ defmodule SanctumWeb.BrowseLive.Show do
         {@description}
       </p>
       <div class="flex flex-col gap-6">
-        <.card_section :for={group <- @groups} title={group.title} cards={group.cards} level={:sub} />
+        <.card_section
+          :for={group <- @groups}
+          title={group.title}
+          cards={group.cards}
+          level={:sub}
+          owned_ids={@owned_ids}
+        />
       </div>
     </section>
     """
@@ -231,6 +314,7 @@ defmodule SanctumWeb.BrowseLive.Show do
   attr :subtitle, :string, default: nil
   attr :cards, :list, required: true
   attr :level, :atom, default: :top
+  attr :owned_ids, :any, default: nil, doc: "MapSet of owned card ids; nil hides collection UI"
 
   defp card_section(assigns) do
     ~H"""
@@ -252,12 +336,11 @@ defmodule SanctumWeb.BrowseLive.Show do
       </div>
 
       <div class="flex flex-wrap gap-2.5">
-        <.link
+        <div
           :for={card <- @cards}
-          navigate={~p"/cards/#{card.card_id}"}
           class={
             [
-              "h-[210px] flex-none border-2 border-neutral shadow-comic-sm",
+              "relative h-[210px] flex-none",
               # Fixed height keeps every card's baseline aligned; the width follows
               # the card's real aspect (7/5 landscape vs 5/7 portrait) so mc_card's
               # object-cover image shows the full scan without cropping.
@@ -265,19 +348,32 @@ defmodule SanctumWeb.BrowseLive.Show do
             ]
           }
         >
-          <.mc_card
-            name={card.name}
-            type={card.type}
-            aspect={card.aspect_key}
-            resources={card.resources}
-            qty={card.quantity}
-            image_url={card.image_url}
-            gradient_from={card.gradient_from}
-            gradient_to={card.gradient_to}
-            size="md"
-            show_cost={false}
+          <.link
+            navigate={~p"/cards/#{card.card_id}"}
+            class="block h-full w-full border-2 border-neutral shadow-comic-sm"
+          >
+            <.mc_card
+              name={card.name}
+              type={card.type}
+              aspect={card.aspect_key}
+              resources={card.resources}
+              qty={card.quantity}
+              image_url={card.image_url}
+              gradient_from={card.gradient_from}
+              gradient_to={card.gradient_to}
+              size="md"
+              show_cost={false}
+            />
+          </.link>
+          <.collection_toggle
+            :if={@owned_ids && card.quantity > 0}
+            compact
+            owned={MapSet.member?(@owned_ids, card.card_id)}
+            event="toggle_card_owned"
+            id={card.card_id}
+            class="absolute -left-1.5 -top-1.5 z-10 shadow-comic-sm"
           />
-        </.link>
+        </div>
       </div>
     </section>
     """
