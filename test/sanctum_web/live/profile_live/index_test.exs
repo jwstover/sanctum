@@ -12,58 +12,75 @@ defmodule SanctumWeb.ProfileLive.IndexTest do
   describe "collection section" do
     import Sanctum.Factory
 
-    test "shows the empty state until packs are added", %{conn: conn} do
-      {:ok, _view, html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
-
-      assert html =~ "Collection"
-      assert html =~ "Nothing here yet"
+    defp core_pack do
+      create(Sanctum.Catalog.Pack,
+        action: :upsert_from_marvelcdb,
+        attrs: %{code: "core", name: "Core Set"}
+      )
+      |> Ash.Changeset.for_update(:set_curated, %{product_type: :core})
+      |> Ash.update!(authorize?: false)
     end
 
-    test "lists owned packs by product type and removes them", %{conn: conn} do
+    defp checkbox(view, pack) do
+      element(view, ~s{input[phx-click="toggle_pack"][phx-value-id="#{pack.id}"]})
+    end
+
+    test "lists every catalog pack with an unchecked box for a fresh user", %{conn: conn} do
+      pack = core_pack()
+
+      {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
+      html = render(view)
+
+      assert html =~ "Core Set · 0 / 1"
+      assert html =~ "0 cards owned"
+      assert has_element?(view, ~s{input[phx-click="toggle_pack"][phx-value-id="#{pack.id}"]})
+      refute has_element?(view, ~s{input[phx-value-id="#{pack.id}"][checked]})
+    end
+
+    test "checking and unchecking a pack updates the collection", %{conn: conn} do
       user = user_fixture()
-
-      pack =
-        create(Sanctum.Catalog.Pack,
-          action: :upsert_from_marvelcdb,
-          attrs: %{code: "core", name: "Core Set"}
-        )
-        |> Ash.Changeset.for_update(:set_curated, %{product_type: :core})
-        |> Ash.update!(authorize?: false)
-
+      pack = core_pack()
       card = create(Sanctum.Games.Card, attrs: %{pack_id: pack.id})
-      Sanctum.Collections.add_pack!(pack.id, actor: user)
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/profile")
+
+      html = view |> checkbox(pack) |> render_click()
+
+      assert html =~ "Core Set · 1 / 1"
+      assert html =~ "1 cards owned"
+      assert Sanctum.Collections.pack_owned?(pack.id, user)
+      assert Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
+
+      html = view |> checkbox(pack) |> render_click()
+
+      assert html =~ "Core Set · 0 / 1"
+      assert html =~ "0 cards owned"
+      refute Sanctum.Collections.pack_owned?(pack.id, user)
+    end
+
+    test "shows override counts alongside the checklist", %{conn: conn} do
+      user = user_fixture()
+      core_pack()
       Sanctum.Collections.set_card_status!(create(Sanctum.Games.Card).id, :owned, actor: user)
 
       {:ok, view, _html} = live(log_in_user(conn, user), ~p"/profile")
       html = render(view)
 
-      assert html =~ "Core Set"
-      assert html =~ "2 cards owned"
-      assert html =~ "1 individually added card"
-
-      html = view |> element(~s{button[phx-click="remove_pack"]}) |> render_click()
-
-      refute html =~ "Core Set"
       assert html =~ "1 cards owned"
-      refute Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
+      assert html =~ "1 individually added card"
     end
 
     test "one user's collection never shows on another's profile", %{conn: conn} do
       owner = user_fixture()
-
-      pack =
-        create(Sanctum.Catalog.Pack,
-          action: :upsert_from_marvelcdb,
-          attrs: %{code: "core", name: "Core Set"}
-        )
-
+      pack = core_pack()
       Sanctum.Collections.add_pack!(pack.id, actor: owner)
 
       {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
       html = render(view)
 
-      refute html =~ "Core Set"
-      assert html =~ "Nothing here yet"
+      assert html =~ "Core Set · 0 / 1"
+      assert html =~ "0 cards owned"
+      refute has_element?(view, ~s{input[phx-value-id="#{pack.id}"][checked]})
     end
   end
 

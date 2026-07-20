@@ -64,7 +64,8 @@ defmodule SanctumWeb.ProfileLive.Index do
           </.form>
         </.panel>
 
-        <!-- collection: private to this user (policy-scoped reads) -->
+        <!-- collection: private to this user (policy-scoped reads). Every
+             product in the catalog with a checkbox — the one-place manager. -->
         <.panel class="mt-6 p-5">
           <div class="flex items-baseline justify-between border-b-2 border-neutral pb-3">
             <h2 class="font-anton text-[20px] uppercase tracking-[0.03em]">Collection</h2>
@@ -73,40 +74,39 @@ defmodule SanctumWeb.ProfileLive.Index do
             </span>
           </div>
 
-          <p
-            :if={@collection_groups == [] and @override_counts == %{}}
-            class="mt-4 font-barlow-condensed text-[15px] text-base-content/60"
-          >
-            Nothing here yet — add the packs and boxes you own from <.link
-              navigate={~p"/browse"}
-              class="text-primary hover:underline"
-            >Browse</.link>.
-          </p>
-
-          <div :for={{label, packs} <- @collection_groups} class="mt-4">
+          <div :for={group <- @collection_groups} class="mt-4">
             <div class="mb-1.5 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
-              {label} · {length(packs)}
+              {group.label} · {group.owned_count} / {length(group.packs)}
             </div>
             <div class="divide-y divide-neutral/50">
-              <div :for={pack <- packs} class="flex items-center gap-2 py-1.5">
-                <.link
-                  navigate={~p"/browse/#{pack.code}"}
-                  class="min-w-0 flex-1 truncate font-barlow-condensed text-[15px] font-semibold hover:text-primary"
-                >
+              <label
+                :for={pack <- group.packs}
+                class="flex cursor-pointer items-center gap-2.5 py-1.5"
+              >
+                <input
+                  type="checkbox"
+                  checked={MapSet.member?(@owned_pack_ids, pack.id)}
+                  phx-click="toggle_pack"
+                  phx-value-id={pack.id}
+                  class="checkbox checkbox-sm"
+                />
+                <span class={[
+                  "min-w-0 flex-1 truncate font-barlow-condensed text-[15px] font-semibold",
+                  !MapSet.member?(@owned_pack_ids, pack.id) && "text-base-content/60"
+                ]}>
                   {pack.name || pack.code}
-                </.link>
+                </span>
                 <span :if={pack.released_on} class="font-ibm-mono text-[11px] text-base-content/40">
                   {pack.released_on.year}
                 </span>
-                <button
-                  phx-click="remove_pack"
-                  phx-value-id={pack.id}
-                  title="Remove from collection"
-                  class="cursor-pointer p-1 text-base-content/40 hover:text-error"
+                <.link
+                  navigate={~p"/browse/#{pack.code}"}
+                  title="View contents"
+                  class="p-1 text-base-content/40 hover:text-primary"
                 >
-                  <.icon name="hero-x-mark" class="size-4" />
-                </button>
-              </div>
+                  <.icon name="hero-arrow-top-right-on-square" class="size-3.5" />
+                </.link>
+              </label>
             </div>
           </div>
 
@@ -127,7 +127,7 @@ defmodule SanctumWeb.ProfileLive.Index do
             navigate={~p"/browse"}
             class="mt-4 inline-flex items-center gap-1 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-primary"
           >
-            Manage your collection in Browse <.icon name="hero-arrow-right" class="size-3.5" />
+            Fine-tune individual cards in Browse <.icon name="hero-arrow-right" class="size-3.5" />
           </.link>
         </.panel>
       </div>
@@ -140,6 +140,7 @@ defmodule SanctumWeb.ProfileLive.Index do
     socket =
       socket
       |> assign(:collection_groups, [])
+      |> assign(:owned_pack_ids, MapSet.new())
       |> assign(:override_counts, %{})
       |> assign(:owned_card_count, 0)
 
@@ -154,8 +155,13 @@ defmodule SanctumWeb.ProfileLive.Index do
      assign(socket, :form, to_form(AshPhoenix.Form.validate(socket.assigns.form.source, params)))}
   end
 
-  def handle_event("remove_pack", %{"id" => pack_id}, socket) do
-    :ok = Sanctum.Collections.remove_pack(pack_id, socket.assigns.current_user)
+  def handle_event("toggle_pack", %{"id" => pack_id}, socket) do
+    user = socket.assigns.current_user
+
+    if MapSet.member?(socket.assigns.owned_pack_ids, pack_id),
+      do: Sanctum.Collections.remove_pack(pack_id, user),
+      else: Sanctum.Collections.add_pack!(pack_id, actor: user)
+
     {:noreply, assign_collection(socket)}
   end
 
@@ -188,23 +194,26 @@ defmodule SanctumWeb.ProfileLive.Index do
   defp display_name(%{username: username}) when not is_nil(username), do: "@#{username}"
   defp display_name(%{email: email}), do: to_string(email)
 
-  # The user's collection: owned packs grouped by product type, per-card
-  # override counts, and the effective owned-card total.
+  # The full catalog as a checklist: every pack grouped by product type with
+  # the user's owned set, plus per-card override counts and the effective
+  # owned-card total.
   defp assign_collection(socket) do
     user = socket.assigns.current_user
+    owned_pack_ids = Sanctum.Collections.owned_pack_ids(user)
 
-    packs =
-      [actor: user, load: [:pack]]
-      |> Sanctum.Collections.list_collection_packs!()
-      |> Enum.map(& &1.pack)
-
-    by_type = Enum.group_by(packs, & &1.product_type)
+    by_type =
+      Sanctum.Catalog.list_packs!()
+      |> Enum.group_by(& &1.product_type)
 
     groups =
       for {type, label} <- @type_order,
           type_packs = Map.get(by_type, type, []),
           type_packs != [] do
-        {label, Enum.sort_by(type_packs, &(&1.position || 9999))}
+        %{
+          label: label,
+          packs: Enum.sort_by(type_packs, &(&1.position || 9999)),
+          owned_count: Enum.count(type_packs, &MapSet.member?(owned_pack_ids, &1.id))
+        }
       end
 
     override_counts =
@@ -224,6 +233,7 @@ defmodule SanctumWeb.ProfileLive.Index do
 
     socket
     |> assign(:collection_groups, groups)
+    |> assign(:owned_pack_ids, owned_pack_ids)
     |> assign(:override_counts, override_counts)
     |> assign(:owned_card_count, owned_card_count)
   end
