@@ -1,12 +1,24 @@
 defmodule SanctumWeb.ProfileLive.Index do
   @moduledoc """
   The signed-in user's profile: claim (or change) a username, preview the
-  avatar. Account settings (change password, linked sign-in methods) will
-  stack on this page later.
+  avatar, and review the private card collection. Account settings (change
+  password, linked sign-in methods) will stack on this page later.
   """
   use SanctumWeb, :live_view
 
+  require Ash.Query
+
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
+
+  # Collection products group by type in release-shelf order.
+  @type_order [
+    {:core, "Core Set"},
+    {:campaign_expansion, "Campaign Expansions"},
+    {:scenario_pack, "Scenario Packs"},
+    {:hero_pack, "Hero Packs"},
+    {:promo, "Promos"},
+    {nil, "Other"}
+  ]
 
   @impl true
   def render(assigns) do
@@ -51,6 +63,73 @@ defmodule SanctumWeb.ProfileLive.Index do
             </.button>
           </.form>
         </.panel>
+
+        <!-- collection: private to this user (policy-scoped reads) -->
+        <.panel class="mt-6 p-5">
+          <div class="flex items-baseline justify-between border-b-2 border-neutral pb-3">
+            <h2 class="font-anton text-[20px] uppercase tracking-[0.03em]">Collection</h2>
+            <span class="font-ibm-mono text-[11px] text-base-content/45">
+              {@owned_card_count} cards owned
+            </span>
+          </div>
+
+          <p
+            :if={@collection_groups == [] and @override_counts == %{}}
+            class="mt-4 font-barlow-condensed text-[15px] text-base-content/60"
+          >
+            Nothing here yet — add the packs and boxes you own from <.link
+              navigate={~p"/browse"}
+              class="text-primary hover:underline"
+            >Browse</.link>.
+          </p>
+
+          <div :for={{label, packs} <- @collection_groups} class="mt-4">
+            <div class="mb-1.5 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+              {label} · {length(packs)}
+            </div>
+            <div class="divide-y divide-neutral/50">
+              <div :for={pack <- packs} class="flex items-center gap-2 py-1.5">
+                <.link
+                  navigate={~p"/browse/#{pack.code}"}
+                  class="min-w-0 flex-1 truncate font-barlow-condensed text-[15px] font-semibold hover:text-primary"
+                >
+                  {pack.name || pack.code}
+                </.link>
+                <span :if={pack.released_on} class="font-ibm-mono text-[11px] text-base-content/40">
+                  {pack.released_on.year}
+                </span>
+                <button
+                  phx-click="remove_pack"
+                  phx-value-id={pack.id}
+                  title="Remove from collection"
+                  class="cursor-pointer p-1 text-base-content/40 hover:text-error"
+                >
+                  <.icon name="hero-x-mark" class="size-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p
+            :if={@override_counts != %{}}
+            class="mt-4 font-barlow-condensed text-[13px] text-base-content/50"
+          >
+            <span :if={@override_counts[:owned]}>
+              Plus {@override_counts[:owned]} individually added {(@override_counts[:owned] == 1 &&
+                                                                     "card") || "cards"}.
+            </span>
+            <span :if={@override_counts[:excluded]}>
+              {@override_counts[:excluded]} marked missing from owned packs.
+            </span>
+          </p>
+
+          <.link
+            navigate={~p"/browse"}
+            class="mt-4 inline-flex items-center gap-1 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-primary"
+          >
+            Manage your collection in Browse <.icon name="hero-arrow-right" class="size-3.5" />
+          </.link>
+        </.panel>
       </div>
     </Layouts.app>
     """
@@ -58,6 +137,14 @@ defmodule SanctumWeb.ProfileLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    socket =
+      socket
+      |> assign(:collection_groups, [])
+      |> assign(:override_counts, %{})
+      |> assign(:owned_card_count, 0)
+
+    socket = if connected?(socket), do: assign_collection(socket), else: socket
+
     {:ok, assign_form(socket)}
   end
 
@@ -65,6 +152,11 @@ defmodule SanctumWeb.ProfileLive.Index do
   def handle_event("validate", %{"profile" => params}, socket) do
     {:noreply,
      assign(socket, :form, to_form(AshPhoenix.Form.validate(socket.assigns.form.source, params)))}
+  end
+
+  def handle_event("remove_pack", %{"id" => pack_id}, socket) do
+    :ok = Sanctum.Collections.remove_pack(pack_id, socket.assigns.current_user)
+    {:noreply, assign_collection(socket)}
   end
 
   def handle_event("save", %{"profile" => params}, socket) do
@@ -95,4 +187,44 @@ defmodule SanctumWeb.ProfileLive.Index do
 
   defp display_name(%{username: username}) when not is_nil(username), do: "@#{username}"
   defp display_name(%{email: email}), do: to_string(email)
+
+  # The user's collection: owned packs grouped by product type, per-card
+  # override counts, and the effective owned-card total.
+  defp assign_collection(socket) do
+    user = socket.assigns.current_user
+
+    packs =
+      [actor: user, load: [:pack]]
+      |> Sanctum.Collections.list_collection_packs!()
+      |> Enum.map(& &1.pack)
+
+    by_type = Enum.group_by(packs, & &1.product_type)
+
+    groups =
+      for {type, label} <- @type_order,
+          type_packs = Map.get(by_type, type, []),
+          type_packs != [] do
+        {label, Enum.sort_by(type_packs, &(&1.position || 9999))}
+      end
+
+    override_counts =
+      [actor: user]
+      |> Sanctum.Collections.list_card_overrides!()
+      |> Enum.frequencies_by(& &1.status)
+
+    # Counted via a select-id read: Ash.count/2 does not resolve the ^actor
+    # template inside the :owned calc's filter (it always counts zero), while
+    # the read pipeline does.
+    owned_card_count =
+      Sanctum.Games.Card
+      |> Ash.Query.filter(owned == true)
+      |> Ash.Query.select([:id])
+      |> Ash.read!(actor: user)
+      |> length()
+
+    socket
+    |> assign(:collection_groups, groups)
+    |> assign(:override_counts, override_counts)
+    |> assign(:owned_card_count, owned_card_count)
+  end
 end

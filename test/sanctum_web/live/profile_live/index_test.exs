@@ -9,6 +9,64 @@ defmodule SanctumWeb.ProfileLive.IndexTest do
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/profile")
   end
 
+  describe "collection section" do
+    import Sanctum.Factory
+
+    test "shows the empty state until packs are added", %{conn: conn} do
+      {:ok, _view, html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
+
+      assert html =~ "Collection"
+      assert html =~ "Nothing here yet"
+    end
+
+    test "lists owned packs by product type and removes them", %{conn: conn} do
+      user = user_fixture()
+
+      pack =
+        create(Sanctum.Catalog.Pack,
+          action: :upsert_from_marvelcdb,
+          attrs: %{code: "core", name: "Core Set"}
+        )
+        |> Ash.Changeset.for_update(:set_curated, %{product_type: :core})
+        |> Ash.update!(authorize?: false)
+
+      card = create(Sanctum.Games.Card, attrs: %{pack_id: pack.id})
+      Sanctum.Collections.add_pack!(pack.id, actor: user)
+      Sanctum.Collections.set_card_status!(create(Sanctum.Games.Card).id, :owned, actor: user)
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/profile")
+      html = render(view)
+
+      assert html =~ "Core Set"
+      assert html =~ "2 cards owned"
+      assert html =~ "1 individually added card"
+
+      html = view |> element(~s{button[phx-click="remove_pack"]}) |> render_click()
+
+      refute html =~ "Core Set"
+      assert html =~ "1 cards owned"
+      refute Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
+    end
+
+    test "one user's collection never shows on another's profile", %{conn: conn} do
+      owner = user_fixture()
+
+      pack =
+        create(Sanctum.Catalog.Pack,
+          action: :upsert_from_marvelcdb,
+          attrs: %{code: "core", name: "Core Set"}
+        )
+
+      Sanctum.Collections.add_pack!(pack.id, actor: owner)
+
+      {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
+      html = render(view)
+
+      refute html =~ "Core Set"
+      assert html =~ "Nothing here yet"
+    end
+  end
+
   test "a signed-in user can claim a username", %{conn: conn} do
     user = user_fixture()
     conn = log_in_user(conn, user)
