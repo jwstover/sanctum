@@ -1,3 +1,12 @@
+# [1.55.0](https://github.com/jwstover/sanctum/compare/v1.54.0...v1.55.0) (2026-07-20)
+
+
+### Features
+
+* **ui:** pin profile/admin drawer links to bottom with icons ([e6c56b9](https://github.com/jwstover/sanctum/commit/e6c56b9b0358090ec3dc6b9e354e4176b4ec7878))
+
+
+
 # [1.54.0](https://github.com/jwstover/sanctum/compare/v1.53.0...v1.54.0) (2026-07-19)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * **heroes:** canonicalize Ironheart suit versions to one Hero ([320b392](https://github.com/jwstover/sanctum/commit/320b392e2f866bdb6a3b03c8967d8a701957896a))
-
-
-
-## [1.51.2](https://github.com/jwstover/sanctum/compare/v1.51.1...v1.51.2) (2026-07-18)
-
-
-### Bug Fixes
-
-* **decks:** capture MarvelCDB deck dates and backfill existing decks ([3894175](https://github.com/jwstover/sanctum/commit/38941757489c33f1abcae4d416fd49d37b624fb8))
 
 
 
