@@ -33,6 +33,18 @@ defmodule Sanctum.Search.Builders do
     expr(ilike(^target, ^pattern(raw)))
   end
 
+  @doc """
+  Standard `build` function for a text field: substring match on `:eq`,
+  negated on `:neq`. `to_expr` turns an escaped ILIKE pattern into an
+  expression.
+  """
+  def text_build(to_expr) do
+    fn
+      :eq, value -> {:ok, to_expr.(pattern(value))}
+      :neq, value -> {:ok, expr(not (^to_expr.(pattern(value))))}
+    end
+  end
+
   @doc "`%…%` ILIKE pattern for user input, escaping `%`, `_`, and `\\`."
   def pattern(raw) do
     escaped =
