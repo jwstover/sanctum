@@ -169,6 +169,12 @@ defmodule Sanctum.Games.Card do
       allow_nil? true
       source_attribute :pack_id
     end
+
+    # Per-user collection overrides (see Sanctum.Collections). Private data —
+    # only referenced through the actor-scoped :owned calculations.
+    has_many :collection_cards, Sanctum.Collections.CollectionCard do
+      destination_attribute :card_id
+    end
   end
 
   identities do

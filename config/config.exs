@@ -79,6 +79,7 @@ config :sanctum,
   ash_domains: [
     Sanctum.Accounts,
     Sanctum.Catalog,
+    Sanctum.Collections,
     Sanctum.Decks,
     Sanctum.Games,
     Sanctum.Heroes,

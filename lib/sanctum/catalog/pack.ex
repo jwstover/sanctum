@@ -94,6 +94,12 @@ defmodule Sanctum.Catalog.Pack do
       public? true
       destination_attribute :pack_id
     end
+
+    # Per-user collection rows (see Sanctum.Collections). Private data —
+    # only referenced through actor-scoped calculations and reads.
+    has_many :collection_packs, Sanctum.Collections.CollectionPack do
+      destination_attribute :pack_id
+    end
   end
 
   aggregates do
