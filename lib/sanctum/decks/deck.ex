@@ -138,6 +138,12 @@ defmodule Sanctum.Decks.Deck do
       skip_global_validations? true
     end
 
+    update :set_description do
+      accept [:description_md]
+      require_atomic? false
+      skip_global_validations? true
+    end
+
     update :set_mcdb_dates do
       description "Backfills the MarvelCDB provenance dates on an already-imported deck."
       accept [:mcdb_date_creation, :mcdb_date_update]

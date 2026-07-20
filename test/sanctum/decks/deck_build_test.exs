@@ -224,13 +224,29 @@ defmodule Sanctum.Decks.DeckBuildTest do
       %{owner: owner, deck: deck}
     end
 
-    test "owner can rename, set aspects, and destroy", %{owner: owner, deck: deck} do
+    test "owner can rename, set aspects, set description, and destroy", %{
+      owner: owner,
+      deck: deck
+    } do
       assert %{title: "Renamed"} = Decks.rename_deck!(deck, %{title: "Renamed"}, actor: owner)
 
       assert %{aspects: [:pool]} =
                Decks.set_deck_aspects!(deck, %{aspects: [:pool]}, actor: owner)
 
+      assert %{description_md: "**Bold** plan."} =
+               Decks.set_deck_description!(deck, %{description_md: "**Bold** plan."},
+                 actor: owner
+               )
+
       assert :ok = Decks.destroy_deck!(deck, actor: owner)
+    end
+
+    test "non-owner cannot set the description", %{deck: deck} do
+      other = user_fixture()
+
+      assert_raise Ash.Error.Forbidden, fn ->
+        Decks.set_deck_description!(deck, %{description_md: "graffiti"}, actor: other)
+      end
     end
 
     test "non-owner cannot rename or destroy", %{deck: deck} do

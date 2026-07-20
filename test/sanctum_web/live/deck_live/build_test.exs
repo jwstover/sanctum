@@ -296,6 +296,33 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       assert {:error, _not_found} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
     end
 
+    test "description tab edits, previews, and saves the writeup", %{conn: conn} do
+      %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_m")
+      render_async(lv)
+
+      lv |> element("button[phx-click='set_tab'][phx-value-key='description']") |> render_click()
+
+      lv
+      |> form("#description-form", %{description: "**Web-slinging** combos"})
+      |> render_change()
+
+      # Preview renders the draft through Writeup (markdown → HTML).
+      html =
+        lv
+        |> element("button[phx-click='set_description_mode'][phx-value-key='preview']")
+        |> render_click()
+
+      assert html =~ "<strong>Web-slinging</strong>"
+
+      # Nothing persisted yet.
+      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).description_md == nil
+
+      lv |> element("button[phx-click='save_description']") |> render_click()
+
+      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).description_md ==
+               "**Web-slinging** combos"
+    end
+
     test "cancel backs out of the delete confirm", %{conn: conn} do
       %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_l")
       render_async(lv)

@@ -19,6 +19,7 @@ defmodule SanctumWeb.DeckLive.Build do
 
   alias Sanctum.Decks
   alias Sanctum.Decks.Legality
+  alias Sanctum.Decks.Writeup
   alias SanctumWeb.Components.Card, as: CardComponent
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
@@ -118,6 +119,11 @@ defmodule SanctumWeb.DeckLive.Build do
     |> assign(:panel_open?, false)
     |> assign(:confirm_delete?, false)
     |> assign(:deck_aspect_options, @deck_aspects)
+    |> assign(:tab, "cards")
+    |> assign(:description_draft, deck.description_md || "")
+    |> assign(:description_mode, "write")
+    |> assign(:description_preview, nil)
+    |> assign(:description_dirty?, false)
     |> assign(:query, "")
     |> assign(:search_diagnostics, [])
     |> assign(:aspect, "all")
@@ -225,6 +231,42 @@ defmodule SanctumWeb.DeckLive.Build do
 
   def handle_event("toggle_panel", _params, socket) do
     {:noreply, assign(socket, :panel_open?, !socket.assigns.panel_open?)}
+  end
+
+  def handle_event("set_tab", %{"key" => tab}, socket) when tab in ["cards", "description"] do
+    {:noreply, assign(socket, :tab, tab)}
+  end
+
+  def handle_event("description_change", %{"description" => draft}, socket) do
+    {:noreply,
+     socket
+     |> assign(:description_draft, draft)
+     |> assign(:description_dirty?, draft != (socket.assigns.deck.description_md || ""))}
+  end
+
+  # Preview renders on demand (not per keystroke) — Writeup.render resolves
+  # card links against the catalog, so it costs reads.
+  def handle_event("set_description_mode", %{"key" => mode}, socket)
+      when mode in ["write", "preview"] do
+    socket =
+      if mode == "preview" do
+        assign(socket, :description_preview, Writeup.render(socket.assigns.description_draft))
+      else
+        socket
+      end
+
+    {:noreply, assign(socket, :description_mode, mode)}
+  end
+
+  def handle_event("save_description", _params, socket) do
+    %{deck: deck, description_draft: draft, current_user: user} = socket.assigns
+
+    updated = Decks.set_deck_description!(deck, %{description_md: draft}, actor: user)
+
+    {:noreply,
+     socket
+     |> assign(:deck, %{deck | description_md: updated.description_md})
+     |> assign(:description_dirty?, false)}
   end
 
   # Fired on blur and on Enter (form submit); both carry the new title.
@@ -566,7 +608,32 @@ defmodule SanctumWeb.DeckLive.Build do
         </:actions>
       </.header>
 
-      <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-5">
+      <!-- build/description tabs -->
+      <div class="mb-5 flex border-b-2 border-neutral">
+        <button
+          :for={{key, label} <- [{"cards", "Cards"}, {"description", "Description"}]}
+          type="button"
+          phx-click="set_tab"
+          phx-value-key={key}
+          class={[
+            "-mb-[2px] cursor-pointer border-b-[3px] px-4 py-2.5 font-anton text-[14px] uppercase tracking-[0.06em] transition-colors",
+            (@tab == key && "border-primary text-primary") ||
+              "border-transparent text-base-content/55 hover:text-base-content"
+          ]}
+        >
+          {label}
+          <span :if={key == "description" && @description_dirty?} class="text-warning">•</span>
+        </button>
+      </div>
+
+      <!-- The cards tab hides via CSS (never unmounts): the grid is a LiveView
+           stream, and stream items aren't resent if the container re-enters
+           the DOM. The lg:grid classes only apply on the cards tab — a plain
+           `hidden` loses to responsive display utilities. -->
+      <div class={[
+        (@tab == "cards" && "lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-5") ||
+          "hidden"
+      ]}>
         <!-- left: browse + grid -->
         <div class="min-w-0">
           <div class="mb-3.5">
@@ -699,13 +766,71 @@ defmodule SanctumWeb.DeckLive.Build do
         </div>
       </div>
 
+      <!-- description editor tab -->
+      <div :if={@tab == "description"} class="mx-auto max-w-3xl">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div class="flex gap-1.5">
+            <.filter_pill
+              :for={{key, label} <- [{"write", "Write"}, {"preview", "Preview"}]}
+              active={@description_mode == key}
+              type="button"
+              phx-click="set_description_mode"
+              phx-value-key={key}
+            >
+              {label}
+            </.filter_pill>
+          </div>
+          <.button
+            variant="primary"
+            phx-click="save_description"
+            disabled={!@description_dirty?}
+            class={!@description_dirty? && "opacity-40"}
+          >
+            {(@description_dirty? && "Save") || "Saved"}
+          </.button>
+        </div>
+
+        <form
+          :if={@description_mode == "write"}
+          id="description-form"
+          phx-change="description_change"
+        >
+          <textarea
+            name="description"
+            phx-debounce="300"
+            placeholder="Write up your deck — how it plays, key combos, mulligan advice… Markdown supported; link cards with [Name](/card/01088)."
+            class="min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-[13px] leading-relaxed text-base-content outline-none focus:border-primary"
+          >{@description_draft}</textarea>
+        </form>
+
+        <.panel :if={@description_mode == "preview"} class="min-w-0 p-5">
+          <div :if={@description_preview} class="space-y-4">
+            <div :for={seg <- @description_preview}>
+              <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
+              <iframe
+                :if={seg.kind == :rich}
+                title="Deck writeup preview"
+                sandbox=""
+                referrerpolicy="no-referrer"
+                loading="lazy"
+                class="deck-writeup-frame"
+                srcdoc={seg.srcdoc}
+              ></iframe>
+            </div>
+          </div>
+          <div :if={!@description_preview} class="font-barlow text-[14px] italic text-base-content/45">
+            Nothing to preview yet.
+          </div>
+        </.panel>
+      </div>
+
       <!-- mobile slide-up deck pane (never a modal: the page stays live behind it) -->
       <div
         id="deck-panel-mobile"
         class={[
           "fixed inset-x-0 bottom-0 z-30 max-h-[75dvh] overflow-y-auto border-t-2 border-neutral bg-base-100",
           "transition-transform duration-200 lg:hidden",
-          (@panel_open? && "translate-y-0") || "translate-y-full"
+          (@tab == "cards" && @panel_open? && "translate-y-0") || "translate-y-full"
         ]}
       >
         <button
@@ -727,8 +852,11 @@ defmodule SanctumWeb.DeckLive.Build do
         />
       </div>
 
-      <!-- persistent mobile deck bar -->
-      <div class="fixed inset-x-0 bottom-0 z-20 border-t-2 border-neutral bg-base-100/95 px-4 py-2.5 backdrop-blur lg:hidden">
+      <!-- persistent mobile deck bar (cards tab only — the editor needs the space) -->
+      <div
+        :if={@tab == "cards"}
+        class="fixed inset-x-0 bottom-0 z-20 border-t-2 border-neutral bg-base-100/95 px-4 py-2.5 backdrop-blur lg:hidden"
+      >
         <button
           type="button"
           phx-click="toggle_panel"

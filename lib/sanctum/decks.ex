@@ -19,6 +19,7 @@ defmodule Sanctum.Decks do
       define :build_deck, action: :build
       define :rename_deck, action: :rename
       define :set_deck_aspects, action: :set_aspects
+      define :set_deck_description, action: :set_description
       define :destroy_deck, action: :destroy
     end
 
