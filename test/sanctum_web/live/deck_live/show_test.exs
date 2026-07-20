@@ -88,6 +88,31 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     assert html =~ "Thwart twice"
   end
 
+  test "a signed-in user sees collection status on the card list", %{conn: conn} do
+    deck = make_deck_with_card()
+    user = Sanctum.AccountsFixtures.user_fixture()
+
+    # Own the ally (2 copies) via a card override; the hero card stays unowned.
+    ally = Ash.get!(Sanctum.Games.Card, %{base_code: "90051"}, authorize?: false)
+    Sanctum.Collections.set_card_status!(ally.id, :owned, actor: user)
+
+    {:ok, view, _html} = live(log_in_user(conn, user), ~p"/decks/#{deck.id}")
+    html = render_async(view)
+
+    assert html =~ "you own 2 / 2"
+    assert html =~ "In your collection"
+  end
+
+  test "anonymous visitors see no collection summary", %{conn: conn} do
+    deck = make_deck_with_card()
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+    html = render_async(view)
+
+    refute html =~ "you own"
+    refute html =~ "In your collection"
+  end
+
   test "restore-scroll confirms once the deck content has loaded", %{conn: conn} do
     deck = make_deck_with_card()
 

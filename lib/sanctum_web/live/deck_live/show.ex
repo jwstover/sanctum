@@ -163,7 +163,10 @@ defmodule SanctumWeb.DeckLive.Show do
                 <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
                   <div class="font-anton text-[17px] uppercase tracking-[0.05em]">In This Deck</div>
                   <div class="ml-auto font-ibm-mono text-[11px] text-base-content/45">
-                    {@cover.total_cards} cards
+                    {@cover.total_cards} cards<span
+                      :if={@owned_summary}
+                      class="text-primary"
+                    > · you own {@owned_summary.owned} / {@owned_summary.total}</span>
                   </div>
                   <div class="flex border-2 border-neutral" role="group" aria-label="Card display">
                     <.view_toggle_button
@@ -192,7 +195,7 @@ defmodule SanctumWeb.DeckLive.Show do
                     <.link
                       :for={c <- g.cards}
                       navigate={~p"/cards/#{c.card_id}"}
-                      class="h-[101px] border-2 border-neutral shadow-comic-sm"
+                      class="relative h-[101px] border-2 border-neutral shadow-comic-sm"
                     >
                       <.mc_card
                         name={c.name}
@@ -205,6 +208,13 @@ defmodule SanctumWeb.DeckLive.Show do
                         size="sm"
                         show_cost={false}
                       />
+                      <span
+                        :if={c.owned == true}
+                        title="In your collection"
+                        class="absolute left-0.5 top-0.5 z-[3] flex size-4 items-center justify-center rounded-[4px] bg-primary text-primary-content"
+                      >
+                        <.icon name="hero-check" class="size-3" />
+                      </span>
                     </.link>
                   </div>
                   <div :if={@card_view == "list"} class="divide-y divide-neutral/50">
@@ -224,6 +234,9 @@ defmodule SanctumWeb.DeckLive.Show do
                       <span :if={c.aspect_key != :hero} class={["size-2.5 flex-none", c.aspect_bg]}></span>
                       <span class="truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85">
                         {c.name}
+                      </span>
+                      <span :if={c.owned == true} title="In your collection" class="flex-none">
+                        <.icon name="hero-check" class="size-3 text-primary" />
                       </span>
                       <span :if={c.pips != []} class="ml-auto flex flex-none items-center gap-1">
                         <span
@@ -363,6 +376,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:writeup, nil)
       |> assign(:card_view, "images")
       |> assign(:scroll_restore_pending?, false)
+      |> assign(:owned_summary, nil)
 
     actor = socket.assigns[:current_user]
 
@@ -410,6 +424,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:deck, data.deck)
       |> assign(:cover, data.cover)
       |> assign(:groups, data.groups)
+      |> assign(:owned_summary, data.owned_summary)
       |> assign(:similar, data.similar)
       |> assign(:writeup, data.writeup)
 
@@ -443,6 +458,9 @@ defmodule SanctumWeb.DeckLive.Show do
   # decks, and rendered writeup. Returns `:not_found` for an unknown id so
   # handle_async can redirect rather than crash the LiveView.
   defp load_deck(id, actor) do
+    # Collection status rides the same deck_cards load when signed in.
+    card_loads = if actor, do: [:primary_side, :owned], else: [:primary_side]
+
     case Sanctum.Decks.get_deck(id,
            actor: actor,
            load: [
@@ -451,15 +469,15 @@ defmodule SanctumWeb.DeckLive.Show do
              :mcdb_user,
              :owner,
              hero: [:display_name, :hero_side, card: [:primary_side]],
-             deck_cards: [card: [:primary_side]]
+             deck_cards: [card: card_loads]
            ]
          ) do
       {:ok, deck} ->
         hero_gradient = hero_gradient(deck.hero)
+        card_views = Enum.map(deck.deck_cards, &card_view(&1, hero_gradient))
 
         groups =
-          deck.deck_cards
-          |> Enum.map(&card_view(&1, hero_gradient))
+          card_views
           |> Enum.group_by(& &1.type)
           |> Enum.map(fn {type, cards} ->
             %{
@@ -476,6 +494,7 @@ defmodule SanctumWeb.DeckLive.Show do
            deck: deck,
            cover: cover_view(deck, hero_gradient),
            groups: groups,
+           owned_summary: owned_summary(card_views, actor),
            similar: similar_views(deck),
            writeup: Sanctum.Decks.Writeup.render(deck.description_md)
          }}
@@ -483,6 +502,16 @@ defmodule SanctumWeb.DeckLive.Show do
       {:error, _} ->
         :not_found
     end
+  end
+
+  # "You own X / Y" across the deck's card copies; nil (no line) for anonymous.
+  defp owned_summary(_card_views, nil), do: nil
+
+  defp owned_summary(card_views, _actor) do
+    %{
+      owned: card_views |> Enum.filter(&(&1.owned == true)) |> Enum.sum_by(& &1.qty),
+      total: Enum.sum_by(card_views, & &1.qty)
+    }
   end
 
   # Same-hero decks that share the most chosen cards with this one.
@@ -544,8 +573,18 @@ defmodule SanctumWeb.DeckLive.Show do
       pips: CardComponent.resource_pips(resources),
       image_url: side.image_url,
       gradient_from: gf,
-      gradient_to: gt
+      gradient_to: gt,
+      owned: owned_flag(dc.card)
     }
+  end
+
+  # true/false only when the :owned calc was loaded (signed-in); nil renders
+  # no collection UI.
+  defp owned_flag(card) do
+    case Map.get(card, :owned) do
+      value when is_boolean(value) -> value
+      _ -> nil
+    end
   end
 
   defp hero_gradient(%{primary_color: from, secondary_color: to, set: set}) do
