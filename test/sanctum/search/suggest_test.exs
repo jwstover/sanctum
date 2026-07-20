@@ -76,6 +76,7 @@ defmodule Sanctum.Search.SuggestTest do
 
   test "is: suggests flags" do
     assert "unique" in labels(suggest("is:", 3))
+    assert "owned" in labels(suggest("own", 3))
   end
 
   test "utf-16 offsets round-trip for non-BMP input" do

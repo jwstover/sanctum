@@ -169,6 +169,35 @@ defmodule Sanctum.Games.Card do
       allow_nil? true
       source_attribute :pack_id
     end
+
+    # Per-user collection overrides (see Sanctum.Collections). Private data —
+    # only referenced through the actor-scoped :owned calculations.
+    has_many :collection_cards, Sanctum.Collections.CollectionCard do
+      destination_attribute :card_id
+    end
+  end
+
+  calculations do
+    # Collection ownership for the requesting user (^actor resolves from the
+    # query's actor; nil actor ⇒ false). A card is derived-owned when the user
+    # owns the pack of any printing — its own or an alternate's.
+    calculate :owned_via_packs,
+              :boolean,
+              expr(
+                exists(pack_ref.collection_packs, user_id == ^actor(:id)) or
+                  exists(alts.pack_ref.collection_packs, user_id == ^actor(:id))
+              )
+
+    # Effective ownership: a per-card override always beats pack membership,
+    # in both directions.
+    calculate :owned,
+              :boolean,
+              expr(
+                exists(collection_cards, user_id == ^actor(:id) and status == :owned) or
+                  (not exists(collection_cards, user_id == ^actor(:id) and status == :excluded) and
+                     (exists(pack_ref.collection_packs, user_id == ^actor(:id)) or
+                        exists(alts.pack_ref.collection_packs, user_id == ^actor(:id))))
+              )
   end
 
   identities do

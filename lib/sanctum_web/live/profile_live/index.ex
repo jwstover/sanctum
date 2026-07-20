@@ -1,12 +1,18 @@
 defmodule SanctumWeb.ProfileLive.Index do
   @moduledoc """
   The signed-in user's profile: claim (or change) a username, preview the
-  avatar. Account settings (change password, linked sign-in methods) will
-  stack on this page later.
+  avatar, and review the private card collection. Account settings (change
+  password, linked sign-in methods) will stack on this page later.
   """
   use SanctumWeb, :live_view
 
+  require Ash.Query
+
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
+
+  # The checklist mirrors the Browse page: waves in release order, packs
+  # within a wave ranked by product type then release position.
+  @type_rank %{core: 0, campaign_expansion: 1, scenario_pack: 2, hero_pack: 3, promo: 4}
 
   @impl true
   def render(assigns) do
@@ -51,6 +57,73 @@ defmodule SanctumWeb.ProfileLive.Index do
             </.button>
           </.form>
         </.panel>
+
+        <!-- collection: private to this user (policy-scoped reads). Every
+             product in the catalog with a checkbox — the one-place manager. -->
+        <.panel class="mt-6 p-5">
+          <div class="flex items-baseline justify-between border-b-2 border-neutral pb-3">
+            <h2 class="font-anton text-[20px] uppercase tracking-[0.03em]">Collection</h2>
+            <span class="font-ibm-mono text-[11px] text-base-content/45">
+              {@owned_card_count} cards owned
+            </span>
+          </div>
+
+          <div :for={group <- @collection_groups} class="mt-4">
+            <div class="mb-1.5 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+              {group.label} · {group.owned_count} / {length(group.packs)}
+            </div>
+            <div class="divide-y divide-neutral/50">
+              <label
+                :for={pack <- group.packs}
+                class="flex cursor-pointer items-center gap-2.5 py-1.5"
+              >
+                <input
+                  type="checkbox"
+                  checked={MapSet.member?(@owned_pack_ids, pack.id)}
+                  phx-click="toggle_pack"
+                  phx-value-id={pack.id}
+                  class="checkbox checkbox-sm"
+                />
+                <span class={[
+                  "min-w-0 flex-1 truncate font-barlow-condensed text-[15px] font-semibold",
+                  !MapSet.member?(@owned_pack_ids, pack.id) && "text-base-content/60"
+                ]}>
+                  {pack.name || pack.code}
+                </span>
+                <span :if={pack.released_on} class="font-ibm-mono text-[11px] text-base-content/40">
+                  {pack.released_on.year}
+                </span>
+                <.link
+                  navigate={~p"/browse/#{pack.code}"}
+                  title="View contents"
+                  class="p-1 text-base-content/40 hover:text-primary"
+                >
+                  <.icon name="hero-arrow-top-right-on-square" class="size-3.5" />
+                </.link>
+              </label>
+            </div>
+          </div>
+
+          <p
+            :if={@override_counts != %{}}
+            class="mt-4 font-barlow-condensed text-[13px] text-base-content/50"
+          >
+            <span :if={@override_counts[:owned]}>
+              Plus {@override_counts[:owned]} individually added {(@override_counts[:owned] == 1 &&
+                                                                     "card") || "cards"}.
+            </span>
+            <span :if={@override_counts[:excluded]}>
+              {@override_counts[:excluded]} marked missing from owned packs.
+            </span>
+          </p>
+
+          <.link
+            navigate={~p"/browse"}
+            class="mt-4 inline-flex items-center gap-1 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-primary"
+          >
+            Fine-tune individual cards in Browse <.icon name="hero-arrow-right" class="size-3.5" />
+          </.link>
+        </.panel>
       </div>
     </Layouts.app>
     """
@@ -58,6 +131,15 @@ defmodule SanctumWeb.ProfileLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    socket =
+      socket
+      |> assign(:collection_groups, [])
+      |> assign(:owned_pack_ids, MapSet.new())
+      |> assign(:override_counts, %{})
+      |> assign(:owned_card_count, 0)
+
+    socket = if connected?(socket), do: assign_collection(socket), else: socket
+
     {:ok, assign_form(socket)}
   end
 
@@ -65,6 +147,16 @@ defmodule SanctumWeb.ProfileLive.Index do
   def handle_event("validate", %{"profile" => params}, socket) do
     {:noreply,
      assign(socket, :form, to_form(AshPhoenix.Form.validate(socket.assigns.form.source, params)))}
+  end
+
+  def handle_event("toggle_pack", %{"id" => pack_id}, socket) do
+    user = socket.assigns.current_user
+
+    if MapSet.member?(socket.assigns.owned_pack_ids, pack_id),
+      do: Sanctum.Collections.remove_pack(pack_id, user),
+      else: Sanctum.Collections.add_pack!(pack_id, actor: user)
+
+    {:noreply, assign_collection(socket)}
   end
 
   def handle_event("save", %{"profile" => params}, socket) do
@@ -95,4 +187,68 @@ defmodule SanctumWeb.ProfileLive.Index do
 
   defp display_name(%{username: username}) when not is_nil(username), do: "@#{username}"
   defp display_name(%{email: email}), do: to_string(email)
+
+  # The full catalog as a checklist: every pack grouped by release wave (the
+  # Browse page's organization) with the user's owned set, plus per-card
+  # override counts and the effective owned-card total.
+  defp assign_collection(socket) do
+    user = socket.assigns.current_user
+    owned_pack_ids = Sanctum.Collections.owned_pack_ids(user)
+
+    by_wave =
+      Sanctum.Catalog.list_packs!(load: [:wave])
+      |> Enum.group_by(& &1.wave)
+
+    groups =
+      by_wave
+      |> Enum.sort_by(fn
+        # Wave-less packs (e.g. standalone modular sets) sort last.
+        {nil, _packs} -> 1_000_000
+        {wave, _packs} -> wave.number
+      end)
+      |> Enum.map(fn {wave, packs} ->
+        %{
+          label: wave_label(wave, packs),
+          packs: sort_packs(packs),
+          owned_count: Enum.count(packs, &MapSet.member?(owned_pack_ids, &1.id))
+        }
+      end)
+
+    override_counts =
+      [actor: user]
+      |> Sanctum.Collections.list_card_overrides!()
+      |> Enum.frequencies_by(& &1.status)
+
+    # Counted via a select-id read: Ash.count/2 does not resolve the ^actor
+    # template inside the :owned calc's filter (it always counts zero), while
+    # the read pipeline does.
+    owned_card_count =
+      Sanctum.Games.Card
+      |> Ash.Query.filter(owned == true)
+      |> Ash.Query.select([:id])
+      |> Ash.read!(actor: user)
+      |> length()
+
+    socket
+    |> assign(:collection_groups, groups)
+    |> assign(:owned_pack_ids, owned_pack_ids)
+    |> assign(:override_counts, override_counts)
+    |> assign(:owned_card_count, owned_card_count)
+  end
+
+  # "Wave 2 · The Rise of Red Skull" — the campaign expansion (if any) names
+  # the wave, matching the Browse page's headings.
+  defp wave_label(nil, _packs), do: "Other"
+
+  defp wave_label(wave, packs) do
+    case Enum.find(packs, &(&1.product_type == :campaign_expansion)) do
+      %{name: name} when is_binary(name) -> "#{wave.name} · #{name}"
+      _ -> wave.name
+    end
+  end
+
+  # Browse-page tile order: product-type rank, then release position.
+  defp sort_packs(packs) do
+    Enum.sort_by(packs, &{Map.get(@type_rank, &1.product_type, 9), &1.position || 9999})
+  end
 end

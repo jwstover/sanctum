@@ -5,6 +5,8 @@ defmodule Sanctum.MarvelCdbTest do
 
   alias Sanctum.MarvelCdb
 
+  require Ash.Query
+
   @tag :skip
   test "loads a decklist" do
     mcdb_deck_id = "50919"
@@ -159,6 +161,37 @@ defmodule Sanctum.MarvelCdbTest do
       assert sides["a"].image_url == "/bundles/cards/01097b.png"
       # Side "b" is the scheme face → the unsuffixed (colored threat) scan.
       assert sides["b"].image_url == "/bundles/cards/01097.png"
+    end
+  end
+
+  describe "create_card_from_entries/2 reprints" do
+    test "stores the reprint's pack FK on the alt" do
+      canonical = create(Sanctum.Games.Card, attrs: %{base_code: "01001", code: "01001"})
+
+      pack =
+        create(Sanctum.Catalog.Pack,
+          action: :upsert_from_marvelcdb,
+          attrs: %{code: "mystique", name: "Mystique"}
+        )
+
+      entry = %{
+        "code" => "33001",
+        "duplicate_of_code" => "01001",
+        "pack_code" => "mystique",
+        "card_set_code" => "mystique_hero",
+        "quantity" => 1
+      }
+
+      assert {:ok, _card} = MarvelCdb.create_card_from_entries([entry], image_url_fun: & &1)
+
+      alt =
+        Sanctum.Games.CardAlt
+        |> Ash.Query.filter(code == "33001")
+        |> Ash.read_one!(authorize?: false)
+
+      assert alt.card_id == canonical.id
+      assert alt.pack == "mystique"
+      assert alt.pack_id == pack.id
     end
   end
 

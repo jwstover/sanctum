@@ -6,10 +6,12 @@ defmodule SanctumWeb.CardLive.DetailTest do
   import Phoenix.LiveViewTest
   import Sanctum.Factory
 
+  # Deliberately outside the "01001"/"core" namespace the async sync tests
+  # upsert — colliding unique keys across sandboxed transactions deadlock.
   defp make_card do
     card =
       create(Sanctum.Games.Card,
-        attrs: %{base_code: "01001", code: "01001a", is_multi_sided: true, pack: "core"}
+        attrs: %{base_code: "60001", code: "60001a", is_multi_sided: true, pack: "core"}
       )
 
     hero =
@@ -18,7 +20,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
           card_id: card.id,
           name: "Spider-Man",
           type: :hero,
-          code: "01001a",
+          code: "60001a",
           side_identifier: "A",
           is_primary_side: true,
           text: "Spider-sense tingling."
@@ -31,7 +33,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
           card_id: card.id,
           name: "Peter Parker",
           type: :alter_ego,
-          code: "01001b",
+          code: "60001b",
           side_identifier: "B",
           is_primary_side: false,
           text: "Scientist supreme of Queens."
@@ -52,7 +54,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
     assert html =~ "Peter Parker"
     assert html =~ "Spider-sense tingling."
     assert html =~ "Scientist supreme of Queens."
-    assert html =~ "01001"
+    assert html =~ "60001"
     assert html =~ "2 sides"
   end
 
@@ -60,7 +62,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
     pack =
       Sanctum.Catalog.Pack
       |> Ash.Changeset.for_create(:upsert_from_marvelcdb, %{
-        code: "core",
+        code: "det_core",
         name: "Core Set",
         released_on: ~D[2019-11-01]
       })
@@ -80,8 +82,8 @@ defmodule SanctumWeb.CardLive.DetailTest do
     assert html =~ "Card File"
     assert html =~ "Core Set"
     assert html =~ "Nov 1, 2019"
-    assert html =~ ~p"/browse/core"
-    assert html =~ "https://marvelcdb.com/card/01001a"
+    assert html =~ ~p"/browse/det_core"
+    assert html =~ "https://marvelcdb.com/card/60001a"
   end
 
   test "shows every alternate printing, with a placeholder when there is no scan", %{conn: conn} do
@@ -117,5 +119,80 @@ defmodule SanctumWeb.CardLive.DetailTest do
     {:ok, lv, _html} = live(conn, ~p"/cards")
 
     assert render_async(lv) =~ ~p"/cards/#{card.id}"
+  end
+
+  describe "collection" do
+    setup %{conn: conn} do
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      pack =
+        create(Sanctum.Catalog.Pack,
+          action: :upsert_from_marvelcdb,
+          attrs: %{code: "det_core", name: "Core Set"}
+        )
+
+      {card, _hero, _alter_ego} = make_card()
+
+      card
+      |> Ash.Changeset.for_update(:update, %{pack_id: pack.id})
+      |> Ash.update!(authorize?: false)
+
+      %{conn: log_in_user(conn, user), user: user, pack: pack, card: card}
+    end
+
+    test "anonymous visitors see no collection UI", %{card: card} do
+      {:ok, lv, _html} = live(build_conn(), ~p"/cards/#{card.id}")
+      html = render_async(lv)
+
+      refute html =~ "Collection</div>"
+      refute html =~ "Add to Collection"
+    end
+
+    test "toggling the card records an owned override", %{conn: conn, card: card, user: user} do
+      {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+      render_async(lv)
+
+      html = lv |> element("button", "Add to Collection") |> render_click()
+
+      assert html =~ "In Collection"
+      assert Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
+    end
+
+    test "toggling the pack flips the card's derived ownership", %{
+      conn: conn,
+      card: card,
+      user: user,
+      pack: pack
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+      render_async(lv)
+
+      html =
+        lv
+        |> element(~s{button[phx-click="toggle_pack_owned"]})
+        |> render_click()
+
+      assert html =~ "In Collection"
+      assert html =~ "in collection — remove"
+      assert Sanctum.Collections.pack_owned?(pack.id, user)
+      assert Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
+    end
+
+    test "card pool shows the owned chip only to the owner", %{
+      conn: conn,
+      user: user,
+      pack: pack,
+      card: card
+    } do
+      Sanctum.Collections.add_pack!(pack.id, actor: user)
+
+      {:ok, lv, _html} = live(conn, ~p"/cards")
+      assert render_async(lv) =~ "Owned"
+
+      {:ok, anon_lv, _html} = live(build_conn(), ~p"/cards")
+      anon_html = render_async(anon_lv)
+      assert anon_html =~ ~p"/cards/#{card.id}"
+      refute anon_html =~ "Owned"
+    end
   end
 end

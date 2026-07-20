@@ -18,6 +18,10 @@ defmodule Sanctum.Games.CardAlt do
   postgres do
     table "card_alts"
     repo Sanctum.Repo
+
+    custom_indexes do
+      index [:pack_id]
+    end
   end
 
   actions do
@@ -78,6 +82,15 @@ defmodule Sanctum.Games.CardAlt do
     belongs_to :card, Sanctum.Games.Card do
       public? true
       allow_nil? false
+    end
+
+    # Catalog FK mirroring Card.pack_ref (the `pack` string above is the
+    # legacy MarvelCDB code). Lets collection ownership count reprints:
+    # owning the pack a reprint shipped in owns the canonical card.
+    belongs_to :pack_ref, Sanctum.Catalog.Pack do
+      public? true
+      allow_nil? true
+      source_attribute :pack_id
     end
   end
 

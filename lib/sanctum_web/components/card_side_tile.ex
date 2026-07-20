@@ -11,6 +11,7 @@ defmodule SanctumWeb.Components.CardSideTile do
   use Phoenix.Component
 
   import SanctumWeb.Components.Card
+  import SanctumWeb.Components.Collection
   import SanctumWeb.Components.HandSizeBadge
   import SanctumWeb.Components.HealthBadge
   import SanctumWeb.Components.StatBadge
@@ -67,11 +68,14 @@ defmodule SanctumWeb.Components.CardSideTile do
             {@side.cost}
           </div>
           <div class="min-w-0 flex-1">
-            <div class={[
-              "font-ibm-mono text-[9px] uppercase tracking-[0.2em]",
-              @side.aspect_text_class
-            ]}>
-              {@side.type_name} · {@side.aspect_name}
+            <div class="flex items-center justify-between gap-2">
+              <div class={[
+                "font-ibm-mono text-[9px] uppercase tracking-[0.2em]",
+                @side.aspect_text_class
+              ]}>
+                {@side.type_name} · {@side.aspect_name}
+              </div>
+              <.owned_badge :if={@side.owned == true} />
             </div>
             <div class="mt-[3px] flex items-baseline gap-2">
               <div class="min-w-0 flex-1 font-anton text-[22px] uppercase leading-[0.94]">
@@ -309,8 +313,18 @@ defmodule SanctumWeb.Components.CardSideTile do
       escalation_threat: stat_value(side.escalation_threat),
       escalation_threat_pp: stat_per_player(side.escalation_threat),
       stage_label: stage_label(side),
-      image_url: side.image_url
+      image_url: side.image_url,
+      owned: owned_flag(side)
     }
+  end
+
+  # Collection status: true/false only when the :owned calc was loaded for a
+  # signed-in actor; nil (calc not loaded / anonymous) renders no chip.
+  defp owned_flag(side) do
+    case Map.get(side, :owned) do
+      value when is_boolean(value) -> value
+      _ -> nil
+    end
   end
 
   # Main-scheme stage + side, e.g. "1A"/"2B", from the printed stage number and

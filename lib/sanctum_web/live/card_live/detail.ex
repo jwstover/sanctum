@@ -96,6 +96,37 @@ defmodule SanctumWeb.CardLive.Detail do
                   <.meta label="Multi-sided" value={yes_no(@card.is_multi_sided)} />
                 </div>
 
+                <div :if={@current_user} class="my-1 h-px bg-neutral"></div>
+
+                <div :if={@current_user}>
+                  <div class="mb-1.5 flex items-center justify-between">
+                    <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+                      Collection
+                    </div>
+                    <.owned_badge :if={@owned} />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <.collection_toggle
+                      owned={@owned == true}
+                      event="toggle_card_owned"
+                      id={@card.id}
+                      title={card_toggle_title(@owned, @pack_owned, @pack)}
+                      class="w-full justify-center"
+                    />
+                    <button
+                      :if={@pack}
+                      phx-click="toggle_pack_owned"
+                      phx-value-id={@pack.id}
+                      class="cursor-pointer text-left font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.06em] text-base-content/50 hover:text-primary"
+                    >
+                      {if @pack_owned,
+                        do: "✓ #{@pack.name || @pack.code} in collection — remove",
+                        else: "Add #{@pack.name || @pack.code} to collection"}
+                    </button>
+                  </div>
+                </div>
+
                 <div class="my-1 h-px bg-neutral"></div>
 
                 <a
@@ -171,6 +202,8 @@ defmodule SanctumWeb.CardLive.Detail do
       |> assign(:pack, nil)
       |> assign(:sides, [])
       |> assign(:alts, [])
+      |> assign(:owned, nil)
+      |> assign(:pack_owned, false)
 
     actor = socket.assigns[:current_user]
 
@@ -193,7 +226,9 @@ defmodule SanctumWeb.CardLive.Detail do
      |> assign(:card, data.card)
      |> assign(:pack, data.pack)
      |> assign(:sides, data.sides)
-     |> assign(:alts, data.alts)}
+     |> assign(:alts, data.alts)
+     |> assign(:owned, data.owned)
+     |> assign(:pack_owned, data.pack_owned)}
   end
 
   def handle_async(:load_card, {:ok, :not_found}, socket) do
@@ -210,13 +245,50 @@ defmodule SanctumWeb.CardLive.Detail do
      |> push_navigate(to: ~p"/cards")}
   end
 
+  @impl true
+  def handle_event("toggle_card_owned", _params, %{assigns: %{current_user: user}} = socket)
+      when not is_nil(user) do
+    owned = Sanctum.Collections.toggle_card(socket.assigns.card.id, user)
+    {:noreply, assign(socket, :owned, owned)}
+  end
+
+  def handle_event("toggle_pack_owned", _params, %{assigns: %{current_user: user}} = socket)
+      when not is_nil(user) do
+    pack = socket.assigns.pack
+
+    if socket.assigns.pack_owned,
+      do: Sanctum.Collections.remove_pack(pack.id, user),
+      else: Sanctum.Collections.add_pack!(pack.id, actor: user)
+
+    # Pack membership flips the card's derived ownership; re-resolve it.
+    card = Ash.get!(Sanctum.Games.Card, socket.assigns.card.id, actor: user, load: [:owned])
+
+    {:noreply,
+     socket
+     |> assign(:pack_owned, !socket.assigns.pack_owned)
+     |> assign(:owned, card.owned)}
+  end
+
+  def handle_event("toggle_" <> _, _params, socket), do: {:noreply, socket}
+
+  # Hover copy for the tri-state toggle: removing a pack-derived card records
+  # an exclusion rather than touching the pack.
+  defp card_toggle_title(true, true, pack) when not is_nil(pack),
+    do: "Mark as missing from your copy of #{pack.name || pack.code}"
+
+  defp card_toggle_title(true, _, _), do: "Remove from collection"
+  defp card_toggle_title(_, _, _), do: "Add this card to your collection"
+
   # Load the card with every face, its alts, and pack metadata, then build the
   # display maps. Returns `:not_found` for an unknown id so handle_async can
   # redirect rather than crash the LiveView.
   defp load_card(id, actor) do
+    collection_loads = if actor, do: [:owned, :owned_via_packs], else: []
+
     case Ash.get(Sanctum.Games.Card, id,
            actor: actor,
-           load: [:card_sides, :primary_side, :alts, :card_set, pack_ref: [:wave]]
+           load:
+             collection_loads ++ [:card_sides, :primary_side, :alts, :card_set, pack_ref: [:wave]]
          ) do
       {:ok, card} ->
         hero_colors = Sanctum.Heroes.hero_color_map()
@@ -240,7 +312,20 @@ defmodule SanctumWeb.CardLive.Detail do
           |> Enum.sort_by(&{is_nil(&1.image_url), &1.code})
           |> Enum.map(&%{&1 | pack: Map.get(pack_names, &1.pack, &1.pack)})
 
-        {:ok, %{title: title, card: card, pack: card.pack_ref, sides: sides, alts: alts}}
+        pack_owned =
+          actor && card.pack_ref &&
+            Sanctum.Collections.pack_owned?(card.pack_ref.id, actor)
+
+        {:ok,
+         %{
+           title: title,
+           card: card,
+           pack: card.pack_ref,
+           sides: sides,
+           alts: alts,
+           owned: actor && card.owned,
+           pack_owned: pack_owned == true
+         }}
 
       {:error, _} ->
         :not_found

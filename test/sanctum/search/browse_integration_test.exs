@@ -132,6 +132,52 @@ defmodule Sanctum.Search.BrowseIntegrationTest do
     end
   end
 
+  describe "card :browse with owned:" do
+    defp browse_names_as(query_string, actor) do
+      CardSide
+      |> Ash.Query.for_read(:browse, %{query: query_string}, actor: actor)
+      |> Ash.read!(actor: actor)
+      |> Enum.map(& &1.name)
+      |> Enum.sort()
+    end
+
+    setup do
+      user = Sanctum.AccountsFixtures.user_fixture()
+      pack = create(Sanctum.Catalog.Pack, action: :upsert_from_marvelcdb)
+
+      owned_card = insert_card(%{pack_id: pack.id})
+
+      CardSide
+      |> Ash.Changeset.for_create(
+        :create,
+        Map.merge(card_side_factory(), %{
+          card_id: owned_card.id,
+          code: Faker.Util.format("%6da"),
+          name: "Owned Ally",
+          type: :ally
+        })
+      )
+      |> Ash.create!(authorize?: false)
+
+      insert_side(%{name: "Unowned Ally", type: :ally})
+
+      Sanctum.Collections.add_pack!(pack.id, actor: user)
+
+      %{user: user}
+    end
+
+    test "owned:true returns only the actor's collection", %{user: user} do
+      assert browse_names_as("owned:true", user) == ["Owned Ally"]
+      assert browse_names_as("t:ally owned:false", user) == ["Unowned Ally"]
+      assert browse_names_as("-owned:true t:ally", user) == ["Unowned Ally"]
+    end
+
+    test "owned:true is empty for anonymous browsing" do
+      assert browse_names_as("owned:true", nil) == []
+      assert "Owned Ally" in browse_names_as("owned:false", nil)
+    end
+  end
+
   describe "deck :browse with advanced queries" do
     defp insert_hero_deck(hero_name, alter_ego, set, base_code) do
       card = insert_card(%{base_code: base_code, set: set})

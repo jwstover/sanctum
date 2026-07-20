@@ -9,6 +9,87 @@ defmodule SanctumWeb.ProfileLive.IndexTest do
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/profile")
   end
 
+  describe "collection section" do
+    import Sanctum.Factory
+
+    # Wave 60 / "prof_core" sit outside the wave-1..10/"core" namespace the
+    # async sync tests upsert — colliding unique keys across sandboxed
+    # transactions deadlock.
+    defp core_pack do
+      {:ok, wave} =
+        Sanctum.Catalog.find_or_create_wave(%{number: 60, name: "Wave 60"}, authorize?: false)
+
+      create(Sanctum.Catalog.Pack,
+        action: :upsert_from_marvelcdb,
+        attrs: %{code: "prof_core", name: "Core Set"}
+      )
+      |> Ash.Changeset.for_update(:set_curated, %{product_type: :core, wave_id: wave.id})
+      |> Ash.update!(authorize?: false)
+    end
+
+    defp checkbox(view, pack) do
+      element(view, ~s{input[phx-click="toggle_pack"][phx-value-id="#{pack.id}"]})
+    end
+
+    test "lists every catalog pack with an unchecked box for a fresh user", %{conn: conn} do
+      pack = core_pack()
+
+      {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
+      html = render(view)
+
+      assert html =~ "Wave 60 · 0 / 1"
+      assert html =~ "0 cards owned"
+      assert has_element?(view, ~s{input[phx-click="toggle_pack"][phx-value-id="#{pack.id}"]})
+      refute has_element?(view, ~s{input[phx-value-id="#{pack.id}"][checked]})
+    end
+
+    test "checking and unchecking a pack updates the collection", %{conn: conn} do
+      user = user_fixture()
+      pack = core_pack()
+      card = create(Sanctum.Games.Card, attrs: %{pack_id: pack.id})
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/profile")
+
+      html = view |> checkbox(pack) |> render_click()
+
+      assert html =~ "Wave 60 · 1 / 1"
+      assert html =~ "1 cards owned"
+      assert Sanctum.Collections.pack_owned?(pack.id, user)
+      assert Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
+
+      html = view |> checkbox(pack) |> render_click()
+
+      assert html =~ "Wave 60 · 0 / 1"
+      assert html =~ "0 cards owned"
+      refute Sanctum.Collections.pack_owned?(pack.id, user)
+    end
+
+    test "shows override counts alongside the checklist", %{conn: conn} do
+      user = user_fixture()
+      core_pack()
+      Sanctum.Collections.set_card_status!(create(Sanctum.Games.Card).id, :owned, actor: user)
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/profile")
+      html = render(view)
+
+      assert html =~ "1 cards owned"
+      assert html =~ "1 individually added card"
+    end
+
+    test "one user's collection never shows on another's profile", %{conn: conn} do
+      owner = user_fixture()
+      pack = core_pack()
+      Sanctum.Collections.add_pack!(pack.id, actor: owner)
+
+      {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
+      html = render(view)
+
+      assert html =~ "Wave 60 · 0 / 1"
+      assert html =~ "0 cards owned"
+      refute has_element?(view, ~s{input[phx-value-id="#{pack.id}"][checked]})
+    end
+  end
+
   test "a signed-in user can claim a username", %{conn: conn} do
     user = user_fixture()
     conn = log_in_user(conn, user)

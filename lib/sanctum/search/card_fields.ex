@@ -196,6 +196,15 @@ defmodule Sanctum.Search.CardFields do
         build: bool_build(fn bool, op -> Builders.cmp(expr(card.unique), op, bool) end)
       },
       %Field{
+        name: "owned",
+        aliases: [],
+        kind: :boolean,
+        values: ["true", "false"],
+        example: "owned:true",
+        hint: "in your collection (empty when signed out)",
+        build: bool_build(fn bool, op -> Builders.cmp(expr(card.owned), op, bool) end)
+      },
+      %Field{
         name: "is",
         aliases: [],
         kind: :flag,
