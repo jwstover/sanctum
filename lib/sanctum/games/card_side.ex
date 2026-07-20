@@ -190,6 +190,12 @@ defmodule Sanctum.Games.CardSide do
     end
   end
 
+  calculations do
+    # Collection ownership of the canonical card, for the requesting user
+    # (nil actor ⇒ false). Lets browse tiles load ownership in the page query.
+    calculate :owned, :boolean, expr(card.owned)
+  end
+
   identities do
     identity :unique_card_side, [:card_id, :side_identifier]
     identity :unique_code, [:code]
