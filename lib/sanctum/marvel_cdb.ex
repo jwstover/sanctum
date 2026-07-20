@@ -643,7 +643,7 @@ defmodule Sanctum.MarvelCdb do
         create_canonical_card(entries, side_entries, parent, card_entry, image_url_fun, catalog)
 
       canonical_code ->
-        create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun)
+        create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun, catalog)
     end
   end
 
@@ -663,23 +663,23 @@ defmodule Sanctum.MarvelCdb do
   # A reprint (`duplicate_of_code` set) is stored as CardAlts pointing at the
   # canonical card rather than as a second Card, so the pool and deck resolution
   # dedupe. One alt row per side entry.
-  defp create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun) do
+  defp create_alts_from_entries(canonical_code, side_entries, parent, image_url_fun, catalog) do
     case resolve_canonical(canonical_code) do
-      {:ok, canonical} -> reduce_alts(canonical, side_entries, parent, image_url_fun)
+      {:ok, canonical} -> reduce_alts(canonical, side_entries, parent, image_url_fun, catalog)
       err -> err
     end
   end
 
-  defp reduce_alts(canonical, side_entries, parent, image_url_fun) do
+  defp reduce_alts(canonical, side_entries, parent, image_url_fun, catalog) do
     Enum.reduce_while(side_entries, {:ok, canonical}, fn entry, acc ->
-      case upsert_alt(canonical, entry, parent, image_url_fun) do
+      case upsert_alt(canonical, entry, parent, image_url_fun, catalog) do
         {:ok, _alt} -> {:cont, acc}
         err -> {:halt, err}
       end
     end)
   end
 
-  defp upsert_alt(canonical, entry, parent, image_url_fun) do
+  defp upsert_alt(canonical, entry, parent, image_url_fun, catalog) do
     image_url = entry |> resolve_imagesrc(parent) |> image_url_fun.()
 
     Games.create_card_alt(
@@ -688,6 +688,7 @@ defmodule Sanctum.MarvelCdb do
         base_code: extract_base_code(entry["code"]),
         side_identifier: extract_side_identifier(entry["code"]),
         pack: entry["pack_code"],
+        pack_id: resolve_pack_id(entry["pack_code"], catalog),
         set: entry["card_set_code"],
         image_url: image_url,
         card_id: canonical.id

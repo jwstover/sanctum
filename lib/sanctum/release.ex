@@ -82,6 +82,38 @@ defmodule Sanctum.Release do
     end
   end
 
+  @doc """
+  One-time backfill of `card_alts.pack_id` from the legacy `pack` code string
+  for alts synced before the FK existed. New syncs populate it directly; alts
+  whose pack code has no `Pack` row are left nil and simply don't count toward
+  collection ownership.
+
+      /app/bin/sanctum eval 'Sanctum.Release.backfill_alt_pack_ids()'
+  """
+  def backfill_alt_pack_ids do
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    pack_ids =
+      Map.new(Sanctum.Catalog.list_packs!(authorize?: false), &{&1.code, &1.id})
+
+    require Ash.Query
+
+    Sanctum.Games.CardAlt
+    |> Ash.Query.filter(is_nil(pack_id) and not is_nil(pack))
+    |> Ash.read!(authorize?: false)
+    |> Enum.reduce(0, fn alt, count ->
+      case pack_ids[alt.pack] do
+        nil ->
+          count
+
+        pack_id ->
+          Ash.update!(alt, %{pack_id: pack_id}, action: :update, authorize?: false)
+          count + 1
+      end
+    end)
+    |> then(&IO.puts("Backfilled pack_id on #{&1} card alts."))
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end

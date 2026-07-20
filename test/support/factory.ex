@@ -62,6 +62,26 @@ defmodule Sanctum.Factory do
     }
   end
 
+  def pack_factory do
+    code = Faker.Util.format("pack_%5d")
+
+    %{
+      code: code,
+      name: "Test Pack #{code}",
+      position: 1
+    }
+  end
+
+  def card_alt_factory do
+    code = Faker.Util.format("%5d")
+
+    %{
+      code: code,
+      base_code: code,
+      pack: "core"
+    }
+  end
+
   def user_factory do
     %{
       email: Faker.Internet.email(),
