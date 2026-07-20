@@ -32,6 +32,11 @@ defmodule SanctumWeb.DeckLive.Index do
         <:subtitle>
           Every deck in the vault. Filter by hero or aspect, then open one for the full list.
         </:subtitle>
+        <:actions>
+          <.button :if={@current_user} variant="primary" navigate={~p"/decks/new"}>
+            <.icon name="hero-plus" /> New Deck
+          </.button>
+        </:actions>
       </.header>
 
       <!-- search + count -->
@@ -71,6 +76,9 @@ defmodule SanctumWeb.DeckLive.Index do
             phx-value-key={key}
           >
             {label}
+          </.filter_pill>
+          <.filter_pill :if={@current_user} active={@mine} phx-click="filter_mine">
+            Mine
           </.filter_pill>
         </div>
         <form
@@ -212,6 +220,7 @@ defmodule SanctumWeb.DeckLive.Index do
       |> assign(:sort, "new")
       |> assign(:aspect, "all")
       |> assign(:hero_id, "all")
+      |> assign(:mine, false)
       # nil until the first async load lands — drives the loading/skeleton UI.
       |> assign(:total, nil)
       |> assign(:count, nil)
@@ -238,10 +247,12 @@ defmodule SanctumWeb.DeckLive.Index do
     sort = if params["sort"] in @sort_keys, do: params["sort"], else: "new"
     aspect = if params["aspect"] in @aspect_keys, do: params["aspect"], else: "all"
     hero_id = valid_hero_id(params["hero_id"])
+    mine = params["mine"] == "true" and socket.assigns.current_user != nil
 
     changed? =
       query != socket.assigns.query or sort != socket.assigns.sort or
-        aspect != socket.assigns.aspect or hero_id != socket.assigns.hero_id
+        aspect != socket.assigns.aspect or hero_id != socket.assigns.hero_id or
+        mine != socket.assigns.mine
 
     socket =
       assign(socket,
@@ -249,6 +260,7 @@ defmodule SanctumWeb.DeckLive.Index do
         sort: sort,
         aspect: aspect,
         hero_id: hero_id,
+        mine: mine,
         search_diagnostics: search_diagnostics(query)
       )
 
@@ -297,6 +309,10 @@ defmodule SanctumWeb.DeckLive.Index do
 
   def handle_event("sort", %{"key" => key}, socket) do
     {:noreply, push_patch(socket, to: decks_path(socket.assigns, sort: key))}
+  end
+
+  def handle_event("filter_mine", _params, socket) do
+    {:noreply, push_patch(socket, to: decks_path(socket.assigns, mine: !socket.assigns.mine))}
   end
 
   def handle_event("filter_aspect", %{"key" => key}, socket) do
@@ -420,11 +436,12 @@ defmodule SanctumWeb.DeckLive.Index do
 
     params =
       Enum.reject(
-        [query: f.query, sort: f.sort, aspect: f.aspect, hero_id: f.hero_id],
+        [query: f.query, sort: f.sort, aspect: f.aspect, hero_id: f.hero_id, mine: f.mine],
         fn {k, v} ->
           case k do
             :query -> v == ""
             :sort -> v == "new"
+            :mine -> v != true
             _ -> v == "all"
           end
         end
@@ -447,7 +464,7 @@ defmodule SanctumWeb.DeckLive.Index do
   defp maybe_assign_count(socket, true, count), do: assign(socket, :count, count)
 
   defp filters(a) do
-    %{query: a.query, aspect: a.aspect, hero_id: a.hero_id, sort: a.sort}
+    %{query: a.query, aspect: a.aspect, hero_id: a.hero_id, sort: a.sort, mine: a.mine}
   end
 
   # Advisory parse/compile problems shown under the query input ("unknown

@@ -56,6 +56,13 @@ defmodule SanctumWeb.DeckLive.Show do
             </div>
             <div class="order-1 flex flex-none items-center gap-2.5 sm:order-2">
               <.button
+                :if={owner?(@deck, @current_user)}
+                variant="primary"
+                navigate={~p"/decks/#{@deck.id}/build"}
+              >
+                <.icon name="hero-pencil-square" /> Edit Deck
+              </.button>
+              <.button
                 :if={mcdb_url(@deck)}
                 href={mcdb_url(@deck)}
                 target="_blank"
@@ -613,6 +620,12 @@ defmodule SanctumWeb.DeckLive.Show do
     ac = CardComponent.aspect_classes(aspect)
     %{label: label, text: ac.text, border: ac.border}
   end
+
+  # Only native decks are editable, and only by their owner.
+  defp owner?(%{source: :native, owner_id: owner_id}, %{id: user_id}) when not is_nil(owner_id),
+    do: owner_id == user_id
+
+  defp owner?(_deck, _user), do: false
 
   # Public MarvelCDB URL for the source deck, when this deck came from there.
   # `decklist` and `deck` are separate id spaces with distinct URL paths.

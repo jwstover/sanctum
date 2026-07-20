@@ -86,6 +86,40 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     refute html =~ "Web Warrior"
   end
 
+  test "the Mine filter shows only the signed-in user's decks", %{conn: conn} do
+    owner = user_fixture()
+
+    make_deck("My Own Deck", "spider_man", "90001", "Spider-Man", [:justice], %{
+      owner_id: owner.id
+    })
+
+    make_deck("Someone Else's", "captain_marvel", "90002", "Captain Marvel", [:aggression])
+
+    conn = log_in_user(conn, owner)
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    html = render_async(view)
+    assert html =~ "My Own Deck"
+    assert html =~ "Someone Else&#39;s"
+
+    view |> element("button", "Mine") |> render_click()
+    html = render_async(view)
+
+    assert html =~ "My Own Deck"
+    refute html =~ "Someone Else&#39;s"
+  end
+
+  test "signed-in users get a New Deck button; anonymous visitors don't", %{conn: conn} do
+    make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+
+    {:ok, _view, html} = live(conn, ~p"/decks")
+    refute html =~ "New Deck"
+
+    conn = log_in_user(conn, user_fixture())
+    {:ok, _view, html} = live(conn, ~p"/decks")
+    assert html =~ "New Deck"
+    assert html =~ "/decks/new"
+  end
+
   test "a native deck credits its owner's username, never their email", %{conn: conn} do
     owner = user_fixture(username: "deck_smith")
 
