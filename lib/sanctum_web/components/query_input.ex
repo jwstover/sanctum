@@ -34,6 +34,17 @@ defmodule SanctumWeb.Components.QueryInput do
     default: nil,
     doc: "when set, renders a “?” link to the search-syntax reference"
 
+  attr :hook, :string,
+    default: "QueryInput",
+    doc: "the JS hook driving the input (the global bar uses GlobalSearch)"
+
+  slot :results,
+    doc: """
+    server-rendered results shown beneath the suggestions inside a shared
+    dropdown panel (the GlobalSearch pattern). Without it the suggestions
+    listbox drops down alone, exactly as on /cards and /decks.
+    """
+
   def query_input(assigns) do
     assigns = assign(assigns, :field_names, field_names(assigns.registry))
 
@@ -42,7 +53,7 @@ defmodule SanctumWeb.Components.QueryInput do
     # for the help link.
     ~H"""
     <div class="relative min-w-[260px] flex-1">
-      <div id={@id} phx-hook="QueryInput" data-fields={Jason.encode!(@field_names)}>
+      <div id={@id} phx-hook={@hook} data-fields={Jason.encode!(@field_names)}>
         <span class="pointer-events-none absolute left-3.5 top-[21px] z-20 -translate-y-1/2 text-[17px] text-base-content/40">
           ⌕
         </span>
@@ -83,11 +94,28 @@ defmodule SanctumWeb.Components.QueryInput do
           </.link>
         </div>
         <div
+          :if={@results == []}
           id={@id <> "-listbox"}
           phx-update="ignore"
           role="listbox"
           class="qi-listbox absolute left-0 right-0 top-full z-30 mt-1.5 hidden max-h-72 overflow-y-auto border-2 border-neutral bg-base-200 shadow-comic"
         >
+        </div>
+        <div
+          :if={@results != []}
+          id={@id <> "-panel"}
+          class="absolute left-0 right-0 top-full z-30 mt-1.5 hidden border-2 border-neutral bg-base-200 shadow-comic"
+        >
+          <div
+            id={@id <> "-listbox"}
+            phx-update="ignore"
+            role="listbox"
+            class="qi-listbox hidden max-h-56 overflow-y-auto border-b-2 border-line"
+          >
+          </div>
+          <div class="max-h-[60vh] overflow-y-auto">
+            {render_slot(@results)}
+          </div>
         </div>
       </div>
       <div

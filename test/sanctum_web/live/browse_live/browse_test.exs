@@ -86,7 +86,10 @@ defmodule SanctumWeb.BrowseLiveTest do
       html = render_async(view)
 
       refute html =~ "Add to Collection"
-      refute html =~ "owned"
+      # no ownership toggles anywhere ("owned" alone would match the global
+      # search bar's field list)
+      refute html =~ "toggle_pack_owned"
+      refute html =~ "toggle_card_owned"
     end
 
     test "adding the pack marks every card owned and shows progress", %{

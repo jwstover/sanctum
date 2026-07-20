@@ -98,19 +98,48 @@ defmodule SanctumWeb.Layouts do
       <div class="drawer-content relative flex min-h-screen flex-col">
         <div class="pointer-events-none fixed inset-0 z-0 bg-halftone"></div>
 
-        <!-- slim top bar (mobile only) -->
-        <header class="sticky top-0 z-30 border-b-[3px] border-neutral bg-base-100/90 backdrop-blur lg:hidden">
-          <div class="flex items-center justify-between px-4 py-3.5">
+        <!-- slim top bar: logo + menu on mobile, global search on all sizes.
+             Sticky only below lg (the pre-existing mobile behavior); on desktop
+             the search bar scrolls away with the page. -->
+        <header class="sticky top-0 z-30 border-b-[3px] border-neutral bg-base-100/90 backdrop-blur lg:static">
+          <input id="global-search-toggle" type="checkbox" class="peer hidden" />
+          <div class="flex items-center justify-between gap-3 px-4 py-3.5 lg:hidden">
             <a href="/" class="font-bangers text-[28px] leading-none tracking-wide text-primary">
               SANCTUM
             </a>
-            <label
-              for="app-drawer"
-              class="drawer-button flex size-11 cursor-pointer items-center justify-center border-2 border-neutral bg-base-300 text-base-content"
-              aria-label="Open menu"
-            >
-              <.icon name="hero-bars-3" class="size-6" />
-            </label>
+            <div class="flex items-center gap-2">
+              <label
+                for="global-search-toggle"
+                class="flex size-11 cursor-pointer items-center justify-center border-2 border-neutral bg-base-300 text-base-content"
+                aria-label="Toggle search"
+              >
+                <.icon name="hero-magnifying-glass" class="size-5" />
+              </label>
+              <label
+                for="app-drawer"
+                class="drawer-button flex size-11 cursor-pointer items-center justify-center border-2 border-neutral bg-base-300 text-base-content"
+                aria-label="Open menu"
+              >
+                <.icon name="hero-bars-3" class="size-6" />
+              </label>
+            </div>
+          </div>
+          <div class="hidden px-4 pb-3 peer-checked:block lg:block lg:px-6 lg:py-2.5">
+            <div class="mx-auto w-full max-w-[1480px]">
+              <div class="flex items-center gap-3 lg:max-w-[560px]">
+                <.live_component
+                  module={SanctumWeb.GlobalSearchComponent}
+                  id="global-search-bar"
+                  current_user={@current_user}
+                />
+                <kbd
+                  class="hidden shrink-0 border border-base-content/25 px-1.5 py-0.5 font-ibm-mono text-[11px] text-base-content/45 lg:block"
+                  title="Focus search"
+                >
+                  ⌘K
+                </kbd>
+              </div>
+            </div>
           </div>
         </header>
 

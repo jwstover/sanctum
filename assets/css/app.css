@@ -836,6 +836,19 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
+/* Global search bar (GlobalSearch hook): navigable result rows share the
+   qi-option chrome; gs-active mirrors qi-active for the virtual list. */
+.qi-kind-result {
+  color: var(--color-base-content);
+}
+a.qi-option {
+  text-decoration: none;
+}
+[data-gs-nav].gs-active {
+  background: var(--color-base-300);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
 /* Search-syntax help page tables (SearchHelpLive) */
 .qh-table {
   width: 100%;

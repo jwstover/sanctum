@@ -31,7 +31,7 @@ defmodule SanctumWeb.CardLive.FormTest do
       # Test card form validation
       html =
         view
-        |> element("form")
+        |> element("#card-form")
         |> render_change(%{"card" => %{"base_code" => ""}})
 
       assert html =~ "is required"
