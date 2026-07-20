@@ -6,10 +6,12 @@ defmodule SanctumWeb.CardLive.DetailTest do
   import Phoenix.LiveViewTest
   import Sanctum.Factory
 
+  # Deliberately outside the "01001"/"core" namespace the async sync tests
+  # upsert — colliding unique keys across sandboxed transactions deadlock.
   defp make_card do
     card =
       create(Sanctum.Games.Card,
-        attrs: %{base_code: "01001", code: "01001a", is_multi_sided: true, pack: "core"}
+        attrs: %{base_code: "60001", code: "60001a", is_multi_sided: true, pack: "core"}
       )
 
     hero =
@@ -18,7 +20,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
           card_id: card.id,
           name: "Spider-Man",
           type: :hero,
-          code: "01001a",
+          code: "60001a",
           side_identifier: "A",
           is_primary_side: true,
           text: "Spider-sense tingling."
@@ -31,7 +33,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
           card_id: card.id,
           name: "Peter Parker",
           type: :alter_ego,
-          code: "01001b",
+          code: "60001b",
           side_identifier: "B",
           is_primary_side: false,
           text: "Scientist supreme of Queens."
@@ -52,7 +54,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
     assert html =~ "Peter Parker"
     assert html =~ "Spider-sense tingling."
     assert html =~ "Scientist supreme of Queens."
-    assert html =~ "01001"
+    assert html =~ "60001"
     assert html =~ "2 sides"
   end
 
@@ -60,7 +62,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
     pack =
       Sanctum.Catalog.Pack
       |> Ash.Changeset.for_create(:upsert_from_marvelcdb, %{
-        code: "core",
+        code: "det_core",
         name: "Core Set",
         released_on: ~D[2019-11-01]
       })
@@ -80,8 +82,8 @@ defmodule SanctumWeb.CardLive.DetailTest do
     assert html =~ "Card File"
     assert html =~ "Core Set"
     assert html =~ "Nov 1, 2019"
-    assert html =~ ~p"/browse/core"
-    assert html =~ "https://marvelcdb.com/card/01001a"
+    assert html =~ ~p"/browse/det_core"
+    assert html =~ "https://marvelcdb.com/card/60001a"
   end
 
   test "shows every alternate printing, with a placeholder when there is no scan", %{conn: conn} do
@@ -126,7 +128,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
       pack =
         create(Sanctum.Catalog.Pack,
           action: :upsert_from_marvelcdb,
-          attrs: %{code: "core", name: "Core Set"}
+          attrs: %{code: "det_core", name: "Core Set"}
         )
 
       {card, _hero, _alter_ego} = make_card()

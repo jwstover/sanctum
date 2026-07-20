@@ -12,13 +12,16 @@ defmodule SanctumWeb.ProfileLive.IndexTest do
   describe "collection section" do
     import Sanctum.Factory
 
+    # Wave 60 / "prof_core" sit outside the wave-1..10/"core" namespace the
+    # async sync tests upsert — colliding unique keys across sandboxed
+    # transactions deadlock.
     defp core_pack do
       {:ok, wave} =
-        Sanctum.Catalog.find_or_create_wave(%{number: 1, name: "Wave 1"}, authorize?: false)
+        Sanctum.Catalog.find_or_create_wave(%{number: 60, name: "Wave 60"}, authorize?: false)
 
       create(Sanctum.Catalog.Pack,
         action: :upsert_from_marvelcdb,
-        attrs: %{code: "core", name: "Core Set"}
+        attrs: %{code: "prof_core", name: "Core Set"}
       )
       |> Ash.Changeset.for_update(:set_curated, %{product_type: :core, wave_id: wave.id})
       |> Ash.update!(authorize?: false)
@@ -34,7 +37,7 @@ defmodule SanctumWeb.ProfileLive.IndexTest do
       {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
       html = render(view)
 
-      assert html =~ "Wave 1 · 0 / 1"
+      assert html =~ "Wave 60 · 0 / 1"
       assert html =~ "0 cards owned"
       assert has_element?(view, ~s{input[phx-click="toggle_pack"][phx-value-id="#{pack.id}"]})
       refute has_element?(view, ~s{input[phx-value-id="#{pack.id}"][checked]})
@@ -49,14 +52,14 @@ defmodule SanctumWeb.ProfileLive.IndexTest do
 
       html = view |> checkbox(pack) |> render_click()
 
-      assert html =~ "Wave 1 · 1 / 1"
+      assert html =~ "Wave 60 · 1 / 1"
       assert html =~ "1 cards owned"
       assert Sanctum.Collections.pack_owned?(pack.id, user)
       assert Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
 
       html = view |> checkbox(pack) |> render_click()
 
-      assert html =~ "Wave 1 · 0 / 1"
+      assert html =~ "Wave 60 · 0 / 1"
       assert html =~ "0 cards owned"
       refute Sanctum.Collections.pack_owned?(pack.id, user)
     end
@@ -81,7 +84,7 @@ defmodule SanctumWeb.ProfileLive.IndexTest do
       {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
       html = render(view)
 
-      assert html =~ "Wave 1 · 0 / 1"
+      assert html =~ "Wave 60 · 0 / 1"
       assert html =~ "0 cards owned"
       refute has_element?(view, ~s{input[phx-value-id="#{pack.id}"][checked]})
     end
