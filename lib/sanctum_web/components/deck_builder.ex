@@ -36,7 +36,7 @@ defmodule SanctumWeb.Components.DeckBuilder do
         >
           <.icon name="hero-minus" class="size-4" />
         </button>
-        <span class="min-w-6 text-center font-ibm-mono text-[14px] font-bold text-primary sm:text-[13px]">
+        <span class="min-w-6 text-center font-ibm-mono text-[14px] font-bold text-success sm:text-[13px]">
           {@qty}
         </span>
         <button
@@ -48,7 +48,7 @@ defmodule SanctumWeb.Components.DeckBuilder do
           class={[
             "flex size-9 cursor-pointer items-center justify-center transition-colors sm:size-8",
             (@qty >= @max && "cursor-default text-white/25") ||
-              "text-white/80 hover:bg-primary hover:text-primary-content"
+              "text-white/80 hover:bg-success hover:text-success-content"
           ]}
         >
           <.icon name="hero-plus" class="size-4" />
@@ -61,7 +61,7 @@ defmodule SanctumWeb.Components.DeckBuilder do
         phx-click="inc"
         phx-value-card-id={@card_id}
         title="Add to deck"
-        class="pointer-events-auto flex size-9 cursor-pointer items-center justify-center border-2 border-neutral bg-primary text-primary-content shadow-comic-sm transition-transform hover:-translate-y-0.5 sm:size-8"
+        class="pointer-events-auto flex size-9 cursor-pointer items-center justify-center border-2 border-neutral bg-success text-white shadow-comic-sm transition-transform hover:-translate-y-0.5 sm:size-8"
       >
         <.icon name="hero-plus" class="size-5" />
       </button>
