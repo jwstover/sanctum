@@ -78,8 +78,11 @@ defmodule SanctumWeb.Router do
       live "/cards/:id", CardLive.Detail, :show
 
       # Public deck browser + detail (deck reads are unauthenticated).
+      # /decks/new must precede /decks/:id or "new" binds as an :id.
       live "/decks", DeckLive.Index, :index
+      live "/decks/new", DeckLive.New, :new
       live "/decks/:id", DeckLive.Show, :show
+      live "/decks/:id/build", DeckLive.Build, :build
 
       # Reference page for the card/deck search query language.
       live "/search-help", SearchHelpLive, :index
