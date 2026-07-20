@@ -10,15 +10,9 @@ defmodule SanctumWeb.ProfileLive.Index do
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
-  # Collection products group by type in release-shelf order.
-  @type_order [
-    {:core, "Core Set"},
-    {:campaign_expansion, "Campaign Expansions"},
-    {:scenario_pack, "Scenario Packs"},
-    {:hero_pack, "Hero Packs"},
-    {:promo, "Promos"},
-    {nil, "Other"}
-  ]
+  # The checklist mirrors the Browse page: waves in release order, packs
+  # within a wave ranked by product type then release position.
+  @type_rank %{core: 0, campaign_expansion: 1, scenario_pack: 2, hero_pack: 3, promo: 4}
 
   @impl true
   def render(assigns) do
@@ -194,27 +188,31 @@ defmodule SanctumWeb.ProfileLive.Index do
   defp display_name(%{username: username}) when not is_nil(username), do: "@#{username}"
   defp display_name(%{email: email}), do: to_string(email)
 
-  # The full catalog as a checklist: every pack grouped by product type with
-  # the user's owned set, plus per-card override counts and the effective
-  # owned-card total.
+  # The full catalog as a checklist: every pack grouped by release wave (the
+  # Browse page's organization) with the user's owned set, plus per-card
+  # override counts and the effective owned-card total.
   defp assign_collection(socket) do
     user = socket.assigns.current_user
     owned_pack_ids = Sanctum.Collections.owned_pack_ids(user)
 
-    by_type =
-      Sanctum.Catalog.list_packs!()
-      |> Enum.group_by(& &1.product_type)
+    by_wave =
+      Sanctum.Catalog.list_packs!(load: [:wave])
+      |> Enum.group_by(& &1.wave)
 
     groups =
-      for {type, label} <- @type_order,
-          type_packs = Map.get(by_type, type, []),
-          type_packs != [] do
+      by_wave
+      |> Enum.sort_by(fn
+        # Wave-less packs (e.g. standalone modular sets) sort last.
+        {nil, _packs} -> 1_000_000
+        {wave, _packs} -> wave.number
+      end)
+      |> Enum.map(fn {wave, packs} ->
         %{
-          label: label,
-          packs: Enum.sort_by(type_packs, &(&1.position || 9999)),
-          owned_count: Enum.count(type_packs, &MapSet.member?(owned_pack_ids, &1.id))
+          label: wave_label(wave, packs),
+          packs: sort_packs(packs),
+          owned_count: Enum.count(packs, &MapSet.member?(owned_pack_ids, &1.id))
         }
-      end
+      end)
 
     override_counts =
       [actor: user]
@@ -236,5 +234,21 @@ defmodule SanctumWeb.ProfileLive.Index do
     |> assign(:owned_pack_ids, owned_pack_ids)
     |> assign(:override_counts, override_counts)
     |> assign(:owned_card_count, owned_card_count)
+  end
+
+  # "Wave 2 · The Rise of Red Skull" — the campaign expansion (if any) names
+  # the wave, matching the Browse page's headings.
+  defp wave_label(nil, _packs), do: "Other"
+
+  defp wave_label(wave, packs) do
+    case Enum.find(packs, &(&1.product_type == :campaign_expansion)) do
+      %{name: name} when is_binary(name) -> "#{wave.name} · #{name}"
+      _ -> wave.name
+    end
+  end
+
+  # Browse-page tile order: product-type rank, then release position.
+  defp sort_packs(packs) do
+    Enum.sort_by(packs, &{Map.get(@type_rank, &1.product_type, 9), &1.position || 9999})
   end
 end
