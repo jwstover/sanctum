@@ -211,7 +211,7 @@ defmodule SanctumWeb.DeckLive.Show do
                       <span
                         :if={c.owned == true}
                         title="In your collection"
-                        class="absolute left-0.5 top-0.5 z-[3] flex size-4 items-center justify-center rounded-[4px] bg-primary text-primary-content"
+                        class="absolute bottom-0.5 right-0.5 z-[3] flex size-4 items-center justify-center rounded-[4px] bg-base-100/75 text-success"
                       >
                         <.icon name="hero-check" class="size-3" />
                       </span>
@@ -236,7 +236,7 @@ defmodule SanctumWeb.DeckLive.Show do
                         {c.name}
                       </span>
                       <span :if={c.owned == true} title="In your collection" class="flex-none">
-                        <.icon name="hero-check" class="size-3 text-primary" />
+                        <.icon name="hero-check" class="size-3 text-success" />
                       </span>
                       <span :if={c.pips != []} class="ml-auto flex flex-none items-center gap-1">
                         <span

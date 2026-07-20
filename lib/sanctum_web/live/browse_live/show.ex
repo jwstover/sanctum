@@ -371,7 +371,7 @@ defmodule SanctumWeb.BrowseLive.Show do
             owned={MapSet.member?(@owned_ids, card.card_id)}
             event="toggle_card_owned"
             id={card.card_id}
-            class="absolute -left-1.5 -top-1.5 z-10 shadow-comic-sm"
+            class="absolute bottom-1.5 right-1.5 z-10"
           />
         </div>
       </div>

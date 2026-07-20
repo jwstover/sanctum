@@ -51,13 +51,21 @@ defmodule SanctumWeb.Components.Collection do
       phx-click={@event}
       phx-value-id={@id}
       title={@hover_title}
-      class={[
-        "inline-flex cursor-pointer items-center justify-center gap-1.5 border-2 transition-colors",
-        (@compact && "size-7") || "px-3 py-1.5",
-        (@owned && "border-primary bg-primary text-primary-content hover:bg-primary/80") ||
-          "border-neutral bg-base-300 text-base-content/70 hover:border-primary hover:text-primary",
-        @class
-      ]}
+      class={
+        [
+          "inline-flex cursor-pointer items-center justify-center gap-1.5 transition-colors",
+          # Compact: a quiet translucent chip over card art; green check = owned.
+          @compact && "size-6 rounded-[4px] bg-base-100/75",
+          @compact &&
+            ((@owned && "text-success hover:text-error") || "text-white/50 hover:text-success"),
+          # Full: the comic neutral button; green text = owned.
+          !@compact && "border-2 border-neutral bg-base-300 px-3 py-1.5",
+          !@compact &&
+            ((@owned && "text-success hover:border-success") ||
+               "text-base-content/70 hover:border-primary hover:text-primary"),
+          @class
+        ]
+      }
     >
       <.icon name={(@owned && "hero-check") || "hero-plus"} class="size-3.5 flex-none" />
       <span
