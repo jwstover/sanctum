@@ -25,7 +25,7 @@ defmodule Sanctum.Games.CardSide do
 
       pagination offset?: true, default_limit: 24, countable: true, required?: false
 
-      prepare fn query, _context ->
+      prepare fn query, context ->
         require Ash.Query
 
         search = Ash.Query.get_argument(query, :query)
@@ -38,6 +38,11 @@ defmodule Sanctum.Games.CardSide do
           # Side `code` sorts by base_code across cards and primary-first within
           # a card (the primary side always holds the smallest code).
           |> Ash.Query.sort(code: :asc)
+
+        # Collection status rides the page query as EXISTS subqueries; skipped
+        # for anonymous browsing so tiles render no collection UI at all.
+        query =
+          if context.actor, do: Ash.Query.load(query, :owned), else: query
 
         query =
           if is_binary(search) and String.trim(search) != "" do

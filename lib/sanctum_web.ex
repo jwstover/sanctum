@@ -88,6 +88,7 @@ defmodule SanctumWeb do
       import SanctumWeb.CoreComponents
       import SanctumWeb.Components.Avatar
       import SanctumWeb.Components.Card
+      import SanctumWeb.Components.Collection
       import SanctumWeb.Components.Skeleton
 
       # Common modules used in templates

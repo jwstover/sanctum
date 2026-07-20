@@ -118,4 +118,79 @@ defmodule SanctumWeb.CardLive.DetailTest do
 
     assert render_async(lv) =~ ~p"/cards/#{card.id}"
   end
+
+  describe "collection" do
+    setup %{conn: conn} do
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      pack =
+        create(Sanctum.Catalog.Pack,
+          action: :upsert_from_marvelcdb,
+          attrs: %{code: "core", name: "Core Set"}
+        )
+
+      {card, _hero, _alter_ego} = make_card()
+
+      card
+      |> Ash.Changeset.for_update(:update, %{pack_id: pack.id})
+      |> Ash.update!(authorize?: false)
+
+      %{conn: log_in_user(conn, user), user: user, pack: pack, card: card}
+    end
+
+    test "anonymous visitors see no collection UI", %{card: card} do
+      {:ok, lv, _html} = live(build_conn(), ~p"/cards/#{card.id}")
+      html = render_async(lv)
+
+      refute html =~ "Collection</div>"
+      refute html =~ "Add to Collection"
+    end
+
+    test "toggling the card records an owned override", %{conn: conn, card: card, user: user} do
+      {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+      render_async(lv)
+
+      html = lv |> element("button", "Add to Collection") |> render_click()
+
+      assert html =~ "In Collection"
+      assert Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
+    end
+
+    test "toggling the pack flips the card's derived ownership", %{
+      conn: conn,
+      card: card,
+      user: user,
+      pack: pack
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+      render_async(lv)
+
+      html =
+        lv
+        |> element(~s{button[phx-click="toggle_pack_owned"]})
+        |> render_click()
+
+      assert html =~ "In Collection"
+      assert html =~ "in collection — remove"
+      assert Sanctum.Collections.pack_owned?(pack.id, user)
+      assert Ash.get!(Sanctum.Games.Card, card.id, actor: user, load: [:owned]).owned
+    end
+
+    test "card pool shows the owned chip only to the owner", %{
+      conn: conn,
+      user: user,
+      pack: pack,
+      card: card
+    } do
+      Sanctum.Collections.add_pack!(pack.id, actor: user)
+
+      {:ok, lv, _html} = live(conn, ~p"/cards")
+      assert render_async(lv) =~ "Owned"
+
+      {:ok, anon_lv, _html} = live(build_conn(), ~p"/cards")
+      anon_html = render_async(anon_lv)
+      assert anon_html =~ ~p"/cards/#{card.id}"
+      refute anon_html =~ "Owned"
+    end
+  end
 end
