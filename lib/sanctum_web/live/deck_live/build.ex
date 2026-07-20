@@ -284,7 +284,15 @@ defmodule SanctumWeb.DeckLive.Build do
     %{req: req, offset: offset, reset?: reset?, page: page} = result
 
     if req == socket.assigns.req_id do
-      tiles = Enum.map(page.results, &tile_view/1)
+      # Stamp each tile with the deck's current quantity so cards already in
+      # the deck arrive badged (fresh mounts, filter changes, later pages).
+      entries = socket.assigns.entries
+
+      tiles =
+        Enum.map(page.results, fn side ->
+          tile = tile_view(side)
+          %{tile | qty: current_entry_qty(entries, tile.card_id)}
+        end)
 
       tile_cache =
         if reset?,
@@ -377,8 +385,10 @@ defmodule SanctumWeb.DeckLive.Build do
     end
   end
 
-  defp current_qty(socket, card_id) do
-    case socket.assigns.entries[card_id] do
+  defp current_qty(socket, card_id), do: current_entry_qty(socket.assigns.entries, card_id)
+
+  defp current_entry_qty(entries, card_id) do
+    case entries[card_id] do
       %{quantity: qty} -> qty
       nil -> 0
     end
@@ -633,8 +643,11 @@ defmodule SanctumWeb.DeckLive.Build do
               @loading? && @count != nil && "opacity-60 transition-opacity"
             ]}
           >
-            <div :for={{dom_id, tile} <- @streams.cards} id={dom_id} class="relative">
-              <.link navigate={~p"/cards/#{tile.card_id}"} class="block border-2 border-neutral">
+            <div :for={{dom_id, tile} <- @streams.cards} id={dom_id} class="relative aspect-[63/88]">
+              <.link
+                navigate={~p"/cards/#{tile.card_id}"}
+                class="block h-full border-2 border-neutral"
+              >
                 <.mc_card
                   name={tile.name}
                   cost={tile.cost}

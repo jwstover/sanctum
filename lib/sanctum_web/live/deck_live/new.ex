@@ -151,7 +151,7 @@ defmodule SanctumWeb.DeckLive.New do
           phx-click="select_hero"
           phx-value-id={hero.id}
           class={[
-            "border-2 border-neutral text-left shadow-comic-sm transition-transform",
+            "aspect-[63/88] border-2 border-neutral text-left shadow-comic-sm transition-transform",
             @selected && @selected.id == hero.id &&
               "outline outline-[3px] outline-primary -translate-y-0.5"
           ]}

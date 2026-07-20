@@ -158,6 +158,22 @@ defmodule SanctumWeb.DeckLive.BuildTest do
     assert deck_quantities(deck.id)[card.id] == 1
   end
 
+  test "grid tiles arrive badged with quantities already in the deck", %{conn: conn} do
+    card = player_card("Prebadged Ally")
+    %{deck: deck, user: user} = mount_builder(conn, "build_lv_pre") |> Map.take([:deck, :user])
+
+    Sanctum.Decks.set_card_quantity(deck.id, card.id, 2, user)
+
+    # A fresh mount must stamp the stream tiles from the persisted deck.
+    {:ok, lv, _html} = live(log_in_user(build_conn(), user), ~p"/decks/#{deck.id}/build")
+    render_async(lv)
+
+    assert has_element?(
+             lv,
+             "#builder-grid button[phx-click='dec'][phx-value-card-id='#{card.id}']"
+           )
+  end
+
   test "hero signature cards are not offered in the grid", %{conn: conn} do
     %{lv: lv, signature: signature} = mount_builder(conn, "build_lv_d")
 
