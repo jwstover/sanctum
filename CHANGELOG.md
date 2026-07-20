@@ -1,3 +1,21 @@
+# [1.56.0](https://github.com/jwstover/sanctum/compare/v1.55.0...v1.56.0) (2026-07-20)
+
+
+### Features
+
+* **collections:** add Collections domain with pack + card ownership resources ([0fd871c](https://github.com/jwstover/sanctum/commit/0fd871c7da4ad4b1d398cd03969930494ee43fe6))
+* **collections:** collection indicators + owned summary on deck view ([90917bb](https://github.com/jwstover/sanctum/commit/90917bbab3b818a7e007814e5f8fdd7e1023d8cf))
+* **collections:** derived ownership calcs + toggle/remove/lookup API ([b8e2ef7](https://github.com/jwstover/sanctum/commit/b8e2ef77d538e463e0b68d2f0d52ca49e8380f3d))
+* **collections:** full pack checklist on the profile ([6bdbbb5](https://github.com/jwstover/sanctum/commit/6bdbbb5404a92decf6200601661a8da265be4758))
+* **collections:** order the profile checklist by release wave ([7aae99f](https://github.com/jwstover/sanctum/commit/7aae99f57ccaab7d29ae7d18a29a7f03a19688a4))
+* **collections:** owned chip + toggles on card detail and pool ([5b09334](https://github.com/jwstover/sanctum/commit/5b0933458f673495f5e2910d1b1bd074a94b3714))
+* **collections:** pack + per-card collection controls on browse pages ([5954f77](https://github.com/jwstover/sanctum/commit/5954f774ad7151f8efe3b4219a2f79b9c6f06862))
+* **collections:** populate CardAlt.pack_id in sync + release backfill ([cf27117](https://github.com/jwstover/sanctum/commit/cf27117cd779182e1847b3d241806d92be20b8f4))
+* **collections:** private collection section on the profile ([5804d80](https://github.com/jwstover/sanctum/commit/5804d80b109e7643bcdea61dc981fe6dcca6d90f))
+* **search:** owned:true/false field filtering by the actor's collection ([629ae9f](https://github.com/jwstover/sanctum/commit/629ae9fdee6a62bc0e2039874cf23de184951458))
+
+
+
 # [1.55.0](https://github.com/jwstover/sanctum/compare/v1.54.0...v1.55.0) (2026-07-20)
 
 
@@ -36,15 +54,6 @@
 ### Features
 
 * **decks:** rewrite HTML anchor card links in deck writeups ([a9629ca](https://github.com/jwstover/sanctum/commit/a9629caf1401d5e8196e7d2d6dcb3fca02a00d77))
-
-
-
-## [1.51.3](https://github.com/jwstover/sanctum/compare/v1.51.2...v1.51.3) (2026-07-19)
-
-
-### Bug Fixes
-
-* **heroes:** canonicalize Ironheart suit versions to one Hero ([320b392](https://github.com/jwstover/sanctum/commit/320b392e2f866bdb6a3b03c8967d8a701957896a))
 
 
 
