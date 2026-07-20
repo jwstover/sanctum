@@ -227,4 +227,68 @@ defmodule SanctumWeb.DeckLive.BuildTest do
     assert html =~ "/ 40–50 cards"
     assert has_element?(lv, "[class*='text-warning']")
   end
+
+  describe "deck panel" do
+    test "renames the deck on blur/submit", %{conn: conn} do
+      %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_h")
+      render_async(lv)
+
+      lv |> form("#rename-desktop", %{title: "Panel Renamed"}) |> render_submit()
+
+      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).title == "Panel Renamed"
+      assert render(lv) =~ "Panel Renamed"
+    end
+
+    test "toggles deck aspects and persists them", %{conn: conn} do
+      %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_i")
+      render_async(lv)
+
+      # Deck starts [:justice]; toggling pool adds it, toggling justice drops it.
+      render_click(lv, "toggle_deck_aspect", %{"key" => "pool"})
+      render_click(lv, "toggle_deck_aspect", %{"key" => "justice"})
+
+      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).aspects == [:pool]
+    end
+
+    test "hero signature rows are locked (no steppers)", %{conn: conn} do
+      %{lv: lv, signature: signature} = mount_builder(conn, "build_lv_j")
+      render_async(lv)
+
+      html = render(lv)
+      assert html =~ "#{signature.code}" or html =~ "Signature"
+      assert html =~ "hero-lock-closed"
+      # No panel stepper targets the signature card.
+      refute has_element?(
+               lv,
+               "[phx-click='dec'][phx-value-card-id='#{signature.id}']"
+             )
+    end
+
+    test "deleting requires the inline confirm and then navigates away", %{conn: conn} do
+      %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_k")
+      render_async(lv)
+
+      # First tap only reveals the confirm row.
+      lv |> element("#deck-panel-desktop button[phx-click='confirm_delete']") |> render_click()
+      assert {:ok, _deck} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
+
+      assert {:error, {:live_redirect, %{to: "/decks"}}} =
+               lv
+               |> element("#deck-panel-desktop button[phx-click='delete_deck']")
+               |> render_click()
+
+      assert {:error, _not_found} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
+    end
+
+    test "cancel backs out of the delete confirm", %{conn: conn} do
+      %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_l")
+      render_async(lv)
+
+      lv |> element("#deck-panel-desktop button[phx-click='confirm_delete']") |> render_click()
+      lv |> element("#deck-panel-desktop button[phx-click='cancel_delete']") |> render_click()
+
+      refute has_element?(lv, "#deck-panel-desktop button[phx-click='delete_deck']")
+      assert {:ok, _deck} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
+    end
+  end
 end
