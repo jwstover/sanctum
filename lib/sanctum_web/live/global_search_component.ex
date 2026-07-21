@@ -65,6 +65,10 @@ defmodule SanctumWeb.GlobalSearchComponent do
             panel_class="mt-3 hidden border-t-2 border-line"
           >
             <:results>
+              <%!-- Navigable rows carry server-rendered ids (for
+                   aria-activedescendant): the hook must never assign ids to
+                   LiveView-managed elements — the DOM patcher tracks nodes by
+                   id, and client-mutated ids corrupt the next diff. --%>
               <div :if={@groups != []} data-gs-content>
                 <div :for={group <- @groups}>
                   <div class="flex items-baseline justify-between border-b border-line bg-base-300/60 px-3 py-1">
@@ -74,14 +78,21 @@ defmodule SanctumWeb.GlobalSearchComponent do
                     <.link
                       :if={group.more_url}
                       navigate={group.more_url}
+                      id={"gs-more-#{group.type}"}
                       data-gs-nav
                       class="gs-more font-barlow-condensed text-[12px] uppercase tracking-wide text-primary/80 hover:text-primary"
                     >
                       all {String.downcase(group.label)} results →
                     </.link>
                   </div>
-                  <%= for result <- group.results do %>
-                    <.link :if={result.href} navigate={result.href} data-gs-nav class="qi-option">
+                  <%= for {result, index} <- Enum.with_index(group.results) do %>
+                    <.link
+                      :if={result.href}
+                      navigate={result.href}
+                      id={"gs-res-#{group.type}-#{index}"}
+                      data-gs-nav
+                      class="qi-option"
+                    >
                       <span class="qi-option-label qi-kind-result">{result.title}</span>
                       <span :if={result.subtitle} class="qi-option-detail">{result.subtitle}</span>
                     </.link>

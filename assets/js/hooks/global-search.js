@@ -122,12 +122,20 @@ export default {
 
   // -- results section ---------------------------------------------------------
 
+  // Collect the server-rendered result anchors. Read-only: their ids come
+  // from the server (mutating ids on LiveView-managed elements corrupts DOM
+  // patching), and listeners bind once per element.
   scanResults() {
     this.navEls = Array.from(this.el.querySelectorAll("[data-gs-nav]"))
-    this.navEls.forEach((el, i) => {
-      el.id = `${this.el.id}-res-${i}`
+    this.navEls.forEach((el) => {
       el.classList.remove("gs-active")
-      el.addEventListener("mousemove", () => this.setActive(this.items.length + i))
+      if (!el.__gsBound) {
+        el.__gsBound = true
+        el.addEventListener("mousemove", () => {
+          const i = this.navEls.indexOf(el)
+          if (i >= 0) this.setActive(this.items.length + i)
+        })
+      }
     })
     // Result rows changed under the cursor — a result index no longer points
     // where it did. Suggestion indexes are still valid.
