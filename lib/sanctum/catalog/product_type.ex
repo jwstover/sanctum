@@ -15,4 +15,12 @@ defmodule Sanctum.Catalog.ProductType do
       :scenario_pack,
       :promo
     ]
+
+  @doc "Human-readable label for a product type."
+  def label(:core), do: "Core Set"
+  def label(:campaign_expansion), do: "Campaign Expansion"
+  def label(:hero_pack), do: "Hero Pack"
+  def label(:scenario_pack), do: "Scenario Pack"
+  def label(:promo), do: "Promo"
+  def label(_), do: "Product"
 end

@@ -109,6 +109,11 @@ jobs:
         # allow credo to pass if only design issues are found. See -> https://hexdocs.pm/credo/exit_statuses.html
         # Run Credo even if formatting or the unused deps check failed
         if: always()
+      - name: Check for code duplication
+        # --max-clones is a ratchet over pre-existing clones: lower it as they
+        # are cleaned up, never raise it. Keep in sync with the ck alias in mix.exs.
+        run: mix ex_dna --max-clones 8
+        if: always()
       - name: Check for security vulnerabilities in Phoenix project
         run: mix sobelow --config --exit
         if: always()

@@ -27,10 +27,7 @@ defmodule Mix.Tasks.Sanctum.SyncDecks do
   def run(argv) do
     {opts, _argv} = OptionParser.parse!(argv, strict: @switches)
 
-    sync_opts =
-      []
-      |> maybe_put_date(:since, opts[:since])
-      |> maybe_put_date(:until, opts[:until])
+    sync_opts = Mix.Tasks.Sanctum.DateOpts.build(opts, [:since, :until])
 
     case Sanctum.DeckSync.run(sync_opts) do
       {:ok, _summary} ->
@@ -41,15 +38,6 @@ defmodule Mix.Tasks.Sanctum.SyncDecks do
           "Deck sync halted at #{summary.halted.date}: #{inspect(summary.halted.reason)} " <>
             "(#{summary.imported} imported before halting). Re-run to resume from the checkpoint."
         )
-    end
-  end
-
-  defp maybe_put_date(opts, _key, nil), do: opts
-
-  defp maybe_put_date(opts, key, value) do
-    case Date.from_iso8601(value) do
-      {:ok, date} -> Keyword.put(opts, key, date)
-      {:error, _} -> Mix.raise("Invalid #{key} date: #{value} (expected YYYY-MM-DD)")
     end
   end
 end

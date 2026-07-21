@@ -212,7 +212,7 @@ defmodule SanctumWeb.BrowseLive.Show do
           <span class="text-base-content/30">/</span>
           {@pack.name || @pack.code}
           <:subtitle>
-            {product_type_label(@pack.product_type)}
+            {Catalog.ProductType.label(@pack.product_type)}
             <span :if={@pack.wave}>
               · {@pack.wave.name}
             </span><span :if={@pack.released_on}>
@@ -582,11 +582,4 @@ defmodule SanctumWeb.BrowseLive.Show do
   defp aspect_label(:hero), do: "Hero"
   defp aspect_label(:encounter), do: "Encounter"
   defp aspect_label(aspect), do: aspect |> to_string() |> String.capitalize()
-
-  defp product_type_label(:core), do: "Core Set"
-  defp product_type_label(:campaign_expansion), do: "Campaign Expansion"
-  defp product_type_label(:hero_pack), do: "Hero Pack"
-  defp product_type_label(:scenario_pack), do: "Scenario Pack"
-  defp product_type_label(:promo), do: "Promo"
-  defp product_type_label(_), do: "Product"
 end

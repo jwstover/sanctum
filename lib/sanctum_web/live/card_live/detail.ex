@@ -11,6 +11,8 @@ defmodule SanctumWeb.CardLive.Detail do
 
   import SanctumWeb.Components.CardSideTile
 
+  alias Sanctum.Catalog.ProductType
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -75,7 +77,7 @@ defmodule SanctumWeb.CardLive.Detail do
                 <.meta
                   :if={@pack}
                   label="Product Type"
-                  value={product_type_label(@pack.product_type)}
+                  value={ProductType.label(@pack.product_type)}
                 />
                 <.meta :if={@pack} label="Released" value={format_date(@pack.released_on)} />
                 <.meta :if={@pack && @pack.wave} label="Wave" value={@pack.wave.name} />
@@ -356,13 +358,6 @@ defmodule SanctumWeb.CardLive.Detail do
 
   defp format_date(nil), do: nil
   defp format_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
-
-  defp product_type_label(:core), do: "Core Set"
-  defp product_type_label(:campaign_expansion), do: "Campaign Expansion"
-  defp product_type_label(:hero_pack), do: "Hero Pack"
-  defp product_type_label(:scenario_pack), do: "Scenario Pack"
-  defp product_type_label(:promo), do: "Promo"
-  defp product_type_label(_), do: "Product"
 
   defp yes_no(true), do: "Yes"
   defp yes_no(_), do: "No"
