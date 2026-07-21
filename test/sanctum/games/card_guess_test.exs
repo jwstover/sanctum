@@ -19,6 +19,43 @@ defmodule Sanctum.Games.CardGuessTest do
     end
   end
 
+  describe "strip_attribution/1" do
+    test "drops a trailing speaker after the closing quote" do
+      assert CardGuess.strip_attribution(~s("I dare you to call me 'Peaches' again!" —Domino)) ==
+               ~s("I dare you to call me 'Peaches' again!")
+
+      assert CardGuess.strip_attribution(~s("That's enough!" - Carol Danvers)) ==
+               ~s("That's enough!")
+    end
+
+    test "leaves a dash inside the quote alone" do
+      quote_text = ~s("Turn around gentlemen, and meet —the Hellcat!")
+      assert CardGuess.strip_attribution(quote_text) == quote_text
+    end
+
+    test "strips only the trailing attribution when the quote also contains a dash" do
+      assert CardGuess.strip_attribution(~s("So we fight — and we win." —Captain America)) ==
+               ~s("So we fight — and we win.")
+    end
+
+    test "unquoted or attribution-less flavor passes through" do
+      assert CardGuess.strip_attribution("The city trembles.") == "The city trembles."
+      assert CardGuess.strip_attribution(nil) == nil
+    end
+  end
+
+  describe "display_flavor/1" do
+    test "drops markup tags and the speaker attribution" do
+      assert CardGuess.display_flavor(~s(<b><i>The office is under attack!</i></b>)) ==
+               "The office is under attack!"
+
+      assert CardGuess.display_flavor(~s(<i>"That's enough!"</i> —Carol Danvers)) ==
+               ~s("That's enough!")
+
+      assert CardGuess.display_flavor(nil) == nil
+    end
+  end
+
   describe "correct?/2" do
     setup do
       card = %Card{primary_side: %CardSide{name: "Black Widow", subname: "Natasha Romanoff"}}

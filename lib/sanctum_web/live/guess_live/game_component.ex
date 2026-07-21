@@ -57,7 +57,7 @@ defmodule SanctumWeb.GuessLive.GameComponent do
             Flavor text
           </div>
           <blockquote class="relative mt-3 font-barlow text-[23px] italic leading-[1.42] text-base-content/90 [text-wrap:balance] sm:text-[20px] sm:leading-[1.5]">
-            {@card.primary_side.flavor}
+            {CardGuess.display_flavor(@card.primary_side.flavor)}
           </blockquote>
         </.panel>
 

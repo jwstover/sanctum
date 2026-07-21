@@ -44,6 +44,16 @@ defmodule SanctumWeb.GuessLive.PlayTest do
     refute html =~ "You got it!"
   end
 
+  test "the prompt hides the quote's speaker attribution", %{conn: conn} do
+    seed_card("Domino", ~s("I dare you to call me 'Peaches' again!" —Domino))
+
+    {:ok, view, _html} = live(conn, ~p"/flavor-town")
+    html = render_async(view)
+
+    assert html =~ "call me &#39;Peaches&#39; again!"
+    refute html =~ "—Domino"
+  end
+
   test "a wrong guess reveals the first hint", %{conn: conn} do
     seed_card("Nick Fury", "The ultimate spy.")
 

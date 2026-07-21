@@ -89,6 +89,31 @@ defmodule Sanctum.Games.CardGuess do
   end
 
   @doc """
+  Flavor text as the game's prompt shows it: markup tags dropped (some
+  flavors carry `<b>`/`<i>`) and the trailing speaker attribution stripped
+  (see `strip_attribution/1`).
+  """
+  def display_flavor(nil), do: nil
+
+  def display_flavor(flavor) when is_binary(flavor) do
+    flavor |> strip_markup() |> strip_attribution()
+  end
+
+  @doc """
+  Drops a trailing speaker attribution (`"…" —Domino`) from flavor text — the
+  speaker is often the card's own character, which would spoil the round.
+
+  Only an attribution *after the final closing quote* is stripped, so an
+  em-dash inside the quote ("…and meet —the Hellcat!") survives untouched.
+  Flavor without one comes back unchanged.
+  """
+  def strip_attribution(nil), do: nil
+
+  def strip_attribution(flavor) when is_binary(flavor) do
+    Regex.replace(~r/(["”])\s*[—–-]\s*[^"”]+$/u, flavor, "\\1")
+  end
+
+  @doc """
   Ordered list of `%{key: atom, text: String.t()}` hints for the card — a
   direct ladder from release info (wave, pack) through classification (player
   vs encounter, pool, exact type) down to the card itself (cost + resources,
@@ -181,7 +206,11 @@ defmodule Sanctum.Games.CardGuess do
   defp encounter_pool_hint(_), do: nil
 
   # 5. The exact card type, qualified by its pool ("an Aggression event").
+  # Hero identity cards skip the qualifier — "an identity-specific hero" is
+  # a mouthful for the hero card itself.
   defp type_hint(%{type: nil}), do: nil
+
+  defp type_hint(%{type: :hero}), do: hint(:type, "It's a hero card.")
 
   defp type_hint(side) do
     label = String.trim("#{pool_word(side)} #{String.downcase(type_label(side.type))}")
