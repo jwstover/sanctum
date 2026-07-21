@@ -1321,8 +1321,8 @@ defmodule SanctumWeb.DeckLive.Build do
               {row.name}
             </.link>
             <span class="flex-1"></span>
-            <span class="flex-none font-ibm-mono text-[11px] text-base-content/50">
-              {row.qty}×
+            <span class="flex-none font-ibm-mono text-[13px] text-base-content/50">
+              ×{row.qty}
             </span>
             <!-- pips column: always rendered so every row's icons share one
                  right edge, independent of what the controls column holds -->

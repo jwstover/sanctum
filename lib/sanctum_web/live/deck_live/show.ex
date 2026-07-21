@@ -195,11 +195,11 @@ defmodule SanctumWeb.DeckLive.Show do
                         show_cost={false}
                       />
                       <span
-                        :if={c.owned == true}
-                        title="In your collection"
-                        class="absolute bottom-0.5 right-0.5 z-[3] flex size-4 items-center justify-center rounded-[4px] bg-base-100/75 text-success"
+                        :if={c.owned == false}
+                        title="Not in your collection"
+                        class="absolute bottom-0.5 right-0.5 z-[3] flex size-4 items-center justify-center rounded-[4px] bg-base-100/75 text-error"
                       >
-                        <.icon name="hero-check" class="size-3" />
+                        <.icon name="hero-x-mark" class="size-3" />
                       </span>
                     </.link>
                   </div>
@@ -219,12 +219,12 @@ defmodule SanctumWeb.DeckLive.Show do
                       <span class="min-w-0 truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85">
                         {c.name}
                       </span>
-                      <span :if={c.owned == true} title="In your collection" class="flex-none">
-                        <.icon name="hero-check" class="size-3 text-success" />
+                      <span :if={c.owned == false} title="Not in your collection" class="flex-none">
+                        <.icon name="hero-x-mark" class="size-3 text-error" />
                       </span>
                       <span class="flex-1"></span>
-                      <span class="flex-none font-ibm-mono text-[11px] text-base-content/50">
-                        {c.qty}×
+                      <span class="flex-none font-ibm-mono text-[13px] text-base-content/50">
+                        ×{c.qty}
                       </span>
                       <span class="flex w-8 flex-none items-center justify-end gap-1">
                         <span

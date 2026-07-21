@@ -138,7 +138,8 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     deck = make_deck_with_card()
     user = Sanctum.AccountsFixtures.user_fixture()
 
-    # Own the ally (2 copies) via a card override; the hero card stays unowned.
+    # Own the ally (2 copies) via a card override — fully owned decks show
+    # the summary but no missing-card marks.
     ally = Ash.get!(Sanctum.Games.Card, %{base_code: "90051"}, authorize?: false)
     Sanctum.Collections.set_card_status!(ally.id, :owned, actor: user)
 
@@ -146,7 +147,18 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     html = render_async(view)
 
     assert html =~ "you own 2 / 2"
-    assert html =~ "In your collection"
+    refute html =~ "Not in your collection"
+  end
+
+  test "a signed-in user sees unowned cards flagged on the card list", %{conn: conn} do
+    deck = make_deck_with_card()
+    user = Sanctum.AccountsFixtures.user_fixture()
+
+    {:ok, view, _html} = live(log_in_user(conn, user), ~p"/decks/#{deck.id}")
+    html = render_async(view)
+
+    assert html =~ "you own 0 / 2"
+    assert html =~ "Not in your collection"
   end
 
   test "anonymous visitors see no collection summary", %{conn: conn} do
@@ -156,7 +168,7 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     html = render_async(view)
 
     refute html =~ "you own"
-    refute html =~ "In your collection"
+    refute html =~ "Not in your collection"
   end
 
   test "restore-scroll confirms once the deck content has loaded", %{conn: conn} do
