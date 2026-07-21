@@ -8,6 +8,11 @@ defmodule Sanctum.Games.CardSide do
   postgres do
     table "card_sides"
     repo Sanctum.Repo
+
+    references do
+      # Destroying a card (custom-card deletes especially) takes its sides.
+      reference :card, on_delete: :delete
+    end
   end
 
   actions do
@@ -101,14 +106,29 @@ defmodule Sanctum.Games.CardSide do
   end
 
   policies do
-    policy action_type(:read) do
+    bypass actor_attribute_equals(:admin, true) do
       authorize_if always()
     end
 
+    # Mirrors Card's read policy — CardSide is queried directly (:browse,
+    # :by_codes) and via load(:card_sides), and Ash applies each resource's
+    # own policies on relationship loads, so both resources need the filter.
+    # Separate checks on purpose: an expr referencing ^actor(:id) collapses
+    # to false wholesale under a nil actor (see Card's read policy).
+    policy action_type(:read) do
+      authorize_if expr(card.origin == :official)
+      authorize_if expr(card.homebrew_project.visibility == :published)
+      authorize_if expr(card.homebrew_project.creator_id == ^actor(:id))
+    end
+
     # Catalog mutations are admin-only; system writes (sync, deck import)
-    # go through Sanctum.MarvelCdb with authorize?: false.
+    # go through Sanctum.MarvelCdb with authorize?: false. Side writes that
+    # arrive through a Card action's manage_relationship (create_custom /
+    # the admin *_with_sides actions) are authorized by the Card policy that
+    # admitted them.
     policy action_type([:create, :update, :destroy]) do
       authorize_if actor_attribute_equals(:admin, true)
+      authorize_if accessing_from(Sanctum.Games.Card, :card_sides)
     end
   end
 

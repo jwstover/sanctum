@@ -83,6 +83,7 @@ config :sanctum,
     Sanctum.Decks,
     Sanctum.Games,
     Sanctum.Heroes,
+    Sanctum.Homebrew,
     Sanctum.Villains
   ]
 

@@ -165,9 +165,11 @@ defmodule Sanctum.Decks.Writeup do
   defp resolve_codes([]), do: %{}
 
   defp resolve_codes(codes) do
+    # authorize?: false bypasses the Card read policy that hides other users'
+    # private homebrew, so this read must stay pinned to the official catalog.
     cards =
       Sanctum.Games.Card
-      |> Ash.Query.filter(base_code in ^codes)
+      |> Ash.Query.filter(base_code in ^codes and origin == :official)
       |> Ash.read!(authorize?: false)
       |> Map.new(&{&1.base_code, &1.id})
 
