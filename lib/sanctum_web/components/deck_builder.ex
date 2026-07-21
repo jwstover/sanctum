@@ -25,14 +25,16 @@ defmodule SanctumWeb.Components.DeckBuilder do
   attr :class, :any, default: nil
 
   def qty_stepper(assigns) do
+    # Mobile buttons hit the 44px-target convention (size-11); desktop stays
+    # compact past the `sm` breakpoint.
     assigns =
       assign(assigns,
-        button_class: (assigns.size == "md" && "size-9 sm:size-8") || "size-7 sm:size-6",
-        icon_class: (assigns.size == "md" && "size-4") || "size-3.5",
-        add_icon_class: (assigns.size == "md" && "size-5") || "size-4",
+        button_class: (assigns.size == "md" && "size-11 sm:size-8") || "size-9 sm:size-6",
+        icon_class: (assigns.size == "md" && "size-5 sm:size-4") || "size-4 sm:size-3.5",
+        add_icon_class: (assigns.size == "md" && "size-6 sm:size-5") || "size-5 sm:size-4",
         count_class:
-          (assigns.size == "md" && "min-w-6 text-[14px] sm:text-[13px]") ||
-            "min-w-5 text-[12px]"
+          (assigns.size == "md" && "min-w-7 text-[15px] sm:min-w-6 sm:text-[13px]") ||
+            "min-w-6 text-[13px] sm:min-w-5 sm:text-[12px]"
       )
 
     ~H"""
@@ -43,6 +45,7 @@ defmodule SanctumWeb.Components.DeckBuilder do
       >
         <button
           type="button"
+          data-haptic
           phx-click="dec"
           phx-value-card-id={@card_id}
           title="Remove a copy"
@@ -58,6 +61,7 @@ defmodule SanctumWeb.Components.DeckBuilder do
         </span>
         <button
           type="button"
+          data-haptic
           phx-click="inc"
           phx-value-card-id={@card_id}
           disabled={@qty >= @max}
@@ -76,6 +80,7 @@ defmodule SanctumWeb.Components.DeckBuilder do
       <button
         :if={@qty == 0}
         type="button"
+        data-haptic
         phx-click="inc"
         phx-value-card-id={@card_id}
         title="Add to deck"
@@ -87,6 +92,31 @@ defmodule SanctumWeb.Components.DeckBuilder do
         <.icon name="hero-plus" class={@add_icon_class} />
       </button>
     </div>
+    """
+  end
+
+  @doc """
+  Invisible mount point wiring haptic feedback to every element carrying
+  `data-haptic`, via one delegated listener. Progressive enhancement: the
+  Vibration API works on Android Chrome; iOS Safari exposes no web haptics
+  API, so it degrades to nothing there.
+  """
+  def haptics(assigns) do
+    ~H"""
+    <div id="haptics" phx-hook=".Haptics"></div>
+    <script :type={Phoenix.LiveView.ColocatedHook} name=".Haptics">
+      export default {
+        mounted() {
+          this.onDown = (e) => {
+            if (e.target.closest("[data-haptic]")) navigator.vibrate?.(10)
+          }
+          document.addEventListener("pointerdown", this.onDown, {passive: true})
+        },
+        destroyed() {
+          document.removeEventListener("pointerdown", this.onDown)
+        }
+      }
+    </script>
     """
   end
 end

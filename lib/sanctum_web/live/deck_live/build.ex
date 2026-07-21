@@ -523,6 +523,7 @@ defmodule SanctumWeb.DeckLive.Build do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:decks}>
       <.card_view_pref id="builder-card-view-pref" />
+      <.haptics />
       <.header>
         {@deck.title}
         <:subtitle>{@deck.hero.display_name} · building</:subtitle>
@@ -627,6 +628,7 @@ defmodule SanctumWeb.DeckLive.Build do
           <div :if={@staples != []} class="mb-5 flex flex-wrap items-center gap-2">
             <button
               type="button"
+              data-haptic
               phx-click="add_staples"
               class="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 border-2 border-neutral bg-base-300 px-3.5 py-1.5 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] text-base-content transition-colors hover:border-primary hover:text-primary sm:min-h-0 sm:px-3 sm:text-[12px]"
             >
@@ -776,16 +778,75 @@ defmodule SanctumWeb.DeckLive.Build do
       <!-- mobile slide-up deck pane (never a modal: the page stays live behind it) -->
       <div
         id="deck-panel-mobile"
+        phx-hook=".PaneDrag"
         class={[
           "fixed inset-x-0 bottom-0 z-50 max-h-[75dvh] overflow-y-auto border-t-2 border-neutral bg-base-100",
           "transition-transform duration-200 lg:hidden",
           (@tab == "cards" && @panel_open? && "translate-y-0") || "translate-y-full"
         ]}
       >
+        <script :type={Phoenix.LiveView.ColocatedHook} name=".PaneDrag">
+          // Drag-to-dismiss for the mobile deck pane. The handle owns both
+          // gestures: a short press is a tap (close), a downward drag past
+          // the threshold dismisses, anything else springs back.
+          const THRESHOLD = 110
+          const TAP_SLOP = 8
+
+          export default {
+            mounted() {
+              const pane = this.el
+              const handle = pane.querySelector("[data-drag-handle]")
+              let startY = null
+              let dy = 0
+
+              handle.addEventListener("pointerdown", (e) => {
+                startY = e.clientY
+                dy = 0
+                handle.setPointerCapture(e.pointerId)
+              })
+
+              handle.addEventListener("pointermove", (e) => {
+                if (startY == null) return
+                dy = Math.max(0, e.clientY - startY)
+                pane.style.transition = "none"
+                pane.style.transform = `translateY(${dy}px)`
+              })
+
+              const finish = () => {
+                if (startY == null) return
+                pane.style.transition = ""
+                if (dy < TAP_SLOP || dy > THRESHOLD) {
+                  // Slide the rest of the way down NOW — translateY(100%)
+                  // matches the closed-state class, so when the server patch
+                  // swaps classes and `updated()` drops the inline style,
+                  // nothing visibly moves. Clearing the transform here
+                  // instead would animate the pane back open while the
+                  // round-trip is in flight.
+                  pane.style.transform = "translateY(100%)"
+                  this.pushEvent("toggle_panel", {})
+                } else {
+                  pane.style.transform = ""
+                }
+                startY = null
+                dy = 0
+              }
+
+              handle.addEventListener("pointerup", finish)
+              handle.addEventListener("pointercancel", finish)
+            },
+
+            // A server patch (open/close) must never fight a leftover drag frame.
+            updated() {
+              this.el.style.transform = ""
+              this.el.style.transition = ""
+            }
+          }
+        </script>
         <button
           type="button"
-          phx-click="toggle_panel"
-          class="flex w-full cursor-pointer items-center justify-center gap-2 py-2 text-base-content/50"
+          data-drag-handle
+          data-haptic
+          class="flex w-full cursor-grab touch-none items-center justify-center gap-2 py-3 text-base-content/50"
           title="Close deck panel"
         >
           <span class="h-1 w-10 rounded-full bg-base-content/25"></span>
@@ -808,6 +869,7 @@ defmodule SanctumWeb.DeckLive.Build do
       >
         <button
           type="button"
+          data-haptic
           phx-click="toggle_panel"
           class="flex min-h-[48px] w-full cursor-pointer items-center justify-between gap-3"
         >
@@ -980,34 +1042,36 @@ defmodule SanctumWeb.DeckLive.Build do
               </span>
             </span>
             <!-- controls column: fixed width whether it holds a lock or steppers -->
-            <span class="flex w-[68px] flex-none items-center justify-end gap-0.5 sm:w-[52px]">
+            <span class="flex w-[84px] flex-none items-center justify-end gap-0.5 sm:w-[52px]">
               <span :if={row.hero?} title="Locked to the hero set" class="flex justify-end">
                 <.icon name="hero-lock-closed" class="size-3 text-base-content/35" />
               </span>
               <button
                 :if={!row.hero?}
                 type="button"
+                data-haptic
                 phx-click="dec"
                 phx-value-card-id={row.card_id}
                 title="Remove a copy"
-                class="flex size-8 cursor-pointer items-center justify-center text-base-content/50 transition-colors hover:text-error sm:size-6"
+                class="flex size-10 cursor-pointer items-center justify-center text-base-content/50 transition-colors hover:text-error sm:size-6"
               >
-                <.icon name="hero-minus" class="size-3.5" />
+                <.icon name="hero-minus" class="size-4 sm:size-3.5" />
               </button>
               <button
                 :if={!row.hero?}
                 type="button"
+                data-haptic
                 phx-click="inc"
                 phx-value-card-id={row.card_id}
                 disabled={row.qty >= row.max}
                 title={(row.qty >= row.max && "At this card's limit") || "Add a copy"}
                 class={[
-                  "flex size-8 cursor-pointer items-center justify-center transition-colors sm:size-6",
+                  "flex size-10 cursor-pointer items-center justify-center transition-colors sm:size-6",
                   (row.qty >= row.max && "cursor-default text-base-content/20") ||
                     "text-base-content/50 hover:text-success"
                 ]}
               >
-                <.icon name="hero-plus" class="size-3.5" />
+                <.icon name="hero-plus" class="size-4 sm:size-3.5" />
               </button>
             </span>
           </div>
