@@ -13,7 +13,7 @@ defmodule Sanctum.Search.CardFields do
   import Ash.Expr
 
   alias Sanctum.Games.{CardAspect, CardOwnership, CardType}
-  alias Sanctum.Search.{Builders, Field}
+  alias Sanctum.Search.{Builders, Field, FormSchema}
 
   # `aspect` accepts the ownership pools too ("hero"/"basic"/…), matching the
   # pool page's filter pills, which conflate the two on purpose.
@@ -100,6 +100,7 @@ defmodule Sanctum.Search.CardFields do
         values: enum_strings(CardType),
         example: "type:ally",
         hint: "card type",
+        form: %{group: "Type", order: 20},
         build:
           enum_build(CardType, fn atom, op ->
             Builders.cmp(expr(type), op, atom)
@@ -112,6 +113,7 @@ defmodule Sanctum.Search.CardFields do
         values: enum_strings(CardAspect) ++ @ownership_as_aspect,
         example: "aspect:aggression",
         hint: "aspect, or a pool like hero/basic",
+        form: %{group: "Aspect", order: 10},
         build: &aspect_build/2
       },
       %Field{
@@ -121,6 +123,7 @@ defmodule Sanctum.Search.CardFields do
         example: "trait:avenger",
         hint: "card trait (Avenger, Skill, …)",
         values_fun: &Sanctum.Search.Values.traits/0,
+        form: %{group: "Traits & Sets", order: 30},
         build: &trait_build/2
       }
     ]
@@ -136,6 +139,7 @@ defmodule Sanctum.Search.CardFields do
         example: "resource:mental",
         hint: "cards printing this resource",
         ops: [:eq],
+        form: %{group: "Resources", order: 40},
         build: &resource_build/2
       },
       %Field{
@@ -157,6 +161,7 @@ defmodule Sanctum.Search.CardFields do
         example: "set:spider_man",
         hint: "card set",
         values_fun: &Sanctum.Search.Values.sets/0,
+        form: %{group: "Traits & Sets", order: 31, option_labels: &FormSchema.humanize/1},
         build: text_build(fn pattern -> expr(ilike(card.set, ^pattern)) end)
       },
       %Field{
@@ -166,6 +171,7 @@ defmodule Sanctum.Search.CardFields do
         example: "pack:core",
         hint: "product/pack",
         values_fun: &Sanctum.Search.Values.packs/0,
+        form: %{group: "Traits & Sets", order: 32, option_labels: &FormSchema.humanize/1},
         build: text_build(fn pattern -> expr(ilike(card.pack, ^pattern)) end)
       },
       Field.text(
@@ -188,6 +194,7 @@ defmodule Sanctum.Search.CardFields do
         kind: :boolean,
         values: ["true", "false"],
         example: "unique:true",
+        form: %{group: "Properties", order: 50},
         build: bool_build(fn bool, op -> Builders.cmp(expr(card.unique), op, bool) end)
       },
       %Field{
@@ -197,6 +204,7 @@ defmodule Sanctum.Search.CardFields do
         values: ["true", "false"],
         example: "owned:true",
         hint: "in your collection (empty when signed out)",
+        form: %{group: "Properties", order: 51},
         build: bool_build(fn bool, op -> Builders.cmp(expr(card.owned), op, bool) end)
       },
       %Field{
@@ -207,6 +215,7 @@ defmodule Sanctum.Search.CardFields do
         example: "is:unique",
         hint: "card properties and icons",
         ops: [:eq],
+        form: %{group: "Properties", order: 52, label: "Card is…"},
         build: &flag_build/2
       }
     ]
@@ -222,6 +231,7 @@ defmodule Sanctum.Search.CardFields do
       example: "cost<=2",
       hint: ~s(printed cost; "x" matches X-cost cards),
       ops: @all_ops,
+      form: %{group: "Stats", order: 60},
       build: fn op, value ->
         with {:ok, n} <- parse_printed_number(op, value) do
           {:ok, Builders.x_cmp(expr(cost), op, n)}
@@ -231,13 +241,14 @@ defmodule Sanctum.Search.CardFields do
   end
 
   defp stat_fields do
-    for {name, aliases, attr, example} <- @stat_fields do
+    for {{name, aliases, attr, example}, index} <- Enum.with_index(@stat_fields) do
       %Field{
         name: name,
         aliases: aliases,
         kind: :stat,
         example: example,
         ops: @all_ops,
+        form: %{group: "Stats", order: 61 + index},
         build: fn op, value ->
           with {:ok, n} <- parse_printed_number(op, value) do
             {:ok, Builders.stat_cmp(attr, op, n)}
@@ -258,13 +269,14 @@ defmodule Sanctum.Search.CardFields do
   end
 
   defp int_fields do
-    for {name, aliases, attr, example} <- @int_fields do
+    for {{name, aliases, attr, example}, index} <- Enum.with_index(@int_fields) do
       %Field{
         name: name,
         aliases: aliases,
         kind: :integer,
         example: example,
         ops: @all_ops,
+        form: %{group: "Stats", order: 70 + index},
         build: fn op, value ->
           with {:ok, n} <- Builders.parse_int(value) do
             {:ok, Builders.cmp(expr(^ref(attr)), op, n)}

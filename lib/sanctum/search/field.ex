@@ -14,6 +14,11 @@ defmodule Sanctum.Search.Field do
   * `build` — `(op, raw_value) -> {:ok, ash_expr} | {:error, message}`;
     validation (enum coercion, integer parsing) happens here
   * `example` / `hint` — shown in autocomplete and the syntax help
+  * `form` — filter-sheet placement (see `Sanctum.Search.FormSchema`). A map
+    with a `:group` opts the field into the structured filter UI; `nil` keeps
+    it query-syntax-only. Optional keys: `:control` (override the
+    kind-derived control), `:order` (sort within/across groups), `:label`,
+    and `:option_labels` (`value -> label` fun for choice controls)
   """
 
   @enforce_keys [:name, :kind, :build]
@@ -24,6 +29,7 @@ defmodule Sanctum.Search.Field do
     :example,
     :hint,
     :values_fun,
+    :form,
     aliases: [],
     values: [],
     ops: [:eq, :neq]
@@ -46,6 +52,7 @@ defmodule Sanctum.Search.Field do
           example: String.t() | nil,
           hint: String.t() | nil,
           values_fun: (-> [String.t()]) | nil,
+          form: map() | nil,
           aliases: [String.t()],
           values: [String.t()],
           ops: [op()]
