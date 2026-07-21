@@ -132,33 +132,35 @@ defmodule SanctumWeb.Components.FilterSheet do
         </button>
       </header>
 
-      <form
-        id={@id <> "-form"}
-        phx-change={@on_change}
-        class="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5"
-      >
-        <section
-          :for={{group, controls} <- @groups}
-          class="mb-6 border-t border-line/70 pt-4 first:border-t-0 first:pt-1 last:mb-2"
-        >
-          <h3 class="mb-2.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45">
-            {group}
-          </h3>
-          <div class={group_layout(controls)}>
-            <.control :for={control <- controls} control={control} sync={@sync} sheet_id={@id} />
-          </div>
-        </section>
+      <%!-- The form is the flex column and the scroll region is an inner div,
+           so the footer never scrolls and no content can peek out below it
+           (a sticky footer inside the scroll container leaves the container's
+           bottom padding visible underneath). --%>
+      <form id={@id <> "-form"} phx-change={@on_change} class="flex min-h-0 flex-1 flex-col">
+        <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
+          <section
+            :for={{group, controls} <- @groups}
+            class="mb-6 border-t border-line/70 pt-4 first:border-t-0 first:pt-1 last:mb-2"
+          >
+            <h3 class="mb-2.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45">
+              {group}
+            </h3>
+            <div class={group_layout(controls)}>
+              <.control :for={control <- controls} control={control} sync={@sync} sheet_id={@id} />
+            </div>
+          </section>
 
-        <div
-          :if={@sync.residual != ""}
-          class="mb-2 border border-dashed border-line px-3 py-2 font-barlow text-[13px] text-base-content/55"
-        >
-          Also filtering:
-          <span class="font-ibm-mono text-[12.5px] text-base-content/80">{@sync.residual}</span>
-          — edit in the search bar.
+          <div
+            :if={@sync.residual != ""}
+            class="mb-2 border border-dashed border-line px-3 py-2 font-barlow text-[13px] text-base-content/55"
+          >
+            Also filtering:
+            <span class="font-ibm-mono text-[12.5px] text-base-content/80">{@sync.residual}</span>
+            — edit in the search bar.
+          </div>
         </div>
 
-        <footer class="sticky bottom-0 -mx-4 mt-2 flex flex-none items-center gap-3 border-t-2 border-line bg-base-100 px-4 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:-mx-5 sm:px-5">
+        <footer class="flex flex-none items-center gap-3 border-t-2 border-line bg-base-100 px-4 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-5">
           <.button type="button" phx-click={@on_clear}>Clear all</.button>
           {render_slot(@footer_extra)}
           <.button type="button" variant="primary" phx-click={@on_toggle} class="ml-auto">

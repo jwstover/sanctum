@@ -689,8 +689,8 @@ defmodule SanctumWeb.DeckLive.Build do
         <!-- left: browse + grid -->
         <div class="min-w-0">
           <div class="mb-3">
-            <div class="flex w-full items-start gap-2">
-              <form id="builder-search" phx-change="search" class="flex min-w-0 flex-1">
+            <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
+              <form id="builder-search" phx-change="search" class="flex w-full sm:min-w-0 sm:flex-1">
                 <.query_input
                   id="builder-query"
                   value={@query}
@@ -702,7 +702,10 @@ defmodule SanctumWeb.DeckLive.Build do
                   help_path={~p"/search-help" <> "#cards"}
                 />
               </form>
-              <.filter_button count={@filter_count} class="min-h-[46px] flex-none sm:min-h-[46px]" />
+              <.filter_button
+                count={@filter_count}
+                class="w-full min-h-[46px] flex-none sm:w-auto sm:min-h-[46px]"
+              />
             </div>
             <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
               <.icon
