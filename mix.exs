@@ -129,10 +129,11 @@ defmodule Sanctum.MixProject do
           "compile --warnings-as-errors",
           "format",
           "credo suggest --min-priority=normal",
-          # Duplication ratchet: the cap covers clones whose fixes ride
-          # unmerged branches. Lower it as they land, never raise it — extract
-          # shared logic instead. Keep in sync with ci.yml.
-          "ex_dna --max-clones 3",
+          # Fails on ANY code duplication — extract the shared logic instead
+          # of tolerating the clone. `mix ex_dna` shows the offending sites.
+          # If a clone's fix rides another unmerged branch, a temporary
+          # --max-clones N ratchet is acceptable; keep in sync with ci.yml.
+          "ex_dna",
           "sobelow --config --exit"
         ],
         setup: [
