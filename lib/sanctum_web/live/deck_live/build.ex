@@ -904,10 +904,73 @@ defmodule SanctumWeb.DeckLive.Build do
         <div
           :if={@picker}
           id="writeup-picker"
+          phx-hook=".PickerNav"
           phx-window-keydown="close_picker"
           phx-key="escape"
           class="fixed inset-0 z-50"
         >
+          <script :type={Phoenix.LiveView.ColocatedHook} name=".PickerNav">
+            // Arrow-key navigation for the picker overlay: the search input
+            // keeps focus while ArrowUp/Down move a highlight over the result
+            // rows and Enter clicks the active one (its phx-click="pick" does
+            // the rest). Results re-render on every search patch, and patches
+            // wipe client-added classes, so updated() re-derives the highlight
+            // — resetting to the first row of each fresh result set.
+            export default {
+              mounted() {
+                this.input = this.el.querySelector("input[name='q']")
+                this.active = -1
+
+                this.onKey = (e) => {
+                  const rows = this.rows()
+                  if (rows.length === 0) return
+
+                  switch (e.key) {
+                    case "ArrowDown":
+                      e.preventDefault()
+                      this.setActive(rows, (this.active + 1) % rows.length)
+                      break
+                    case "ArrowUp":
+                      e.preventDefault()
+                      this.setActive(rows, (this.active - 1 + rows.length) % rows.length)
+                      break
+                    case "Enter":
+                      if (this.active >= 0 && rows[this.active]) {
+                        e.preventDefault()
+                        rows[this.active].click()
+                      }
+                      break
+                  }
+                }
+                this.input.addEventListener("keydown", this.onKey)
+
+                this.onMove = (e) => {
+                  const row = e.target.closest("[phx-click='pick']")
+                  if (!row) return
+                  const rows = this.rows()
+                  this.setActive(rows, rows.indexOf(row))
+                }
+                this.el.addEventListener("mousemove", this.onMove)
+
+                this.updated()
+              },
+
+              updated() {
+                const rows = this.rows()
+                this.setActive(rows, rows.length > 0 ? 0 : -1)
+              },
+
+              rows() {
+                return [...this.el.querySelectorAll("[phx-click='pick']")]
+              },
+
+              setActive(rows, i) {
+                this.active = i
+                rows.forEach((row, j) => row.classList.toggle("picker-active", j === i))
+                if (i >= 0) rows[i]?.scrollIntoView({block: "nearest"})
+              },
+            }
+          </script>
           <div class="absolute inset-0 bg-black/60" phx-click="close_picker" aria-hidden="true"></div>
           <div class="absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-hidden border-t-[3px] border-neutral bg-base-100 p-3 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12vh] sm:w-[min(92vw,560px)] sm:-translate-x-1/2 sm:border-2 sm:shadow-comic-lg">
             <div class="mb-2.5 flex items-center justify-between gap-3">
