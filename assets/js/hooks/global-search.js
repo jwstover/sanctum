@@ -98,9 +98,25 @@ export default {
     this.open = true
     this.syncOverlay()
     this.syncPanel()
+    this.animateSheetIn()
     this.input.focus()
     this.input.select()
     this.queueSuggest()
+  },
+
+  // The slide-up runs off a temporary class so it plays exactly once per
+  // open — an always-on animation would replay every time a LiveView patch
+  // re-toggles the overlay's `hidden` class (a display flip resets CSS
+  // animations).
+  animateSheetIn() {
+    const sheet = this.overlay?.querySelector(".gs-sheet")
+    if (!sheet) return
+    sheet.classList.add("gs-sheet-opening")
+    sheet.addEventListener(
+      "animationend",
+      () => sheet.classList.remove("gs-sheet-opening"),
+      {once: true}
+    )
   },
 
   closeOverlay() {

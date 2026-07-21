@@ -847,11 +847,15 @@ textarea::placeholder {
     transform: translateY(0);
   }
 }
-.gs-sheet {
+/* Applied by the GlobalSearch hook only while opening (removed on
+   animationend): LiveView patches re-toggle the overlay's `hidden` class,
+   and a display flip restarts any always-on animation — the sheet would
+   replay its slide-up on every result patch while typing. */
+.gs-sheet-opening {
   animation: gs-slide-up 0.22s ease-out;
 }
 @media (min-width: 640px) {
-  .gs-sheet {
+  .gs-sheet-opening {
     animation: none;
   }
 }
