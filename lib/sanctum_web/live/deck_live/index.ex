@@ -445,10 +445,8 @@ defmodule SanctumWeb.DeckLive.Index do
   defp maybe_assign_count(socket, false, _count), do: socket
   defp maybe_assign_count(socket, true, count), do: assign(socket, :count, count)
 
-  # The :browse aspect/hero_id/mine arguments are superseded by the query
-  # string; they remain (as no-op defaults) until the action drops them.
   defp filters(a) do
-    %{query: a.query, sort: a.sort, aspect: "all", hero_id: "all", mine: false}
+    %{query: a.query, sort: a.sort}
   end
 
   # Advisory parse/compile problems shown under the query input ("unknown

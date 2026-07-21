@@ -334,10 +334,8 @@ defmodule SanctumWeb.CardLive.Pool do
     |> then(fn s -> if is_nil(s.assigns.total), do: assign(s, :total, count), else: s end)
   end
 
-  # The :browse aspect/type arguments are superseded by the query string
-  # ("all" = no filter); they remain until the action drops them.
   defp filters(assigns) do
-    %{query: assigns.query, aspect: "all", type: "all"}
+    %{query: assigns.query}
   end
 
   # Advisory parse/compile problems shown under the query input ("unknown

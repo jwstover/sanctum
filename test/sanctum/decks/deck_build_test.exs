@@ -275,7 +275,7 @@ defmodule Sanctum.Decks.DeckBuildTest do
     end
   end
 
-  describe ":browse mine" do
+  describe ":browse mine:true query" do
     test "returns only the actor's decks" do
       %{hero: hero} = make_hero("build_mine")
       me = user_fixture()
@@ -286,7 +286,7 @@ defmodule Sanctum.Decks.DeckBuildTest do
 
       results =
         Deck
-        |> Ash.Query.for_read(:browse, %{mine: true}, actor: me)
+        |> Ash.Query.for_read(:browse, %{query: "mine:true"}, actor: me)
         |> Ash.read!()
 
       assert Enum.map(results, & &1.id) == [mine.id]
@@ -297,7 +297,7 @@ defmodule Sanctum.Decks.DeckBuildTest do
       user = user_fixture()
       _deck = Decks.build_deck!(%{hero_id: hero.id}, actor: user)
 
-      assert Deck |> Ash.Query.for_read(:browse, %{mine: true}) |> Ash.read!() == []
+      assert Deck |> Ash.Query.for_read(:browse, %{query: "mine:true"}) |> Ash.read!() == []
     end
   end
 

@@ -495,14 +495,7 @@ defmodule SanctumWeb.DeckLive.Build do
     req = socket.assigns.req_id + 1
     actor = socket.assigns.current_user
 
-    # aspect/type are superseded by the query string ("all" = no filter);
-    # they remain until the :browse action drops them.
-    filters = %{
-      query: socket.assigns.query,
-      aspect: "all",
-      type: "all",
-      scope: "deckbuilding"
-    }
+    filters = %{query: socket.assigns.query, scope: "deckbuilding"}
 
     socket
     |> assign(:req_id, req)

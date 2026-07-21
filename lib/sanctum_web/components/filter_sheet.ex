@@ -100,6 +100,7 @@ defmodule SanctumWeb.Components.FilterSheet do
       role="dialog"
       aria-modal="true"
       aria-label="Filters"
+      inert={!@open?}
       class={[
         "fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col border-t-2 border-neutral bg-base-100",
         "transition-transform duration-200",
