@@ -277,7 +277,7 @@ defmodule SanctumWeb.Components.CardSideTile do
       name: side.name,
       type: side.type,
       is_landscape: landscape_type?(side.type),
-      cost: side.cost,
+      cost: display_value(side.cost),
       show_cost: side.type != :resource and not is_nil(side.cost),
       aspect_key: aspect_key,
       aspect_name: aspect_name(aspect_key, card.set),
@@ -304,7 +304,7 @@ defmodule SanctumWeb.Components.CardSideTile do
       defense: stat_value(side.defense),
       health: stat_value(side.health),
       health_per_player: stat_per_player(side.health),
-      scheme: side.scheme,
+      scheme: display_value(side.scheme),
       is_main_scheme: side.type == :main_scheme,
       threat_target: threat_target(side),
       threat_per_player: threat_target_per_player?(side),
@@ -345,7 +345,7 @@ defmodule SanctumWeb.Components.CardSideTile do
   end
 
   defp stat_value(nil), do: nil
-  defp stat_value(%{value: value}), do: value
+  defp stat_value(%{value: value}), do: display_value(value)
 
   defp stat_consequential(%{consequential: n}) when is_integer(n), do: n
   defp stat_consequential(_), do: 0
@@ -359,8 +359,8 @@ defmodule SanctumWeb.Components.CardSideTile do
 
   # A scheme's threat target: main schemes carry it in `max_threat`; side schemes
   # (and player side schemes) carry it in `base_threat`.
-  defp threat_target(%{max_threat: %{value: v}}), do: v
-  defp threat_target(%{base_threat: %{value: v}}), do: v
+  defp threat_target(%{max_threat: %{value: v}}), do: display_value(v)
+  defp threat_target(%{base_threat: %{value: v}}), do: display_value(v)
   defp threat_target(_), do: nil
 
   defp threat_target_per_player?(%{max_threat: stat}) when not is_nil(stat),

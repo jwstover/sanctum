@@ -38,7 +38,7 @@ defmodule SanctumWeb.Components.DeckCards do
       card_id: card.id,
       qty: qty,
       name: side.name,
-      cost: side.cost,
+      cost: CardComponent.display_value(side.cost),
       type: side.type,
       hero?: side.ownership == :hero,
       aspect_key: aspect_key,

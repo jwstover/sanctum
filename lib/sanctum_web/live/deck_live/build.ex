@@ -530,7 +530,7 @@ defmodule SanctumWeb.DeckLive.Build do
       card_id: card.id,
       card: card,
       name: side.name,
-      cost: side.cost,
+      cost: display_value(side.cost),
       type: side.type,
       aspect_key: display_aspect(side),
       resources: resources,

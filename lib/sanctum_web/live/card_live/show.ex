@@ -449,7 +449,7 @@ defmodule SanctumWeb.CardLive.Show do
       object_key: CardImages.key_from_url(side.image_url),
       name: side.name,
       subname: side.subname,
-      cost: side.cost,
+      cost: CardComponent.display_value(side.cost),
       side_identifier: side.side_identifier,
       is_primary_side: side.is_primary_side,
       type: side.type,
@@ -497,11 +497,11 @@ defmodule SanctumWeb.CardLive.Show do
 
   defp typed_meta(side) do
     [
-      {"Cost", side.cost},
+      {"Cost", CardComponent.display_value(side.cost)},
       {"Hand Size", side.hand_size},
       {"Recover", stat_meta(side.recover)},
       {"Stage", side.stage},
-      {"Scheme", side.scheme},
+      {"Scheme", CardComponent.display_value(side.scheme)},
       {"Health Scaling", scaling_label(side.health)},
       {"Base Threat", stat_meta(side.base_threat)},
       {"Escalation", stat_meta(side.escalation_threat)},
@@ -519,12 +519,13 @@ defmodule SanctumWeb.CardLive.Show do
   defp stat_value(_), do: nil
 
   defp stat_box_value(%{value: value, star: star}) when not is_nil(value),
-    do: "#{value}#{if star, do: "★", else: ""}"
+    do: "#{CardComponent.display_value(value)}#{if star, do: "★", else: ""}"
 
   defp stat_box_value(_), do: nil
 
   defp stat_meta(%{value: value, star: star, scaling: scaling}) when not is_nil(value),
-    do: "#{value}#{if star, do: "★", else: ""}#{scaling_suffix(scaling)}"
+    do:
+      "#{CardComponent.display_value(value)}#{if star, do: "★", else: ""}#{scaling_suffix(scaling)}"
 
   defp stat_meta(_), do: nil
 
