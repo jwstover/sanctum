@@ -228,13 +228,9 @@ defmodule Sanctum.Search.FormSync do
     if value in ["true", "false"], do: {:ok, value}, else: :error
   end
 
-  # Adopt the vocabulary's own spelling so the <select> option matches.
+  # Adopt the vocabulary's own spelling so the typeahead shows it verbatim.
   defp adopt_value(:select, field, :eq, [value_tok]) do
-    normalized = Registry.normalize(value_tok.value)
-
-    (field.values ++ dynamic_values(field))
-    |> Enum.find(&(Registry.normalize(&1) == normalized))
-    |> case do
+    case vocab_match(field, value_tok.value) do
       nil -> :error
       match -> {:ok, match}
     end
@@ -329,7 +325,19 @@ defmodule Sanctum.Search.FormSync do
   defp clean_value(control, _field, raw) when control in [:tristate, :toggle],
     do: raw |> to_string() |> Registry.normalize()
 
-  defp clean_value(:select, _field, raw), do: raw |> to_string() |> String.trim()
+  # Select values are typed into a typeahead, so a submit can carry a
+  # half-typed value. Commit only exact (normalized) vocabulary matches —
+  # adopting the vocabulary's own spelling — and treat anything else as
+  # :unmatched, which diff/6 ignores rather than splicing into the query.
+  defp clean_value(:select, field, raw) do
+    value = raw |> to_string() |> String.trim()
+
+    if value == "" do
+      ""
+    else
+      vocab_match(field, value) || :unmatched
+    end
+  end
 
   defp clean_value(:number, field, %{} = raw) do
     value = (raw[:value] || raw["value"] || "") |> to_string() |> String.trim()
@@ -348,6 +356,15 @@ defmodule Sanctum.Search.FormSync do
   defp clean_op(_op, field), do: default_op(field)
 
   defp default_op(%Field{ops: ops}), do: if(:eq in ops, do: :eq, else: hd(ops))
+
+  defp vocab_match(field, value) do
+    normalized = Registry.normalize(value)
+
+    (field.values ++ dynamic_values(field))
+    |> Enum.find(&(Registry.normalize(&1) == normalized))
+  end
+
+  defp diff(_control, _field, _entries, :unmatched, edits, appends), do: {edits, appends}
 
   defp diff(:checks, field, entries, new_values, edits, appends) do
     old_values = Enum.flat_map(entries, & &1.value)

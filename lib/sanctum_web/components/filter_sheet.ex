@@ -137,14 +137,17 @@ defmodule SanctumWeb.Components.FilterSheet do
         phx-change={@on_change}
         class="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5"
       >
-        <fieldset :for={{group, controls} <- @groups} class="mb-4 last:mb-1">
-          <legend class="mb-1.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45">
+        <section
+          :for={{group, controls} <- @groups}
+          class="mb-6 border-t border-line/70 pt-4 first:border-t-0 first:pt-1 last:mb-2"
+        >
+          <h3 class="mb-2.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45">
             {group}
-          </legend>
+          </h3>
           <div class={group_layout(controls)}>
-            <.control :for={control <- controls} control={control} sync={@sync} />
+            <.control :for={control <- controls} control={control} sync={@sync} sheet_id={@id} />
           </div>
-        </fieldset>
+        </section>
 
         <div
           :if={@sync.residual != ""}
@@ -171,6 +174,7 @@ defmodule SanctumWeb.Components.FilterSheet do
 
   attr :control, :map, required: true
   attr :sync, :map, required: true
+  attr :sheet_id, :string, default: nil
 
   defp control(%{control: %{control: kind}} = assigns) when kind in [:chips, :checks] do
     assigns = assign(assigns, :selected, Map.get(assigns.sync.fields, assigns.control.name, []))
@@ -224,19 +228,36 @@ defmodule SanctumWeb.Components.FilterSheet do
     """
   end
 
+  # Vocabulary fields render as a typeahead over a native <datalist>. A
+  # half-typed value is harmless: FormSync only commits exact vocabulary
+  # matches, so the query updates when a suggestion is picked (or the typed
+  # text completes a value) and clears when the input empties.
   defp control(%{control: %{control: :select}} = assigns) do
-    assigns = assign(assigns, :selected, Map.get(assigns.sync.fields, assigns.control.name, ""))
+    assigns =
+      assigns
+      |> assign(:selected, Map.get(assigns.sync.fields, assigns.control.name, ""))
+      |> assign(:list_id, "#{assigns.sheet_id}-#{assigns.control.name}-list")
 
     ~H"""
-    <label class="flex min-w-0 flex-1 items-center gap-2 basis-full sm:basis-[calc(50%-0.375rem)]">
+    <label class="contents">
       <span class={control_label_classes()}>{@control.label}</span>
-      <select name={@control.name} class={select_classes() <> " min-w-0 flex-1"}>
-        <option value="">Any</option>
-        <option :for={{value, label} <- @control.options} value={value} selected={value == @selected}>
-          {label}
-        </option>
-      </select>
+      <input
+        type="text"
+        name={@control.name}
+        value={@selected}
+        list={@list_id}
+        placeholder="Any"
+        autocomplete="off"
+        spellcheck="false"
+        phx-debounce="300"
+        class="min-w-0 border-2 border-line bg-black px-2.5 py-1.5 font-barlow text-[14px] text-base-content outline-none placeholder:text-base-content/35 focus:border-primary"
+      />
     </label>
+    <datalist id={@list_id}>
+      <option :for={{value, label} <- @control.options} value={value}>
+        {if label != value, do: label}
+      </option>
+    </datalist>
     """
   end
 
@@ -310,9 +331,13 @@ defmodule SanctumWeb.Components.FilterSheet do
     |> Enum.reject(fn {_group, controls} -> controls == [] end)
   end
 
-  # Number rows pack two to a row on wider screens; everything else wraps.
+  # Number rows pack two to a row on wider screens; typeahead rows share a
+  # label column so labels and inputs align vertically; everything else wraps.
   defp group_layout([%{control: :number} | _]),
     do: "grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2"
+
+  defp group_layout([%{control: :select} | _]),
+    do: "grid grid-cols-[minmax(56px,auto)_1fr] items-center gap-x-3 gap-y-2"
 
   defp group_layout(_controls), do: "flex flex-wrap items-center gap-x-6 gap-y-2"
 

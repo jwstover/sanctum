@@ -548,13 +548,19 @@ defmodule SanctumWeb.DeckLive.Build do
   defp maybe_assign_count(socket, true, count), do: assign(socket, :count, count)
 
   # Shared landing point for every query mutation (typing, sheet changes,
-  # clear): assigns + diagnostics + badge count + reload.
+  # clear): assigns + diagnostics + badge count + reload. A no-op change
+  # (e.g. a half-typed typeahead value FormSync declined to commit) skips
+  # the reload.
   defp apply_query(socket, query) do
-    socket
-    |> assign(:query, query)
-    |> assign(:search_diagnostics, search_diagnostics(query))
-    |> assign(:filter_count, FormSync.active_count(query, Sanctum.Search.CardFields))
-    |> start_load(0, reset: true)
+    if query == socket.assigns.query do
+      socket
+    else
+      socket
+      |> assign(:query, query)
+      |> assign(:search_diagnostics, search_diagnostics(query))
+      |> assign(:filter_count, FormSync.active_count(query, Sanctum.Search.CardFields))
+      |> start_load(0, reset: true)
+    end
   end
 
   defp search_diagnostics(query) when is_binary(query) and query != "" do

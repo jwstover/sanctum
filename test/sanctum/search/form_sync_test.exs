@@ -201,6 +201,18 @@ defmodule Sanctum.Search.FormSyncTest do
                ~s{hero:"Black Panther (T'Challa)"}
     end
 
+    test "select values commit only on exact vocabulary matches" do
+      # half-typed typeahead input: leave the query alone
+      assert FormSync.update("t:ally", VocabFields, %{"hero" => "spid"}) == "t:ally"
+      assert FormSync.update("hero:Groot", VocabFields, %{"hero" => "spid"}) == "hero:Groot"
+
+      # a completed value commits with the vocabulary's spelling
+      assert FormSync.update("", VocabFields, %{"hero" => "spider-man"}) == "hero:Spider-Man"
+
+      # empty still clears
+      assert FormSync.update("hero:Groot spider", VocabFields, %{"hero" => ""}) == "spider"
+    end
+
     test "toggle fields render true and clear" do
       assert FormSync.update("", VocabFields, %{"mine" => "true"}) == "mine:true"
       assert FormSync.update("mine:true groot", VocabFields, %{"mine" => ""}) == "groot"
