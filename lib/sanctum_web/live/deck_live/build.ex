@@ -27,25 +27,8 @@ defmodule SanctumWeb.DeckLive.Build do
 
   @page_size 24
 
-  @aspects [
-    {"all", "All", nil},
-    {"aggression", "Aggression", "bg-aspect-aggression"},
-    {"justice", "Justice", "bg-aspect-justice"},
-    {"leadership", "Leadership", "bg-aspect-leadership"},
-    {"protection", "Protection", "bg-aspect-protection"},
-    {"pool", "Pool", "bg-aspect-pool"},
-    {"basic", "Basic", "bg-aspect-basic"}
-  ]
-
-  @types [
-    {"all", "All"},
-    {"ally", "Ally"},
-    {"event", "Event"},
-    {"support", "Support"},
-    {"upgrade", "Upgrade"},
-    {"resource", "Resource"},
-    {"player_side_scheme", "Side Scheme"}
-  ]
+  @aspects SanctumWeb.CardFilters.deck_aspect_options()
+  @types SanctumWeb.CardFilters.type_options()
 
   @aspect_keys Enum.map(@aspects, &elem(&1, 0))
   @type_keys Enum.map(@types, &elem(&1, 0))
