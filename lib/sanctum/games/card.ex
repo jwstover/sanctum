@@ -140,8 +140,46 @@ defmodule Sanctum.Games.Card do
     end
 
     update :update_custom do
+      description "Enriches a custom card: card-level flags plus per-side metadata."
+
       accept [:deck_limit, :unique, :permanent]
       require_atomic? false
+
+      # Each map must carry the side's :id — sides are matched by primary key
+      # against this card's own sides. Omitted sides are left alone (never
+      # destroyed), unknown ids error, and matches run through CardSide's
+      # narrow :enrich action so codes/images can't be smuggled.
+      argument :card_sides, {:array, :map}
+
+      change manage_relationship(:card_sides,
+               on_lookup: :ignore,
+               on_no_match: :error,
+               on_match: {:update, :enrich},
+               on_missing: :ignore
+             )
+    end
+
+    update :pair_custom do
+      description "Merges another single-sided custom card into this one as side b; " <>
+                    "the donor card row is destroyed."
+
+      accept []
+      require_atomic? false
+
+      argument :donor_card_id, :uuid, allow_nil?: false
+
+      change set_attribute(:is_multi_sided, true)
+      change Sanctum.Games.Changes.PairCustomCard
+    end
+
+    update :unpair_custom do
+      description "Splits side b off into its own single-sided card in the same project."
+
+      accept []
+      require_atomic? false
+
+      change set_attribute(:is_multi_sided, false)
+      change Sanctum.Games.Changes.UnpairCustomCard
     end
 
     destroy :destroy_custom do
@@ -174,7 +212,7 @@ defmodule Sanctum.Games.Card do
 
     # Filter checks: someone else's custom (or any official card) is simply
     # not found through these actions.
-    policy action([:update_custom, :destroy_custom]) do
+    policy action([:update_custom, :destroy_custom, :pair_custom, :unpair_custom]) do
       authorize_if expr(origin == :custom and homebrew_project.creator_id == ^actor(:id))
     end
 

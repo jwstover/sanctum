@@ -84,6 +84,30 @@ defmodule Sanctum.Games.CardSide do
       accept [:*]
     end
 
+    # Creator-editable homebrew metadata only — never code / side_identifier /
+    # is_primary_side / image_url (those are minted or content-addressed).
+    # Reached exclusively through Card.update_custom's manage_relationship;
+    # the accessing_from policy below keeps direct calls admin-only.
+    update :enrich do
+      accept [
+        :name,
+        :subname,
+        :ownership,
+        :type,
+        :aspect,
+        :cost,
+        :attack,
+        :thwart,
+        :defense,
+        :health,
+        :recover,
+        :scheme,
+        :traits,
+        :text,
+        :flavor
+      ]
+    end
+
     read :primary_sides do
       filter expr(is_primary_side == true)
     end

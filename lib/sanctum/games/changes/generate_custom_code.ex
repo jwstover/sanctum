@@ -16,12 +16,11 @@ defmodule Sanctum.Games.Changes.GenerateCustomCode do
   use Ash.Resource.Change
 
   alias Ash.Changeset
-
-  @side_letters ~w(a b c d e f)
+  alias Sanctum.Games.CustomCode
 
   @impl true
   def change(changeset, _opts, _context) do
-    code = "custom-" <> Ash.UUID.generate()
+    code = CustomCode.mint()
 
     sides =
       changeset
@@ -46,13 +45,13 @@ defmodule Sanctum.Games.Changes.GenerateCustomCode do
 
   defp build_sides(sides, code) do
     sides
-    |> Enum.zip(@side_letters)
+    |> Enum.zip(CustomCode.side_letters())
     |> Enum.map(fn {side, letter} ->
       normalized = Map.new(side, fn {key, value} -> {to_atom_key(key), value} end)
 
       normalized
       |> Map.delete(:filename)
-      |> Map.put(:code, code <> letter)
+      |> Map.put(:code, CustomCode.side_code(code, letter))
       |> Map.put(:side_identifier, letter)
       |> Map.put(:is_primary_side, letter == "a")
       |> Map.put(:name, side_name(normalized))
