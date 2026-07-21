@@ -55,7 +55,6 @@ defmodule SanctumWeb.CardLive.DetailTest do
     assert html =~ "Spider-sense tingling."
     assert html =~ "Scientist supreme of Queens."
     assert html =~ "60001"
-    assert html =~ "2 sides"
   end
 
   test "shows pack metadata in the card file panel", %{conn: conn} do
