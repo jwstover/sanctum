@@ -144,7 +144,12 @@ defmodule SanctumWeb.CardLive.PoolTest do
     render_async(lv)
 
     assert has_element?(lv, ~s(#card-filters input[value="event"][checked]))
-    assert has_element?(lv, ~s(#card-filters select[name="cost_op"] option[value="lte"][selected]))
+
+    assert has_element?(
+             lv,
+             ~s(#card-filters select[name="cost_op"] option[value="lte"][selected])
+           )
+
     assert has_element?(lv, ~s(#card-filters input[name="cost"][value="2"]))
 
     # the negation isn't form-representable — preserved as residual

@@ -117,7 +117,7 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     refute html =~ "Web Warrior"
   end
 
-  test "the Mine filter shows only the signed-in user's decks", %{conn: conn} do
+  test "the My decks toggle shows only the signed-in user's decks", %{conn: conn} do
     owner = user_fixture()
 
     make_deck("My Own Deck", "spider_man", "90001", "Spider-Man", [:justice], %{
@@ -132,11 +132,87 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     assert html =~ "My Own Deck"
     assert html =~ "Someone Else&#39;s"
 
-    view |> element("button", "Mine") |> render_click()
+    view |> form("#deck-filters-form") |> render_change(%{"mine" => "true"})
+    assert_patch(view, ~p"/decks?#{[query: "mine:true"]}")
     html = render_async(view)
 
     assert html =~ "My Own Deck"
     refute html =~ "Someone Else&#39;s"
+  end
+
+  test "mine:true matches nothing when signed out", %{conn: conn} do
+    owner = user_fixture()
+
+    make_deck("My Own Deck", "spider_man", "90001", "Spider-Man", [:justice], %{
+      owner_id: owner.id
+    })
+
+    {:ok, view, _html} = live(conn, ~p"/decks?#{[query: "mine:true"]}")
+    html = render_async(view)
+
+    refute html =~ "My Own Deck"
+    assert html =~ "No decks found"
+  end
+
+  test "the mine toggle is hidden when signed out", %{conn: conn} do
+    make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+
+    {:ok, view, _html} = live(conn, ~p"/decks")
+
+    refute has_element?(view, ~s(#deck-filters input[name="mine"][value="true"]))
+  end
+
+  test "sheet aspect chips rewrite the query and narrow the feed", %{conn: conn} do
+    make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+    make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression])
+
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    render_async(view)
+
+    view |> form("#deck-filters-form") |> render_change(%{"aspect" => ["", "justice"]})
+    assert_patch(view, ~p"/decks?#{[query: "aspect:justice"]}")
+    html = render_async(view)
+
+    assert html =~ "Web Warrior"
+    refute html =~ "Cosmic Blast"
+  end
+
+  test "the sort radio rides along as a sidecar param", %{conn: conn} do
+    make_deck("Beta Deck", "spider_man", "90001", "Spider-Man", [:justice])
+    make_deck("Alpha Deck", "captain_marvel", "90002", "Captain Marvel", [:aggression])
+
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    render_async(view)
+
+    view |> form("#deck-filters-form") |> render_change(%{"sort" => "title"})
+    assert_patch(view, ~p"/decks?#{[sort: "title"]}")
+
+    html = render_async(view)
+    assert html =~ "Alpha Deck"
+  end
+
+  test "legacy aspect/hero_id/mine params fold into the query string", %{conn: conn} do
+    deck = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+    make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression])
+
+    hero = Ash.get!(Sanctum.Heroes.Hero, deck.hero_id, load: [:display_name])
+
+    expected =
+      Sanctum.Search.FormSync.update("", Sanctum.Search.DeckFields, %{
+        "aspect" => ["justice"],
+        "hero" => hero.display_name
+      })
+
+    assert {:error, {:live_redirect, %{to: to}}} =
+             live(conn, ~p"/decks?aspect=justice&hero_id=#{deck.hero_id}")
+
+    assert to == ~p"/decks?#{[query: expected]}"
+
+    {:ok, view, _html} = live(conn, to)
+    html = render_async(view)
+
+    assert html =~ "Web Warrior"
+    refute html =~ "Cosmic Blast"
   end
 
   test "signed-in users get a New Deck button; anonymous visitors don't", %{conn: conn} do

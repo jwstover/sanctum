@@ -85,6 +85,20 @@ defmodule Sanctum.Search.DeckFields do
         end
       },
       %Field{
+        name: "mine",
+        aliases: [],
+        kind: :boolean,
+        values: ["true", "false"],
+        example: "mine:true",
+        hint: "decks you own (empty when signed out)",
+        form: %{group: "Ownership", order: 35, control: :toggle, label: "My decks"},
+        build: fn op, value ->
+          with {:ok, bool} <- Builders.parse_bool(value) do
+            {:ok, Builders.cmp(expr(mine), op, bool)}
+          end
+        end
+      },
+      %Field{
         name: "source",
         aliases: [],
         kind: :enum,

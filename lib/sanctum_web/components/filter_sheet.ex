@@ -246,7 +246,11 @@ defmodule SanctumWeb.Components.FilterSheet do
     ~H"""
     <div class="flex items-center gap-1.5">
       <span class={control_label_classes() <> " w-[86px] flex-none"}>{@control.label}</span>
-      <select name={@control.name <> "_op"} aria-label={"#{@control.label} comparison"} class={select_classes()}>
+      <select
+        name={@control.name <> "_op"}
+        aria-label={"#{@control.label} comparison"}
+        class={select_classes()}
+      >
         <option :for={op <- @control.ops} value={op} selected={op == @current.op}>
           {op_symbol(op)}
         </option>
@@ -264,6 +268,11 @@ defmodule SanctumWeb.Components.FilterSheet do
     """
   end
 
+  @doc """
+  A filter_pill-styled `<label>` wrapping an invisible checkbox/radio, so
+  every option is a form input and each tap submits the sheet's form. Public
+  for `footer_extra` slots (e.g. the deck browser's sort radios).
+  """
   attr :type, :string, required: true
   attr :name, :string, required: true
   attr :value, :string, required: true
@@ -271,9 +280,7 @@ defmodule SanctumWeb.Components.FilterSheet do
   attr :dot_class, :string, default: nil
   slot :inner_block, required: true
 
-  # A filter_pill-styled <label> wrapping an invisible checkbox/radio, so
-  # every option is a form input and each tap submits the sheet's form.
-  defp chip(assigns) do
+  def chip(assigns) do
     ~H"""
     <label class={[
       "inline-flex min-h-[40px] cursor-pointer items-center gap-1.5 border-2 px-3.5 py-1.5 sm:min-h-0 sm:px-3",
@@ -314,7 +321,8 @@ defmodule SanctumWeb.Components.FilterSheet do
   defp op_symbol(op), do: Map.fetch!(@op_symbols, op)
 
   defp control_label_classes,
-    do: "font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] text-base-content/70"
+    do:
+      "font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] text-base-content/70"
 
   defp select_classes,
     do:

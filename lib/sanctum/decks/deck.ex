@@ -341,6 +341,13 @@ defmodule Sanctum.Decks.Deck do
     end
   end
 
+  calculations do
+    # Whether the requesting user owns this deck — backs the `mine:` search
+    # field (^actor resolves from the query's actor; a nil actor compares
+    # owner_id to NULL, which matches nothing rather than everyone's decks).
+    calculate :mine, :boolean, expr(owner_id == ^actor(:id))
+  end
+
   aggregates do
     count :card_row_count, :deck_cards
     sum :total_card_count, :deck_cards, :quantity
