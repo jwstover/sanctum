@@ -137,9 +137,6 @@ defmodule SanctumWeb.BrowseLive.Index do
       <div id="scroll-restore" phx-hook="ScrollRestore"></div>
       <.header>
         Browse
-        <:subtitle>
-          Every product in the game, organized by release wave — campaign expansions, hero packs, and scenario packs. Pick a product to see everything inside it.
-        </:subtitle>
       </.header>
 
       <!-- search: matches product names and the names of the card sets inside them -->

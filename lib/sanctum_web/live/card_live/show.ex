@@ -13,13 +13,6 @@ defmodule SanctumWeb.CardLive.Show do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:cards}>
       <.header>
         {@title}
-        <:subtitle>
-          <span class="font-ibm-mono text-[12px] uppercase tracking-[0.16em]">
-            {@card.base_code}
-          </span>
-          · {length(@card.card_sides)} side{if length(@card.card_sides) != 1, do: "s"}
-          <span :if={@card.is_multi_sided} class="text-base-content/45">· multi-sided</span>
-        </:subtitle>
 
         <:actions>
           <.back_button fallback={~p"/admin/cards"} />

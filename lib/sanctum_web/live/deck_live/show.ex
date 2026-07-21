@@ -23,36 +23,27 @@ defmodule SanctumWeb.DeckLive.Show do
       </div>
 
       <div :if={@deck != nil}>
-        <header class="mb-6 border-b-[3px] border-neutral pb-4">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-            <div class="order-2 min-w-0 sm:order-1">
-              <h1 class="font-anton text-3xl uppercase leading-[0.9] tracking-[0.005em] md:text-[42px]">
-                {@deck.title}
-              </h1>
-              <p class="mt-2 font-barlow text-[15px] text-base-content/60">
-                {@cover.hero_name}<span :if={@cover.author}> · by {@cover.author}</span>
-              </p>
-            </div>
-            <div class="order-1 flex flex-none items-center gap-2.5 sm:order-2">
-              <.button
-                :if={owner?(@deck, @current_user)}
-                variant="primary"
-                navigate={~p"/decks/#{@deck.id}/build"}
-              >
-                <.icon name="hero-pencil-square" /> Edit Deck
-              </.button>
-              <.button
-                :if={mcdb_url(@deck)}
-                href={mcdb_url(@deck)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <.icon name="hero-arrow-top-right-on-square" /> MarvelCDB
-              </.button>
-              <.back_button fallback={~p"/decks"} />
-            </div>
-          </div>
-        </header>
+        <.header>
+          {@deck.title}
+          <:actions>
+            <.button
+              :if={owner?(@deck, @current_user)}
+              variant="primary"
+              navigate={~p"/decks/#{@deck.id}/build"}
+            >
+              <.icon name="hero-pencil-square" /> Edit Deck
+            </.button>
+            <.button
+              :if={mcdb_url(@deck)}
+              href={mcdb_url(@deck)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <.icon name="hero-arrow-top-right-on-square" /> MarvelCDB
+            </.button>
+            <.back_button fallback={~p"/decks"} />
+          </:actions>
+        </.header>
 
         <div class="space-y-5">
           <!-- cover -->

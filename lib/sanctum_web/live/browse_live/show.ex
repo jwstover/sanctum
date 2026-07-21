@@ -211,20 +211,14 @@ defmodule SanctumWeb.BrowseLive.Show do
           </.link>
           <span class="text-base-content/30">/</span>
           {@pack.name || @pack.code}
-          <:subtitle>
-            {Catalog.ProductType.label(@pack.product_type)}
-            <span :if={@pack.wave}>
-              · {@pack.wave.name}
-            </span><span :if={@pack.released_on}>
-              · {@pack.released_on.year}
-            </span>
-            · {@pack.card_total || 0} cards
-            <span :if={@owned_ids} class="text-primary">
-              · {MapSet.size(@owned_ids)} / {@total_cards} owned
-            </span>
-          </:subtitle>
 
           <:actions :if={@current_user}>
+            <span
+              :if={@owned_ids}
+              class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-primary"
+            >
+              {MapSet.size(@owned_ids)} / {@total_cards} owned
+            </span>
             <.collection_toggle owned={@pack_owned} event="toggle_pack_owned" id={@pack.id} />
           </:actions>
         </.header>

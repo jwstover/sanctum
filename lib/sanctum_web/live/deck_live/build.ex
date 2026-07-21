@@ -637,7 +637,6 @@ defmodule SanctumWeb.DeckLive.Build do
       <.haptics />
       <.header>
         {@deck.title}
-        <:subtitle>{@deck.hero.display_name} · building</:subtitle>
         <:actions>
           <div :if={!@confirm_delete?} class="flex items-center gap-2.5">
             <.button phx-click="confirm_delete" class="!text-error">

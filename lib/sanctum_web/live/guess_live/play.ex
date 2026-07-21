@@ -17,10 +17,6 @@ defmodule SanctumWeb.GuessLive.Play do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:guess}>
       <.header>
         Flavor Town
-        <:subtitle>
-          Read the flavor text and name the card. Inspired by the <em>Stunned &amp; Confused</em>
-          podcast — every wrong guess earns you a hint that narrows it down.
-        </:subtitle>
       </.header>
 
       <.panel :if={@status == :empty} class="px-6 py-12 text-center">

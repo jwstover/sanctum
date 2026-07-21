@@ -35,11 +35,6 @@ defmodule SanctumWeb.SearchHelpLive do
     <Layouts.app current_user={@current_user} flash={@flash}>
       <.header>
         Search Syntax
-        <:subtitle>
-          The card pool and deck browser share a query language: type plain words to
-          search names, or combine field filters for precise questions. Everything is
-          case-insensitive, and partial or imperfect queries still return results.
-        </:subtitle>
       </.header>
 
       <div class="max-w-4xl space-y-8">

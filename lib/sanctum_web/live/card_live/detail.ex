@@ -26,14 +26,6 @@ defmodule SanctumWeb.CardLive.Detail do
       <div :if={@card != nil}>
         <.header>
           {@title}
-          <:subtitle>
-            <span class="font-ibm-mono text-[12px] uppercase tracking-[0.16em]">
-              {@card.base_code}
-            </span>
-            <span :if={@card.pack}> · {@card.pack}</span>
-            · {length(@sides)} side{if length(@sides) != 1, do: "s"}
-            <span :if={@card.unique} class="text-base-content/45">· unique</span>
-          </:subtitle>
 
           <:actions>
             <.back_button fallback={~p"/cards"} />

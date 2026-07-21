@@ -7,7 +7,6 @@ defmodule SanctumWeb.CardLive.Form do
     <Layouts.app current_user={@current_user} flash={@flash}>
       <.header>
         {@page_title}
-        <:subtitle>Use this form to manage card records in your database.</:subtitle>
       </.header>
 
       <.form for={@card_form} id="card-form" phx-change="validate" phx-submit="save">

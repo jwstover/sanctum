@@ -123,9 +123,6 @@ defmodule SanctumWeb.DeckLive.New do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:decks}>
       <.header>
         New Deck
-        <:subtitle>
-          Pick a hero to start building. The hero's signature cards come locked in.
-        </:subtitle>
       </.header>
 
       <form id="hero-filter" phx-change="filter" class="mb-4" onsubmit="return false">

@@ -45,9 +45,6 @@ defmodule SanctumWeb.StatsLive.Index do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:stats}>
       <.header>
         Vault Stats
-        <:subtitle>
-          The deck vault by the numbers — growth over time, hero popularity, and aspect splits.
-        </:subtitle>
       </.header>
 
       <div :if={@stats == nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
