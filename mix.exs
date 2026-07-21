@@ -50,6 +50,7 @@ defmodule Sanctum.MixProject do
       {:bcrypt_elixir, "~> 3.0"},
       {:hammer, "~> 7.4"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.18", only: :test},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
@@ -128,6 +129,10 @@ defmodule Sanctum.MixProject do
           "compile --warnings-as-errors",
           "format",
           "credo suggest --min-priority=normal",
+          # Duplication ratchet: the cap covers clones whose fixes ride
+          # unmerged branches. Lower it as they land, never raise it — extract
+          # shared logic instead. Keep in sync with ci.yml.
+          "ex_dna --max-clones 3",
           "sobelow --config --exit"
         ],
         setup: [

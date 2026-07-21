@@ -30,10 +30,7 @@ defmodule Mix.Tasks.Sanctum.BackfillDeckDates do
   def run(argv) do
     {opts, _argv} = OptionParser.parse!(argv, strict: @switches)
 
-    backfill_opts =
-      []
-      |> maybe_put_date(:since, opts[:since])
-      |> maybe_put_date(:until, opts[:until])
+    backfill_opts = Mix.Tasks.Sanctum.DateOpts.build(opts, [:since, :until])
 
     case Sanctum.Decks.McdbDateBackfill.run(backfill_opts) do
       {:ok, _summary} ->
@@ -46,15 +43,6 @@ defmodule Mix.Tasks.Sanctum.BackfillDeckDates do
             "(#{summary.updated} updated before halting). " <>
             "Re-run with --since #{summary.halted.date} to resume."
         )
-    end
-  end
-
-  defp maybe_put_date(opts, _key, nil), do: opts
-
-  defp maybe_put_date(opts, key, value) do
-    case Date.from_iso8601(value) do
-      {:ok, date} -> Keyword.put(opts, key, date)
-      {:error, _} -> Mix.raise("Invalid #{key} date: #{value} (expected YYYY-MM-DD)")
     end
   end
 end

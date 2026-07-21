@@ -27,6 +27,7 @@ defmodule Sanctum.Decks.McdbDateBackfill do
   require Ash.Query
   require Logger
 
+  alias Sanctum.Decks.DateWalkLog
   alias Sanctum.Decks.Deck
   alias Sanctum.MarvelCdb
 
@@ -186,14 +187,12 @@ defmodule Sanctum.Decks.McdbDateBackfill do
     end
   end
 
-  defp log_progress({:started, %{from: from, to: to, days: days}}),
-    do: Logger.info("Backfilling deck dates from #{from} to #{to} (#{days} days)...")
+  defp log_progress({:started, event}), do: DateWalkLog.started("Backfilling deck dates", event)
 
   defp log_progress({:date, %{date: date, updated: updated}}),
     do: Logger.info("  #{date}: #{updated} deck(s) updated")
 
-  defp log_progress({:date_error, %{date: date, reason: reason}}),
-    do: Logger.warning("  #{date}: fetch failed: #{inspect(reason)}")
+  defp log_progress({:date_error, event}), do: DateWalkLog.date_error(event)
 
   defp log_progress({:done, %{halted: %{date: date, reason: reason}} = s}),
     do:
