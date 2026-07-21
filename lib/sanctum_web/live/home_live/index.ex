@@ -67,25 +67,14 @@ defmodule SanctumWeb.HomeLive.Index do
             </div>
           </.panel>
 
-          <!-- flavor town teaser: today's mystery quote, never the answer -->
-          <div
-            :if={@home == nil}
-            class="mt-6 h-[150px] animate-pulse border-2 border-neutral bg-base-300"
-          />
-
-          <div :if={@home != nil && @home.flavor}>
-            <h2 class="mt-6 font-anton text-lg uppercase tracking-[0.05em]">Flavor Town</h2>
-            <.panel class="mt-3 p-5">
-              <blockquote class="text-center font-barlow italic text-[15px] leading-relaxed text-base-content/80">
-                {Sanctum.CardText.to_html(@home.flavor)}
-              </blockquote>
-              <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/55">
-                  Can you name the card?
-                </span>
-                <.button variant="primary" navigate={~p"/flavor-town"}>Play Flavor Town</.button>
-              </div>
-            </.panel>
+          <!-- embedded Flavor Town: today's puzzle, playable in place -->
+          <h2 class="mt-6 font-anton text-lg uppercase tracking-[0.05em]">Flavor Town</h2>
+          <div class="mt-3">
+            <.live_component
+              module={SanctumWeb.GuessLive.GameComponent}
+              id="home-flavor-game"
+              mode={:embedded}
+            />
           </div>
         </section>
 
@@ -204,7 +193,6 @@ defmodule SanctumWeb.HomeLive.Index do
      |> assign(:home, %{
        totals: %{decks: 0, this_month: 0, cards: 0, heroes: 0, villains: 0},
        card: nil,
-       flavor: nil,
        decks: []
      })
      |> put_flash(:error, "Couldn’t load the homepage: #{inspect(reason)}")}
@@ -214,18 +202,8 @@ defmodule SanctumWeb.HomeLive.Index do
     %{
       totals: Stats.totals(),
       card: card_view(CardOfTheDay.for_date()),
-      flavor: daily_flavor(),
       decks: Enum.map(newest_decks(), &deck_view(&1, timezone))
     }
-  end
-
-  # Only the quote leaves this function — the card's name is the Flavor Town
-  # answer, so it must never reach the template.
-  defp daily_flavor do
-    case CardOfTheDay.flavor_teaser() do
-      %{primary_side: %{flavor: flavor}} when is_binary(flavor) and flavor != "" -> flavor
-      _empty_pool -> nil
-    end
   end
 
   # The deck browser's :browse read in its default "Newest" order — the

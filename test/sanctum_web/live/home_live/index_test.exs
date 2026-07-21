@@ -40,7 +40,7 @@ defmodule SanctumWeb.HomeLive.IndexTest do
     assert render_async(view) =~ "Daily Test Card"
   end
 
-  test "shows the flavor teaser without leaking the card name", %{conn: conn} do
+  test "embeds a playable Flavor Town round without leaking the answer", %{conn: conn} do
     card = create(Sanctum.Games.Card, attrs: %{base_code: "61002", code: "61002"})
 
     # No image_url: the card qualifies for the flavor pool (:guessable) but
@@ -59,7 +59,16 @@ defmodule SanctumWeb.HomeLive.IndexTest do
     html = render_async(view)
 
     assert html =~ "With great power comes great flavor."
-    assert html =~ "Play Flavor Town"
+    assert html =~ "Guess"
     refute html =~ "Secret Answer Card"
+    refute html =~ "Play more"
+
+    # Ending the round reveals the answer and offers the full game instead of
+    # an in-place replay.
+    html = view |> element(~s(button[phx-click="give-up"])) |> render_click()
+
+    assert html =~ "Secret Answer Card"
+    assert html =~ "Play more"
+    refute html =~ "Play again"
   end
 end
