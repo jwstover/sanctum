@@ -16,6 +16,12 @@ defmodule Sanctum.Decks.DeckCard do
       # user-deletable from the builder).
       reference :deck, on_delete: :delete
     end
+
+    custom_indexes do
+      # The deck browser's card: filter probes deck_cards by card_id alone;
+      # the (deck_id, card_id) identity index can't seek on its second column.
+      index [:card_id]
+    end
   end
 
   actions do
