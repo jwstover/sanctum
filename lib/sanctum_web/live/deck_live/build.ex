@@ -946,7 +946,9 @@ defmodule SanctumWeb.DeckLive.Build do
             >
               {row.name}
             </.link>
-            <span :if={row.pips != []} class="ml-auto flex flex-none items-center gap-1">
+            <!-- pips column: always rendered so every row's icons share one
+                 right edge, independent of what the controls column holds -->
+            <span class="ml-auto flex flex-none items-center gap-1">
               <span
                 :for={{color_class, glyph} <- row.pips}
                 class={["font-champions text-[13px] leading-none", color_class]}
@@ -954,18 +956,13 @@ defmodule SanctumWeb.DeckLive.Build do
                 {glyph}
               </span>
             </span>
-            <span
-              :if={row.hero?}
-              class={["flex-none", row.pips == [] && "ml-auto"]}
-              title="Locked to the hero set"
-            >
-              <.icon name="hero-lock-closed" class="size-3 text-base-content/35" />
-            </span>
-            <span
-              :if={!row.hero?}
-              class={["flex flex-none items-center gap-0.5", row.pips == [] && "ml-auto"]}
-            >
+            <!-- controls column: fixed width whether it holds a lock or steppers -->
+            <span class="flex w-[68px] flex-none items-center justify-end gap-0.5 sm:w-[52px]">
+              <span :if={row.hero?} title="Locked to the hero set" class="flex justify-end">
+                <.icon name="hero-lock-closed" class="size-3 text-base-content/35" />
+              </span>
               <button
+                :if={!row.hero?}
                 type="button"
                 phx-click="dec"
                 phx-value-card-id={row.card_id}
@@ -975,6 +972,7 @@ defmodule SanctumWeb.DeckLive.Build do
                 <.icon name="hero-minus" class="size-3.5" />
               </button>
               <button
+                :if={!row.hero?}
                 type="button"
                 phx-click="inc"
                 phx-value-card-id={row.card_id}
