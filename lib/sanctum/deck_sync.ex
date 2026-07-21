@@ -34,6 +34,7 @@ defmodule Sanctum.DeckSync do
   require Logger
 
   alias Sanctum.Decks
+  alias Sanctum.Decks.DateWalkLog
   alias Sanctum.MarvelCdb
 
   # MarvelCDB launched in late 2019; used as the backfill floor when no cursor
@@ -294,14 +295,12 @@ defmodule Sanctum.DeckSync do
     end
   end
 
-  defp log_progress({:started, %{from: from, to: to, days: days}}),
-    do: Logger.info("Syncing decklists from #{from} to #{to} (#{days} days)...")
+  defp log_progress({:started, event}), do: DateWalkLog.started("Syncing decklists", event)
 
   defp log_progress({:date, %{date: date, imported: imported, failed: failed}}),
     do: Logger.info("  #{date}: #{imported} imported, #{failed} failed")
 
-  defp log_progress({:date_error, %{date: date, reason: reason}}),
-    do: Logger.warning("  #{date}: fetch failed: #{inspect(reason)}")
+  defp log_progress({:date_error, event}), do: DateWalkLog.date_error(event)
 
   defp log_progress({:done, %{halted: %{date: date, reason: reason}} = s}),
     do:

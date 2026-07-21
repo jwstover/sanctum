@@ -22,14 +22,12 @@ defmodule Sanctum.Search.DeckFields do
   @impl true
   def fields do
     [
-      %Field{
-        name: "title",
-        aliases: [],
-        kind: :text,
-        example: ~s(title:"web warriors"),
-        hint: "deck title",
-        build: text_build(fn pattern -> expr(ilike(title, ^pattern)) end)
-      },
+      Field.text(
+        "title",
+        ~s(title:"web warriors"),
+        "deck title",
+        text_build(fn pattern -> expr(ilike(title, ^pattern)) end)
+      ),
       %Field{
         name: "hero",
         aliases: ["h"],

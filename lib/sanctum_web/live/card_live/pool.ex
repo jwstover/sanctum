@@ -11,35 +11,15 @@ defmodule SanctumWeb.CardLive.Pool do
   import SanctumWeb.Components.CardSideTile
   import SanctumWeb.Components.QueryInput
 
+  alias SanctumWeb.InfiniteScroll
+
   @page_size 24
 
-  @aspects [
-    {"all", "All", nil},
-    {"hero", "Hero", "bg-aspect-hero"},
-    {"aggression", "Aggression", "bg-aspect-aggression"},
-    {"justice", "Justice", "bg-aspect-justice"},
-    {"leadership", "Leadership", "bg-aspect-leadership"},
-    {"protection", "Protection", "bg-aspect-protection"},
-    {"pool", "Pool", "bg-aspect-pool"},
-    {"basic", "Basic", "bg-aspect-basic"}
-  ]
-
-  @types [
-    {"all", "All"},
-    {"ally", "Ally"},
-    {"event", "Event"},
-    {"support", "Support"},
-    {"upgrade", "Upgrade"},
-    {"resource", "Resource"},
-    {"player_side_scheme", "Side Scheme"}
-  ]
+  @aspects SanctumWeb.CardFilters.aspect_options()
+  @types SanctumWeb.CardFilters.type_options()
 
   @aspect_keys Enum.map(@aspects, &elem(&1, 0))
   @type_keys Enum.map(@types, &elem(&1, 0))
-
-  # Deepest infinite-scroll offset a scroll restore will refetch in one query
-  # (limit = offset + page size must stay within Ash's 250 max page size).
-  @max_restore_offset @page_size * 9
 
   @impl true
   def render(assigns) do
@@ -241,41 +221,16 @@ defmodule SanctumWeb.CardLive.Pool do
     {:noreply, push_patch(socket, to: pool_path(socket.assigns, type: key))}
   end
 
+  def handle_event("restore-scroll", %{"offset" => offset}, socket) do
+    {:noreply, InfiniteScroll.restore_scroll(socket, offset, @page_size, &start_load/3)}
+  end
+
   def handle_event("clear", _params, socket) do
     {:noreply, push_patch(socket, to: ~p"/cards")}
   end
 
-  # Pushed by the ScrollRestore hook when the user arrives with a saved scroll
-  # position: refetch everything through the saved infinite-scroll offset in
-  # one query, then confirm so the hook can restore the scroll position.
-  def handle_event("restore-scroll", %{"offset" => offset}, socket) do
-    offset = sanitize_offset(offset)
-
-    socket =
-      cond do
-        offset > 0 ->
-          socket
-          |> assign(:scroll_restore_pending?, true)
-          |> start_load(offset, reset: true, restore: true)
-
-        socket.assigns.loading? ->
-          assign(socket, :scroll_restore_pending?, true)
-
-        true ->
-          confirm_scroll_restore(socket)
-      end
-
-    {:noreply, socket}
-  end
-
-  # Ignore the viewport trigger while a page is already in flight so a burst of
-  # scroll events can't fan out into overlapping loads.
   def handle_event("next-page", _params, socket) do
-    if socket.assigns.end_of_timeline? or socket.assigns.loading? do
-      {:noreply, socket}
-    else
-      {:noreply, start_load(socket, socket.assigns.offset + @page_size)}
-    end
+    {:noreply, InfiniteScroll.next_page(socket, @page_size, &start_load/3)}
   end
 
   @impl true
@@ -300,12 +255,7 @@ defmodule SanctumWeb.CardLive.Pool do
           reset: reset?
         )
 
-      socket =
-        if socket.assigns.scroll_restore_pending?,
-          do: confirm_scroll_restore(socket),
-          else: socket
-
-      {:noreply, socket}
+      {:noreply, InfiniteScroll.maybe_confirm_scroll_restore(socket)}
     else
       {:noreply, socket}
     end
@@ -333,7 +283,7 @@ defmodule SanctumWeb.CardLive.Pool do
   # `restore: true` refetches pages 0..offset in one query (for scroll
   # restoration) while keeping `offset` as the logical last-page offset so
   # subsequent viewport loads continue from the right place.
-  defp start_load(socket, offset, opts \\ []) do
+  defp start_load(socket, offset, opts) do
     reset? = Keyword.get(opts, :reset, false)
     restore? = Keyword.get(opts, :restore, false)
     {query_offset, limit} = if restore?, do: {0, offset + @page_size}, else: {offset, @page_size}
@@ -356,22 +306,6 @@ defmodule SanctumWeb.CardLive.Pool do
       %{req: req, offset: offset, reset?: reset?, page: page, colors: colors}
     end)
   end
-
-  defp confirm_scroll_restore(socket) do
-    socket
-    |> assign(:scroll_restore_pending?, false)
-    |> push_event("sanctum:scroll-restore", %{})
-  end
-
-  # Clamp a client-supplied offset to a sane page-aligned value.
-  defp sanitize_offset(offset) when is_integer(offset) do
-    offset
-    |> max(0)
-    |> min(@max_restore_offset)
-    |> then(&(&1 - rem(&1, @page_size)))
-  end
-
-  defp sanitize_offset(_), do: 0
 
   # /cards path carrying the current (or overridden) filters, omitting defaults.
   defp pool_path(assigns, overrides) do

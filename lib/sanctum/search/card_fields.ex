@@ -171,14 +171,12 @@ defmodule Sanctum.Search.CardFields do
         values_fun: &Sanctum.Search.Values.packs/0,
         build: text_build(fn pattern -> expr(ilike(card.pack, ^pattern)) end)
       },
-      %Field{
-        name: "flavor",
-        aliases: [],
-        kind: :text,
-        example: ~s(flavor:avenger),
-        hint: "flavor text",
-        build: text_build(fn pattern -> expr(ilike(flavor, ^pattern)) end)
-      },
+      Field.text(
+        "flavor",
+        ~s(flavor:avenger),
+        "flavor text",
+        text_build(fn pattern -> expr(ilike(flavor, ^pattern)) end)
+      ),
       %Field{
         name: "code",
         aliases: [],

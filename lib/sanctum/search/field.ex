@@ -31,6 +31,14 @@ defmodule Sanctum.Search.Field do
 
   @type op :: :eq | :neq | :lt | :gt | :lte | :gte
 
+  @doc """
+  Builds the common plain text field shape — `:text` kind, no aliases or
+  completable values, just an example/hint and a build function.
+  """
+  def text(name, example, hint, build) do
+    %__MODULE__{name: name, kind: :text, example: example, hint: hint, build: build}
+  end
+
   @type t :: %__MODULE__{
           name: String.t(),
           kind: :text | :integer | :stat | :enum | :boolean | :flag,
