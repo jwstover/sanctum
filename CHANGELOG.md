@@ -1,3 +1,12 @@
+## [1.59.1](https://github.com/jwstover/sanctum/compare/v1.59.0...v1.59.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* **cards:** render printed X values instead of -1 and make search X-aware ([995f32f](https://github.com/jwstover/sanctum/commit/995f32f561074fef96f9e435a715c97359d82e07))
+
+
+
 # [1.59.0](https://github.com/jwstover/sanctum/compare/v1.58.0...v1.59.0) (2026-07-21)
 
 
@@ -78,15 +87,6 @@
 * **collections:** populate CardAlt.pack_id in sync + release backfill ([cf27117](https://github.com/jwstover/sanctum/commit/cf27117cd779182e1847b3d241806d92be20b8f4))
 * **collections:** private collection section on the profile ([5804d80](https://github.com/jwstover/sanctum/commit/5804d80b109e7643bcdea61dc981fe6dcca6d90f))
 * **search:** owned:true/false field filtering by the actor's collection ([629ae9f](https://github.com/jwstover/sanctum/commit/629ae9fdee6a62bc0e2039874cf23de184951458))
-
-
-
-# [1.55.0](https://github.com/jwstover/sanctum/compare/v1.54.0...v1.55.0) (2026-07-20)
-
-
-### Features
-
-* **ui:** pin profile/admin drawer links to bottom with icons ([e6c56b9](https://github.com/jwstover/sanctum/commit/e6c56b9b0358090ec3dc6b9e354e4176b4ec7878))
 
 
 
