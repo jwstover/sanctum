@@ -75,7 +75,9 @@ defmodule SanctumWeb.Components.FilterSheet do
   attr :on_clear, :string, default: "clear"
   attr :hide, :list, default: [], doc: "field names to omit (e.g. owned/mine when signed out)"
 
-  slot :footer_extra, doc: "extra controls in the footer form (e.g. the deck browser's sort)"
+  slot :body_extra,
+    doc:
+      "extra controls rendered as the first section of the sheet body (e.g. the deck browser's sort)"
 
   def filter_sheet(assigns) do
     assigns =
@@ -139,6 +141,12 @@ defmodule SanctumWeb.Components.FilterSheet do
       <form id={@id <> "-form"} phx-change={@on_change} class="flex min-h-0 flex-1 flex-col">
         <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
           <section
+            :if={@body_extra != []}
+            class="mb-6 border-t border-line/70 pt-4 first:border-t-0 first:pt-1"
+          >
+            {render_slot(@body_extra)}
+          </section>
+          <section
             :for={{group, controls} <- @groups}
             class="mb-6 border-t border-line/70 pt-4 first:border-t-0 first:pt-1 last:mb-2"
           >
@@ -162,7 +170,6 @@ defmodule SanctumWeb.Components.FilterSheet do
 
         <footer class="flex flex-none items-center gap-3 border-t-2 border-line bg-base-100 px-4 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-5">
           <.button type="button" phx-click={@on_clear}>Clear all</.button>
-          {render_slot(@footer_extra)}
           <.button type="button" variant="primary" phx-click={@on_toggle} class="ml-auto">
             {(@count && "Show #{@count} results") || "Show results"}
           </.button>

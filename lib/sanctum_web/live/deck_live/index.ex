@@ -76,15 +76,11 @@ defmodule SanctumWeb.DeckLive.Index do
         count={@count}
         hide={(@current_user && []) || ["mine"]}
       >
-        <:footer_extra>
-          <div
-            class="flex items-center gap-1.5"
-            role="radiogroup"
-            aria-label="Sort decks"
-          >
-            <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] text-base-content/70">
-              Sort
-            </span>
+        <:body_extra>
+          <h3 class="mb-2.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45">
+            Sort
+          </h3>
+          <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Sort decks">
             <.chip
               :for={{key, label} <- @sort_options}
               type="radio"
@@ -95,7 +91,7 @@ defmodule SanctumWeb.DeckLive.Index do
               {label}
             </.chip>
           </div>
-        </:footer_extra>
+        </:body_extra>
       </.filter_sheet>
 
       <!-- first-load skeletons: shown until the async load delivers a count -->
