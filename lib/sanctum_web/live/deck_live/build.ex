@@ -15,12 +15,13 @@ defmodule SanctumWeb.DeckLive.Build do
 
   require Ash.Query
 
+  import SanctumWeb.Components.DeckCards
   import SanctumWeb.Components.QueryInput
 
   alias Sanctum.Decks
   alias Sanctum.Decks.Legality
   alias Sanctum.Decks.Writeup
-  alias SanctumWeb.Components.Card, as: CardComponent
+  alias SanctumWeb.Components.DeckCards
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
@@ -48,26 +49,6 @@ defmodule SanctumWeb.DeckLive.Build do
 
   @aspect_keys Enum.map(@aspects, &elem(&1, 0))
   @type_keys Enum.map(@types, &elem(&1, 0))
-
-  # The deck's own aspect chips (panel) — the five real aspects, no "all".
-  @deck_aspects [
-    {:aggression, "Aggression", "bg-aspect-aggression"},
-    {:justice, "Justice", "bg-aspect-justice"},
-    {:leadership, "Leadership", "bg-aspect-leadership"},
-    {:protection, "Protection", "bg-aspect-protection"},
-    {:pool, "'Pool", "bg-aspect-pool"}
-  ]
-
-  # Panel group order; hero signature cards get their own leading group.
-  @type_order [:ally, :event, :support, :upgrade, :resource, :player_side_scheme]
-  @type_labels %{
-    ally: "Allies",
-    event: "Events",
-    support: "Supports",
-    upgrade: "Upgrades",
-    resource: "Resources",
-    player_side_scheme: "Side Schemes"
-  }
 
   # Core-set printings of the three double resources; reprints are separate
   # Card rows, so quick-add pins the canonical codes.
@@ -111,6 +92,8 @@ defmodule SanctumWeb.DeckLive.Build do
     socket
     |> assign(:page_title, "Build · #{deck.title}")
     |> assign(:deck, deck)
+    |> assign(:hero_gradient, hero_gradient(deck.hero))
+    |> assign(:card_view, "images")
     |> assign(:entries, entries)
     |> assign(:signature_cards, signature_cards)
     |> assign(:signature_ids, signature_ids)
@@ -118,7 +101,6 @@ defmodule SanctumWeb.DeckLive.Build do
     |> recompute_issues()
     |> assign(:panel_open?, false)
     |> assign(:confirm_delete?, false)
-    |> assign(:deck_aspect_options, @deck_aspects)
     |> assign(:tab, "cards")
     |> assign(:description_draft, deck.description_md || "")
     |> assign(:description_mode, "write")
@@ -237,6 +219,13 @@ defmodule SanctumWeb.DeckLive.Build do
     {:noreply, assign(socket, :tab, tab)}
   end
 
+  # Shared with the deck page: same events, same localStorage key, so the
+  # images/list preference follows the user between viewing and building.
+  def handle_event(event, params, socket)
+      when event in ["set_card_view", "restore_card_view"] do
+    {:noreply, DeckCards.handle_card_view_event(event, params, socket)}
+  end
+
   def handle_event("description_change", %{"description" => draft}, socket) do
     {:noreply,
      socket
@@ -284,24 +273,6 @@ defmodule SanctumWeb.DeckLive.Build do
        |> assign(:deck, %{deck | title: updated.title})
        |> assign(:page_title, "Build · #{updated.title}")}
     end
-  end
-
-  def handle_event("toggle_deck_aspect", %{"key" => key}, socket) do
-    aspect = String.to_existing_atom(key)
-    deck = socket.assigns.deck
-
-    aspects =
-      if aspect in deck.aspects,
-        do: List.delete(deck.aspects, aspect),
-        else: deck.aspects ++ [aspect]
-
-    updated =
-      Decks.set_deck_aspects!(deck, %{aspects: aspects}, actor: socket.assigns.current_user)
-
-    {:noreply,
-     socket
-     |> assign(:deck, %{deck | aspects: updated.aspects})
-     |> recompute_issues()}
   end
 
   def handle_event("confirm_delete", _params, socket) do
@@ -524,63 +495,16 @@ defmodule SanctumWeb.DeckLive.Build do
     }
   end
 
-  defp display_aspect(%{ownership: :player, aspect: aspect}) when not is_nil(aspect), do: aspect
-  defp display_aspect(%{ownership: :hero}), do: :hero
-  defp display_aspect(%{ownership: :basic}), do: :basic
-  defp display_aspect(%{aspect: aspect}) when not is_nil(aspect), do: aspect
-  defp display_aspect(_side), do: :basic
-
-  defp side_resources(side) do
-    [
-      energy: side.resource_energy_count,
-      mental: side.resource_mental_count,
-      physical: side.resource_physical_count,
-      wild: side.resource_wild_count
-    ]
-    |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
-  end
-
   # -- deck panel data --------------------------------------------------------
 
-  # Hero signature cards lead (locked rows), then chosen cards by type.
-  defp panel_groups(entries) do
-    rows = entries |> Map.values() |> Enum.map(&panel_row/1)
-    {hero_rows, chosen} = Enum.split_with(rows, & &1.hero?)
-
-    typed =
-      @type_order
-      |> Enum.map(fn type ->
-        group =
-          chosen
-          |> Enum.filter(&(&1.type == type))
-          |> Enum.sort_by(&String.downcase(&1.name))
-
-        {Map.fetch!(@type_labels, type), group}
-      end)
-      |> Kernel.++([{"Other", Enum.filter(chosen, &(&1.type not in @type_order))}])
-      |> Enum.reject(fn {_label, group} -> group == [] end)
-
-    case hero_rows do
-      [] -> typed
-      rows -> [{"Hero", Enum.sort_by(rows, &String.downcase(&1.name))} | typed]
-    end
-  end
-
-  defp panel_row(%{card: card, quantity: qty}) do
-    side = card.primary_side
-    aspect_key = display_aspect(side)
-
-    %{
-      card_id: card.id,
-      qty: qty,
-      name: side.name,
-      type: side.type,
-      hero?: side.ownership == :hero,
-      aspect_key: aspect_key,
-      aspect_bg: CardComponent.aspect_classes(aspect_key).bg,
-      pips: CardComponent.resource_pips(side_resources(side)),
-      max: if(card.unique, do: 1, else: card.deck_limit || 1)
-    }
+  # Grouped exactly like the deck page's "In This Deck" section: by card type
+  # in canonical order, hero signature cards folded into their type (marked
+  # with a lock), names sorted within each group.
+  defp panel_groups(entries, hero_gradient) do
+    entries
+    |> Map.values()
+    |> Enum.map(&DeckCards.card_view(&1, hero_gradient))
+    |> DeckCards.group_by_type()
   end
 
   defp maybe_assign_count(socket, false, _count), do: socket
@@ -598,6 +522,7 @@ defmodule SanctumWeb.DeckLive.Build do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:decks}>
+      <.card_view_pref id="builder-card-view-pref" />
       <.header>
         {@deck.title}
         <:subtitle>{@deck.hero.display_name} · building</:subtitle>
@@ -717,13 +642,13 @@ defmodule SanctumWeb.DeckLive.Build do
               >
                 <.mc_card
                   name={tile.name}
-                  cost={tile.cost}
                   type={tile.type}
                   aspect={tile.aspect_key}
                   resources={tile.resources}
                   qty={tile.qty}
                   size="md"
                   image_url={tile.image_url}
+                  show_cost={false}
                 />
               </.link>
               <.qty_stepper
@@ -760,8 +685,9 @@ defmodule SanctumWeb.DeckLive.Build do
             deck={@deck}
             entries={@entries}
             issues={@issues}
-            deck_aspect_options={@deck_aspect_options}
             confirm_delete?={@confirm_delete?}
+            card_view={@card_view}
+            hero_gradient={@hero_gradient}
           />
         </div>
       </div>
@@ -847,8 +773,9 @@ defmodule SanctumWeb.DeckLive.Build do
           deck={@deck}
           entries={@entries}
           issues={@issues}
-          deck_aspect_options={@deck_aspect_options}
           confirm_delete?={@confirm_delete?}
+          card_view={@card_view}
+          hero_gradient={@hero_gradient}
         />
       </div>
 
@@ -887,11 +814,12 @@ defmodule SanctumWeb.DeckLive.Build do
   attr :deck, :map, required: true
   attr :entries, :map, required: true
   attr :issues, :list, required: true
-  attr :deck_aspect_options, :list, required: true
   attr :confirm_delete?, :boolean, required: true
+  attr :card_view, :string, required: true
+  attr :hero_gradient, :any, required: true
 
   defp deck_panel(assigns) do
-    assigns = assign(assigns, :groups, panel_groups(assigns.entries))
+    assigns = assign(assigns, :groups, panel_groups(assigns.entries, assigns.hero_gradient))
     assigns = assign(assigns, :size, deck_size(assigns.entries))
 
     ~H"""
@@ -908,32 +836,32 @@ defmodule SanctumWeb.DeckLive.Build do
             class="min-h-[44px] w-full border-[2.5px] border-transparent bg-transparent px-1 font-anton text-[18px] uppercase tracking-[0.04em] text-base-content outline-none focus:border-line focus:bg-black sm:min-h-0"
           />
         </form>
-        <div class="mt-1 flex items-center justify-between px-1">
+        <div class="mt-1 flex items-center gap-2 px-1">
           <span class="font-anton text-[14px] uppercase tracking-[0.05em]">
             <span class={deck_size_class(@size)}>{@size}</span>
             <span class="text-base-content/45">/ 40–50 cards</span>
           </span>
           <.link
             navigate={~p"/decks/#{@deck.id}"}
-            class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+            class="ml-auto font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
           >
             View deck →
           </.link>
+          <div class="flex border-2 border-neutral" role="group" aria-label="Card display">
+            <.view_toggle_button
+              view="images"
+              icon="hero-squares-2x2"
+              label="Image view"
+              active={@card_view == "images"}
+            />
+            <.view_toggle_button
+              view="list"
+              icon="hero-list-bullet"
+              label="List view"
+              active={@card_view == "list"}
+            />
+          </div>
         </div>
-      </div>
-
-      <!-- deck aspects -->
-      <div class="flex flex-wrap gap-1.5">
-        <.filter_pill
-          :for={{key, label, dot_class} <- @deck_aspect_options}
-          active={key in @deck.aspects}
-          dot_class={dot_class}
-          type="button"
-          phx-click="toggle_deck_aspect"
-          phx-value-key={key}
-        >
-          {label}
-        </.filter_pill>
       </div>
 
       <!-- advisory issues -->
@@ -957,18 +885,52 @@ defmodule SanctumWeb.DeckLive.Build do
         </ul>
       </div>
 
-      <!-- grouped card list -->
-      <div :for={{label, rows} <- @groups}>
-        <div class="mb-1 flex items-baseline justify-between border-b-2 border-neutral pb-1">
-          <span class="font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/70">
-            {label}
-          </span>
-          <span class="font-ibm-mono text-[11px] text-base-content/45">
-            {rows |> Enum.map(& &1.qty) |> Enum.sum()}
-          </span>
+      <!-- grouped card list (mirrors the deck page's "In This Deck") -->
+      <div :for={g <- @groups}>
+        <div class="mb-2 font-anton text-[12px] uppercase tracking-[0.06em] text-primary">
+          {g.name} · {g.count}
         </div>
-        <div class="divide-y divide-neutral/40">
-          <div :for={row <- rows} class="flex min-h-[40px] items-center gap-2 px-1 py-1">
+
+        <div
+          :if={@card_view == "images"}
+          class="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2"
+        >
+          <div :for={row <- g.cards} class="relative aspect-[63/88]">
+            <.link
+              navigate={~p"/cards/#{row.card_id}"}
+              class="block h-full border-2 border-neutral shadow-comic-sm"
+            >
+              <.mc_card
+                name={row.name}
+                aspect={row.aspect_key}
+                image_url={row.image_url}
+                gradient_from={row.gradient_from}
+                gradient_to={row.gradient_to}
+                qty={row.qty}
+                size="sm"
+                show_cost={false}
+              />
+            </.link>
+            <.qty_stepper
+              :if={!row.hero?}
+              card_id={row.card_id}
+              qty={row.qty}
+              max={row.max}
+              size="sm"
+              class="absolute bottom-1 right-1 z-10"
+            />
+            <span
+              :if={row.hero?}
+              class="absolute bottom-1 right-1 z-10 flex size-6 items-center justify-center rounded-[4px] bg-base-100/75"
+              title="Locked to the hero set"
+            >
+              <.icon name="hero-lock-closed" class="size-3 text-white/60" />
+            </span>
+          </div>
+        </div>
+
+        <div :if={@card_view == "list"} class="divide-y divide-neutral/40">
+          <div :for={row <- g.cards} class="flex min-h-[40px] items-center gap-2 px-1 py-1">
             <span class="w-6 flex-none font-ibm-mono text-[11px] text-base-content/50">
               {row.qty}×
             </span>

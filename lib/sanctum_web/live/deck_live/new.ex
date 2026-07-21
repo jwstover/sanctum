@@ -8,7 +8,7 @@ defmodule SanctumWeb.DeckLive.New do
   use SanctumWeb, :live_view
 
   alias Sanctum.Decks
-  alias SanctumWeb.Components.Card, as: CardComponent
+  alias SanctumWeb.Components.DeckCards
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
@@ -101,20 +101,16 @@ defmodule SanctumWeb.DeckLive.New do
   defp buildable?(_hero), do: false
 
   defp hero_view(hero) do
-    {fallback_from, fallback_to} = CardComponent.fallback_gradient(hero.set)
+    {gradient_from, gradient_to} = DeckCards.hero_gradient(hero)
 
     %{
       id: hero.id,
       name: hero.display_name,
-      image_url: identity_image(hero),
-      gradient_from: hero.primary_color || fallback_from,
-      gradient_to: hero.secondary_color || fallback_to
+      image_url: DeckCards.identity_image(hero),
+      gradient_from: gradient_from,
+      gradient_to: gradient_to
     }
   end
-
-  defp identity_image(%{hero_side: %{image_url: url}}) when is_binary(url), do: url
-  defp identity_image(%{card: %{primary_side: %{image_url: url}}}) when is_binary(url), do: url
-  defp identity_image(_hero), do: nil
 
   defp visible?(hero, filter) do
     filter = filter |> String.trim() |> String.downcase()

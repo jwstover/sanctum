@@ -5,38 +5,16 @@ defmodule SanctumWeb.DeckLive.Show do
   """
   use SanctumWeb, :live_view
 
-  alias SanctumWeb.Components.Card, as: CardComponent
+  import SanctumWeb.Components.DeckCards
 
-  @type_order [:ally, :event, :support, :upgrade, :resource]
-  @type_plural %{
-    ally: "Allies",
-    event: "Events",
-    support: "Supports",
-    upgrade: "Upgrades",
-    resource: "Resources"
-  }
+  alias SanctumWeb.Components.DeckCards
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:decks}>
       <div id="scroll-restore" phx-hook="ScrollRestore"></div>
-      <div id="deck-card-view-pref" phx-hook=".CardViewPref"></div>
-      <script :type={Phoenix.LiveView.ColocatedHook} name=".CardViewPref">
-        const KEY = "sanctum:deck-card-view"
-
-        export default {
-          mounted() {
-            const stored = localStorage.getItem(KEY)
-            if (stored === "list" || stored === "images") {
-              this.pushEvent("restore_card_view", {view: stored})
-            }
-            this.handleEvent("store_card_view", ({view}) => {
-              localStorage.setItem(KEY, view)
-            })
-          }
-        }
-      </script>
+      <.card_view_pref />
       <!-- first-load skeleton -->
       <div :if={@deck == nil}>
         <div class="mb-6 h-9 w-1/2 max-w-md animate-pulse bg-base-300"></div>
@@ -329,33 +307,6 @@ defmodule SanctumWeb.DeckLive.Show do
     """
   end
 
-  attr :view, :string, required: true
-  attr :icon, :string, required: true
-  attr :label, :string, required: true
-  attr :active, :boolean, required: true
-
-  defp view_toggle_button(assigns) do
-    ~H"""
-    <button
-      type="button"
-      phx-click="set_card_view"
-      phx-value-view={@view}
-      aria-label={@label}
-      aria-pressed={to_string(@active)}
-      title={@label}
-      class={[
-        "flex size-7 items-center justify-center transition-colors",
-        if(@active,
-          do: "bg-primary text-primary-content",
-          else: "text-base-content/50 hover:bg-base-200 hover:text-base-content"
-        )
-      ]}
-    >
-      <.icon name={@icon} class="size-4" />
-    </button>
-    """
-  end
-
   attr :label, :string, required: true
   attr :value, :any, required: true
 
@@ -398,18 +349,9 @@ defmodule SanctumWeb.DeckLive.Show do
   end
 
   @impl true
-  def handle_event("set_card_view", %{"view" => view}, socket) when view in ~w(images list) do
-    {:noreply,
-     socket
-     |> assign(:card_view, view)
-     |> push_event("store_card_view", %{view: view})}
-  end
-
-  # Pushed by the CardViewPref hook on connect with the preference stored in
-  # localStorage (if any).
-  def handle_event("restore_card_view", %{"view" => view}, socket)
-      when view in ~w(images list) do
-    {:noreply, assign(socket, :card_view, view)}
+  def handle_event(event, params, socket)
+      when event in ["set_card_view", "restore_card_view"] do
+    {:noreply, DeckCards.handle_card_view_event(event, params, socket)}
   end
 
   # Pushed by the ScrollRestore hook when the user arrives with a saved scroll
@@ -480,21 +422,9 @@ defmodule SanctumWeb.DeckLive.Show do
            ]
          ) do
       {:ok, deck} ->
-        hero_gradient = hero_gradient(deck.hero)
-        card_views = Enum.map(deck.deck_cards, &card_view(&1, hero_gradient))
-
-        groups =
-          card_views
-          |> Enum.group_by(& &1.type)
-          |> Enum.map(fn {type, cards} ->
-            %{
-              type: type,
-              name: type_plural(type),
-              count: Enum.sum(Enum.map(cards, & &1.qty)),
-              cards: Enum.sort_by(cards, &String.downcase(&1.name))
-            }
-          end)
-          |> Enum.sort_by(&type_rank(&1.type))
+        hero_gradient = DeckCards.hero_gradient(deck.hero)
+        card_views = Enum.map(deck.deck_cards, &DeckCards.card_view(&1, hero_gradient))
+        groups = DeckCards.group_by_type(card_views)
 
         {:ok,
          %{
@@ -555,72 +485,6 @@ defmodule SanctumWeb.DeckLive.Show do
     }
   end
 
-  defp card_view(dc, hero_gradient) do
-    side = dc.card.primary_side
-    aspect_key = display_aspect(side)
-    {gf, gt} = if aspect_key == :hero, do: hero_gradient, else: {nil, nil}
-
-    resources =
-      [
-        energy: side.resource_energy_count,
-        mental: side.resource_mental_count,
-        physical: side.resource_physical_count,
-        wild: side.resource_wild_count
-      ]
-      |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
-
-    %{
-      card_id: dc.card.id,
-      qty: dc.quantity,
-      name: side.name,
-      cost: side.cost,
-      type: side.type,
-      aspect_key: aspect_key,
-      aspect_bg: CardComponent.aspect_classes(aspect_key).bg,
-      pips: CardComponent.resource_pips(resources),
-      image_url: side.image_url,
-      gradient_from: gf,
-      gradient_to: gt,
-      owned: owned_flag(dc.card)
-    }
-  end
-
-  # true/false only when the :owned calc was loaded (signed-in); nil renders
-  # no collection UI.
-  defp owned_flag(card) do
-    case Map.get(card, :owned) do
-      value when is_boolean(value) -> value
-      _ -> nil
-    end
-  end
-
-  defp hero_gradient(%{primary_color: from, secondary_color: to, set: set}) do
-    {fallback_from, fallback_to} = CardComponent.fallback_gradient(set)
-    {from || fallback_from, to || fallback_to}
-  end
-
-  defp identity_image(%{hero_side: %{image_url: url}}) when is_binary(url), do: url
-  defp identity_image(%{card: %{primary_side: %{image_url: url}}}) when is_binary(url), do: url
-  defp identity_image(_), do: nil
-
-  # Player-card aspect display key (aspect cards — including pool — use their
-  # aspect; hero/basic ownership pools use their ownership).
-  defp display_aspect(%{ownership: :player, aspect: aspect}) when not is_nil(aspect), do: aspect
-  defp display_aspect(%{ownership: :hero}), do: :hero
-  defp display_aspect(%{ownership: :basic}), do: :basic
-  defp display_aspect(%{aspect: aspect}) when not is_nil(aspect), do: aspect
-  defp display_aspect(_), do: :basic
-
-  defp aspect_badges([]), do: [aspect_badge(:basic, "Basic")]
-
-  defp aspect_badges(aspects),
-    do: Enum.map(aspects, &aspect_badge(&1, &1 |> to_string() |> String.capitalize()))
-
-  defp aspect_badge(aspect, label) do
-    ac = CardComponent.aspect_classes(aspect)
-    %{label: label, text: ac.text, border: ac.border}
-  end
-
   # Only native decks are editable, and only by their owner.
   defp owner?(%{source: :native, owner_id: owner_id}, %{id: user_id}) when not is_nil(owner_id),
     do: owner_id == user_id
@@ -636,32 +500,4 @@ defmodule SanctumWeb.DeckLive.Show do
     do: "https://marvelcdb.com/deck/view/#{id}"
 
   defp mcdb_url(_), do: nil
-
-  defp source_label(:marvelcdb), do: "MarvelCDB"
-  defp source_label(:native), do: "Native"
-  defp source_label(other), do: other |> to_string() |> String.capitalize()
-
-  # Attribution: imported decks credit the MarvelCDB author; native decks
-  # credit the owner's claimed username (never their email — the field is
-  # policy-hidden). Owners without a username get no attribution row.
-  defp author(%{mcdb_user: %{username: username}}) when is_binary(username) and username != "",
-    do: %{name: "@" <> username, avatar: nil}
-
-  defp author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id),
-    do: %{name: "mcdb ##{id}", avatar: nil}
-
-  defp author(%{owner: %{username: %Ash.CiString{} = username, avatar_url: avatar}}),
-    do: %{name: "@" <> to_string(username), avatar: avatar}
-
-  defp author(_), do: nil
-
-  defp type_plural(type),
-    do: Map.get(@type_plural, type, type |> to_string() |> String.capitalize())
-
-  defp type_rank(type) do
-    case Enum.find_index(@type_order, &(&1 == type)) do
-      nil -> length(@type_order)
-      i -> i
-    end
-  end
 end

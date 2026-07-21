@@ -255,17 +255,6 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       assert render(lv) =~ "Panel Renamed"
     end
 
-    test "toggles deck aspects and persists them", %{conn: conn} do
-      %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_i")
-      render_async(lv)
-
-      # Deck starts [:justice]; toggling pool adds it, toggling justice drops it.
-      render_click(lv, "toggle_deck_aspect", %{"key" => "pool"})
-      render_click(lv, "toggle_deck_aspect", %{"key" => "justice"})
-
-      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).aspects == [:pool]
-    end
-
     test "hero signature rows are locked (no steppers)", %{conn: conn} do
       %{lv: lv, signature: signature} = mount_builder(conn, "build_lv_j")
       render_async(lv)
