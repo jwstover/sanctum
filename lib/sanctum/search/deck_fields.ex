@@ -61,7 +61,11 @@ defmodule Sanctum.Search.DeckFields do
         hint: "decks containing a card",
         build:
           text_build(fn pattern ->
-            expr(exists(cards.card_sides, ilike(name, ^pattern)))
+            # Via deck_cards (not the many_to_many cards path) so the deck
+            # correlation lands in the subquery's WHERE clause — Postgres can
+            # only flatten EXISTS into a semi-join from there. The cards path
+            # puts it in a JOIN ON clause, forcing a per-deck SubPlan (~69s).
+            expr(exists(deck_cards.card.card_sides, ilike(name, ^pattern)))
           end)
       },
       %Field{
