@@ -110,9 +110,9 @@ jobs:
         # Run Credo even if formatting or the unused deps check failed
         if: always()
       - name: Check for code duplication
-        # --max-clones is a ratchet over pre-existing clones: lower it as they
-        # are cleaned up, never raise it. Keep in sync with the ck alias in mix.exs.
-        run: mix ex_dna --max-clones 8
+        # Zero tolerance: any detected clone fails the build — extract the
+        # shared logic instead. Keep in sync with the ck alias in mix.exs.
+        run: mix ex_dna
         if: always()
       - name: Check for security vulnerabilities in Phoenix project
         run: mix sobelow --config --exit

@@ -129,9 +129,9 @@ defmodule Sanctum.MixProject do
           "compile --warnings-as-errors",
           "format",
           "credo suggest --min-priority=normal",
-          # Duplication ratchet: lower --max-clones as existing clones are
-          # cleaned up, never raise it. Keep in sync with ci.yml.
-          "ex_dna --max-clones 8",
+          # Fails on ANY code duplication — extract the shared logic instead
+          # of tolerating the clone. `mix ex_dna` shows the offending sites.
+          "ex_dna",
           "sobelow --config --exit"
         ],
         setup: [
