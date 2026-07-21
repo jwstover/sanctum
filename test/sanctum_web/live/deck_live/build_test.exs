@@ -158,6 +158,27 @@ defmodule SanctumWeb.DeckLive.BuildTest do
     assert deck_quantities(deck.id)[card.id] == 1
   end
 
+  test "filter sheet changes rewrite the query and narrow the grid", %{conn: conn} do
+    player_card("Sheet Ally", type: :ally)
+    player_card("Sheet Upgrade", type: :upgrade)
+    %{lv: lv} = mount_builder(conn, "build_lv_fs")
+
+    render_async(lv)
+    assert render(lv) =~ "Sheet Ally"
+    assert render(lv) =~ "Sheet Upgrade"
+
+    lv |> form("#builder-filters-form") |> render_change(%{"type" => ["", "upgrade"]})
+    html = render_async(lv)
+
+    assert html =~ "Sheet Upgrade"
+    refute html =~ "Sheet Ally"
+
+    # the sheet wrote the clause into the search input's value
+    assert has_element?(lv, ~s(#builder-query-input[value="type:upgrade"]))
+    # and the typed query direction: checked control reflects it
+    assert has_element?(lv, ~s(#builder-filters input[value="upgrade"][checked]))
+  end
+
   test "grid tiles arrive badged with quantities already in the deck", %{conn: conn} do
     card = player_card("Prebadged Ally")
     %{deck: deck, user: user} = mount_builder(conn, "build_lv_pre") |> Map.take([:deck, :user])

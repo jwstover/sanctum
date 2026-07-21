@@ -17,7 +17,10 @@ defmodule SanctumWeb.DeckLive.Build do
 
   import SanctumWeb.Components.CardPreview
   import SanctumWeb.Components.DeckCards
+  import SanctumWeb.Components.FilterSheet
   import SanctumWeb.Components.QueryInput
+
+  alias Sanctum.Search.FormSync
 
   alias Sanctum.Decks
   alias Sanctum.Decks.Legality
@@ -27,12 +30,6 @@ defmodule SanctumWeb.DeckLive.Build do
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
   @page_size 24
-
-  @aspects SanctumWeb.CardFilters.deck_aspect_options()
-  @types SanctumWeb.CardFilters.type_options()
-
-  @aspect_keys Enum.map(@aspects, &elem(&1, 0))
-  @type_keys Enum.map(@types, &elem(&1, 0))
 
   # Core-set printings of the three double resources; reprints are separate
   # Card rows, so quick-add pins the canonical codes.
@@ -96,11 +93,9 @@ defmodule SanctumWeb.DeckLive.Build do
     |> assign(:picker_results, [])
     |> assign(:query, "")
     |> assign(:search_diagnostics, [])
-    |> assign(:aspect, "all")
-    |> assign(:type, "all")
+    |> assign(:filters_open?, false)
+    |> assign(:filter_count, 0)
     |> assign(:count, nil)
-    |> assign(:aspect_options, @aspects)
-    |> assign(:type_options, @types)
     |> assign(:offset, 0)
     |> assign(:end_of_timeline?, false)
     |> assign(:req_id, 0)
@@ -134,13 +129,7 @@ defmodule SanctumWeb.DeckLive.Build do
 
   @impl true
   def handle_event("search", %{"query" => query}, socket) do
-    socket =
-      socket
-      |> assign(:query, query)
-      |> assign(:search_diagnostics, search_diagnostics(query))
-      |> start_load(0, reset: true)
-
-    {:noreply, socket}
+    {:noreply, apply_query(socket, query)}
   end
 
   def handle_event("suggest", %{"value" => value, "cursor" => cursor}, socket)
@@ -204,24 +193,27 @@ defmodule SanctumWeb.DeckLive.Build do
     end
   end
 
-  def handle_event("filter_aspect", %{"key" => key}, socket) when key in @aspect_keys do
-    {:noreply, socket |> assign(:aspect, key) |> start_load(0, reset: true)}
+  # The filter sheet and the mobile deck pane are both z-40/z-50 overlays —
+  # opening one closes the other.
+  def handle_event("toggle_filters", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:filters_open?, !socket.assigns.filters_open?)
+     |> assign(:panel_open?, false)}
   end
 
-  def handle_event("filter_type", %{"key" => key}, socket) when key in @type_keys do
-    {:noreply, socket |> assign(:type, key) |> start_load(0, reset: true)}
+  # A filter-sheet change: splice the submitted controls back into the query
+  # string. Unlike the browse pages, builder filter state lives in assigns
+  # (no URL round-trip), so this re-loads directly.
+  def handle_event("filters_change", params, socket) do
+    fields = FormSync.fields_from_params(params, Sanctum.Search.CardFields)
+    query = FormSync.update(socket.assigns.query, Sanctum.Search.CardFields, fields)
+
+    {:noreply, apply_query(socket, query)}
   end
 
   def handle_event("clear", _params, socket) do
-    socket =
-      socket
-      |> assign(:query, "")
-      |> assign(:search_diagnostics, [])
-      |> assign(:aspect, "all")
-      |> assign(:type, "all")
-      |> start_load(0, reset: true)
-
-    {:noreply, socket}
+    {:noreply, apply_query(socket, "")}
   end
 
   def handle_event("next-page", _params, socket) do
@@ -259,7 +251,10 @@ defmodule SanctumWeb.DeckLive.Build do
   end
 
   def handle_event("toggle_panel", _params, socket) do
-    {:noreply, assign(socket, :panel_open?, !socket.assigns.panel_open?)}
+    {:noreply,
+     socket
+     |> assign(:panel_open?, !socket.assigns.panel_open?)
+     |> assign(:filters_open?, false)}
   end
 
   def handle_event("set_tab", %{"key" => tab}, socket) when tab in ["cards", "description"] do
@@ -500,12 +495,7 @@ defmodule SanctumWeb.DeckLive.Build do
     req = socket.assigns.req_id + 1
     actor = socket.assigns.current_user
 
-    filters = %{
-      query: socket.assigns.query,
-      aspect: socket.assigns.aspect,
-      type: socket.assigns.type,
-      scope: "deckbuilding"
-    }
+    filters = %{query: socket.assigns.query, scope: "deckbuilding"}
 
     socket
     |> assign(:req_id, req)
@@ -556,6 +546,22 @@ defmodule SanctumWeb.DeckLive.Build do
 
   defp maybe_assign_count(socket, false, _count), do: socket
   defp maybe_assign_count(socket, true, count), do: assign(socket, :count, count)
+
+  # Shared landing point for every query mutation (typing, sheet changes,
+  # clear): assigns + diagnostics + badge count + reload. A no-op change
+  # (e.g. a half-typed typeahead value FormSync declined to commit) skips
+  # the reload.
+  defp apply_query(socket, query) do
+    if query == socket.assigns.query do
+      socket
+    else
+      socket
+      |> assign(:query, query)
+      |> assign(:search_diagnostics, search_diagnostics(query))
+      |> assign(:filter_count, FormSync.active_count(query, Sanctum.Search.CardFields))
+      |> start_load(0, reset: true)
+    end
+  end
 
   defp search_diagnostics(query) when is_binary(query) and query != "" do
     Sanctum.Search.compile(query, Sanctum.Search.CardFields).diagnostics
@@ -682,19 +688,25 @@ defmodule SanctumWeb.DeckLive.Build do
       ]}>
         <!-- left: browse + grid -->
         <div class="min-w-0">
-          <div class="mb-3.5">
-            <form id="builder-search" phx-change="search" class="flex w-full">
-              <.query_input
-                id="builder-query"
-                value={@query}
-                name="query"
-                placeholder="Search cards — try cost<=2 type:ally owned:true"
-                placeholder_short="Search cards…"
-                registry={Sanctum.Search.CardFields}
-                diagnostics={@search_diagnostics}
-                help_path={~p"/search-help" <> "#cards"}
+          <div class="mb-3">
+            <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
+              <form id="builder-search" phx-change="search" class="flex w-full sm:min-w-0 sm:flex-1">
+                <.query_input
+                  id="builder-query"
+                  value={@query}
+                  name="query"
+                  placeholder="Search cards — try cost<=2 type:ally owned:true"
+                  placeholder_short="Search cards…"
+                  registry={Sanctum.Search.CardFields}
+                  diagnostics={@search_diagnostics}
+                  help_path={~p"/search-help" <> "#cards"}
+                />
+              </form>
+              <.filter_button
+                count={@filter_count}
+                class="w-full min-h-[46px] flex-none sm:w-auto sm:min-h-[46px]"
               />
-            </form>
+            </div>
             <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
               <.icon
                 :if={@loading?}
@@ -706,28 +718,13 @@ defmodule SanctumWeb.DeckLive.Build do
             </div>
           </div>
 
-          <div class="mb-2.5 flex flex-wrap gap-1.5">
-            <.filter_pill
-              :for={{key, label, dot_class} <- @aspect_options}
-              active={@aspect == key}
-              dot_class={dot_class}
-              phx-click="filter_aspect"
-              phx-value-key={key}
-            >
-              {label}
-            </.filter_pill>
-          </div>
-
-          <div class="mb-3 flex flex-wrap gap-1.5">
-            <.filter_pill
-              :for={{key, label} <- @type_options}
-              active={@type == key}
-              phx-click="filter_type"
-              phx-value-key={key}
-            >
-              {label}
-            </.filter_pill>
-          </div>
+          <.filter_sheet
+            id="builder-filters"
+            open?={@filters_open?}
+            query={@query}
+            registry={Sanctum.Search.CardFields}
+            count={@count}
+          />
 
           <!-- staples quick-add -->
           <div :if={@staples != []} class="mb-5 flex flex-wrap items-center gap-2">
@@ -1078,70 +1075,14 @@ defmodule SanctumWeb.DeckLive.Build do
       <!-- mobile slide-up deck pane (never a modal: the page stays live behind it) -->
       <div
         id="deck-panel-mobile"
-        phx-hook=".PaneDrag"
+        phx-hook="PaneDrag"
+        data-dismiss-event="toggle_panel"
         class={[
           "fixed inset-x-0 bottom-0 z-50 max-h-[75dvh] overflow-y-auto border-t-2 border-neutral bg-base-100",
           "transition-transform duration-200 lg:hidden",
           (@tab == "cards" && @panel_open? && "translate-y-0") || "translate-y-full"
         ]}
       >
-        <script :type={Phoenix.LiveView.ColocatedHook} name=".PaneDrag">
-          // Drag-to-dismiss for the mobile deck pane. The handle owns both
-          // gestures: a short press is a tap (close), a downward drag past
-          // the threshold dismisses, anything else springs back.
-          const THRESHOLD = 110
-          const TAP_SLOP = 8
-
-          export default {
-            mounted() {
-              const pane = this.el
-              const handle = pane.querySelector("[data-drag-handle]")
-              let startY = null
-              let dy = 0
-
-              handle.addEventListener("pointerdown", (e) => {
-                startY = e.clientY
-                dy = 0
-                handle.setPointerCapture(e.pointerId)
-              })
-
-              handle.addEventListener("pointermove", (e) => {
-                if (startY == null) return
-                dy = Math.max(0, e.clientY - startY)
-                pane.style.transition = "none"
-                pane.style.transform = `translateY(${dy}px)`
-              })
-
-              const finish = () => {
-                if (startY == null) return
-                pane.style.transition = ""
-                if (dy < TAP_SLOP || dy > THRESHOLD) {
-                  // Slide the rest of the way down NOW — translateY(100%)
-                  // matches the closed-state class, so when the server patch
-                  // swaps classes and `updated()` drops the inline style,
-                  // nothing visibly moves. Clearing the transform here
-                  // instead would animate the pane back open while the
-                  // round-trip is in flight.
-                  pane.style.transform = "translateY(100%)"
-                  this.pushEvent("toggle_panel", {})
-                } else {
-                  pane.style.transform = ""
-                }
-                startY = null
-                dy = 0
-              }
-
-              handle.addEventListener("pointerup", finish)
-              handle.addEventListener("pointercancel", finish)
-            },
-
-            // A server patch (open/close) must never fight a leftover drag frame.
-            updated() {
-              this.el.style.transform = ""
-              this.el.style.transition = ""
-            }
-          }
-        </script>
         <button
           type="button"
           data-drag-handle

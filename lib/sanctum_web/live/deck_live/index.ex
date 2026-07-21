@@ -8,19 +8,17 @@ defmodule SanctumWeb.DeckLive.Index do
 
   require Ash.Query
 
+  import SanctumWeb.Components.FilterSheet
   import SanctumWeb.Components.QueryInput
 
+  alias Sanctum.Search.FormSync
   alias SanctumWeb.Components.DeckCards
   alias SanctumWeb.InfiniteScroll
   alias SanctumWeb.Timezone
 
   @page_size 24
 
-  @aspects SanctumWeb.CardFilters.deck_aspect_options()
-
   @sorts [{"new", "Newest"}, {"unique", "Unique"}, {"title", "A–Z"}]
-
-  @aspect_keys Enum.map(@aspects, &elem(&1, 0))
   @sort_keys Enum.map(@sorts, &elem(&1, 0))
 
   @impl true
@@ -41,19 +39,25 @@ defmodule SanctumWeb.DeckLive.Index do
       </.header>
 
       <!-- search + count -->
-      <div class="mb-3">
-        <form id="deck-search" phx-change="search" class="flex w-full">
-          <.query_input
-            id="deck-query"
-            value={@query}
-            name="query"
-            placeholder="Search decks — try hero:spider aspect:justice cards>=45"
-            placeholder_short="Search decks — try hero:spider"
-            registry={Sanctum.Search.DeckFields}
-            diagnostics={@search_diagnostics}
-            help_path={~p"/search-help" <> "#decks"}
+      <div class="mb-6">
+        <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
+          <form id="deck-search" phx-change="search" class="flex w-full sm:min-w-0 sm:flex-1">
+            <.query_input
+              id="deck-query"
+              value={@query}
+              name="query"
+              placeholder="Search decks — try hero:spider aspect:justice cards>=45"
+              placeholder_short="Search decks — try hero:spider"
+              registry={Sanctum.Search.DeckFields}
+              diagnostics={@search_diagnostics}
+              help_path={~p"/search-help" <> "#decks"}
+            />
+          </form>
+          <.filter_button
+            count={@filter_count}
+            class="w-full min-h-[46px] flex-none sm:w-auto sm:min-h-[46px]"
           />
-        </form>
+        </div>
         <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
           <.icon
             :if={@loading?}
@@ -67,50 +71,35 @@ defmodule SanctumWeb.DeckLive.Index do
         </div>
       </div>
 
-      <!-- sort + hero -->
-      <div class="mb-2.5 flex flex-wrap items-center gap-2.5">
-        <div class="flex gap-1.5">
-          <.filter_pill
-            :for={{key, label} <- @sort_options}
-            active={@sort == key}
-            phx-click="sort"
-            phx-value-key={key}
+      <.filter_sheet
+        id="deck-filters"
+        open?={@filters_open?}
+        query={@query}
+        registry={Sanctum.Search.DeckFields}
+        count={@count}
+        hide={(@current_user && []) || ["mine"]}
+      >
+        <:footer_extra>
+          <div
+            class="flex items-center gap-1.5"
+            role="radiogroup"
+            aria-label="Sort decks"
           >
-            {label}
-          </.filter_pill>
-          <.filter_pill :if={@current_user} active={@mine} phx-click="filter_mine">
-            Mine
-          </.filter_pill>
-        </div>
-        <form
-          id="deck-hero-filter"
-          phx-change="filter_hero"
-          class="ml-auto min-w-[180px] flex-1 sm:min-w-[200px] sm:flex-none"
-        >
-          <select
-            name="hero_id"
-            class="min-h-[44px] w-full border-[2.5px] border-line bg-black px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.04em] text-base-content outline-none focus:border-primary sm:min-h-0 sm:text-[14px]"
-          >
-            <option value="all" selected={@hero_id == "all"}>All heroes</option>
-            <option :for={{id, name} <- @hero_options} value={id} selected={@hero_id == id}>
-              {name}
-            </option>
-          </select>
-        </form>
-      </div>
-
-      <!-- aspect filters -->
-      <div class="mb-6 flex flex-wrap gap-1.5">
-        <.filter_pill
-          :for={{key, label, dot_class} <- @aspect_options}
-          active={@aspect == key}
-          dot_class={dot_class}
-          phx-click="filter_aspect"
-          phx-value-key={key}
-        >
-          {label}
-        </.filter_pill>
-      </div>
+            <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] text-base-content/70">
+              Sort
+            </span>
+            <.chip
+              :for={{key, label} <- @sort_options}
+              type="radio"
+              name="sort"
+              value={key}
+              checked={@sort == key}
+            >
+              {label}
+            </.chip>
+          </div>
+        </:footer_extra>
+      </.filter_sheet>
 
       <!-- first-load skeletons: shown until the async load delivers a count -->
       <.deck_tile_skeleton_grid :if={@count == nil} />
@@ -219,15 +208,12 @@ defmodule SanctumWeb.DeckLive.Index do
       |> assign(:query, "")
       |> assign(:search_diagnostics, [])
       |> assign(:sort, "new")
-      |> assign(:aspect, "all")
-      |> assign(:hero_id, "all")
-      |> assign(:mine, false)
+      |> assign(:filters_open?, false)
+      |> assign(:filter_count, 0)
       # nil until the first async load lands — drives the loading/skeleton UI.
       |> assign(:total, nil)
       |> assign(:count, nil)
-      |> assign(:aspect_options, @aspects)
       |> assign(:sort_options, @sorts)
-      |> assign(:hero_options, [])
       |> assign(:offset, 0)
       |> assign(:end_of_timeline?, false)
       |> assign(:req_id, 0)
@@ -238,60 +224,79 @@ defmodule SanctumWeb.DeckLive.Index do
     {:ok, socket}
   end
 
-  # Filters live in the URL (filter events push_patch here) so back/forward
-  # and shared links restore them. The initial data load also starts here —
-  # only on the connected mount (req_id == 0 guards the first pass); the
-  # static render just paints the shell.
+  # Filters live in the URL — as the query string itself, plus a sidecar
+  # `sort` param (sorting isn't a filter, so it stays out of the query
+  # language) — so back/forward and shared links restore them. The initial
+  # data load also starts here — only on the connected mount (req_id == 0
+  # guards the first pass); the static render just paints the shell.
   @impl true
   def handle_params(params, _uri, socket) do
     query = params["query"] || ""
     sort = if params["sort"] in @sort_keys, do: params["sort"], else: "new"
-    aspect = if params["aspect"] in @aspect_keys, do: params["aspect"], else: "all"
-    hero_id = valid_hero_id(params["hero_id"])
-    mine = params["mine"] == "true" and socket.assigns.current_user != nil
 
-    changed? =
-      query != socket.assigns.query or sort != socket.assigns.sort or
-        aspect != socket.assigns.aspect or hero_id != socket.assigns.hero_id or
-        mine != socket.assigns.mine
+    case legacy_filter_query(query, params, socket.assigns.current_user) do
+      nil ->
+        changed? = query != socket.assigns.query or sort != socket.assigns.sort
 
-    socket =
-      assign(socket,
-        query: query,
-        sort: sort,
-        aspect: aspect,
-        hero_id: hero_id,
-        mine: mine,
-        search_diagnostics: search_diagnostics(query)
-      )
+        socket =
+          assign(socket,
+            query: query,
+            sort: sort,
+            search_diagnostics: search_diagnostics(query),
+            filter_count: FormSync.active_count(query, Sanctum.Search.DeckFields)
+          )
 
-    socket =
-      if connected?(socket) and (changed? or socket.assigns.req_id == 0),
-        do: reset_and_load(socket),
-        else: socket
+        socket =
+          if connected?(socket) and (changed? or socket.assigns.req_id == 0),
+            do: reset_and_load(socket),
+            else: socket
 
-    {:noreply, socket}
-  end
+        {:noreply, socket}
 
-  defp valid_hero_id(hero_id) when is_binary(hero_id) do
-    case Ecto.UUID.cast(hero_id) do
-      {:ok, _} -> hero_id
-      :error -> "all"
+      translated ->
+        {:noreply,
+         push_patch(socket,
+           to: decks_path(socket.assigns, query: translated, sort: sort),
+           replace: true
+         )}
     end
   end
 
-  defp valid_hero_id(_), do: "all"
+  # Pre-filter-sheet URLs carried ?aspect= / ?hero_id= / ?mine= params. Fold
+  # them into the query string once and re-patch to the canonical URL.
+  defp legacy_filter_query(query, params, current_user) do
+    fields =
+      %{}
+      |> put_legacy_aspect(params["aspect"])
+      |> put_legacy_mine(params["mine"], current_user)
+      |> put_legacy_hero(params["hero_id"])
 
-  # {id, display_name} for every hero, sorted by name. `display_name` carries
-  # the alter ego for same-named heroes (the Black Panthers, the Spider-Men).
-  defp load_hero_options do
-    Sanctum.Heroes.Hero
-    |> Ash.Query.select([:id, :hero_name])
-    |> Ash.Query.load(:display_name)
-    |> Ash.read!()
-    |> Enum.map(&{&1.id, &1.display_name})
-    |> Enum.sort_by(fn {_id, name} -> name end)
+    if fields == %{},
+      do: nil,
+      else: FormSync.update(query, Sanctum.Search.DeckFields, fields)
   end
+
+  defp put_legacy_aspect(fields, aspect) when is_binary(aspect) and aspect != "all" do
+    valid = Sanctum.Search.Registry.lookup(Sanctum.Search.DeckFields, "aspect").values
+    if aspect in valid, do: Map.put(fields, "aspect", [aspect]), else: fields
+  end
+
+  defp put_legacy_aspect(fields, _aspect), do: fields
+
+  defp put_legacy_mine(fields, "true", %{id: _}), do: Map.put(fields, "mine", "true")
+  defp put_legacy_mine(fields, _mine, _user), do: fields
+
+  # A legacy hero_id UUID becomes a hero:"<display name>" clause.
+  defp put_legacy_hero(fields, hero_id) when is_binary(hero_id) and hero_id != "all" do
+    with {:ok, _} <- Ecto.UUID.cast(hero_id),
+         {:ok, hero} <- Ash.get(Sanctum.Heroes.Hero, hero_id, load: [:display_name]) do
+      Map.put(fields, "hero", hero.display_name)
+    else
+      _ -> fields
+    end
+  end
+
+  defp put_legacy_hero(fields, _hero_id), do: fields
 
   # `replace: true` so typing doesn't spam a history entry per keystroke.
   @impl true
@@ -308,20 +313,20 @@ defmodule SanctumWeb.DeckLive.Index do
 
   def handle_event("suggest", _params, socket), do: {:reply, %{items: []}, socket}
 
-  def handle_event("sort", %{"key" => key}, socket) do
-    {:noreply, push_patch(socket, to: decks_path(socket.assigns, sort: key))}
+  def handle_event("toggle_filters", _params, socket) do
+    {:noreply, update(socket, :filters_open?, &(!&1))}
   end
 
-  def handle_event("filter_mine", _params, socket) do
-    {:noreply, push_patch(socket, to: decks_path(socket.assigns, mine: !socket.assigns.mine))}
-  end
+  # A filter-sheet change: splice the submitted controls back into the query
+  # string (the sidecar sort radio rides along in the same form) and re-enter
+  # the normal search path (URL → handle_params → load).
+  def handle_event("filters_change", params, socket) do
+    fields = FormSync.fields_from_params(params, Sanctum.Search.DeckFields)
+    query = FormSync.update(socket.assigns.query, Sanctum.Search.DeckFields, fields)
+    sort = if params["sort"] in @sort_keys, do: params["sort"], else: socket.assigns.sort
 
-  def handle_event("filter_aspect", %{"key" => key}, socket) do
-    {:noreply, push_patch(socket, to: decks_path(socket.assigns, aspect: key))}
-  end
-
-  def handle_event("filter_hero", %{"hero_id" => hero_id}, socket) do
-    {:noreply, push_patch(socket, to: decks_path(socket.assigns, hero_id: hero_id))}
+    {:noreply,
+     push_patch(socket, to: decks_path(socket.assigns, query: query, sort: sort), replace: true)}
   end
 
   def handle_event("restore-scroll", %{"offset" => offset}, socket) do
@@ -338,14 +343,7 @@ defmodule SanctumWeb.DeckLive.Index do
 
   @impl true
   def handle_async(:load_decks, {:ok, result}, socket) do
-    %{
-      req: req,
-      offset: offset,
-      reset?: reset?,
-      page: page,
-      hero_options: hero_options,
-      total: total
-    } = result
+    %{req: req, offset: offset, reset?: reset?, page: page, total: total} = result
 
     # A newer filter/search/page request has since fired; drop these stale
     # results so out-of-order completions can't clobber the current view.
@@ -355,7 +353,6 @@ defmodule SanctumWeb.DeckLive.Index do
         |> assign(:offset, offset)
         |> assign(:end_of_timeline?, !page.more?)
         |> assign(:loading?, false)
-        |> maybe_assign_hero_options(hero_options)
         |> maybe_assign_total(total)
         |> maybe_assign_count(reset?, page.count)
         |> stream(:decks, Enum.map(page.results, &deck_view(&1, socket.assigns.timezone)),
@@ -384,8 +381,7 @@ defmodule SanctumWeb.DeckLive.Index do
   end
 
   # Kick off the browse read off the socket so the connected mount returns the
-  # shell immediately. `hero_options` is fetched only once per LiveView (a
-  # static hero list) and reused across every subsequent load.
+  # shell immediately.
   #
   # `restore: true` refetches pages 0..offset in one query (for scroll
   # restoration) while keeping `offset` as the logical last-page offset so
@@ -397,7 +393,6 @@ defmodule SanctumWeb.DeckLive.Index do
     req = socket.assigns.req_id + 1
     filters = filters(socket.assigns)
     actor = socket.assigns[:current_user]
-    fetch_heroes? = socket.assigns.hero_options == []
     # `total` is the full unfiltered catalog size. It's fetched independently
     # (not read off the first page's count) so it stays accurate even when the
     # LiveView first loads with filters already applied in the URL.
@@ -412,17 +407,9 @@ defmodule SanctumWeb.DeckLive.Index do
         |> Ash.Query.for_read(:browse, filters, actor: actor)
         |> Ash.read!(page: [limit: limit, offset: query_offset, count: reset?])
 
-      hero_options = if fetch_heroes?, do: load_hero_options(), else: nil
       total = if fetch_total?, do: load_total(actor), else: nil
 
-      %{
-        req: req,
-        offset: offset,
-        reset?: reset?,
-        page: page,
-        hero_options: hero_options,
-        total: total
-      }
+      %{req: req, offset: offset, reset?: reset?, page: page, total: total}
     end)
   end
 
@@ -439,22 +426,17 @@ defmodule SanctumWeb.DeckLive.Index do
 
     params =
       Enum.reject(
-        [query: f.query, sort: f.sort, aspect: f.aspect, hero_id: f.hero_id, mine: f.mine],
+        [query: f.query, sort: f.sort],
         fn {k, v} ->
           case k do
             :query -> v == ""
             :sort -> v == "new"
-            :mine -> v != true
-            _ -> v == "all"
           end
         end
       )
 
     ~p"/decks?#{params}"
   end
-
-  defp maybe_assign_hero_options(socket, nil), do: socket
-  defp maybe_assign_hero_options(socket, options), do: assign(socket, :hero_options, options)
 
   # `total` (the unfiltered catalog size) is fetched once via `load_total/1` and
   # then left untouched. nil means this load didn't refetch it.
@@ -467,7 +449,7 @@ defmodule SanctumWeb.DeckLive.Index do
   defp maybe_assign_count(socket, true, count), do: assign(socket, :count, count)
 
   defp filters(a) do
-    %{query: a.query, aspect: a.aspect, hero_id: a.hero_id, sort: a.sort, mine: a.mine}
+    %{query: a.query, sort: a.sort}
   end
 
   # Advisory parse/compile problems shown under the query input ("unknown

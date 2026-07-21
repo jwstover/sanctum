@@ -33,33 +33,20 @@ defmodule Sanctum.Decks.Deck do
   actions do
     defaults [:read, :destroy, create: :*]
 
-    # Public deck-browser search: filter by title/hero name, aspect, and hero,
-    # with sorting and offset pagination. Backs SanctumWeb.DeckLive.Index.
+    # Public deck-browser search: an advanced search query (see
+    # Sanctum.Search.DeckFields; the filter sheet writes the same syntax)
+    # plus sorting and offset pagination. Backs SanctumWeb.DeckLive.Index.
     read :browse do
       argument :query, :string, allow_nil?: true
-      argument :aspect, :string, allow_nil?: true
-      argument :hero_id, :string, allow_nil?: true
       argument :sort, :string, allow_nil?: true
-      argument :mine, :boolean, allow_nil?: true, default: false
 
       pagination offset?: true, default_limit: 24, countable: true, required?: false
 
-      prepare fn query, context ->
+      prepare fn query, _context ->
         require Ash.Query
 
         search = Ash.Query.get_argument(query, :query)
-        aspect = Ash.Query.get_argument(query, :aspect)
-        hero_id = Ash.Query.get_argument(query, :hero_id)
         sort = Ash.Query.get_argument(query, :sort)
-
-        query =
-          case {Ash.Query.get_argument(query, :mine), context.actor} do
-            {true, %{id: actor_id}} -> Ash.Query.filter(query, owner_id == ^actor_id)
-            # "Mine" without a signed-in actor matches nothing rather than
-            # silently widening to everyone's decks.
-            {true, nil} -> Ash.Query.filter(query, false)
-            _public -> query
-          end
 
         query =
           Ash.Query.load(query, [
@@ -78,26 +65,6 @@ defmodule Sanctum.Decks.Deck do
               %{expr: nil} -> query
               %{expr: filter} -> Ash.Query.filter(query, ^filter)
             end
-          else
-            query
-          end
-
-        query =
-          cond do
-            not is_binary(aspect) or aspect in ["", "all"] ->
-              query
-
-            # An empty aspect list is a basic deck.
-            aspect == "basic" ->
-              Ash.Query.filter(query, fragment("cardinality(?) = 0", aspects))
-
-            true ->
-              Ash.Query.filter(query, ^to_enum(aspect) in aspects)
-          end
-
-        query =
-          if is_binary(hero_id) and hero_id not in ["", "all"] do
-            Ash.Query.filter(query, hero_id == ^hero_id)
           else
             query
           end
@@ -341,6 +308,13 @@ defmodule Sanctum.Decks.Deck do
     end
   end
 
+  calculations do
+    # Whether the requesting user owns this deck — backs the `mine:` search
+    # field (^actor resolves from the query's actor; a nil actor compares
+    # owner_id to NULL, which matches nothing rather than everyone's decks).
+    calculate :mine, :boolean, expr(owner_id == ^actor(:id))
+  end
+
   aggregates do
     count :card_row_count, :deck_cards
     sum :total_card_count, :deck_cards, :quantity
@@ -348,14 +322,6 @@ defmodule Sanctum.Decks.Deck do
 
   identities do
     identity :unique_mcdb_deck, [:mcdb_type, :mcdb_id]
-  end
-
-  # Safely convert an incoming filter string to an existing atom; unknown
-  # values fall back to a sentinel that matches nothing.
-  defp to_enum(value) do
-    String.to_existing_atom(value)
-  rescue
-    ArgumentError -> :__invalid__
   end
 
   # Blank titles on :build get "<Hero> Deck".

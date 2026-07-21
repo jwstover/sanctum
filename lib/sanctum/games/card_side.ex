@@ -14,14 +14,12 @@ defmodule Sanctum.Games.CardSide do
     defaults [:read, :destroy]
 
     # Public card pool browsing: every card face — player *and* encounter —
-    # filtered by an advanced search query (see Sanctum.Search) plus the
-    # aspect/type filter pills. Each side is its own row so multi-sided
-    # cards surface every face, and searching an alternate title (e.g. "Peter
-    # Parker") ranks that face first. Backs SanctumWeb.CardLive.Pool.
+    # filtered by an advanced search query (see Sanctum.Search; the filter
+    # sheet writes the same query syntax). Each side is its own row so
+    # multi-sided cards surface every face, and searching an alternate title
+    # (e.g. "Peter Parker") ranks that face first. Backs SanctumWeb.CardLive.Pool.
     read :browse do
       argument :query, :string, allow_nil?: true
-      argument :aspect, :string, allow_nil?: true
-      argument :type, :string, allow_nil?: true
       argument :scope, :string, allow_nil?: true
 
       pagination offset?: true, default_limit: 24, countable: true, required?: false
@@ -30,8 +28,6 @@ defmodule Sanctum.Games.CardSide do
         require Ash.Query
 
         search = Ash.Query.get_argument(query, :query)
-        aspect = Ash.Query.get_argument(query, :aspect)
-        type = Ash.Query.get_argument(query, :type)
         scope = Ash.Query.get_argument(query, :scope)
 
         query =
@@ -59,34 +55,14 @@ defmodule Sanctum.Games.CardSide do
         query =
           if context.actor, do: Ash.Query.load(query, :owned), else: query
 
-        query =
-          if is_binary(search) and String.trim(search) != "" do
-            # Bare words search name/subname; `field op value` terms filter
-            # any registered card field. Malformed input degrades gracefully
-            # (diagnostics are surfaced by the LiveView, not here).
-            case Sanctum.Search.compile(search, Sanctum.Search.CardFields) do
-              %{expr: nil} -> query
-              %{expr: filter} -> Ash.Query.filter(query, ^filter)
-            end
-          else
-            query
+        if is_binary(search) and String.trim(search) != "" do
+          # Bare words search name/subname; `field op value` terms filter
+          # any registered card field. Malformed input degrades gracefully
+          # (diagnostics are surfaced by the LiveView, not here).
+          case Sanctum.Search.compile(search, Sanctum.Search.CardFields) do
+            %{expr: nil} -> query
+            %{expr: filter} -> Ash.Query.filter(query, ^filter)
           end
-
-        query =
-          cond do
-            not is_binary(aspect) or aspect in ["", "all"] ->
-              query
-
-            # "hero"/"basic" are ownership pools, not aspects.
-            aspect in ["hero", "basic"] ->
-              Ash.Query.filter(query, ownership == ^to_enum(aspect))
-
-            true ->
-              Ash.Query.filter(query, aspect == ^to_enum(aspect))
-          end
-
-        if is_binary(type) and type not in ["", "all"] do
-          Ash.Query.filter(query, type == ^to_enum(type))
         else
           query
         end
@@ -219,13 +195,5 @@ defmodule Sanctum.Games.CardSide do
   identities do
     identity :unique_card_side, [:card_id, :side_identifier]
     identity :unique_code, [:code]
-  end
-
-  # Safely convert an incoming filter string to an existing atom; unknown
-  # values fall back to a sentinel that matches nothing.
-  defp to_enum(value) do
-    String.to_existing_atom(value)
-  rescue
-    ArgumentError -> :__invalid__
   end
 end

@@ -35,6 +35,7 @@ defmodule Sanctum.Search.DeckFields do
         example: "hero:spider-man",
         hint: "hero or alter-ego name",
         values_fun: &Sanctum.Search.Values.heroes/0,
+        form: %{group: "Hero", order: 10},
         build:
           text_build(fn pattern ->
             # display_name always contains hero_name, so it subsumes a
@@ -51,6 +52,7 @@ defmodule Sanctum.Search.DeckFields do
         example: "aspect:justice",
         hint: "aspect the deck plays (basic = none)",
         ops: [:eq, :neq],
+        form: %{group: "Aspect", order: 20},
         build: &aspect_build/2
       },
       %Field{
@@ -75,9 +77,24 @@ defmodule Sanctum.Search.DeckFields do
         example: "cards>=45",
         hint: "total card count",
         ops: @all_ops,
+        form: %{group: "Deck", order: 40, label: "Card count"},
         build: fn op, value ->
           with {:ok, n} <- Builders.parse_int(value) do
             {:ok, Builders.cmp(expr(total_card_count), op, n)}
+          end
+        end
+      },
+      %Field{
+        name: "mine",
+        aliases: [],
+        kind: :boolean,
+        values: ["true", "false"],
+        example: "mine:true",
+        hint: "decks you own (empty when signed out)",
+        form: %{group: "Ownership", order: 35, control: :toggle, label: "My decks"},
+        build: fn op, value ->
+          with {:ok, bool} <- Builders.parse_bool(value) do
+            {:ok, Builders.cmp(expr(mine), op, bool)}
           end
         end
       },
@@ -87,6 +104,7 @@ defmodule Sanctum.Search.DeckFields do
         kind: :enum,
         values: Enum.map(DeckSource.values(), &to_string/1),
         example: "source:marvelcdb",
+        form: %{group: "Source", order: 30},
         build: fn op, value ->
           with {:ok, atom} <- Builders.coerce_enum(value, DeckSource.values()) do
             {:ok, Builders.cmp(expr(source), op, atom)}

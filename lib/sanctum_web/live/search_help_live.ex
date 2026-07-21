@@ -63,6 +63,12 @@ defmodule SanctumWeb.SearchHelpLive do
               Values can be shortened to any unambiguous prefix: <.q c="t:all" /> means
               <.q c="type:ally" />.
             </p>
+            <p>
+              Prefer tapping to typing? The <span class="font-semibold">Filters</span>
+              panel next to the search bar writes this same syntax: its controls read
+              the current query and each change edits it in place, so the two always
+              stay in sync.
+            </p>
           </div>
         </section>
 
