@@ -1,20 +1,24 @@
-// Site-wide search bar: the QueryInput pattern (syntax-highlight mirror +
-// server-driven suggestions) extended with a server-rendered results panel.
+// Site-wide search overlay: the QueryInput pattern (syntax-highlight mirror +
+// server-driven suggestions) inside a command-palette dialog — centered modal
+// on desktop, slide-up sheet on mobile.
 //
-// The dropdown panel stacks two sections:
+// Opening/closing is fully client-side: trigger buttons dispatch a
+// `sanctum:open-search` window event (see Layouts.open_search/1), Cmd/Ctrl+K
+// toggles, Escape and the backdrop close. The hook re-asserts visibility in
+// updated() because LiveView patches reset the server-rendered `hidden`
+// classes.
+//
+// Inside the panel, two result sections share one virtual keyboard list:
 //
 //   * a JS-managed suggestion listbox (phx-update="ignore", filled from the
 //     "suggest" reply — text-insert items, exactly like QueryInput)
 //   * server-rendered result rows/links marked with [data-gs-nav], patched by
 //     LiveView as the debounced "search" form event returns groups
 //
-// Keyboard nav walks one virtual list across both sections: indexes below
-// items.length are suggestions (Enter splices the insert text), the rest are
-// result anchors (Enter clicks them). Enter with nothing active opens the
-// first result. The hook lives inside a LiveComponent, so all events go
-// through pushEventTo(this.el, ...).
-//
-// Also owns the app's global search shortcut: Cmd/Ctrl+K focuses the input.
+// Indexes below items.length are suggestions (Enter splices the insert
+// text); the rest are result anchors (Enter clicks them). Enter with nothing
+// active opens the first result. The hook lives inside a LiveComponent, so
+// all events go through pushEventTo(this.el, ...).
 
 import {paintMirror} from "./query-syntax"
 
@@ -24,11 +28,13 @@ export default {
     this.mirror = document.getElementById(`${this.el.id}-mirror`)
     this.listbox = document.getElementById(`${this.el.id}-listbox`)
     this.panel = document.getElementById(`${this.el.id}-panel`)
+    this.overlay = this.el.closest("[data-gs-overlay]")
     this.knownFields = new Set(JSON.parse(this.el.dataset.fields || "[]"))
     this.items = []
     this.navEls = []
     this.active = -1
     this.open = false
+    this.overlayOpen = false
     this.suggestTimer = null
 
     this.paint()
@@ -36,45 +42,82 @@ export default {
 
     this.onInput = () => { this.paint(); this.queueSuggest(); this.show() }
     this.onScroll = () => { this.mirror.scrollLeft = this.input.scrollLeft }
-    this.onFocus = () => { this.queueSuggest(); this.show() }
+    this.onFocus = () => this.queueSuggest()
     this.onClick = () => this.queueSuggest()
-    this.onBlur = () => setTimeout(() => this.hide(), 120)
     this.onKeydown = (e) => this.handleKey(e)
 
     this.input.addEventListener("input", this.onInput)
     this.input.addEventListener("scroll", this.onScroll)
     this.input.addEventListener("focus", this.onFocus)
     this.input.addEventListener("click", this.onClick)
-    this.input.addEventListener("blur", this.onBlur)
     this.input.addEventListener("keydown", this.onKeydown)
+
+    this.onBackdrop = () => this.closeOverlay()
+    this.overlay
+      ?.querySelector("[data-gs-close]")
+      ?.addEventListener("click", this.onBackdrop)
+
+    this.onOpenEvent = () => this.openOverlay()
+    window.addEventListener("sanctum:open-search", this.onOpenEvent)
 
     this.onGlobalKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault()
-        this.input.focus()
-        this.input.select()
+        this.overlayOpen ? this.closeOverlay() : this.openOverlay()
       }
     }
     window.addEventListener("keydown", this.onGlobalKey)
   },
 
   // LiveView patched the component (new result groups, cleared input, …):
-  // repaint, rescan the result anchors, and re-assert panel visibility (the
-  // patch resets the server-rendered "hidden" class).
+  // repaint, rescan the result anchors, and re-assert overlay/panel
+  // visibility (the patch resets the server-rendered "hidden" classes).
   updated() {
     this.paint()
     this.scanResults()
+    this.syncOverlay()
     this.syncPanel()
   },
 
   destroyed() {
     clearTimeout(this.suggestTimer)
+    window.removeEventListener("sanctum:open-search", this.onOpenEvent)
     window.removeEventListener("keydown", this.onGlobalKey)
+    document.body.classList.remove("overflow-hidden")
   },
 
   paint() {
     paintMirror(this.mirror, this.input.value, this.knownFields)
     this.mirror.scrollLeft = this.input.scrollLeft
+  },
+
+  // -- overlay -------------------------------------------------------------------
+
+  openOverlay() {
+    this.overlayOpen = true
+    this.open = true
+    this.syncOverlay()
+    this.syncPanel()
+    this.input.focus()
+    this.input.select()
+    this.queueSuggest()
+  },
+
+  closeOverlay() {
+    this.overlayOpen = false
+    this.open = false
+    this.setActive(-1)
+    this.items = []
+    this.listbox.textContent = ""
+    this.syncOverlay()
+    this.syncPanel()
+    this.input.blur()
+  },
+
+  syncOverlay() {
+    if (!this.overlay) return
+    this.overlay.classList.toggle("hidden", !this.overlayOpen)
+    document.body.classList.toggle("overflow-hidden", this.overlayOpen)
   },
 
   // -- results section ---------------------------------------------------------
@@ -104,7 +147,7 @@ export default {
   },
 
   showSuggestions(reply) {
-    if (document.activeElement !== this.input) return
+    if (!this.overlayOpen || document.activeElement !== this.input) return
     this.items = reply.items || []
     this.replaceStart = reply.start
     this.replaceLength = reply.length
@@ -174,12 +217,6 @@ export default {
     this.syncPanel()
   },
 
-  hide() {
-    this.open = false
-    this.setActive(-1)
-    this.syncPanel()
-  },
-
   syncPanel() {
     if (!this.panel) return
     const empty = this.items.length === 0 && this.panel.querySelector("[data-gs-content]") == null
@@ -215,16 +252,6 @@ export default {
   },
 
   handleKey(e) {
-    const isOpen = this.open && !this.panel.classList.contains("hidden")
-
-    if (!isOpen) {
-      if (e.key === "ArrowDown") {
-        this.queueSuggest()
-        this.show()
-      }
-      return
-    }
-
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault()
@@ -262,8 +289,7 @@ export default {
         if (this.active >= 0) {
           this.setActive(-1)
         } else {
-          this.hide()
-          this.input.blur()
+          this.closeOverlay()
         }
         break
     }

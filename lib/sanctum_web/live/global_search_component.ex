@@ -1,7 +1,11 @@
 defmodule SanctumWeb.GlobalSearchComponent do
   @moduledoc """
-  The site-wide search bar: a `query_input` wired to `Sanctum.Search.Global`,
-  rendered once from `Layouts.app/1`.
+  The site-wide search overlay: a `query_input` wired to
+  `Sanctum.Search.Global`, rendered once from `Layouts.app/1` as a
+  command-palette dialog — centered modal on desktop, slide-up sheet on
+  mobile. Trigger buttons (sidebar, mobile header) and Cmd/Ctrl+K open it via
+  a `sanctum:open-search` window event handled by the GlobalSearch hook;
+  open/close state never touches the server.
 
   A LiveComponent (not layout markup handled by the host LiveView) because
   the pool and deck browser already define their own `"search"`/`"suggest"`
@@ -31,73 +35,84 @@ defmodule SanctumWeb.GlobalSearchComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="relative w-full">
-      <form
-        id="global-search-form"
-        phx-change="search"
-        phx-submit="submit"
-        phx-target={@myself}
-        autocomplete="off"
-        class="w-full"
-      >
-        <.query_input
-          id="global-search"
-          hook="GlobalSearch"
-          name="query"
-          value={@query}
-          registry={Sanctum.Search.GlobalFields}
-          placeholder="Search cards, decks, heroes… (try in:cards cost<=2)"
-          placeholder_short="Search…"
-          help_path={~p"/search-help"}
+    <div
+      id="global-search-overlay"
+      data-gs-overlay
+      class="fixed inset-0 z-50 hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Site search"
+    >
+      <div class="absolute inset-0 bg-black/60" data-gs-close aria-hidden="true"></div>
+      <div class="gs-sheet absolute inset-x-0 bottom-0 max-h-[85vh] border-t-[3px] border-neutral bg-base-100 p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12vh] sm:w-[min(92vw,620px)] sm:-translate-x-1/2 sm:border-2 sm:shadow-comic-lg">
+        <form
+          id="global-search-form"
+          phx-change="search"
+          phx-submit="submit"
+          phx-target={@myself}
+          autocomplete="off"
+          class="w-full"
         >
-          <:results>
-            <div :if={@groups != []} data-gs-content>
-              <div :for={group <- @groups}>
-                <div class="flex items-baseline justify-between border-b border-line bg-base-300/60 px-3 py-1">
-                  <span class="font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.14em] text-base-content/60">
-                    {group.label}
-                  </span>
-                  <.link
-                    :if={group.more_url}
-                    navigate={group.more_url}
-                    data-gs-nav
-                    class="gs-more font-barlow-condensed text-[12px] uppercase tracking-wide text-primary/80 hover:text-primary"
-                  >
-                    all {String.downcase(group.label)} results →
-                  </.link>
-                </div>
-                <%= for result <- group.results do %>
-                  <.link :if={result.href} navigate={result.href} data-gs-nav class="qi-option">
-                    <span class="qi-option-label qi-kind-result">{result.title}</span>
-                    <span :if={result.subtitle} class="qi-option-detail">{result.subtitle}</span>
-                  </.link>
-                  <div :if={is_nil(result.href)} class="qi-option cursor-default">
-                    <span class="qi-option-label qi-kind-result">{result.title}</span>
-                    <span :if={result.subtitle} class="qi-option-detail">{result.subtitle}</span>
+          <.query_input
+            id="global-search"
+            hook="GlobalSearch"
+            name="query"
+            value={@query}
+            registry={Sanctum.Search.GlobalFields}
+            placeholder="Search cards, decks, heroes… (try in:cards cost<=2)"
+            placeholder_short="Search…"
+            help_path={~p"/search-help"}
+            panel_class="mt-3 hidden border-t-2 border-line"
+          >
+            <:results>
+              <div :if={@groups != []} data-gs-content>
+                <div :for={group <- @groups}>
+                  <div class="flex items-baseline justify-between border-b border-line bg-base-300/60 px-3 py-1">
+                    <span class="font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.14em] text-base-content/60">
+                      {group.label}
+                    </span>
+                    <.link
+                      :if={group.more_url}
+                      navigate={group.more_url}
+                      data-gs-nav
+                      class="gs-more font-barlow-condensed text-[12px] uppercase tracking-wide text-primary/80 hover:text-primary"
+                    >
+                      all {String.downcase(group.label)} results →
+                    </.link>
                   </div>
-                <% end %>
+                  <%= for result <- group.results do %>
+                    <.link :if={result.href} navigate={result.href} data-gs-nav class="qi-option">
+                      <span class="qi-option-label qi-kind-result">{result.title}</span>
+                      <span :if={result.subtitle} class="qi-option-detail">{result.subtitle}</span>
+                    </.link>
+                    <div :if={is_nil(result.href)} class="qi-option cursor-default">
+                      <span class="qi-option-label qi-kind-result">{result.title}</span>
+                      <span :if={result.subtitle} class="qi-option-detail">{result.subtitle}</span>
+                    </div>
+                  <% end %>
+                </div>
               </div>
-            </div>
-            <div
-              :if={@groups == [] and @loading?}
-              data-gs-content
-              class="px-3 py-2.5 font-barlow text-[13px] text-base-content/50"
-            >
-              Searching…
-            </div>
-            <div
-              :if={@groups == [] and not @loading? and String.trim(@query) != ""}
-              data-gs-content
-              class="px-3 py-2.5 font-barlow text-[13px] text-base-content/50"
-            >
-              <span :if={@diagnostics == []}>No matches for this search.</span>
-              <span :if={@diagnostics != []} class="text-primary/90">
-                ⚠ {hd(@diagnostics).message}
-              </span>
-            </div>
-          </:results>
-        </.query_input>
-      </form>
+              <div
+                :if={@groups == [] and @loading?}
+                data-gs-content
+                class="px-3 py-2.5 font-barlow text-[13px] text-base-content/50"
+              >
+                Searching…
+              </div>
+              <div
+                :if={@groups == [] and not @loading? and String.trim(@query) != ""}
+                data-gs-content
+                class="px-3 py-2.5 font-barlow text-[13px] text-base-content/50"
+              >
+                <span :if={@diagnostics == []}>No matches for this search.</span>
+                <span :if={@diagnostics != []} class="text-primary/90">
+                  ⚠ {hd(@diagnostics).message}
+                </span>
+              </div>
+            </:results>
+          </.query_input>
+        </form>
+      </div>
     </div>
     """
   end

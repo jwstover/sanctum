@@ -98,23 +98,21 @@ defmodule SanctumWeb.Layouts do
       <div class="drawer-content relative flex min-h-screen flex-col">
         <div class="pointer-events-none fixed inset-0 z-0 bg-halftone"></div>
 
-        <!-- slim top bar: logo + menu on mobile, global search on all sizes.
-             Sticky only below lg (the pre-existing mobile behavior); on desktop
-             the search bar scrolls away with the page. -->
-        <header class="sticky top-0 z-30 border-b-[3px] border-neutral bg-base-100/90 backdrop-blur lg:static">
-          <input id="global-search-toggle" type="checkbox" class="peer hidden" />
-          <div class="flex items-center justify-between gap-3 px-4 py-3.5 lg:hidden">
+        <!-- slim top bar (mobile only) -->
+        <header class="sticky top-0 z-30 border-b-[3px] border-neutral bg-base-100/90 backdrop-blur lg:hidden">
+          <div class="flex items-center justify-between gap-3 px-4 py-3.5">
             <a href="/" class="font-bangers text-[28px] leading-none tracking-wide text-primary">
               SANCTUM
             </a>
             <div class="flex items-center gap-2">
-              <label
-                for="global-search-toggle"
+              <button
+                type="button"
+                phx-click={open_search()}
                 class="flex size-11 cursor-pointer items-center justify-center border-2 border-neutral bg-base-300 text-base-content"
-                aria-label="Toggle search"
+                aria-label="Search"
               >
                 <.icon name="hero-magnifying-glass" class="size-5" />
-              </label>
+              </button>
               <label
                 for="app-drawer"
                 class="drawer-button flex size-11 cursor-pointer items-center justify-center border-2 border-neutral bg-base-300 text-base-content"
@@ -168,6 +166,18 @@ defmodule SanctumWeb.Layouts do
             </label>
           </div>
           <nav class="mt-6 flex flex-col flex-1 gap-1.5 lg:mt-4 lg:gap-1">
+            <button
+              type="button"
+              phx-click={open_search()}
+              class="hidden cursor-pointer items-center justify-between border-2 border-transparent px-3 py-2 font-barlow-condensed text-[15px] font-bold uppercase tracking-[0.1em] text-base-content/55 transition-colors hover:text-white lg:flex lg:px-2.5 lg:py-1.5 lg:text-[13px]"
+            >
+              <span class="flex items-center gap-2">
+                <.icon name="hero-magnifying-glass" class="size-3.5" /> Search
+              </span>
+              <kbd class="border border-base-content/20 px-1 font-ibm-mono text-[10px] normal-case tracking-normal text-base-content/35">
+                ⌘K
+              </kbd>
+            </button>
             <.sidebar_link navigate={~p"/browse"} active={@active_tab == :browse}>
               Packs
             </.sidebar_link>
@@ -238,6 +248,12 @@ defmodule SanctumWeb.Layouts do
   # navigating on mobile (handled by a window listener in app.js).
   defp close_drawer(js \\ %JS{}) do
     JS.dispatch(js, "sanctum:close-drawer", to: "#app-drawer")
+  end
+
+  # Opens the global search overlay (handled by the GlobalSearch hook, which
+  # listens for this event on window — same pattern as sanctum:close-drawer).
+  defp open_search(js \\ %JS{}) do
+    JS.dispatch(js, "sanctum:open-search")
   end
 
   attr :active, :boolean, default: false

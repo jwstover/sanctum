@@ -836,8 +836,26 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
-/* Global search bar (GlobalSearch hook): navigable result rows share the
-   qi-option chrome; gs-active mirrors qi-active for the virtual list. */
+/* Global search overlay (GlobalSearch hook): slide-up sheet on mobile,
+   static centered dialog on sm+. Navigable result rows share the qi-option
+   chrome; gs-active mirrors qi-active for the virtual list. */
+@keyframes gs-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.gs-sheet {
+  animation: gs-slide-up 0.22s ease-out;
+}
+@media (min-width: 640px) {
+  .gs-sheet {
+    animation: none;
+  }
+}
+
 .qi-kind-result {
   color: var(--color-base-content);
 }

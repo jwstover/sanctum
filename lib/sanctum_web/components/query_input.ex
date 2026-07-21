@@ -41,8 +41,17 @@ defmodule SanctumWeb.Components.QueryInput do
   slot :results,
     doc: """
     server-rendered results shown beneath the suggestions inside a shared
-    dropdown panel (the GlobalSearch pattern). Without it the suggestions
-    listbox drops down alone, exactly as on /cards and /decks.
+    panel (the GlobalSearch pattern). Without it the suggestions listbox
+    drops down alone, exactly as on /cards and /decks.
+    """
+
+  attr :panel_class, :string,
+    default:
+      "absolute left-0 right-0 top-full z-30 mt-1.5 hidden border-2 border-neutral bg-base-200 shadow-comic",
+    doc: """
+    chrome/positioning of the suggestions+results panel (only used with the
+    `results` slot). The default is an anchored dropdown; the search overlay
+    passes in-flow classes instead. Keep `hidden` — the hook owns visibility.
     """
 
   def query_input(assigns) do
@@ -101,11 +110,7 @@ defmodule SanctumWeb.Components.QueryInput do
           class="qi-listbox absolute left-0 right-0 top-full z-30 mt-1.5 hidden max-h-72 overflow-y-auto border-2 border-neutral bg-base-200 shadow-comic"
         >
         </div>
-        <div
-          :if={@results != []}
-          id={@id <> "-panel"}
-          class="absolute left-0 right-0 top-full z-30 mt-1.5 hidden border-2 border-neutral bg-base-200 shadow-comic"
-        >
+        <div :if={@results != []} id={@id <> "-panel"} class={@panel_class}>
           <div
             id={@id <> "-listbox"}
             phx-update="ignore"

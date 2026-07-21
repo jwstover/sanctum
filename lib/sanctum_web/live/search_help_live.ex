@@ -100,7 +100,8 @@ defmodule SanctumWeb.SearchHelpLive do
           <.section_title>Global search</.section_title>
           <div class="space-y-2.5 font-barlow text-[15px] leading-relaxed text-base-content/85">
             <p>
-              The search bar in the header (press <.q c="⌘K" /> anywhere) searches the whole
+              The Search button (in the sidebar or the mobile header — or press <.q c="⌘K" />
+              anywhere) opens a search palette that searches the whole
               site at once — cards, decks, heroes, packs, card sets, villains, and
               scenarios — with this same query language, grouped by type.
             </p>
