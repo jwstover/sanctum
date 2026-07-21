@@ -39,4 +39,27 @@ defmodule SanctumWeb.HomeLive.IndexTest do
 
     assert render_async(view) =~ "Daily Test Card"
   end
+
+  test "shows the flavor teaser without leaking the card name", %{conn: conn} do
+    card = create(Sanctum.Games.Card, attrs: %{base_code: "61002", code: "61002"})
+
+    # No image_url: the card qualifies for the flavor pool (:guessable) but
+    # not the card-of-the-day pool, so its name has no reason to render.
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: card.id,
+        name: "Secret Answer Card",
+        code: "61002",
+        type: :ally,
+        flavor: "With great power comes great flavor."
+      }
+    )
+
+    {:ok, view, _html} = live(conn, ~p"/")
+    html = render_async(view)
+
+    assert html =~ "With great power comes great flavor."
+    assert html =~ "Play Flavor Town"
+    refute html =~ "Secret Answer Card"
+  end
 end

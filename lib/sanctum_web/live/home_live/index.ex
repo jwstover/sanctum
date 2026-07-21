@@ -10,11 +10,12 @@ defmodule SanctumWeb.HomeLive.Index do
 
   require Ash.Query
 
+  import SanctumWeb.Components.CardSideTile, only: [card_side_tile: 1]
   import SanctumWeb.Components.StatTile, only: [stat_tile: 1]
 
   alias Sanctum.Decks.Stats
   alias Sanctum.Games.CardOfTheDay
-  alias SanctumWeb.Components.Card, as: CardComponent
+  alias SanctumWeb.Components.CardSideTile
   alias SanctumWeb.Components.DeckCards
   alias SanctumWeb.Timezone
 
@@ -38,9 +39,9 @@ defmodule SanctumWeb.HomeLive.Index do
         />
       </div>
 
-      <div class="mt-6 grid items-start gap-6 lg:grid-cols-[300px_1fr]">
+      <div class="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,480px)_1fr]">
         <!-- card of the day -->
-        <.panel class="p-4">
+        <section>
           <div class="flex items-baseline justify-between gap-3">
             <h2 class="font-anton text-lg uppercase tracking-[0.05em]">Card of the Day</h2>
             <span class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
@@ -50,48 +51,43 @@ defmodule SanctumWeb.HomeLive.Index do
 
           <div
             :if={@home == nil}
-            class="mt-3 aspect-[5/7] w-full animate-pulse border-2 border-neutral bg-base-300"
+            class="mt-3 h-[280px] animate-pulse border-2 border-neutral bg-base-300"
           />
 
-          <.link
-            :if={@home != nil && @home.card}
-            navigate={~p"/cards/#{@home.card.id}"}
-            class="group mt-3 block"
-          >
-            <div class={[
-              "w-full overflow-hidden border-2 border-neutral shadow-comic transition-transform group-hover:-translate-y-0.5",
-              (@home.card.landscape? && "aspect-[7/5]") || "aspect-[5/7]"
-            ]}>
-              <img
-                src={@home.card.image_url}
-                alt={@home.card.name}
-                class="h-full w-full object-cover"
-              />
-            </div>
-            <div class="mt-3 flex items-center gap-2">
-              <span class={["size-[8px] rounded-[1px]", @home.card.aspect_bg]}></span>
-              <span class="font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.12em] text-base-content/55">
-                {@home.card.type_label}
-              </span>
-            </div>
-            <div class="mt-1 font-anton text-[22px] uppercase leading-[0.95] group-hover:text-primary">
-              {@home.card.name}
-            </div>
-            <div
-              :if={@home.card.subname}
-              class="mt-0.5 font-barlow-condensed text-[13px] text-base-content/55"
-            >
-              {@home.card.subname}
-            </div>
-          </.link>
+          <div :if={@home != nil && @home.card} class="mt-3">
+            <.card_side_tile side={@home.card} navigate={~p"/cards/#{@home.card.card_id}"} />
+          </div>
 
-          <p
+          <.panel
             :if={@home != nil && @home.card == nil}
-            class="mt-3 font-barlow-condensed text-sm text-base-content/55"
+            class="mt-3 border-dashed !border-[#2a2a30] px-6 py-10 text-center !shadow-none"
           >
-            No cards in the vault yet.
-          </p>
-        </.panel>
+            <div class="font-bangers text-[26px] tracking-[0.02em] text-primary">
+              No cards in the vault yet
+            </div>
+          </.panel>
+
+          <!-- flavor town teaser: today's mystery quote, never the answer -->
+          <div
+            :if={@home == nil}
+            class="mt-6 h-[150px] animate-pulse border-2 border-neutral bg-base-300"
+          />
+
+          <div :if={@home != nil && @home.flavor}>
+            <h2 class="mt-6 font-anton text-lg uppercase tracking-[0.05em]">Flavor Town</h2>
+            <.panel class="mt-3 p-5">
+              <blockquote class="text-center font-barlow italic text-[15px] leading-relaxed text-base-content/80">
+                {Sanctum.CardText.to_html(@home.flavor)}
+              </blockquote>
+              <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/55">
+                  Can you name the card?
+                </span>
+                <.button variant="primary" navigate={~p"/flavor-town"}>Play Flavor Town</.button>
+              </div>
+            </.panel>
+          </div>
+        </section>
 
         <!-- latest decks -->
         <section>
@@ -208,6 +204,7 @@ defmodule SanctumWeb.HomeLive.Index do
      |> assign(:home, %{
        totals: %{decks: 0, this_month: 0, cards: 0, heroes: 0, villains: 0},
        card: nil,
+       flavor: nil,
        decks: []
      })
      |> put_flash(:error, "Couldn’t load the homepage: #{inspect(reason)}")}
@@ -217,8 +214,18 @@ defmodule SanctumWeb.HomeLive.Index do
     %{
       totals: Stats.totals(),
       card: card_view(CardOfTheDay.for_date()),
+      flavor: daily_flavor(),
       decks: Enum.map(newest_decks(), &deck_view(&1, timezone))
     }
+  end
+
+  # Only the quote leaves this function — the card's name is the Flavor Town
+  # answer, so it must never reach the template.
+  defp daily_flavor do
+    case CardOfTheDay.flavor_teaser() do
+      %{primary_side: %{flavor: flavor}} when is_binary(flavor) and flavor != "" -> flavor
+      _empty_pool -> nil
+    end
   end
 
   # The deck browser's :browse read in its default "Newest" order — the
@@ -230,22 +237,10 @@ defmodule SanctumWeb.HomeLive.Index do
     |> Map.get(:results)
   end
 
+  # The pool's dossier-tile display map. Daily-pool cards are never
+  # hero-ownership, so no hero-color palette is needed for the gradient.
   defp card_view(nil), do: nil
-
-  defp card_view(card) do
-    side = card.primary_side
-    aspect = DeckCards.display_aspect(side)
-
-    %{
-      id: card.id,
-      name: side.name,
-      subname: if(side.subname != side.name, do: side.subname),
-      type_label: side.type |> to_string() |> String.replace("_", " "),
-      aspect_bg: CardComponent.aspect_classes(aspect).bg,
-      image_url: side.image_url,
-      landscape?: CardComponent.landscape_type?(side.type)
-    }
-  end
+  defp card_view(card), do: CardSideTile.side_view(%{card.primary_side | card: card}, %{})
 
   defp deck_view(deck, timezone) do
     hero = deck.hero
