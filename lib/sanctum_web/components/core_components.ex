@@ -463,15 +463,12 @@ defmodule SanctumWeb.CoreComponents do
       <div class={[
         @actions != [] && "flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6"
       ]}>
-        <div class={["min-w-0", @actions != [] && "order-2 sm:order-1"]}>
+        <div class="min-w-0">
           <h1 class="font-anton text-3xl uppercase leading-[0.9] tracking-[0.005em] md:text-[42px]">
             {render_slot(@inner_block)}
           </h1>
         </div>
-        <div
-          :if={@actions != []}
-          class="order-1 flex flex-none items-center justify-end gap-2.5 sm:order-2"
-        >
+        <div :if={@actions != []} class="flex flex-none items-center justify-end gap-2.5">
           {render_slot(@actions)}
         </div>
       </div>
