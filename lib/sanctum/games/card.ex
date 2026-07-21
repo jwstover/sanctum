@@ -71,7 +71,8 @@ defmodule Sanctum.Games.Card do
     end
 
     # Random-pickable pool for the "Name That Card" guessing game: any card
-    # whose primary side has flavor text. Backs SanctumWeb.GuessLive.Play.
+    # whose primary side has flavor text, except main schemes (their names are
+    # scenario titles, not really guessable). Backs SanctumWeb.GuessLive.Play.
     # Official-only by intent — even published homebrew shouldn't pollute the
     # guessing pool (the read policy would otherwise admit it).
     read :guessable do
@@ -81,7 +82,8 @@ defmodule Sanctum.Games.Card do
 
       filter expr(
                origin == :official and
-                 not is_nil(primary_side.flavor) and primary_side.flavor != ""
+                 not is_nil(primary_side.flavor) and primary_side.flavor != "" and
+                 (is_nil(primary_side.type) or primary_side.type != :main_scheme)
              )
 
       pagination offset?: true, default_limit: 1, countable: true, required?: false

@@ -106,6 +106,7 @@ defmodule Sanctum.Games.CardGuess do
       type_hint(side),
       cost_resources_hint(side),
       traits_hint(side),
+      set_name_hint(card),
       text_hint(side)
     ]
     |> Enum.reject(&is_nil/1)
@@ -146,7 +147,7 @@ defmodule Sanctum.Games.CardGuess do
   end
 
   defp pool_hint(%Card{primary_side: %{ownership: :hero}}),
-    do: hint(:pool, "This is a hero-specific card.")
+    do: hint(:pool, "This is an identity-specific card.")
 
   defp pool_hint(%Card{primary_side: %{ownership: :basic}}),
     do: hint(:pool, "This is a Basic card — any deck can include it.")
@@ -191,7 +192,7 @@ defmodule Sanctum.Games.CardGuess do
   # already says everything.
   defp pool_word(%{type: :villain}), do: ""
   defp pool_word(%{aspect: aspect}) when not is_nil(aspect), do: aspect_label(aspect)
-  defp pool_word(%{ownership: :hero}), do: "hero-specific"
+  defp pool_word(%{ownership: :hero}), do: "identity-specific"
   defp pool_word(%{ownership: :basic}), do: "Basic"
   defp pool_word(%{ownership: :campaign}), do: "campaign"
   defp pool_word(%{ownership: :encounter}), do: "encounter"
@@ -244,7 +245,32 @@ defmodule Sanctum.Games.CardGuess do
 
   defp traits_hint(_), do: nil
 
-  # 8. The card's own rules text, name redacted — the final giveaway.
+  # 8. For scenario cards, the set the card belongs to — the villain or
+  # modular set by name. Skipped when the set name would hand over the card's
+  # own name (the villain card in its self-titled set).
+  defp set_name_hint(%Card{card_set: %{name: set_name, set_type: set_type}, primary_side: side})
+       when is_binary(set_name) and set_name != "" do
+    cond do
+      side.ownership not in @encounter_ownerships -> nil
+      names_overlap?(set_name, side.name) -> nil
+      true -> hint(:set_name, "It belongs to the “#{set_name}” #{set_kind(set_type)}.")
+    end
+  end
+
+  defp set_name_hint(_), do: nil
+
+  defp set_kind(:villain), do: "villain set"
+  defp set_kind(:modular), do: "modular set"
+  defp set_kind(:nemesis), do: "nemesis set"
+  defp set_kind(_), do: "set"
+
+  defp names_overlap?(set_name, card_name) do
+    a = normalize(set_name)
+    b = normalize(card_name)
+    a != "" and b != "" and (String.contains?(a, b) or String.contains?(b, a))
+  end
+
+  # 9. The card's own rules text, name redacted — the final giveaway.
   defp text_hint(%{text: text, name: name}) when is_binary(text) and text != "" do
     hint(:text, "Its text reads: “#{text |> strip_markup() |> redact_name(name)}”")
   end

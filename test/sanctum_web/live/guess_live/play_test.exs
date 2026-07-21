@@ -76,4 +76,29 @@ defmodule SanctumWeb.GuessLive.PlayTest do
 
     assert {:ok, _view, _html} = live(conn, ~p"/flavor-town")
   end
+
+  test "the reveal frames landscape types (side schemes) in landscape", %{conn: conn} do
+    card = create(Sanctum.Games.Card, attrs: %{base_code: "95002", code: "95002"})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: card.id,
+        code: "95002a",
+        name: "Alpha Flight Station",
+        type: :side_scheme,
+        ownership: :encounter,
+        aspect: nil,
+        cost: nil,
+        flavor: "Keep your sensors locked."
+      }
+    )
+
+    {:ok, view, _html} = live(conn, ~p"/flavor-town")
+    render_async(view)
+
+    html = view |> element(~s(button[phx-click="give-up"])) |> render_click()
+
+    assert html =~ "h-[200px] w-[280px]"
+    refute html =~ "h-[280px] w-[200px]"
+  end
 end

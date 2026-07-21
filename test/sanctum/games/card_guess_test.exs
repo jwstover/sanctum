@@ -108,21 +108,40 @@ defmodule Sanctum.Games.CardGuessTest do
       card = %Card{
         set: "rhino",
         pack: "core",
-        card_set: %CatalogCardSet{set_type: :villain},
+        card_set: %CatalogCardSet{set_type: :villain, name: "Rhino"},
         primary_side: side
       }
 
       hints = CardGuess.build_hints(card)
 
-      assert Enum.map(hints, & &1.key) == [:pack, :allegiance, :pool, :type]
+      assert Enum.map(hints, & &1.key) == [:pack, :allegiance, :pool, :type, :set_name]
       assert Enum.at(hints, 1).text == "This is an encounter card."
       assert Enum.at(hints, 2).text == "It's part of a villain's encounter set."
       assert Enum.at(hints, 3).text == "Specifically, it's an encounter treachery."
+      assert Enum.at(hints, 4).text == "It belongs to the “Rhino” villain set."
 
-      modular = %Card{card | card_set: %CatalogCardSet{set_type: :modular}}
+      modular = %Card{card | card_set: %CatalogCardSet{set_type: :modular, name: "Bomb Scare"}}
+      modular_hints = CardGuess.build_hints(modular)
 
-      assert Enum.find(CardGuess.build_hints(modular), &(&1.key == :pool)).text ==
+      assert Enum.find(modular_hints, &(&1.key == :pool)).text ==
                "It's part of a modular encounter set."
+
+      assert Enum.find(modular_hints, &(&1.key == :set_name)).text ==
+               "It belongs to the “Bomb Scare” modular set."
+    end
+
+    test "the set-name rung is skipped when it would give the card away" do
+      side = %CardSide{name: "Rhino", type: :villain, ownership: :encounter}
+
+      card = %Card{
+        pack: "core",
+        card_set: %CatalogCardSet{set_type: :villain, name: "Rhino"},
+        primary_side: side
+      }
+
+      keys = card |> CardGuess.build_hints() |> Enum.map(& &1.key)
+
+      refute :set_name in keys
     end
 
     test "an encounter card with no synced set skips the pool rung" do
@@ -177,6 +196,25 @@ defmodule Sanctum.Games.CardGuessTest do
 
       create(CardSide,
         attrs: %{card_id: card.id, code: "90002a", is_primary_side: true, flavor: nil}
+      )
+
+      assert CardGuess.random_guessable_card() == nil
+    end
+
+    test "main schemes are excluded even when they carry flavor text" do
+      card = create(Card, attrs: %{base_code: "90003", code: "90003"})
+
+      create(CardSide,
+        attrs: %{
+          card_id: card.id,
+          code: "90003a",
+          is_primary_side: true,
+          type: :main_scheme,
+          ownership: :encounter,
+          aspect: nil,
+          cost: nil,
+          flavor: "The city trembles."
+        }
       )
 
       assert CardGuess.random_guessable_card() == nil

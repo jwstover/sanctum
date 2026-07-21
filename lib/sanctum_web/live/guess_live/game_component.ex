@@ -57,7 +57,7 @@ defmodule SanctumWeb.GuessLive.GameComponent do
             Flavor text
           </div>
           <blockquote class="relative mt-3 font-barlow text-[23px] italic leading-[1.42] text-base-content/90 [text-wrap:balance] sm:text-[20px] sm:leading-[1.5]">
-            “{@card.primary_side.flavor}”
+            {@card.primary_side.flavor}
           </blockquote>
         </.panel>
 
@@ -152,7 +152,11 @@ defmodule SanctumWeb.GuessLive.GameComponent do
           </div>
 
           <div class="mt-5 flex flex-col items-center gap-3">
-            <div class="h-[280px] w-[200px] border-2 border-neutral shadow-comic">
+            <div class={[
+              "border-2 border-neutral shadow-comic",
+              (landscape_type?(@card.primary_side.type) && "h-[200px] w-[280px]") ||
+                "h-[280px] w-[200px]"
+            ]}>
               <.mc_card
                 name={@card.primary_side.name}
                 aspect={reveal_aspect(@card)}
