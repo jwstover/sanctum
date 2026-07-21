@@ -32,6 +32,7 @@ import DescriptionEditor from "./hooks/description-editor";
 import DragDrop from "./hooks/drag-drop";
 import GlobalSearch from "./hooks/global-search";
 import LayoutHand from "./hooks/layout-hand";
+import PaneDrag from "./hooks/pane-drag";
 import QueryInput from "./hooks/query-input";
 import ResponsivePlaceholder from "./hooks/responsive-placeholder";
 import ScrollRestore from "./hooks/scroll-restore";
@@ -55,7 +56,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone},
-  hooks: {...colocatedHooks, CardDrag, CardLinkPreview, Chart, DescriptionEditor, DragDrop, GlobalSearch, LayoutHand, QueryInput, ResponsivePlaceholder, ScrollRestore},
+  hooks: {...colocatedHooks, CardDrag, CardLinkPreview, Chart, DescriptionEditor, DragDrop, GlobalSearch, LayoutHand, PaneDrag, QueryInput, ResponsivePlaceholder, ScrollRestore},
 })
 
 // Uncheck the daisyUI drawer toggle when a sidebar link is clicked, so the

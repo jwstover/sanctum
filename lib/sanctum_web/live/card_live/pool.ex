@@ -9,17 +9,13 @@ defmodule SanctumWeb.CardLive.Pool do
   require Ash.Query
 
   import SanctumWeb.Components.CardSideTile
+  import SanctumWeb.Components.FilterSheet
   import SanctumWeb.Components.QueryInput
 
+  alias Sanctum.Search.FormSync
   alias SanctumWeb.InfiniteScroll
 
   @page_size 24
-
-  @aspects SanctumWeb.CardFilters.aspect_options()
-  @types SanctumWeb.CardFilters.type_options()
-
-  @aspect_keys Enum.map(@aspects, &elem(&1, 0))
-  @type_keys Enum.map(@types, &elem(&1, 0))
 
   @impl true
   def render(assigns) do
@@ -34,19 +30,22 @@ defmodule SanctumWeb.CardLive.Pool do
       </.header>
 
       <!-- controls -->
-      <div class="mb-3.5">
-        <form id="card-search" phx-change="search" class="flex w-full">
-          <.query_input
-            id="card-query"
-            value={@query}
-            name="query"
-            placeholder="Search cards — try aspect:aggression cost<=2 type:ally"
-            placeholder_short="Search cards — try cost<=2"
-            registry={Sanctum.Search.CardFields}
-            diagnostics={@search_diagnostics}
-            help_path={~p"/search-help" <> "#cards"}
-          />
-        </form>
+      <div class="mb-6">
+        <div class="flex w-full items-start gap-2">
+          <form id="card-search" phx-change="search" class="flex min-w-0 flex-1">
+            <.query_input
+              id="card-query"
+              value={@query}
+              name="query"
+              placeholder="Search cards — try aspect:aggression cost<=2 type:ally"
+              placeholder_short="Search cards — try cost<=2"
+              registry={Sanctum.Search.CardFields}
+              diagnostics={@search_diagnostics}
+              help_path={~p"/search-help" <> "#cards"}
+            />
+          </form>
+          <.filter_button count={@filter_count} class="min-h-[46px] flex-none sm:min-h-[46px]" />
+        </div>
         <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
           <.icon
             :if={@loading?}
@@ -60,30 +59,14 @@ defmodule SanctumWeb.CardLive.Pool do
         </div>
       </div>
 
-      <!-- aspect filters -->
-      <div class="mb-2.5 flex flex-wrap gap-1.5">
-        <.filter_pill
-          :for={{key, label, dot_class} <- @aspect_options}
-          active={@aspect == key}
-          dot_class={dot_class}
-          phx-click="filter_aspect"
-          phx-value-key={key}
-        >
-          {label}
-        </.filter_pill>
-      </div>
-
-      <!-- type filters -->
-      <div class="mb-6 flex flex-wrap gap-1.5">
-        <.filter_pill
-          :for={{key, label} <- @type_options}
-          active={@type == key}
-          phx-click="filter_type"
-          phx-value-key={key}
-        >
-          {label}
-        </.filter_pill>
-      </div>
+      <.filter_sheet
+        id="card-filters"
+        open?={@filters_open?}
+        query={@query}
+        registry={Sanctum.Search.CardFields}
+        count={@count}
+        hide={(@current_user && []) || ["owned"]}
+      />
 
       <!-- first-load skeletons: shown until the async load delivers a count -->
       <div
@@ -150,13 +133,11 @@ defmodule SanctumWeb.CardLive.Pool do
       |> assign(:page_title, "Card Pool")
       |> assign(:query, "")
       |> assign(:search_diagnostics, [])
-      |> assign(:aspect, "all")
-      |> assign(:type, "all")
+      |> assign(:filters_open?, false)
+      |> assign(:filter_count, 0)
       # nil until the first async load lands — drives the loading/skeleton UI.
       |> assign(:total, nil)
       |> assign(:count, nil)
-      |> assign(:aspect_options, @aspects)
-      |> assign(:type_options, @types)
       |> assign(:offset, 0)
       |> assign(:end_of_timeline?, false)
       |> assign(:req_id, 0)
@@ -168,34 +149,55 @@ defmodule SanctumWeb.CardLive.Pool do
     {:ok, socket}
   end
 
-  # Filters live in the URL (filter events push_patch here) so back/forward
+  # Filters live in the URL — as the query string itself — so back/forward
   # and shared links restore them. The initial data load also starts here —
   # only on the connected mount (req_id == 0 guards the first pass); the
   # static render just paints the shell.
   @impl true
   def handle_params(params, _uri, socket) do
     query = params["query"] || ""
-    aspect = if params["aspect"] in @aspect_keys, do: params["aspect"], else: "all"
-    type = if params["type"] in @type_keys, do: params["type"], else: "all"
 
-    changed? =
-      query != socket.assigns.query or aspect != socket.assigns.aspect or
-        type != socket.assigns.type
+    case legacy_filter_query(query, params) do
+      nil ->
+        changed? = query != socket.assigns.query
 
-    socket =
-      assign(socket,
-        query: query,
-        aspect: aspect,
-        type: type,
-        search_diagnostics: search_diagnostics(query)
-      )
+        socket =
+          assign(socket,
+            query: query,
+            search_diagnostics: search_diagnostics(query),
+            filter_count: FormSync.active_count(query, Sanctum.Search.CardFields)
+          )
 
-    socket =
-      if connected?(socket) and (changed? or socket.assigns.req_id == 0),
-        do: reset_and_load(socket),
-        else: socket
+        socket =
+          if connected?(socket) and (changed? or socket.assigns.req_id == 0),
+            do: reset_and_load(socket),
+            else: socket
 
-    {:noreply, socket}
+        {:noreply, socket}
+
+      translated ->
+        {:noreply,
+         push_patch(socket, to: pool_path(socket.assigns, query: translated), replace: true)}
+    end
+  end
+
+  # Pre-filter-sheet URLs carried ?aspect= / ?type= params. Fold them into
+  # the query string once and re-patch to the canonical URL.
+  defp legacy_filter_query(query, params) do
+    fields =
+      [{"aspect", params["aspect"]}, {"type", params["type"]}]
+      |> Enum.filter(fn {name, value} -> legacy_value?(name, value) end)
+      |> Map.new(fn {name, value} -> {name, [value]} end)
+
+    if fields == %{},
+      do: nil,
+      else: FormSync.update(query, Sanctum.Search.CardFields, fields)
+  end
+
+  defp legacy_value?(_name, value) when value in [nil, "all"], do: false
+
+  defp legacy_value?(name, value) do
+    value in Sanctum.Search.Registry.lookup(Sanctum.Search.CardFields, name).values
   end
 
   # `replace: true` so typing doesn't spam a history entry per keystroke.
@@ -213,12 +215,18 @@ defmodule SanctumWeb.CardLive.Pool do
 
   def handle_event("suggest", _params, socket), do: {:reply, %{items: []}, socket}
 
-  def handle_event("filter_aspect", %{"key" => key}, socket) do
-    {:noreply, push_patch(socket, to: pool_path(socket.assigns, aspect: key))}
+  def handle_event("toggle_filters", _params, socket) do
+    {:noreply, update(socket, :filters_open?, &(!&1))}
   end
 
-  def handle_event("filter_type", %{"key" => key}, socket) do
-    {:noreply, push_patch(socket, to: pool_path(socket.assigns, type: key))}
+  # A filter-sheet change: splice the submitted controls back into the query
+  # string and re-enter the normal search path (URL → handle_params → load),
+  # which also pushes the rewritten query into the search input.
+  def handle_event("filters_change", params, socket) do
+    fields = FormSync.fields_from_params(params, Sanctum.Search.CardFields)
+    query = FormSync.update(socket.assigns.query, Sanctum.Search.CardFields, fields)
+
+    {:noreply, push_patch(socket, to: pool_path(socket.assigns, query: query), replace: true)}
   end
 
   def handle_event("restore-scroll", %{"offset" => offset}, socket) do
@@ -307,15 +315,10 @@ defmodule SanctumWeb.CardLive.Pool do
     end)
   end
 
-  # /cards path carrying the current (or overridden) filters, omitting defaults.
+  # /cards path carrying the current (or overridden) query, omitted when empty.
   defp pool_path(assigns, overrides) do
     f = Map.merge(filters(assigns), Map.new(overrides))
-
-    params =
-      Enum.reject(
-        [query: f.query, aspect: f.aspect, type: f.type],
-        fn {k, v} -> if k == :query, do: v == "", else: v == "all" end
-      )
+    params = if f.query == "", do: [], else: [query: f.query]
 
     ~p"/cards?#{params}"
   end
@@ -331,8 +334,10 @@ defmodule SanctumWeb.CardLive.Pool do
     |> then(fn s -> if is_nil(s.assigns.total), do: assign(s, :total, count), else: s end)
   end
 
+  # The :browse aspect/type arguments are superseded by the query string
+  # ("all" = no filter); they remain until the action drops them.
   defp filters(assigns) do
-    %{query: assigns.query, aspect: assigns.aspect, type: assigns.type}
+    %{query: assigns.query, aspect: "all", type: "all"}
   end
 
   # Advisory parse/compile problems shown under the query input ("unknown
