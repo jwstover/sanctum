@@ -48,6 +48,7 @@ defmodule Sanctum.MixProject do
   defp deps do
     [
       {:bcrypt_elixir, "~> 3.0"},
+      {:tz, "~> 0.28"},
       {:hammer, "~> 7.4"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},

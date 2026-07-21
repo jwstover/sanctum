@@ -143,6 +143,11 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# IANA timezone database for DateTime.shift_zone/2 — timestamps are stored in
+# UTC and shifted to the browser's zone at render time (SanctumWeb.Timezone).
+# `tz` compiles the IANA data in and never fetches at runtime.
+config :elixir, :time_zone_database, Tz.TimeZoneDatabase
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

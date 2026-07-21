@@ -6,6 +6,7 @@ defmodule SanctumWeb.GameLive.Index do
   on_mount {SanctumWeb.LiveUserAuth, :live_user_optional}
 
   alias Sanctum.Games
+  alias SanctumWeb.Timezone
 
   def mount(_params, _session, socket) do
     # nil until loaded — drives the loading skeleton. Anonymous visitors have no
@@ -78,7 +79,11 @@ defmodule SanctumWeb.GameLive.Index do
             {game.game_villain.villain.villain_name}
           </span>
 
-          <span class="text-sm">{Calendar.strftime(game.inserted_at, "%a %b %d %H:%M %p")}</span>
+          <span class="text-sm">
+            {game.inserted_at
+            |> Timezone.to_local(@timezone)
+            |> Calendar.strftime("%a %b %-d %I:%M %p")}
+          </span>
 
           <div class="flex flex-row justify-end gap-2">
             <button class="btn btn-ghost btn-circle">
