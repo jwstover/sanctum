@@ -123,11 +123,7 @@ defmodule SanctumWeb.CardLive.Form do
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
-  # Stats are stored as Sanctum.Games.Stat structs; the number inputs edit only
-  # the value (a bare number casts to a flat, unstarred stat).
-  defp stat_value(%Sanctum.Games.Stat{value: value}), do: value
-  defp stat_value(value) when is_integer(value) or is_binary(value), do: value
-  defp stat_value(_), do: nil
+  defdelegate stat_value(value), to: Sanctum.Games.Stat, as: :input_value
 
   defp assign_forms(%{assigns: %{card: card}} = socket) do
     card_form =
