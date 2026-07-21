@@ -117,7 +117,37 @@ export default {
   syncOverlay() {
     if (!this.overlay) return
     this.overlay.classList.toggle("hidden", !this.overlayOpen)
-    document.body.classList.toggle("overflow-hidden", this.overlayOpen)
+    if (this.overlayOpen && !this.scrollLocked) this.lockScroll()
+    if (!this.overlayOpen && this.scrollLocked) this.unlockScroll(true)
+  },
+
+  // `overflow: hidden` on <body> doesn't stop touch scrolling on iOS — the
+  // page behind the sheet keeps panning. Pinning the body with position:fixed
+  // (offset to the current scroll) is the reliable lock; the offset is
+  // restored on close.
+  lockScroll() {
+    this.scrollLocked = true
+    this.savedScrollY = window.scrollY
+    const style = document.body.style
+    style.position = "fixed"
+    style.top = `-${this.savedScrollY}px`
+    style.left = "0"
+    style.right = "0"
+    style.width = "100%"
+  },
+
+  // `restore` scrolls back to the pre-lock position — wanted when the user
+  // closes the overlay in place, not when the hook dies mid-navigation (the
+  // next page starts fresh).
+  unlockScroll(restore) {
+    this.scrollLocked = false
+    const style = document.body.style
+    style.position = ""
+    style.top = ""
+    style.left = ""
+    style.right = ""
+    style.width = ""
+    if (restore) window.scrollTo(0, this.savedScrollY ?? 0)
   },
 
   // -- results section ---------------------------------------------------------

@@ -44,7 +44,11 @@ defmodule SanctumWeb.GlobalSearchComponent do
       aria-label="Site search"
     >
       <div class="absolute inset-0 bg-black/60" data-gs-close aria-hidden="true"></div>
-      <div class="gs-sheet absolute inset-x-0 bottom-0 max-h-[85vh] border-t-[3px] border-neutral bg-base-100 p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12vh] sm:w-[min(92vw,620px)] sm:-translate-x-1/2 sm:border-2 sm:shadow-comic-lg">
+      <%!-- Mobile: a fixed-height bottom sheet (dvh so browser chrome is
+           accounted for) — it doesn't grow/shrink with results, and the
+           results region scrolls inside it. Desktop: centered dialog sized
+           by content. --%>
+      <div class="gs-sheet absolute inset-x-0 bottom-0 h-[85dvh] overflow-hidden border-t-[3px] border-neutral bg-base-100 p-3 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12vh] sm:h-auto sm:w-[min(92vw,620px)] sm:-translate-x-1/2 sm:overflow-visible sm:border-2 sm:shadow-comic-lg">
         <form
           id="global-search-form"
           phx-change="search"
@@ -62,7 +66,7 @@ defmodule SanctumWeb.GlobalSearchComponent do
             placeholder="Search cards, decks, heroes… (try in:cards cost<=2)"
             placeholder_short="Search…"
             help_path={~p"/search-help"}
-            panel_class="mt-3 hidden border-t-2 border-line"
+            panel_class="mt-3 hidden max-h-[calc(85dvh-6rem)] overflow-y-auto overscroll-contain border-t-2 border-line sm:max-h-[60vh]"
           >
             <:results>
               <%!-- Navigable rows carry server-rendered ids (for

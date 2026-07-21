@@ -110,15 +110,19 @@ defmodule SanctumWeb.Components.QueryInput do
           class="qi-listbox absolute left-0 right-0 top-full z-30 mt-1.5 hidden max-h-72 overflow-y-auto border-2 border-neutral bg-base-200 shadow-comic"
         >
         </div>
+        <%!-- The panel is the single scroll region (see panel_class);
+             suggestions and results scroll together. The inner bottom padding
+             keeps the last row clear of the phone's screen edge / home
+             indicator. --%>
         <div :if={@results != []} id={@id <> "-panel"} class={@panel_class}>
           <div
             id={@id <> "-listbox"}
             phx-update="ignore"
             role="listbox"
-            class="qi-listbox hidden max-h-56 overflow-y-auto border-b-2 border-line"
+            class="qi-listbox hidden border-b-2 border-line"
           >
           </div>
-          <div class="max-h-[60vh] overflow-y-auto">
+          <div class="pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:pb-0">
             {render_slot(@results)}
           </div>
         </div>
