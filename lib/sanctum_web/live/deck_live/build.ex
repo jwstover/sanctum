@@ -646,7 +646,7 @@ defmodule SanctumWeb.DeckLive.Build do
             phx-update="stream"
             phx-viewport-bottom={!@end_of_timeline? && "next-page"}
             class={[
-              "grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] items-start gap-2.5 pb-24 lg:pb-6",
+              "grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] items-start gap-2.5 pb-32 lg:pb-6",
               @loading? && @count != nil && "opacity-60 transition-opacity"
             ]}
           >
@@ -764,11 +764,20 @@ defmodule SanctumWeb.DeckLive.Build do
         </.panel>
       </div>
 
+      <!-- scrim behind the open pane; tapping it closes -->
+      <div
+        :if={@tab == "cards" && @panel_open?}
+        phx-click="toggle_panel"
+        aria-hidden="true"
+        class="fixed inset-0 z-40 bg-black/60 lg:hidden"
+      >
+      </div>
+
       <!-- mobile slide-up deck pane (never a modal: the page stays live behind it) -->
       <div
         id="deck-panel-mobile"
         class={[
-          "fixed inset-x-0 bottom-0 z-30 max-h-[75dvh] overflow-y-auto border-t-2 border-neutral bg-base-100",
+          "fixed inset-x-0 bottom-0 z-50 max-h-[75dvh] overflow-y-auto border-t-2 border-neutral bg-base-100",
           "transition-transform duration-200 lg:hidden",
           (@tab == "cards" && @panel_open? && "translate-y-0") || "translate-y-full"
         ]}
@@ -795,25 +804,25 @@ defmodule SanctumWeb.DeckLive.Build do
       <!-- persistent mobile deck bar (cards tab only — the editor needs the space) -->
       <div
         :if={@tab == "cards"}
-        class="fixed inset-x-0 bottom-0 z-20 border-t-2 border-neutral bg-base-100/95 px-4 py-2.5 backdrop-blur lg:hidden"
+        class="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-neutral bg-base-200 px-4 py-3 shadow-[0_-6px_18px_rgba(0,0,0,.65)] lg:hidden"
       >
         <button
           type="button"
           phx-click="toggle_panel"
-          class="flex w-full cursor-pointer items-center justify-between gap-3"
+          class="flex min-h-[48px] w-full cursor-pointer items-center justify-between gap-3"
         >
-          <span class="font-anton text-[15px] uppercase tracking-[0.05em]">
+          <span class="font-anton text-[19px] uppercase tracking-[0.05em]">
             <span class={deck_size_class(deck_size(@entries))}>{deck_size(@entries)}</span>
             <span class="text-base-content/45">/ 40–50 cards</span>
           </span>
           <span
             :if={@issues != []}
-            class="inline-flex items-center gap-1 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] text-warning"
+            class="inline-flex items-center gap-1 font-barlow-condensed text-[15px] font-bold uppercase tracking-[0.07em] text-warning"
           >
-            <.icon name="hero-exclamation-triangle" class="size-3.5" /> {length(@issues)}
+            <.icon name="hero-exclamation-triangle" class="size-4" /> {length(@issues)}
           </span>
-          <span class="inline-flex items-center gap-1 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/70">
-            Deck <.icon name="hero-chevron-up" class="size-3.5" />
+          <span class="inline-flex items-center gap-1.5 border-2 border-neutral bg-primary px-3.5 py-2 font-barlow-condensed text-[14px] font-bold uppercase tracking-[0.08em] text-primary-content shadow-comic-sm">
+            Deck <.icon name="hero-chevron-up" class="size-4" />
           </span>
         </button>
       </div>
