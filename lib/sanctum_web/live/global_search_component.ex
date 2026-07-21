@@ -46,9 +46,11 @@ defmodule SanctumWeb.GlobalSearchComponent do
       <div class="absolute inset-0 bg-black/60" data-gs-close aria-hidden="true"></div>
       <%!-- Mobile: a fixed-height bottom sheet (dvh so browser chrome is
            accounted for) — it doesn't grow/shrink with results, and the
-           results region scrolls inside it. Desktop: centered dialog sized
-           by content. --%>
-      <div class="gs-sheet absolute inset-x-0 bottom-0 h-[85dvh] overflow-hidden border-t-[3px] border-neutral bg-base-100 p-3 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12vh] sm:h-auto sm:w-[min(92vw,620px)] sm:-translate-x-1/2 sm:overflow-visible sm:border-2 sm:shadow-comic-lg">
+           results region scrolls inside it. max-h-full matters when the
+           on-screen keyboard is up: the hook shrinks the overlay to the
+           visual viewport, and the sheet must not poke above it. Desktop:
+           centered dialog sized by content. --%>
+      <div class="gs-sheet absolute inset-x-0 bottom-0 h-[85dvh] max-h-full overflow-hidden border-t-[3px] border-neutral bg-base-100 p-3 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12vh] sm:h-auto sm:max-h-none sm:w-[min(92vw,620px)] sm:-translate-x-1/2 sm:overflow-visible sm:border-2 sm:shadow-comic-lg">
         <form
           id="global-search-form"
           phx-change="search"
@@ -67,7 +69,7 @@ defmodule SanctumWeb.GlobalSearchComponent do
             placeholder_short="Search…"
             help_path={~p"/search-help"}
             debounce={350}
-            panel_class="mt-3 hidden max-h-[calc(85dvh-6rem)] overflow-y-auto overscroll-contain border-t-2 border-line sm:max-h-[60vh]"
+            panel_class="mt-3 hidden max-h-[calc(min(85dvh,var(--gs-vh,100dvh))-6rem)] overflow-y-auto overscroll-contain border-t-2 border-line sm:max-h-[60vh]"
           >
             <:results>
               <%!-- Navigable rows carry server-rendered ids (for

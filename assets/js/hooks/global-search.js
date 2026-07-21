@@ -67,6 +67,8 @@ export default {
       }
     }
     window.addEventListener("keydown", this.onGlobalKey)
+
+    this.onViewport = () => this.syncViewport()
   },
 
   // LiveView patched the component (new result groups, cleared input, …):
@@ -77,12 +79,15 @@ export default {
     this.scanResults()
     this.syncOverlay()
     this.syncPanel()
+    this.syncViewport()
   },
 
   destroyed() {
     clearTimeout(this.suggestTimer)
     window.removeEventListener("sanctum:open-search", this.onOpenEvent)
     window.removeEventListener("keydown", this.onGlobalKey)
+    window.visualViewport?.removeEventListener("resize", this.onViewport)
+    window.visualViewport?.removeEventListener("scroll", this.onViewport)
     // Navigating from a result destroys the hook with the overlay still
     // open — release the body lock (without scroll restore: the next page
     // owns its own position) or the new page can't scroll at all.
@@ -102,7 +107,9 @@ export default {
     this.syncOverlay()
     this.syncPanel()
     this.animateSheetIn()
-    this.input.focus()
+    window.visualViewport?.addEventListener("resize", this.onViewport)
+    window.visualViewport?.addEventListener("scroll", this.onViewport)
+    this.input.focus({preventScroll: true})
     this.input.select()
     this.queueSuggest()
   },
@@ -130,6 +137,9 @@ export default {
     this.listbox.textContent = ""
     this.syncOverlay()
     this.syncPanel()
+    window.visualViewport?.removeEventListener("resize", this.onViewport)
+    window.visualViewport?.removeEventListener("scroll", this.onViewport)
+    this.syncViewport()
     this.input.blur()
   },
 
@@ -167,6 +177,31 @@ export default {
     style.right = ""
     style.width = ""
     if (restore) window.scrollTo(0, this.savedScrollY ?? 0)
+  },
+
+  // The mobile keyboard doesn't resize the layout viewport — it shrinks and
+  // scrolls the *visual* viewport while position:fixed elements stay glued
+  // to the layout viewport, so the sheet (input included) slides off the top
+  // of the screen. While the overlay is open, pin it to the visual viewport
+  // instead: offset it by the visual scroll and cap its height. --gs-vh lets
+  // the sheet/results CSS shrink to the space left above the keyboard.
+  syncViewport() {
+    if (!this.overlay) return
+    const vv = window.visualViewport
+    const layoutHeight = document.documentElement.clientHeight
+    const shifted = vv && (vv.offsetTop > 0 || vv.height < layoutHeight - 1)
+    const style = this.overlay.style
+    if (this.overlayOpen && shifted) {
+      style.transform = `translateY(${vv.offsetTop}px)`
+      style.height = `${vv.height}px`
+      style.bottom = "auto"
+      style.setProperty("--gs-vh", `${vv.height}px`)
+    } else {
+      style.transform = ""
+      style.height = ""
+      style.bottom = ""
+      style.removeProperty("--gs-vh")
+    }
   },
 
   // -- results section ---------------------------------------------------------
