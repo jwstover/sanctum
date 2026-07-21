@@ -836,6 +836,26 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
+/* Card-mention picker (CardMention hook): qi-option rows with a card thumb
+   and a stacked name/detail column. */
+.mention-option {
+  align-items: center;
+}
+.mention-thumb {
+  width: 2rem;
+  aspect-ratio: 63 / 88;
+  flex: none;
+  object-fit: cover;
+  border: 1px solid var(--color-line);
+  background: var(--color-base-300);
+}
+.mention-text {
+  min-width: 0;
+}
+.mention-text .qi-option-detail {
+  display: block;
+}
+
 /* Global search overlay (GlobalSearch hook): slide-up sheet on mobile,
    static centered dialog on sm+. Navigable result rows share the qi-option
    chrome; gs-active mirrors qi-active for the virtual list. */

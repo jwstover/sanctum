@@ -312,6 +312,19 @@ defmodule SanctumWeb.DeckLive.BuildTest do
                "**Web-slinging** combos"
     end
 
+    # `{:reply, ...}` payloads aren't inspectable through LiveViewTest, but
+    # exercising the handler still covers the browse query and item mapping
+    # (a bad filter or missing card load would crash the view).
+    test "card_mention event answers the description editor's picker", %{conn: conn} do
+      player_card("Web-Shooter")
+      %{lv: lv} = mount_builder(conn, "build_lv_n")
+      render_async(lv)
+
+      assert render_hook(lv, "card_mention", %{"q" => "web-sho"})
+      assert render_hook(lv, "card_mention", %{"q" => "  "})
+      assert render_hook(lv, "card_mention", %{"bogus" => true})
+    end
+
     test "cancel backs out of the delete confirm", %{conn: conn} do
       %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_l")
       render_async(lv)

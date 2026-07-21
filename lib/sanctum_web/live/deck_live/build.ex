@@ -145,6 +145,17 @@ defmodule SanctumWeb.DeckLive.Build do
 
   def handle_event("suggest", _params, socket), do: {:reply, %{items: []}, socket}
 
+  # Card-mention autocomplete for the description editor: `#query` in the
+  # textarea (CardMention hook, same trigger as MarvelCDB's editor) searches
+  # every catalog face — writeups reference villains and encounter cards, not
+  # just the buildable pool — and the picker inserts the `[Name](/card/CODE)`
+  # markdown that Writeup.render already resolves.
+  def handle_event("card_mention", %{"q" => q}, socket) when is_binary(q) do
+    {:reply, %{items: mention_items(q, socket.assigns.current_user)}, socket}
+  end
+
+  def handle_event("card_mention", _params, socket), do: {:reply, %{items: []}, socket}
+
   def handle_event("filter_aspect", %{"key" => key}, socket) when key in @aspect_keys do
     {:noreply, socket |> assign(:aspect, key) |> start_load(0, reset: true)}
   end
@@ -499,6 +510,28 @@ defmodule SanctumWeb.DeckLive.Build do
 
   defp search_diagnostics(_query), do: []
 
+  defp mention_items(q, actor) do
+    if String.trim(q) == "" do
+      []
+    else
+      page =
+        Sanctum.Games.CardSide
+        |> Ash.Query.for_read(:browse, %{query: q}, actor: actor)
+        |> Ash.read!(page: [limit: 8])
+
+      Enum.map(page.results, fn side ->
+        %{
+          name: side.name,
+          # Some catalog entries repeat the name as subname; drop the echo.
+          subname: side.subname != side.name && side.subname,
+          type: side.type && Phoenix.Naming.humanize(side.type),
+          code: side.card.base_code,
+          image_url: side.image_url
+        }
+      end)
+    end
+  end
+
   # -- render -----------------------------------------------------------------
 
   @impl true
@@ -720,12 +753,22 @@ defmodule SanctumWeb.DeckLive.Build do
           id="description-form"
           phx-change="description_change"
         >
-          <textarea
-            name="description"
-            phx-debounce="300"
-            placeholder="Write up your deck — how it plays, key combos, mulligan advice… Markdown supported; link cards with [Name](/card/01088)."
-            class="min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-[13px] leading-relaxed text-base-content outline-none focus:border-primary"
-          >{@description_draft}</textarea>
+          <div id="description-editor" phx-hook="CardMention" class="relative">
+            <textarea
+              name="description"
+              phx-debounce="300"
+              placeholder="Write up your deck — how it plays, key combos, mulligan advice… Markdown supported; type #cardname to link a card."
+              class="min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-[13px] leading-relaxed text-base-content outline-none focus:border-primary"
+            >{@description_draft}</textarea>
+            <div
+              data-mention-listbox
+              phx-update="ignore"
+              id="description-mention-listbox"
+              role="listbox"
+              class="absolute z-30 hidden max-h-80 w-80 max-w-full overflow-y-auto border-2 border-neutral bg-base-200 shadow-comic"
+            >
+            </div>
+          </div>
         </form>
 
         <.panel :if={@description_mode == "preview"} class="min-w-0 p-5">
