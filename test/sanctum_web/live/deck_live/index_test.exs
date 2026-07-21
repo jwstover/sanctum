@@ -70,6 +70,37 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     assert html =~ "Cosmic Blast"
   end
 
+  test "deck dates render in the browser's timezone", %{conn: conn} do
+    deck = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+
+    # 02:35 UTC on the 21st is still the evening of the 20th in Chicago.
+    deck
+    |> Ash.Changeset.for_update(:set_mcdb_dates, %{mcdb_date_update: ~U[2026-07-21 02:35:12Z]})
+    |> Ash.update!(authorize?: false)
+
+    {:ok, view, _html} =
+      conn
+      |> put_connect_params(%{"timezone" => "America/Chicago"})
+      |> live(~p"/decks")
+
+    assert render_async(view) =~ "Jul 20, 2026"
+  end
+
+  test "an unknown browser timezone falls back to UTC", %{conn: conn} do
+    deck = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+
+    deck
+    |> Ash.Changeset.for_update(:set_mcdb_dates, %{mcdb_date_update: ~U[2026-07-21 02:35:12Z]})
+    |> Ash.update!(authorize?: false)
+
+    {:ok, view, _html} =
+      conn
+      |> put_connect_params(%{"timezone" => "Not/AZone"})
+      |> live(~p"/decks")
+
+    assert render_async(view) =~ "Jul 21, 2026"
+  end
+
   test "search narrows the feed", %{conn: conn} do
     make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
     make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression])

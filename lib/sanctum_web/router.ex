@@ -49,7 +49,8 @@ defmodule SanctumWeb.Router do
     ash_authentication_live_session :authenticated_routes,
       on_mount: [
         {SanctumWeb.Presence, :track},
-        {SanctumWeb.DeployNotice, :notify}
+        {SanctumWeb.DeployNotice, :notify},
+        {SanctumWeb.Timezone, :assign}
       ] do
       # in each liveview, add one of the following at the top of the module:
       #
@@ -101,7 +102,8 @@ defmodule SanctumWeb.Router do
       on_mount: [
         {SanctumWeb.LiveUserAuth, :live_admin_required},
         {SanctumWeb.Presence, :track},
-        {SanctumWeb.DeployNotice, :notify}
+        {SanctumWeb.DeployNotice, :notify},
+        {SanctumWeb.Timezone, :assign}
       ] do
       # Admin landing page — system health + links to admin surfaces.
       live "/admin", AdminLive.Index, :index

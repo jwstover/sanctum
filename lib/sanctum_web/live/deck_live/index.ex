@@ -12,6 +12,7 @@ defmodule SanctumWeb.DeckLive.Index do
 
   alias SanctumWeb.Components.DeckCards
   alias SanctumWeb.InfiniteScroll
+  alias SanctumWeb.Timezone
 
   @page_size 24
 
@@ -357,7 +358,9 @@ defmodule SanctumWeb.DeckLive.Index do
         |> maybe_assign_hero_options(hero_options)
         |> maybe_assign_total(total)
         |> maybe_assign_count(reset?, page.count)
-        |> stream(:decks, Enum.map(page.results, &deck_view/1), reset: reset?)
+        |> stream(:decks, Enum.map(page.results, &deck_view(&1, socket.assigns.timezone)),
+          reset: reset?
+        )
 
       {:noreply, InfiniteScroll.maybe_confirm_scroll_restore(socket)}
     else
@@ -476,7 +479,7 @@ defmodule SanctumWeb.DeckLive.Index do
   defp search_diagnostics(_query), do: []
 
   # Builds the row display map from a loaded Deck.
-  defp deck_view(deck) do
+  defp deck_view(deck, timezone) do
     hero = deck.hero
     author = DeckCards.author(deck)
     {gradient_from, gradient_to} = DeckCards.hero_gradient(hero)
@@ -496,7 +499,7 @@ defmodule SanctumWeb.DeckLive.Index do
       total_card_count: deck.total_card_count || 0,
       card_row_count: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
-      updated: format_date(deck.mcdb_date_update || deck.updated_at)
+      updated: format_date(deck.mcdb_date_update || deck.updated_at, timezone)
     }
   end
 
@@ -518,6 +521,8 @@ defmodule SanctumWeb.DeckLive.Index do
 
   defp excerpt(_), do: nil
 
-  defp format_date(%DateTime{} = dt), do: Calendar.strftime(dt, "%b %-d, %Y")
-  defp format_date(_), do: ""
+  defp format_date(%DateTime{} = dt, timezone),
+    do: dt |> Timezone.to_local(timezone) |> Calendar.strftime("%b %-d, %Y")
+
+  defp format_date(_value, _timezone), do: ""
 end
