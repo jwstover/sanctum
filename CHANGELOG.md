@@ -1,3 +1,12 @@
+## [1.60.1](https://github.com/jwstover/sanctum/compare/v1.60.0...v1.60.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* **search:** keep mobile search sheet on-screen when keyboard opens ([e152f8c](https://github.com/jwstover/sanctum/commit/e152f8ce01b0e258edb07c9fe47c1cf2917a3e8b))
+
+
+
 # [1.60.0](https://github.com/jwstover/sanctum/compare/v1.59.1...v1.60.0) (2026-07-21)
 
 
@@ -68,25 +77,6 @@
 ### Performance Improvements
 
 * **decks:** fix 69s card: search filter in the deck browser ([7477c6a](https://github.com/jwstover/sanctum/commit/7477c6add13904b97ae9e1415e3b5ba26150dced))
-
-
-
-# [1.57.0](https://github.com/jwstover/sanctum/compare/v1.56.0...v1.57.0) (2026-07-21)
-
-
-### Bug Fixes
-
-* **search:** mobile sheet scroll lock, fixed height, safe-area padding ([a45776e](https://github.com/jwstover/sanctum/commit/a45776eb15ef002795c1574d554d3a23921f53cb))
-* **search:** play the sheet slide-up once per open, not per patch ([b6e6154](https://github.com/jwstover/sanctum/commit/b6e6154b31079d6a395ca8e0a7a15e98d46dc921))
-* **search:** release the body lock on navigation; 350ms results debounce ([4e20dbf](https://github.com/jwstover/sanctum/commit/4e20dbf93c6c6b76e725828d1d02e57111472949))
-* **search:** stop mutating LiveView-managed ids on result rows ([54e02fb](https://github.com/jwstover/sanctum/commit/54e02fbc3cf4b0ce01c76c584e98556759b125f7))
-
-
-### Features
-
-* **browse:** set-section anchors — /browse/:pack#<set_code> ([3522de0](https://github.com/jwstover/sanctum/commit/3522de00674715ec9981270ce35197bf0f8c3339))
-* **search:** cross-type global search core ([c414104](https://github.com/jwstover/sanctum/commit/c41410470d847e2eab1dd949f4808bc454ed7b34))
-* **ui:** site-wide search bar in the app header ([ed61c3a](https://github.com/jwstover/sanctum/commit/ed61c3aa21768fee45bc2d5c709f3980c0a82349))
 
 
 
