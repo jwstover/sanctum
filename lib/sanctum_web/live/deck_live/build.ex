@@ -89,6 +89,9 @@ defmodule SanctumWeb.DeckLive.Build do
     |> assign(:description_mode, "write")
     |> assign(:description_preview, nil)
     |> assign(:description_dirty?, false)
+    |> assign(:picker, nil)
+    |> assign(:picker_query, "")
+    |> assign(:picker_results, [])
     |> assign(:query, "")
     |> assign(:search_diagnostics, [])
     |> assign(:aspect, "all")
@@ -156,6 +159,48 @@ defmodule SanctumWeb.DeckLive.Build do
   end
 
   def handle_event("card_mention", _params, socket), do: {:reply, %{items: []}, socket}
+
+  # The toolbar's Card/Icon buttons open a search-and-pick overlay (centered
+  # dialog on desktop, bottom sheet on mobile). The hook saves the caret
+  # before pushing this event; picking pushes "writeup:insert" back so the
+  # hook splices the text in at that spot.
+  def handle_event("open_picker", %{"kind" => kind}, socket) when kind in ["card", "icon"] do
+    {:noreply,
+     socket
+     |> assign(:picker, kind)
+     |> assign(:picker_query, "")
+     |> assign(:picker_results, if(kind == "icon", do: filter_icons(""), else: []))}
+  end
+
+  def handle_event("close_picker", _params, socket) do
+    {:noreply, assign(socket, :picker, nil)}
+  end
+
+  def handle_event("picker_search", %{"q" => q}, socket) when is_binary(q) do
+    results =
+      case socket.assigns.picker do
+        "card" -> mention_items(q, socket.assigns.current_user, 12)
+        "icon" -> filter_icons(q)
+        nil -> []
+      end
+
+    {:noreply, socket |> assign(:picker_query, q) |> assign(:picker_results, results)}
+  end
+
+  # Enter in the picker's search box takes the top result.
+  def handle_event("picker_submit", _params, socket) do
+    case socket.assigns.picker_results do
+      [top | _rest] -> {:noreply, insert_pick(socket, top)}
+      [] -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("pick", %{"index" => index}, socket) do
+    case Enum.at(socket.assigns.picker_results, String.to_integer(index)) do
+      nil -> {:noreply, socket}
+      item -> {:noreply, insert_pick(socket, item)}
+    end
+  end
 
   def handle_event("filter_aspect", %{"key" => key}, socket) when key in @aspect_keys do
     {:noreply, socket |> assign(:aspect, key) |> start_load(0, reset: true)}
@@ -528,14 +573,22 @@ defmodule SanctumWeb.DeckLive.Build do
     end)
   end
 
-  defp mention_items(q, actor) do
+  defp filter_icons(q) do
+    q = q |> String.trim() |> String.downcase()
+
+    Enum.filter(mention_icons(), fn icon ->
+      String.contains?(icon.token, q) or String.contains?(String.downcase(icon.label), q)
+    end)
+  end
+
+  defp mention_items(q, actor, limit \\ 8) do
     if String.trim(q) == "" do
       []
     else
       page =
         Sanctum.Games.CardSide
         |> Ash.Query.for_read(:browse, %{query: q}, actor: actor)
-        |> Ash.read!(page: [limit: 8])
+        |> Ash.read!(page: [limit: limit])
 
       Enum.map(page.results, fn side ->
         %{
@@ -548,6 +601,17 @@ defmodule SanctumWeb.DeckLive.Build do
         }
       end)
     end
+  end
+
+  defp insert_pick(socket, %{token: token}), do: push_writeup_insert(socket, "[#{token}]")
+
+  defp insert_pick(socket, %{name: name, code: code}),
+    do: push_writeup_insert(socket, "[#{name}](/card/#{code})")
+
+  defp push_writeup_insert(socket, text) do
+    socket
+    |> push_event("writeup:insert", %{text: text})
+    |> assign(:picker, nil)
   end
 
   # -- render -----------------------------------------------------------------
@@ -777,11 +841,30 @@ defmodule SanctumWeb.DeckLive.Build do
             data-icons={Jason.encode!(mention_icons())}
             class="relative"
           >
+            <div class="flex flex-wrap items-center gap-0.5 border-[2.5px] border-b-0 border-line bg-base-200 px-1.5 py-1">
+              <.md_tool cmd="bold" title="Bold"><span class="font-bold">B</span></.md_tool>
+              <.md_tool cmd="italic" title="Italic"><span class="italic">I</span></.md_tool>
+              <.md_tool cmd="heading" title="Heading">H</.md_tool>
+              <.md_tool cmd="ul" title="Bulleted list">
+                <.icon name="hero-list-bullet" class="size-4" />
+              </.md_tool>
+              <.md_tool cmd="quote" title="Quote">❝</.md_tool>
+              <.md_tool cmd="link" title="Link">
+                <.icon name="hero-link" class="size-4" />
+              </.md_tool>
+              <span class="mx-1 h-5 w-px bg-line" aria-hidden="true"></span>
+              <.md_tool cmd="card" title="Link a card (or type #cardname)">
+                <span class="font-bold">#</span>&nbsp;Card
+              </.md_tool>
+              <.md_tool cmd="icon" title="Insert a game icon (or type $icon)">
+                <span class="font-bold">$</span>&nbsp;Icon
+              </.md_tool>
+            </div>
             <textarea
               name="description"
               phx-debounce="300"
               placeholder="Write up your deck — how it plays, key combos, mulligan advice… Markdown supported; type #cardname to link a card, $icon for symbols."
-              class="min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-[13px] leading-relaxed text-base-content outline-none focus:border-primary"
+              class="block min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-[13px] leading-relaxed text-base-content outline-none focus:border-primary"
             >{@description_draft}</textarea>
             <div
               data-mention-listbox
@@ -813,6 +896,104 @@ defmodule SanctumWeb.DeckLive.Build do
             Nothing to preview yet.
           </div>
         </.panel>
+
+        <%!-- Card/icon picker: bottom sheet on mobile, centered dialog on
+             sm+ (the global search overlay's presentation). Picking pushes
+             "writeup:insert" to the DescriptionEditor hook, which splices
+             the text at the caret position saved when the picker opened. --%>
+        <div
+          :if={@picker}
+          id="writeup-picker"
+          phx-window-keydown="close_picker"
+          phx-key="escape"
+          class="fixed inset-0 z-50"
+        >
+          <div class="absolute inset-0 bg-black/60" phx-click="close_picker" aria-hidden="true"></div>
+          <div class="absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-hidden border-t-[3px] border-neutral bg-base-100 p-3 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12vh] sm:w-[min(92vw,560px)] sm:-translate-x-1/2 sm:border-2 sm:shadow-comic-lg">
+            <div class="mb-2.5 flex items-center justify-between gap-3">
+              <span class="font-anton text-[15px] uppercase tracking-[0.05em]">
+                {(@picker == "card" && "Link a Card") || "Insert an Icon"}
+              </span>
+              <button
+                type="button"
+                phx-click="close_picker"
+                aria-label="Close"
+                class="flex size-8 cursor-pointer items-center justify-center text-base-content/50 hover:text-base-content"
+              >
+                <.icon name="hero-x-mark" class="size-5" />
+              </button>
+            </div>
+            <form id="writeup-picker-form" phx-change="picker_search" phx-submit="picker_submit">
+              <input
+                type="text"
+                name="q"
+                value={@picker_query}
+                placeholder={(@picker == "card" && "Search cards…") || "Filter icons…"}
+                phx-debounce="150"
+                phx-mounted={JS.focus()}
+                autocomplete="off"
+                class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 font-barlow text-base text-base-content outline-none placeholder:text-base-content/35 focus:border-primary sm:text-[15px]"
+              />
+            </form>
+            <div class="mt-3 max-h-[calc(85dvh-9rem)] overflow-y-auto overscroll-contain pb-[max(env(safe-area-inset-bottom),0.5rem)] sm:max-h-[55vh] sm:pb-0">
+              <div :if={@picker == "card"} class="divide-y divide-neutral/40">
+                <button
+                  :for={{item, i} <- Enum.with_index(@picker_results)}
+                  type="button"
+                  data-haptic
+                  phx-click="pick"
+                  phx-value-index={i}
+                  class="flex min-h-[52px] w-full cursor-pointer items-center gap-3 px-2 py-1.5 text-left transition-colors hover:bg-base-300"
+                >
+                  <img
+                    :if={item.image_url}
+                    src={item.image_url}
+                    loading="lazy"
+                    alt=""
+                    class="aspect-[63/88] w-9 flex-none border border-line object-cover"
+                  />
+                  <div
+                    :if={!item.image_url}
+                    class="aspect-[63/88] w-9 flex-none border border-line bg-base-300"
+                  >
+                  </div>
+                  <div class="min-w-0">
+                    <div class="truncate font-barlow-condensed text-[15px] font-semibold">
+                      {item.name}
+                    </div>
+                    <div class="truncate font-barlow-condensed text-[13px] text-base-content/55">
+                      {[item.subname, item.type] |> Enum.filter(& &1) |> Enum.join(" · ")}
+                    </div>
+                  </div>
+                </button>
+              </div>
+              <div :if={@picker == "icon"} class="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+                <button
+                  :for={{icon, i} <- Enum.with_index(@picker_results)}
+                  type="button"
+                  data-haptic
+                  phx-click="pick"
+                  phx-value-index={i}
+                  class="flex min-h-[64px] cursor-pointer flex-col items-center justify-center gap-1.5 border-2 border-neutral bg-base-200 px-2 py-2 transition-colors hover:border-primary"
+                >
+                  <span class={["font-champions text-[22px] leading-none", icon.color]}>
+                    {icon.glyph}
+                  </span>
+                  <span class="font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.06em] text-base-content/70">
+                    {icon.label}
+                  </span>
+                </button>
+              </div>
+              <div
+                :if={@picker_results == []}
+                class="px-2 py-6 text-center font-barlow text-[14px] italic text-base-content/45"
+              >
+                {(@picker == "card" && @picker_query == "" && "Search the card catalog…") ||
+                  "No matches."}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- scrim behind the open pane; tapping it closes -->
@@ -1134,6 +1315,28 @@ defmodule SanctumWeb.DeckLive.Build do
         No cards yet — tap + on a card to add it.
       </p>
     </div>
+    """
+  end
+
+  # One formatting-toolbar button. The DescriptionEditor hook owns the
+  # behavior via data-md-cmd (delegated mousedown, so the textarea keeps
+  # focus); no LiveView events are involved.
+  attr :cmd, :string, required: true
+  attr :title, :string, required: true
+  slot :inner_block, required: true
+
+  defp md_tool(assigns) do
+    ~H"""
+    <button
+      type="button"
+      data-md-cmd={@cmd}
+      data-haptic
+      title={@title}
+      aria-label={@title}
+      class="flex h-11 min-w-11 cursor-pointer items-center justify-center px-2 font-barlow-condensed text-[14px] font-bold text-base-content/60 transition-colors hover:text-primary sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-[13px]"
+    >
+      {render_slot(@inner_block)}
+    </button>
     """
   end
 

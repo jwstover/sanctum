@@ -1,5 +1,6 @@
-// Description-editor enhancements for the deck writeup textarea: caret-
-// anchored autocomplete pickers, opened by a trigger character.
+// Description-editor enhancements for the deck writeup textarea.
+//
+// Caret-anchored autocomplete pickers, opened by a trigger character:
 //
 //   `#query` — card mentions (the trigger MarvelCDB's deck editor uses).
 //   Matches are searched server-side (the hosting LiveView answers the
@@ -11,7 +12,13 @@
 //   truth: Sanctum.CardText.icons/0) and filters locally; accepting inserts
 //   the `[token]` code Writeup renders to a glyph.
 //
-// Both triggers are editor sugar only — the stored writeup stays plain
+// A formatting toolbar (any [data-md-cmd] button inside the hook element):
+// wrap/toggle commands for bold/italic/heading/list/quote/link, plus Card
+// and Icon buttons that save the caret and ask the LiveView to open the
+// search-and-pick overlay ("open_picker"); the pick comes back as a
+// "writeup:insert" event and is spliced in at the saved caret.
+//
+// All of it is editor sugar only — the stored writeup stays plain
 // CommonMark plus MarvelCDB's token conventions.
 //
 // Expects the hooked element to wrap the <textarea> and a positioned
@@ -108,11 +115,143 @@ export default {
     this.textarea.addEventListener("click", this.onClick)
     this.textarea.addEventListener("blur", this.onBlur)
     this.textarea.addEventListener("scroll", this.onScroll)
+
+    // Toolbar buttons, delegated. mousedown + preventDefault so the textarea
+    // keeps its focus/selection while the command runs.
+    this.onToolbar = (e) => {
+      const btn = e.target.closest("[data-md-cmd]")
+      if (!btn) return
+      e.preventDefault()
+      this.command(btn.dataset.mdCmd)
+    }
+    this.el.addEventListener("mousedown", this.onToolbar)
+
+    // A pick from the LiveView overlay, spliced in at the caret saved when
+    // the picker opened.
+    this.handleEvent("writeup:insert", ({text}) => {
+      const [s, e] = this.saved ?? [this.textarea.value.length, this.textarea.value.length]
+      this.replaceRange(s, e, text)
+      this.saved = null
+    })
   },
 
   destroyed() {
     clearTimeout(this.timer)
   },
+
+  // -- toolbar commands -------------------------------------------------------
+
+  command(cmd) {
+    const t = this.textarea
+
+    switch (cmd) {
+      case "bold":
+        return this.wrapSelection("**", "**", "bold text")
+      case "italic":
+        return this.wrapSelection("*", "*", "italic text")
+      case "heading":
+        return this.toggleLinePrefix("## ")
+      case "ul":
+        return this.toggleLinePrefix("- ")
+      case "quote":
+        return this.toggleLinePrefix("> ")
+      case "link":
+        return this.insertLink()
+      case "card":
+      case "icon":
+        this.saved = [t.selectionStart ?? t.value.length, t.selectionEnd ?? t.value.length]
+        return this.pushEvent("open_picker", {kind: cmd})
+    }
+  },
+
+  // Replace [start, end) with text, going through execCommand when possible
+  // so the browser's native undo stack survives (deprecated but universally
+  // shipped; setRangeText is the no-undo fallback).
+  replaceRange(start, end, text) {
+    const t = this.textarea
+    t.focus()
+    if (start === end && text === "") return
+    t.setSelectionRange(start, end)
+
+    let ok = false
+    try {
+      ok = text === ""
+        ? document.execCommand("delete")
+        : document.execCommand("insertText", false, text)
+    } catch {
+      ok = false
+    }
+
+    if (!ok) {
+      t.setRangeText(text, start, end, "end")
+      t.dispatchEvent(new Event("input", {bubbles: true}))
+    }
+  },
+
+  // Wrap the selection in prefix/suffix, or unwrap when it's already wrapped.
+  // With nothing selected, insert the placeholder pre-selected so typing
+  // replaces it.
+  wrapSelection(prefix, suffix, placeholder) {
+    const t = this.textarea
+    const [s, e] = [t.selectionStart, t.selectionEnd]
+    const sel = t.value.slice(s, e)
+
+    if (
+      s >= prefix.length &&
+      t.value.slice(s - prefix.length, s) === prefix &&
+      t.value.slice(e, e + suffix.length) === suffix
+    ) {
+      this.replaceRange(s - prefix.length, e + suffix.length, sel)
+      t.setSelectionRange(s - prefix.length, s - prefix.length + sel.length)
+      return
+    }
+
+    const inner = sel || placeholder
+    this.replaceRange(s, e, prefix + inner + suffix)
+    t.setSelectionRange(s + prefix.length, s + prefix.length + inner.length)
+  },
+
+  // Add prefix to every line the selection touches, or strip it when every
+  // non-blank line already carries it.
+  toggleLinePrefix(prefix) {
+    const t = this.textarea
+    const [s, e] = [t.selectionStart, t.selectionEnd]
+    const lineStart = t.value.lastIndexOf("\n", s - 1) + 1
+    let lineEnd = t.value.indexOf("\n", e)
+    if (lineEnd === -1) lineEnd = t.value.length
+
+    const block = t.value.slice(lineStart, lineEnd)
+    const lines = block.split("\n")
+
+    let next
+    if (block.trim() === "" && lines.length === 1) {
+      next = prefix
+    } else {
+      const allPrefixed = lines.every((l) => l.startsWith(prefix) || l.trim() === "")
+      next = lines
+        .map((l) => {
+          if (l.trim() === "") return l
+          return allPrefixed ? l.slice(prefix.length) : prefix + l
+        })
+        .join("\n")
+    }
+
+    this.replaceRange(lineStart, lineEnd, next)
+    const pos = lineStart + next.length
+    t.setSelectionRange(pos, pos)
+  },
+
+  // Wrap the selection as a markdown link and pre-select the url placeholder.
+  insertLink() {
+    const t = this.textarea
+    const [s, e] = [t.selectionStart, t.selectionEnd]
+    const sel = t.value.slice(s, e) || "link text"
+    this.replaceRange(s, e, `[${sel}](url)`)
+    const urlStart = s + sel.length + 3
+    t.setSelectionRange(urlStart, urlStart + 3)
+  },
+
+  // -- trigger pickers --------------------------------------------------------
 
   detect() {
     const trigger = findTrigger(this.textarea.value, this.textarea.selectionStart ?? 0)
@@ -241,21 +380,23 @@ export default {
     const trigger = this.trigger
     if (!item || !trigger) return
 
-    const t = this.textarea
-    const end = t.selectionStart ?? trigger.start
+    const end = this.textarea.selectionStart ?? trigger.start
     const insert = item.glyph ? `[${item.token}]` : `[${item.name}](/card/${item.code})`
-    t.value = t.value.slice(0, trigger.start) + insert + t.value.slice(end)
-
-    const caret = trigger.start + insert.length
-    t.setSelectionRange(caret, caret)
+    // replaceRange fires input (natively or manually), so the form's
+    // phx-change keeps the LiveView's draft assign in sync.
+    this.replaceRange(trigger.start, end, insert)
     this.close()
-
-    // Bubble a real input event so the surrounding form's phx-change fires
-    // and the LiveView's draft assign catches up.
-    t.dispatchEvent(new Event("input", {bubbles: true}))
   },
 
   handleKey(e) {
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey) {
+      const cmd = {b: "bold", i: "italic", k: "link"}[e.key.toLowerCase()]
+      if (cmd) {
+        e.preventDefault()
+        return this.command(cmd)
+      }
+    }
+
     if (!this.isOpen()) return
 
     switch (e.key) {

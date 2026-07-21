@@ -325,6 +325,58 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       assert render_hook(lv, "card_mention", %{"bogus" => true})
     end
 
+    test "card picker searches the catalog and pushes the insert", %{conn: conn} do
+      card = player_card("Web-Shooter")
+      %{lv: lv} = mount_builder(conn, "build_lv_pick_c")
+      render_async(lv)
+
+      lv |> element("button[phx-click='set_tab'][phx-value-key='description']") |> render_click()
+      assert has_element?(lv, "[data-md-cmd='bold']")
+
+      render_click(lv, "open_picker", %{"kind" => "card"})
+      assert has_element?(lv, "#writeup-picker")
+
+      lv |> form("#writeup-picker-form", %{q: "web-sho"}) |> render_change()
+      assert render(lv) =~ "Web-Shooter"
+
+      render_click(lv, "pick", %{"index" => "0"})
+
+      assert_push_event(lv, "writeup:insert", %{text: text})
+      assert text == "[Web-Shooter](/card/#{card.base_code})"
+      refute has_element?(lv, "#writeup-picker")
+    end
+
+    test "icon picker filters glyphs and Enter takes the top result", %{conn: conn} do
+      %{lv: lv} = mount_builder(conn, "build_lv_pick_i")
+      render_async(lv)
+
+      lv |> element("button[phx-click='set_tab'][phx-value-key='description']") |> render_click()
+
+      # Opening lists every glyph; filtering narrows; submit picks the top.
+      render_click(lv, "open_picker", %{"kind" => "icon"})
+      assert render(lv) =~ "Acceleration"
+
+      lv |> form("#writeup-picker-form", %{q: "ment"}) |> render_change()
+      lv |> form("#writeup-picker-form") |> render_submit()
+
+      assert_push_event(lv, "writeup:insert", %{text: "[mental]"})
+      refute has_element?(lv, "#writeup-picker")
+    end
+
+    test "escape and out-of-range picks close or no-op safely", %{conn: conn} do
+      %{lv: lv} = mount_builder(conn, "build_lv_pick_e")
+      render_async(lv)
+
+      lv |> element("button[phx-click='set_tab'][phx-value-key='description']") |> render_click()
+
+      render_click(lv, "open_picker", %{"kind" => "card"})
+      render_click(lv, "pick", %{"index" => "5"})
+      assert has_element?(lv, "#writeup-picker")
+
+      render_click(lv, "close_picker", %{"key" => "Escape"})
+      refute has_element?(lv, "#writeup-picker")
+    end
+
     test "cancel backs out of the delete confirm", %{conn: conn} do
       %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_l")
       render_async(lv)
