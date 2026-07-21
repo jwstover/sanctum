@@ -102,7 +102,7 @@ defmodule Sanctum.Games.CardGuess do
       wave_hint(card),
       pack_hint(card),
       allegiance_hint(side),
-      pool_hint(side),
+      pool_hint(card),
       type_hint(side),
       cost_resources_hint(side),
       traits_hint(side),
@@ -135,24 +135,49 @@ defmodule Sanctum.Games.CardGuess do
 
   defp allegiance_hint(_), do: nil
 
-  # 4. The specific pool the card belongs to.
-  defp pool_hint(%{type: :villain}), do: hint(:pool, "This is a villain card.")
+  # 4. The specific pool the card belongs to. Encounter-pool cards name their
+  # set's role instead — rung 3 already said "encounter card".
+  defp pool_hint(%Card{primary_side: %{type: :villain}}),
+    do: hint(:pool, "This is a villain card.")
 
-  defp pool_hint(%{aspect: aspect}) when not is_nil(aspect) do
+  defp pool_hint(%Card{primary_side: %{aspect: aspect}}) when not is_nil(aspect) do
     label = aspect_label(aspect)
     hint(:pool, "This is #{article(label)} #{label} card.")
   end
 
-  defp pool_hint(%{ownership: :hero}), do: hint(:pool, "This is a hero-specific card.")
+  defp pool_hint(%Card{primary_side: %{ownership: :hero}}),
+    do: hint(:pool, "This is a hero-specific card.")
 
-  defp pool_hint(%{ownership: :basic}),
+  defp pool_hint(%Card{primary_side: %{ownership: :basic}}),
     do: hint(:pool, "This is a Basic card — any deck can include it.")
 
-  defp pool_hint(%{ownership: :campaign}), do: hint(:pool, "This is a campaign card.")
+  defp pool_hint(%Card{primary_side: %{ownership: :campaign}}),
+    do: hint(:pool, "This is a campaign card.")
 
-  defp pool_hint(%{ownership: :encounter}), do: hint(:pool, "This is an encounter card.")
+  defp pool_hint(%Card{primary_side: %{ownership: :encounter}} = card),
+    do: encounter_pool_hint(card)
 
   defp pool_hint(_), do: nil
+
+  # The set-role rung for encounter cards, from the synced CardSet taxonomy.
+  # With no set (or an unsynced one) there's nothing rung 3 didn't already
+  # say, so the rung is skipped rather than repeated.
+  defp encounter_pool_hint(%Card{card_set: %{set_type: set_type}}) do
+    case set_type do
+      :villain -> hint(:pool, "It's part of a villain's encounter set.")
+      :nemesis -> hint(:pool, "It's part of a hero's nemesis set.")
+      :modular -> hint(:pool, "It's part of a modular encounter set.")
+      :standard -> hint(:pool, "It's part of the Standard encounter set.")
+      :expert -> hint(:pool, "It's part of the Expert encounter set.")
+      :main_scheme -> hint(:pool, "It's part of a main-scheme set.")
+      :hero -> hint(:pool, "It's part of a specific hero's own set.")
+      :leader -> hint(:pool, "It's part of a leader set.")
+      :evidence -> hint(:pool, "It's part of an evidence set.")
+      _unknown -> nil
+    end
+  end
+
+  defp encounter_pool_hint(_), do: nil
 
   # 5. The exact card type, qualified by its pool ("an Aggression event").
   defp type_hint(%{type: nil}), do: nil

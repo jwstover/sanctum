@@ -5,6 +5,7 @@ defmodule Sanctum.Games.CardGuessTest do
 
   import Sanctum.Factory
 
+  alias Sanctum.Catalog.CardSet, as: CatalogCardSet
   alias Sanctum.Catalog.Pack
   alias Sanctum.Catalog.Wave
   alias Sanctum.Games.{Card, CardGuess, CardSide}
@@ -96,7 +97,7 @@ defmodule Sanctum.Games.CardGuessTest do
       assert Enum.at(hints, 4) == nil
     end
 
-    test "an encounter card gets encounter pool/type rungs and skips cost" do
+    test "an encounter card names its set's role instead of repeating rung 3" do
       side = %CardSide{
         name: "Shadow of the Past",
         type: :treachery,
@@ -104,13 +105,33 @@ defmodule Sanctum.Games.CardGuessTest do
         traits: []
       }
 
-      card = %Card{unique: false, deck_limit: nil, set: "rhino", pack: "core", primary_side: side}
+      card = %Card{
+        set: "rhino",
+        pack: "core",
+        card_set: %CatalogCardSet{set_type: :villain},
+        primary_side: side
+      }
+
       hints = CardGuess.build_hints(card)
 
       assert Enum.map(hints, & &1.key) == [:pack, :allegiance, :pool, :type]
       assert Enum.at(hints, 1).text == "This is an encounter card."
-      assert Enum.at(hints, 2).text == "This is an encounter card."
+      assert Enum.at(hints, 2).text == "It's part of a villain's encounter set."
       assert Enum.at(hints, 3).text == "Specifically, it's an encounter treachery."
+
+      modular = %Card{card | card_set: %CatalogCardSet{set_type: :modular}}
+
+      assert Enum.find(CardGuess.build_hints(modular), &(&1.key == :pool)).text ==
+               "It's part of a modular encounter set."
+    end
+
+    test "an encounter card with no synced set skips the pool rung" do
+      side = %CardSide{name: "Shadow of the Past", type: :treachery, ownership: :encounter}
+      card = %Card{pack: "core", primary_side: side}
+
+      keys = card |> CardGuess.build_hints() |> Enum.map(& &1.key)
+
+      assert keys == [:pack, :allegiance, :type]
     end
 
     test "a villain-type card is called a villain, not a generic encounter card" do
