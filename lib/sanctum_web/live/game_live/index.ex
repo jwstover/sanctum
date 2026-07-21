@@ -58,7 +58,7 @@ defmodule SanctumWeb.GameLive.Index do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app current_user={@current_user} flash={@flash}>
+    <Layouts.app current_user={@current_user} flash={@flash} active_tab={:games}>
       <.button :if={@current_user} variant="primary" phx-click="new-game">New Game</.button>
 
       <div :if={@games == nil} class="mt-2 flex flex-col gap-2">

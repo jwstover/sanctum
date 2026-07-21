@@ -63,7 +63,10 @@ defmodule SanctumWeb.Router do
       # If an authenticated user must *not* be present:
       # on_mount {SanctumWeb.LiveUserAuth, :live_no_user}
 
-      live "/", GameLive.Index, :index
+      # Public landing page: vault stats, card of the day, newest decks.
+      live "/", HomeLive.Index, :index
+
+      live "/games", GameLive.Index, :index
       live "/games/new", GameLive.New, :new
       live "/games/:id", GameLive.Show, :show
 

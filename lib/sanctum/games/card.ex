@@ -85,6 +85,24 @@ defmodule Sanctum.Games.Card do
       pagination offset?: true, default_limit: 1, countable: true, required?: false
     end
 
+    # Pool for the homepage's "card of the day": official aspect/basic player
+    # cards (no hero-specific signature cards) whose primary side has a scan.
+    # Stable-sorted so a date-hashed offset lands on the same card for the
+    # whole day. Backs Sanctum.Games.CardOfTheDay.
+    read :daily_pool do
+      prepare build(sort: [base_code: :asc], load: [:primary_side])
+
+      # Spelled as ORs — `ownership in [...]` fails Ash's expr type resolution
+      # against the related enum. Pool-aspect cards are ownership :player.
+      filter expr(
+               origin == :official and
+                 (primary_side.ownership == :player or primary_side.ownership == :basic) and
+                 not is_nil(primary_side.image_url)
+             )
+
+      pagination offset?: true, default_limit: 1, countable: true, required?: false
+    end
+
     read :by_set do
       argument :set, :string, allow_nil?: false
       filter expr(set == ^arg(:set))

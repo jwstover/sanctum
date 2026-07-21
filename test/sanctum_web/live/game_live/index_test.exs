@@ -85,7 +85,7 @@ defmodule SanctumWeb.GameLive.IndexTest do
     end
 
     test "renders games index page", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/")
+      {:ok, _view, html} = live(conn, ~p"/games")
 
       # Just assert that the page loads without crashing
       assert html =~ "Sanctum"
@@ -94,7 +94,7 @@ defmodule SanctumWeb.GameLive.IndexTest do
     test "renders games index with existing game", %{conn: conn, user: user} do
       _game = create_test_game(user)
 
-      {:ok, view, html} = live(conn, ~p"/")
+      {:ok, view, html} = live(conn, ~p"/games")
 
       # The shell paints immediately; the games list loads asynchronously.
       assert html =~ "Sanctum"
@@ -102,7 +102,7 @@ defmodule SanctumWeb.GameLive.IndexTest do
     end
 
     test "shows new game button", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/")
+      {:ok, _view, html} = live(conn, ~p"/games")
 
       assert html =~ "New Game"
     end

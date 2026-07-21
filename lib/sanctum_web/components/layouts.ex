@@ -35,7 +35,19 @@ defmodule SanctumWeb.Layouts do
 
   attr :active_tab, :atom,
     default: nil,
-    values: [nil, :browse, :cards, :guess, :decks, :homebrew, :stats, :profile, :admin],
+    values: [
+      nil,
+      :home,
+      :games,
+      :browse,
+      :cards,
+      :guess,
+      :decks,
+      :homebrew,
+      :stats,
+      :profile,
+      :admin
+    ],
     doc: "which top-nav tab to highlight"
 
   slot :inner_block, required: true
@@ -171,6 +183,9 @@ defmodule SanctumWeb.Layouts do
                 ⌘K
               </kbd>
             </button>
+            <.sidebar_link navigate={~p"/"} active={@active_tab == :home}>
+              Home
+            </.sidebar_link>
             <.sidebar_link navigate={~p"/browse"} active={@active_tab == :browse}>
               Packs
             </.sidebar_link>
