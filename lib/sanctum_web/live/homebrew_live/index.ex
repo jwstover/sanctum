@@ -71,10 +71,6 @@ defmodule SanctumWeb.HomebrewLive.Index do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:homebrew}>
       <.header>
         Homebrew
-        <:subtitle>
-          Your custom content projects — unofficial fan content, not affiliated with
-          FFG or Marvel. A card is an image; everything else is optional.
-        </:subtitle>
         <:actions>
           <.button :if={!@creating?} variant="primary" phx-click="start_create">
             New Project

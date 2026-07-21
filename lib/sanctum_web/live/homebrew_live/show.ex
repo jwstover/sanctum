@@ -124,9 +124,6 @@ defmodule SanctumWeb.HomebrewLive.Show do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:homebrew}>
       <.header>
         {@project.name}
-        <:subtitle>
-          {@cards |> length()} {if length(@cards) == 1, do: "card", else: "cards"} &middot; {@project.visibility} &middot; unofficial fan content
-        </:subtitle>
       </.header>
 
       <.panel :if={!@uploads_configured?} class="mb-6 p-5">
