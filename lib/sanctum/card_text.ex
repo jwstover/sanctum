@@ -55,6 +55,30 @@ defmodule Sanctum.CardText do
   @trait ~r/^\[\[(.+)\]\]$/
 
   @doc """
+  The `token => {glyph, color class | nil}` map of ChampionsIcons tokens.
+  Consumers outside card text (the deck writeup renderer, the description
+  editor's icon picker) share this as the single source of truth.
+  """
+  def icons, do: @icons
+
+  @doc """
+  The ChampionsIcons `<span>` for `token`, or `nil` when the font has no
+  glyph for it.
+  """
+  def icon_span(token) do
+    case Map.fetch(@icons, token) do
+      {:ok, {glyph, nil}} ->
+        ~s(<span class="font-champions leading-none">#{glyph}</span>)
+
+      {:ok, {glyph, color}} ->
+        ~s(<span class="font-champions leading-none #{color}">#{glyph}</span>)
+
+      :error ->
+        nil
+    end
+  end
+
+  @doc """
   Convert a MarvelCDB markup string into `{:safe, iodata}` for direct use in
   HEEx. Returns an empty safe value for `nil` or `""`.
   """
@@ -93,18 +117,15 @@ defmodule Sanctum.CardText do
   end
 
   defp render_icon(name) do
-    case Map.fetch(@icons, name) do
-      {:ok, {glyph, nil}} ->
-        ~s(<span class="font-champions leading-none">#{glyph}</span>)
-
-      {:ok, {glyph, color}} ->
-        ~s(<span class="font-champions leading-none #{color}">#{glyph}</span>)
-
-      :error ->
+    case icon_span(name) do
+      nil ->
         # No glyph in ChampionsIcons for this token — show the name in small
         # caps rather than the raw `[bracket]` code.
         label = name |> String.replace("_", " ") |> escape()
         ~s(<span class="font-semibold uppercase tracking-wide">#{label}</span>)
+
+      span ->
+        span
     end
   end
 

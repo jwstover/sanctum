@@ -1,16 +1,23 @@
-// Card-mention autocomplete for the deck description textarea.
+// Description-editor enhancements for the deck writeup textarea: caret-
+// anchored autocomplete pickers, opened by a trigger character.
 //
-// Typing `#` opens a card picker anchored at the caret (the same trigger
-// MarvelCDB's deck editor uses); the text after it is searched server-side
-// (the hosting LiveView answers the hook's "card_mention" event with catalog
-// matches). Accepting a card replaces `#query` with a plain markdown link
-// `[Name](/card/CODE)` — the trigger is editor sugar only; the stored
-// writeup stays the CommonMark that Sanctum.Decks.Writeup already resolves.
+//   `#query` — card mentions (the trigger MarvelCDB's deck editor uses).
+//   Matches are searched server-side (the hosting LiveView answers the
+//   hook's "card_mention" event); accepting inserts the `[Name](/card/CODE)`
+//   markdown that Sanctum.Decks.Writeup already resolves.
+//
+//   `$query` — ChampionsIcons symbols (resources, boost, crisis, …). The
+//   list rides in on the element's data-icons attribute (single source of
+//   truth: Sanctum.CardText.icons/0) and filters locally; accepting inserts
+//   the `[token]` code Writeup renders to a glyph.
+//
+// Both triggers are editor sugar only — the stored writeup stays plain
+// CommonMark plus MarvelCDB's token conventions.
 //
 // Expects the hooked element to wrap the <textarea> and a positioned
 // [data-mention-listbox] dropdown (see the description tab in DeckLive.Build).
 
-const MIN_QUERY = 2
+const MIN_CARD_QUERY = 2
 const MAX_QUERY = 50
 
 // Copied onto the offscreen mirror so its text wraps exactly like the
@@ -50,26 +57,33 @@ function caretOffset(textarea, index) {
   return offset
 }
 
-// The nearest `#` before the caret, with the query typed after it. `#` is
-// also markdown heading syntax, so only a word-starting `#` immediately
-// followed by text counts: `##` and `# Heading` never trigger, and neither
-// does anything that no longer looks like an in-progress mention.
+// The nearest trigger character before the caret, with the query typed after
+// it. Both trigger chars double as ordinary text (`#` starts markdown
+// headings, `$` prices), so only a word-starting occurrence counts, and the
+// query shape must still look like an in-progress mention: for `#`, text
+// that doesn't open with a space; for `$`, token letters only (so `$5`
+// never opens the picker).
 function findTrigger(value, caret) {
-  const start = value.lastIndexOf("#", caret - 1)
+  const start = Math.max(value.lastIndexOf("#", caret - 1), value.lastIndexOf("$", caret - 1))
   if (start === -1 || start + 1 > caret) return null
 
   const before = value[start - 1]
   if (before !== undefined && !/[\s(]/.test(before)) return null
 
+  const kind = value[start] === "#" ? "card" : "icon"
   const query = value.slice(start + 1, caret)
-  if (query.startsWith(" ") || query.length > MAX_QUERY || /[\n#{}[\]()]/.test(query)) return null
-  return {start, query}
+  if (query.length > MAX_QUERY) return null
+
+  if (kind === "card" && (query.startsWith(" ") || /[\n#${}[\]()]/.test(query))) return null
+  if (kind === "icon" && !/^[a-z_]*$/i.test(query)) return null
+  return {start, kind, query}
 }
 
 export default {
   mounted() {
     this.textarea = this.el.querySelector("textarea")
     this.listbox = this.el.querySelector("[data-mention-listbox]")
+    this.icons = JSON.parse(this.el.dataset.icons || "[]")
     this.items = []
     this.active = 0
     this.trigger = null
@@ -105,7 +119,17 @@ export default {
     this.trigger = trigger
     clearTimeout(this.timer)
 
-    if (!trigger || trigger.query.length < MIN_QUERY) return this.close()
+    if (!trigger) return this.close()
+
+    // Icons filter locally — no debounce, no round-trip.
+    if (trigger.kind === "icon") {
+      const q = trigger.query.toLowerCase()
+      return this.show(
+        this.icons.filter((i) => i.token.includes(q) || i.label.toLowerCase().includes(q))
+      )
+    }
+
+    if (trigger.query.length < MIN_CARD_QUERY) return this.close()
 
     this.timer = setTimeout(() => {
       this.pushEvent("card_mention", {q: trigger.query}, (reply) => {
@@ -128,31 +152,8 @@ export default {
       row.id = `${this.el.id}-opt-${i}`
       row.className = "qi-option mention-option"
       row.dataset.index = i
-
-      const thumb = document.createElement(item.image_url ? "img" : "div")
-      thumb.className = "mention-thumb"
-      if (item.image_url) {
-        thumb.src = item.image_url
-        thumb.loading = "lazy"
-        thumb.alt = ""
-      }
-      row.appendChild(thumb)
-
-      const text = document.createElement("div")
-      text.className = "mention-text"
-      const name = document.createElement("div")
-      name.className = "qi-option-label"
-      name.textContent = item.name
-      text.appendChild(name)
-
-      const detail = [item.subname, item.type].filter(Boolean).join(" · ")
-      if (detail) {
-        const detailEl = document.createElement("div")
-        detailEl.className = "qi-option-detail"
-        detailEl.textContent = detail
-        text.appendChild(detailEl)
-      }
-      row.appendChild(text)
+      row.appendChild(item.glyph ? this.iconVisual(item) : this.cardVisual(item))
+      row.appendChild(this.textCol(item))
 
       // mousedown (not click) so the textarea never loses focus.
       row.addEventListener("mousedown", (e) => {
@@ -166,6 +167,45 @@ export default {
     this.listbox.classList.remove("hidden")
     this.position()
     this.setActive(0)
+  },
+
+  cardVisual(item) {
+    const thumb = document.createElement(item.image_url ? "img" : "div")
+    thumb.className = "mention-thumb"
+    if (item.image_url) {
+      thumb.src = item.image_url
+      thumb.loading = "lazy"
+      thumb.alt = ""
+    }
+    return thumb
+  },
+
+  iconVisual(item) {
+    const glyph = document.createElement("span")
+    glyph.className = `mention-glyph font-champions ${item.color || ""}`
+    glyph.textContent = item.glyph
+    return glyph
+  },
+
+  textCol(item) {
+    const text = document.createElement("div")
+    text.className = "mention-text"
+    const name = document.createElement("div")
+    name.className = "qi-option-label"
+    name.textContent = item.name || item.label
+    text.appendChild(name)
+
+    const detail = item.glyph
+      ? `[${item.token}]`
+      : [item.subname, item.type].filter(Boolean).join(" · ")
+
+    if (detail) {
+      const detailEl = document.createElement("div")
+      detailEl.className = "qi-option-detail"
+      detailEl.textContent = detail
+      text.appendChild(detailEl)
+    }
+    return text
   },
 
   position() {
@@ -203,7 +243,7 @@ export default {
 
     const t = this.textarea
     const end = t.selectionStart ?? trigger.start
-    const insert = `[${item.name}](/card/${item.code})`
+    const insert = item.glyph ? `[${item.token}]` : `[${item.name}](/card/${item.code})`
     t.value = t.value.slice(0, trigger.start) + insert + t.value.slice(end)
 
     const caret = trigger.start + insert.length

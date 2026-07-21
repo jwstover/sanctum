@@ -146,10 +146,11 @@ defmodule SanctumWeb.DeckLive.Build do
   def handle_event("suggest", _params, socket), do: {:reply, %{items: []}, socket}
 
   # Card-mention autocomplete for the description editor: `#query` in the
-  # textarea (CardMention hook, same trigger as MarvelCDB's editor) searches
-  # every catalog face — writeups reference villains and encounter cards, not
-  # just the buildable pool — and the picker inserts the `[Name](/card/CODE)`
-  # markdown that Writeup.render already resolves.
+  # textarea (DescriptionEditor hook, same trigger as MarvelCDB's editor)
+  # searches every catalog face — writeups reference villains and encounter
+  # cards, not just the buildable pool — and the picker inserts the
+  # `[Name](/card/CODE)` markdown that Writeup.render already resolves.
+  # (The hook's `$` icon picker filters locally from data-icons; no event.)
   def handle_event("card_mention", %{"q" => q}, socket) when is_binary(q) do
     {:reply, %{items: mention_items(q, socket.assigns.current_user)}, socket}
   end
@@ -510,6 +511,23 @@ defmodule SanctumWeb.DeckLive.Build do
 
   defp search_diagnostics(_query), do: []
 
+  # Most-used first: the four resources, then the encounter/game symbols.
+  # Tokens CardText knows but this list doesn't sort after them, so a new
+  # glyph in the font shows up in the picker without touching this module.
+  @icon_order ~w(energy mental physical wild boost acceleration amplify crisis
+                 hazard star unique per_hero per_group cost)
+              |> Enum.with_index()
+              |> Map.new()
+
+  # The `$` icon picker's choices (DescriptionEditor hook, data-icons).
+  defp mention_icons do
+    Sanctum.CardText.icons()
+    |> Enum.sort_by(fn {token, _} -> {Map.get(@icon_order, token, 99), token} end)
+    |> Enum.map(fn {token, {glyph, color}} ->
+      %{token: token, glyph: glyph, color: color, label: Phoenix.Naming.humanize(token)}
+    end)
+  end
+
   defp mention_items(q, actor) do
     if String.trim(q) == "" do
       []
@@ -753,11 +771,16 @@ defmodule SanctumWeb.DeckLive.Build do
           id="description-form"
           phx-change="description_change"
         >
-          <div id="description-editor" phx-hook="CardMention" class="relative">
+          <div
+            id="description-editor"
+            phx-hook="DescriptionEditor"
+            data-icons={Jason.encode!(mention_icons())}
+            class="relative"
+          >
             <textarea
               name="description"
               phx-debounce="300"
-              placeholder="Write up your deck — how it plays, key combos, mulligan advice… Markdown supported; type #cardname to link a card."
+              placeholder="Write up your deck — how it plays, key combos, mulligan advice… Markdown supported; type #cardname to link a card, $icon for symbols."
               class="min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-[13px] leading-relaxed text-base-content outline-none focus:border-primary"
             >{@description_draft}</textarea>
             <div

@@ -836,8 +836,9 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
-/* Card-mention picker (CardMention hook): qi-option rows with a card thumb
-   and a stacked name/detail column. */
+/* Description-editor pickers (DescriptionEditor hook): qi-option rows with a
+   card thumb (# mentions) or a ChampionsIcons glyph ($ icons) beside a
+   stacked name/detail column. */
 .mention-option {
   align-items: center;
 }
@@ -848,6 +849,13 @@ textarea::placeholder {
   object-fit: cover;
   border: 1px solid var(--color-line);
   background: var(--color-base-300);
+}
+.mention-glyph {
+  width: 2rem;
+  flex: none;
+  font-size: 1.3rem;
+  line-height: 1;
+  text-align: center;
 }
 .mention-text {
   min-width: 0;
