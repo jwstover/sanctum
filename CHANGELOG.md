@@ -1,3 +1,13 @@
+# [1.59.0](https://github.com/jwstover/sanctum/compare/v1.58.0...v1.59.0) (2026-07-21)
+
+
+### Features
+
+* **decks:** extend hover card previews to decklists ([0c2f84b](https://github.com/jwstover/sanctum/commit/0c2f84baf3bf22299ab750727d45aecc1b052a95))
+* **ui:** render timestamps in the browser's timezone ([57212eb](https://github.com/jwstover/sanctum/commit/57212eb07ca3f13605e7c69e6815cb38ed3ad636))
+
+
+
 # [1.58.0](https://github.com/jwstover/sanctum/compare/v1.57.0...v1.58.0) (2026-07-21)
 
 
@@ -77,19 +87,6 @@
 ### Features
 
 * **ui:** pin profile/admin drawer links to bottom with icons ([e6c56b9](https://github.com/jwstover/sanctum/commit/e6c56b9b0358090ec3dc6b9e354e4176b4ec7878))
-
-
-
-# [1.54.0](https://github.com/jwstover/sanctum/compare/v1.53.0...v1.54.0) (2026-07-19)
-
-
-### Features
-
-* **stats:** add public deck stats page with ECharts ([1b502db](https://github.com/jwstover/sanctum/commit/1b502db1759c10288c9b222dfa231bff80ad02a8))
-* **stats:** colored KPI tiles and hero→aspect→cards drill-down ([57c8928](https://github.com/jwstover/sanctum/commit/57c89287c5dd2208c1e95edb14d6d269954dca3a))
-* **stats:** rename tile label to "Decks Added this Month" ([7ae7a9a](https://github.com/jwstover/sanctum/commit/7ae7a9a1b2c134dd896ac18abefd0ff3bc174dc6))
-* **stats:** show all heroes in hero chart, colored per hero ([42ddef8](https://github.com/jwstover/sanctum/commit/42ddef859ae6e4a93e0e07d9a7aaa57beb2550e3))
-* **stats:** URL-driven drill state, card links, donut, release markers ([0fb17a9](https://github.com/jwstover/sanctum/commit/0fb17a9e6456a11574c8c4a9361a335cb595903d))
 
 
 
