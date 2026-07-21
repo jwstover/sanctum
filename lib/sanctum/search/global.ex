@@ -514,7 +514,7 @@ defmodule Sanctum.Search.Global do
         id: set.id,
         title: set.name || set.code,
         subtitle: join_subtitle([humanize(set.set_type), set.pack && set.pack.name]),
-        href: set.pack && "/browse/#{set.pack.code}",
+        href: set.pack && browse_href(set.pack.code, set.code),
         kind: :card_set
       }
     end)
@@ -528,7 +528,7 @@ defmodule Sanctum.Search.Global do
         id: villain.id,
         title: villain.villain_name,
         subtitle: "Villain",
-        href: browse_href(packs[villain.set]),
+        href: browse_href(packs[villain.set], villain.set),
         kind: :villain
       }
     end)
@@ -542,7 +542,7 @@ defmodule Sanctum.Search.Global do
         id: scenario.id,
         title: scenario.name,
         subtitle: "Scenario",
-        href: browse_href(packs[scenario.set]),
+        href: browse_href(packs[scenario.set], scenario.set),
         kind: :scenario
       }
     end)
@@ -570,8 +570,11 @@ defmodule Sanctum.Search.Global do
       %{}
   end
 
-  defp browse_href(nil), do: nil
-  defp browse_href(pack_code), do: "/browse/#{pack_code}"
+  # Set-scoped results land on the pack's browse page with the card-set code
+  # as the fragment; the pack page renders set sections with matching DOM ids
+  # and scrolls the fragment into view once its async load renders.
+  defp browse_href(nil, _set_code), do: nil
+  defp browse_href(pack_code, set_code), do: "/browse/#{pack_code}##{set_code}"
 
   defp more_url(:cards, rest), do: "/cards" <> query_param(rest)
   defp more_url(:decks, rest), do: "/decks" <> query_param(rest)

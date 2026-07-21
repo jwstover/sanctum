@@ -325,12 +325,16 @@ defmodule Sanctum.Search.GlobalTest do
       found_pack = Enum.find(group(result, :packs).results, &(&1.title == "#{@marker} Rising"))
       assert found_pack.href == "/browse/#{pack.code}"
 
-      # villain + scenario resolve their set slug to the pack's browse page
+      # set-scoped results carry the set code as a fragment so the pack page
+      # can scroll that section into view
+      [card_set] = group(result, :card_sets).results
+      assert card_set.href == "/browse/#{pack.code}#zz_villain"
+
       [villain] = group(result, :villains).results
-      assert villain.href == "/browse/#{pack.code}"
+      assert villain.href == "/browse/#{pack.code}#zz_villain"
 
       [scenario] = group(result, :scenarios).results
-      assert scenario.href == "/browse/#{pack.code}"
+      assert scenario.href == "/browse/#{pack.code}#zz_villain"
     end
 
     test "typed clauses implicitly narrow to the types that understand them" do

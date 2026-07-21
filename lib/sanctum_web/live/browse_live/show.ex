@@ -123,7 +123,12 @@ defmodule SanctumWeb.BrowseLive.Show do
         socket
       end
 
-    {:noreply, socket}
+    # Sections carry their card-set code as a DOM id (/browse/cw#spider_man),
+    # but the fragment never reaches the server and the anchor target only
+    # exists now that the async load has rendered — nudge the client to honor
+    # it (a no-op without a fragment; ScrollRestore skips saved positions when
+    # one is present).
+    {:noreply, push_event(socket, "sanctum:scroll-to-hash", %{})}
   end
 
   def handle_async(:load_pack, {:ok, {:error, code}}, socket) do
@@ -244,6 +249,7 @@ defmodule SanctumWeb.BrowseLive.Show do
             title={section.title}
             subtitle={section.subtitle}
             cards={section.cards}
+            anchor={section.code}
             owned_ids={@owned_ids}
           />
 
@@ -303,6 +309,7 @@ defmodule SanctumWeb.BrowseLive.Show do
           title={group.title}
           cards={group.cards}
           level={:sub}
+          anchor={group[:code]}
           owned_ids={@owned_ids}
         />
       </div>
@@ -316,9 +323,13 @@ defmodule SanctumWeb.BrowseLive.Show do
   attr :level, :atom, default: :top
   attr :owned_ids, :any, default: nil, doc: "MapSet of owned card ids; nil hides collection UI"
 
+  attr :anchor, :string,
+    default: nil,
+    doc: "card-set code used as the section's DOM id, so /browse/:pack#<code> can land here"
+
   defp card_section(assigns) do
     ~H"""
-    <section>
+    <section id={@anchor} class="scroll-mt-24 lg:scroll-mt-6">
       <div class="mb-3.5 flex flex-wrap items-baseline gap-x-3 border-b-2 border-neutral pb-2">
         <h2 class={[
           "font-anton uppercase leading-none tracking-[0.03em]",
@@ -388,10 +399,16 @@ defmodule SanctumWeb.BrowseLive.Show do
     hero_sets = Enum.filter(sets, &(&1.set_type == :hero))
     paired_nemesis_ids = nemesis_ids_for(sets, hero_sets)
 
+    main_scheme_sets = Enum.filter(sets, &(&1.set_type == :main_scheme))
+
     main_scheme_sections =
-      case cards_of_type(sets, :main_scheme, hero_colors) do
-        [] -> []
-        cards -> [%{title: "Main Scheme", subtitle: nil, cards: cards}]
+      case cards_from_sets(main_scheme_sets, hero_colors) do
+        [] ->
+          []
+
+        cards ->
+          code = main_scheme_sets |> List.first() |> then(&(&1 && &1.code))
+          [%{title: "Main Scheme", subtitle: nil, cards: cards, code: code}]
       end
 
     hero_sections = Enum.flat_map(hero_sets, &hero_and_nemesis_sections(&1, sets, hero_colors))
@@ -403,7 +420,8 @@ defmodule SanctumWeb.BrowseLive.Show do
         &%{
           title: &1.name || "Nemesis",
           subtitle: "Nemesis",
-          cards: view_cards(&1.cards, hero_colors)
+          cards: view_cards(&1.cards, hero_colors),
+          code: &1.code
         }
       )
 
@@ -418,7 +436,8 @@ defmodule SanctumWeb.BrowseLive.Show do
     hero_section = %{
       title: hero_set.name || "Hero",
       subtitle: "Hero",
-      cards: view_cards(hero_set.cards, hero_colors)
+      cards: view_cards(hero_set.cards, hero_colors),
+      code: hero_set.code
     }
 
     nemesis_section =
@@ -427,7 +446,8 @@ defmodule SanctumWeb.BrowseLive.Show do
           %{
             title: nemesis.name || "Nemesis",
             subtitle: "Nemesis",
-            cards: view_cards(nemesis.cards, hero_colors)
+            cards: view_cards(nemesis.cards, hero_colors),
+            code: nemesis.code
           }
         ]
       else
@@ -441,10 +461,6 @@ defmodule SanctumWeb.BrowseLive.Show do
     hero_ids = MapSet.new(hero_sets, & &1.id)
 
     for s <- sets, s.set_type == :nemesis, s.hero_set_id in hero_ids, into: MapSet.new(), do: s.id
-  end
-
-  defp cards_of_type(sets, type, hero_colors) do
-    sets |> Enum.filter(&(&1.set_type == type)) |> cards_from_sets(hero_colors)
   end
 
   defp cards_from_sets(sets, hero_colors) do
@@ -471,7 +487,9 @@ defmodule SanctumWeb.BrowseLive.Show do
     # Order by each set's lowest card code — roughly the pack's printed order, so
     # the headline set leads rather than whatever sorts alphabetically.
     |> Enum.sort_by(&min_card_code/1)
-    |> Enum.map(&%{title: &1.name || &1.code, cards: view_cards(&1.cards, hero_colors)})
+    |> Enum.map(
+      &%{title: &1.name || &1.code, cards: view_cards(&1.cards, hero_colors), code: &1.code}
+    )
     |> Enum.reject(&(&1.cards == []))
   end
 
