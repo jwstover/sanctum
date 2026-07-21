@@ -274,12 +274,12 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       render_async(lv)
 
       # First tap only reveals the confirm row.
-      lv |> element("#deck-panel-desktop button[phx-click='confirm_delete']") |> render_click()
+      lv |> element("button[phx-click='confirm_delete']") |> render_click()
       assert {:ok, _deck} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
 
       assert {:error, {:live_redirect, %{to: "/decks"}}} =
                lv
-               |> element("#deck-panel-desktop button[phx-click='delete_deck']")
+               |> element("button[phx-click='delete_deck']")
                |> render_click()
 
       assert {:error, _not_found} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
@@ -316,10 +316,10 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_l")
       render_async(lv)
 
-      lv |> element("#deck-panel-desktop button[phx-click='confirm_delete']") |> render_click()
-      lv |> element("#deck-panel-desktop button[phx-click='cancel_delete']") |> render_click()
+      lv |> element("button[phx-click='confirm_delete']") |> render_click()
+      lv |> element("button[phx-click='cancel_delete']") |> render_click()
 
-      refute has_element?(lv, "#deck-panel-desktop button[phx-click='delete_deck']")
+      refute has_element?(lv, "button[phx-click='delete_deck']")
       assert {:ok, _deck} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
     end
   end

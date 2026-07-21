@@ -527,9 +527,24 @@ defmodule SanctumWeb.DeckLive.Build do
         {@deck.title}
         <:subtitle>{@deck.hero.display_name} · building</:subtitle>
         <:actions>
-          <.button navigate={~p"/decks/#{@deck.id}"} class="hidden sm:inline-flex">
-            View Deck
-          </.button>
+          <div :if={!@confirm_delete?} class="flex items-center gap-2.5">
+            <.button phx-click="confirm_delete" class="!text-error">
+              <.icon name="hero-trash" /> Delete
+            </.button>
+            <.button navigate={~p"/decks/#{@deck.id}"} class="hidden sm:inline-flex">
+              View Deck
+            </.button>
+          </div>
+          <!-- two-step confirm, inline (no modal) -->
+          <div :if={@confirm_delete?} class="flex items-center gap-2.5">
+            <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-error">
+              Really delete?
+            </span>
+            <.button phx-click="delete_deck" class="!text-error">
+              Delete
+            </.button>
+            <.button phx-click="cancel_delete">Cancel</.button>
+          </div>
         </:actions>
       </.header>
 
@@ -685,7 +700,6 @@ defmodule SanctumWeb.DeckLive.Build do
             deck={@deck}
             entries={@entries}
             issues={@issues}
-            confirm_delete?={@confirm_delete?}
             card_view={@card_view}
             hero_gradient={@hero_gradient}
           />
@@ -773,7 +787,6 @@ defmodule SanctumWeb.DeckLive.Build do
           deck={@deck}
           entries={@entries}
           issues={@issues}
-          confirm_delete?={@confirm_delete?}
           card_view={@card_view}
           hero_gradient={@hero_gradient}
         />
@@ -814,7 +827,6 @@ defmodule SanctumWeb.DeckLive.Build do
   attr :deck, :map, required: true
   attr :entries, :map, required: true
   attr :issues, :list, required: true
-  attr :confirm_delete?, :boolean, required: true
   attr :card_view, :string, required: true
   attr :hero_gradient, :any, required: true
 
@@ -999,29 +1011,6 @@ defmodule SanctumWeb.DeckLive.Build do
       >
         No cards yet — tap + on a card to add it.
       </p>
-
-      <!-- inline delete (two-step, no modal) -->
-      <div class="mt-2 border-t-2 border-neutral pt-3">
-        <button
-          :if={!@confirm_delete?}
-          type="button"
-          phx-click="confirm_delete"
-          class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/45 transition-colors hover:text-error"
-        >
-          Delete deck
-        </button>
-        <div :if={@confirm_delete?} class="flex items-center gap-3">
-          <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-error">
-            Really delete?
-          </span>
-          <.button phx-click="delete_deck" class="!min-h-0 !border-error !px-3 !py-1 !text-error">
-            Delete
-          </.button>
-          <.button phx-click="cancel_delete" class="!min-h-0 !px-3 !py-1">
-            Cancel
-          </.button>
-        </div>
-      </div>
     </div>
     """
   end
