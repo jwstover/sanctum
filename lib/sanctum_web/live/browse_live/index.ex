@@ -240,7 +240,8 @@ defmodule SanctumWeb.BrowseLive.Index do
           </span>
           <.owned_badge
             :if={MapSet.member?(@owned_pack_ids, pack.id)}
-            class="absolute right-1.5 top-1.5 bg-base-100/90"
+            title="Pack in your collection"
+            class="absolute right-1.5 top-1.5 size-5 rounded-[4px] bg-base-100/85"
           />
         </div>
         <div class="flex flex-1 flex-col gap-1 p-2.5">

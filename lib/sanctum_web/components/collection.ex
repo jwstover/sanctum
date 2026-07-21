@@ -9,20 +9,20 @@ defmodule SanctumWeb.Components.Collection do
   import SanctumWeb.CoreComponents, only: [icon: 1]
 
   @doc """
-  A small comic-style chip marking something as in the user's collection.
+  A subtle check mark marking something as in the user's collection, with the
+  explanation in a hover tooltip.
   """
   attr :class, :any, default: nil
-  attr :label, :string, default: "Owned"
+  attr :title, :string, default: "In your collection"
 
   def owned_badge(assigns) do
     ~H"""
-    <span class={[
-      "inline-flex flex-none items-center gap-0.5 border border-primary/60 bg-primary/15 px-1.5 py-px",
-      "font-ibm-mono text-[9px] uppercase leading-4 tracking-[0.14em] text-primary",
-      @class
-    ]}>
-      <.icon name="hero-check" class="size-2.5" />
-      {@label}
+    <span
+      title={@title}
+      class={["inline-flex flex-none items-center justify-center text-success", @class]}
+    >
+      <.icon name="hero-check" class="size-3.5" />
+      <span class="sr-only">{@title}</span>
     </span>
     """
   end
