@@ -38,6 +38,10 @@ defmodule SanctumWeb.Components.QueryInput do
     default: "QueryInput",
     doc: "the JS hook driving the input (the global bar uses GlobalSearch)"
 
+  attr :debounce, :integer,
+    default: 200,
+    doc: "phx-debounce for the surrounding form's change event"
+
   slot :results,
     doc: """
     server-rendered results shown beneath the suggestions inside a shared
@@ -79,7 +83,7 @@ defmodule SanctumWeb.Components.QueryInput do
             id={@id <> "-input"}
             name={@name}
             value={@value}
-            phx-debounce="200"
+            phx-debounce={@debounce}
             autocomplete="off"
             spellcheck="false"
             autocapitalize="off"

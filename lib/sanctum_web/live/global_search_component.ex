@@ -66,6 +66,7 @@ defmodule SanctumWeb.GlobalSearchComponent do
             placeholder="Search cards, decks, heroes… (try in:cards cost<=2)"
             placeholder_short="Search…"
             help_path={~p"/search-help"}
+            debounce={350}
             panel_class="mt-3 hidden max-h-[calc(85dvh-6rem)] overflow-y-auto overscroll-contain border-t-2 border-line sm:max-h-[60vh]"
           >
             <:results>

@@ -83,7 +83,10 @@ export default {
     clearTimeout(this.suggestTimer)
     window.removeEventListener("sanctum:open-search", this.onOpenEvent)
     window.removeEventListener("keydown", this.onGlobalKey)
-    document.body.classList.remove("overflow-hidden")
+    // Navigating from a result destroys the hook with the overlay still
+    // open — release the body lock (without scroll restore: the next page
+    // owns its own position) or the new page can't scroll at all.
+    if (this.scrollLocked) this.unlockScroll(false)
   },
 
   paint() {
