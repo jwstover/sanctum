@@ -50,7 +50,8 @@ defmodule SanctumWeb.GuessLive.PlayTest do
     {:ok, view, _html} = live(conn, ~p"/flavor-town")
     render_async(view)
 
-    html = view |> form("form", %{guess: "Definitely Wrong"}) |> render_submit()
+    html =
+      view |> form(~s(form[phx-submit="guess"]), %{guess: "Definitely Wrong"}) |> render_submit()
 
     assert html =~ "Hints"
     assert html =~ "This is a player card."
@@ -63,7 +64,7 @@ defmodule SanctumWeb.GuessLive.PlayTest do
     {:ok, view, _html} = live(conn, ~p"/flavor-town")
     render_async(view)
 
-    html = view |> form("form", %{guess: "nick fury"}) |> render_submit()
+    html = view |> form(~s(form[phx-submit="guess"]), %{guess: "nick fury"}) |> render_submit()
 
     assert html =~ "You got it!"
     assert html =~ "Nick Fury"

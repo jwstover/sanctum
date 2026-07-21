@@ -100,17 +100,44 @@ defmodule SanctumWeb.Layouts do
 
         <!-- slim top bar (mobile only) -->
         <header class="sticky top-0 z-30 border-b-[3px] border-neutral bg-base-100/90 backdrop-blur lg:hidden">
-          <div class="flex items-center justify-between px-4 py-3.5">
+          <div class="flex items-center justify-between gap-3 px-4 py-3.5">
             <a href="/" class="font-bangers text-[28px] leading-none tracking-wide text-primary">
               SANCTUM
             </a>
-            <label
-              for="app-drawer"
-              class="drawer-button flex size-11 cursor-pointer items-center justify-center border-2 border-neutral bg-base-300 text-base-content"
-              aria-label="Open menu"
-            >
-              <.icon name="hero-bars-3" class="size-6" />
-            </label>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                phx-click={open_search()}
+                class="flex size-11 cursor-pointer items-center justify-center border-2 border-neutral bg-base-300 text-base-content"
+                aria-label="Search"
+              >
+                <.icon name="hero-magnifying-glass" class="size-5" />
+              </button>
+              <label
+                for="app-drawer"
+                class="drawer-button flex size-11 cursor-pointer items-center justify-center border-2 border-neutral bg-base-300 text-base-content"
+                aria-label="Open menu"
+              >
+                <.icon name="hero-bars-3" class="size-6" />
+              </label>
+            </div>
+          </div>
+          <div class="hidden px-4 pb-3 peer-checked:block lg:block lg:px-6 lg:py-2.5">
+            <div class="mx-auto w-full max-w-[1480px]">
+              <div class="flex items-center gap-3 lg:max-w-[560px]">
+                <.live_component
+                  module={SanctumWeb.GlobalSearchComponent}
+                  id="global-search-bar"
+                  current_user={@current_user}
+                />
+                <kbd
+                  class="hidden shrink-0 border border-base-content/25 px-1.5 py-0.5 font-ibm-mono text-[11px] text-base-content/45 lg:block"
+                  title="Focus search"
+                >
+                  ⌘K
+                </kbd>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -139,6 +166,18 @@ defmodule SanctumWeb.Layouts do
             </label>
           </div>
           <nav class="mt-6 flex flex-col flex-1 gap-1.5 lg:mt-4 lg:gap-1">
+            <button
+              type="button"
+              phx-click={open_search()}
+              class="hidden cursor-pointer items-center justify-between border-2 border-transparent px-3 py-2 font-barlow-condensed text-[15px] font-bold uppercase tracking-[0.1em] text-base-content/55 transition-colors hover:text-white lg:flex lg:px-2.5 lg:py-1.5 lg:text-[13px]"
+            >
+              <span class="flex items-center gap-2">
+                <.icon name="hero-magnifying-glass" class="size-3.5" /> Search
+              </span>
+              <kbd class="border border-base-content/20 px-1 font-ibm-mono text-[10px] normal-case tracking-normal text-base-content/35">
+                ⌘K
+              </kbd>
+            </button>
             <.sidebar_link navigate={~p"/browse"} active={@active_tab == :browse}>
               Packs
             </.sidebar_link>
@@ -209,6 +248,12 @@ defmodule SanctumWeb.Layouts do
   # navigating on mobile (handled by a window listener in app.js).
   defp close_drawer(js \\ %JS{}) do
     JS.dispatch(js, "sanctum:close-drawer", to: "#app-drawer")
+  end
+
+  # Opens the global search overlay (handled by the GlobalSearch hook, which
+  # listens for this event on window — same pattern as sanctum:close-drawer).
+  defp open_search(js \\ %JS{}) do
+    JS.dispatch(js, "sanctum:open-search")
   end
 
   attr :active, :boolean, default: false

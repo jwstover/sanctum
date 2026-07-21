@@ -17,6 +17,8 @@ defmodule Sanctum.Search.Diagnostic do
           | :invalid_value
           | :stray_token
           | :unclosed_paren
+          | :misplaced_scope
+          | :unknown_type
 
   @type t :: %__MODULE__{
           severity: :warning | :error,

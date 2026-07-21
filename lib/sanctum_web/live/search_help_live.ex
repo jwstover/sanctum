@@ -96,6 +96,28 @@ defmodule SanctumWeb.SearchHelpLive do
           </table>
         </section>
 
+        <section id="global">
+          <.section_title>Global search</.section_title>
+          <div class="space-y-2.5 font-barlow text-[15px] leading-relaxed text-base-content/85">
+            <p>
+              The Search button (in the sidebar or the mobile header — or press <.q c="⌘K" />
+              anywhere) opens a search palette that searches the whole
+              site at once — cards, decks, heroes, packs, card sets, villains, and
+              scenarios — with this same query language, grouped by type.
+            </p>
+            <p>
+              Add <.q c="in:" /> to limit results to specific types:
+              <.q c="in:decks spider" />, or several at once with <.q c="in:cards|decks" />. Types:
+              <span :for={type <- @global_types} class="mr-1"><.q c={type} /></span>
+            </p>
+            <p>
+              A typed filter also narrows the search on its own, to the types that
+              understand it — <.q c="cost<=2" /> only ever matches cards, so only card
+              results appear; <.q c="aspect:aggression" /> means both cards and decks.
+            </p>
+          </div>
+        </section>
+
         <section id="cards">
           <.section_title>Card fields</.section_title>
           <.fields_table fields={@card_fields} base_path="/cards" />
@@ -190,6 +212,7 @@ defmodule SanctumWeb.SearchHelpLive do
       |> assign(:page_title, "Search Syntax")
       |> assign(:card_fields, CardFields.fields())
       |> assign(:deck_fields, DeckFields.fields())
+      |> assign(:global_types, Sanctum.Search.Global.type_values())
       |> assign(:card_examples, @card_examples)
       |> assign(:deck_examples, @deck_examples)
 

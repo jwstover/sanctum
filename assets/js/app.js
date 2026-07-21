@@ -28,6 +28,7 @@ import topbar from "../vendor/topbar"
 import CardDrag from "./hooks/card-drag";
 import Chart from "./hooks/chart";
 import DragDrop from "./hooks/drag-drop";
+import GlobalSearch from "./hooks/global-search";
 import LayoutHand from "./hooks/layout-hand";
 import QueryInput from "./hooks/query-input";
 import ResponsivePlaceholder from "./hooks/responsive-placeholder";
@@ -52,13 +53,24 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, CardDrag, Chart, DragDrop, LayoutHand, QueryInput, ResponsivePlaceholder, ScrollRestore},
+  hooks: {...colocatedHooks, CardDrag, Chart, DragDrop, GlobalSearch, LayoutHand, QueryInput, ResponsivePlaceholder, ScrollRestore},
 })
 
 // Uncheck the daisyUI drawer toggle when a sidebar link is clicked, so the
 // mobile slideout closes across live navigation (checkbox state survives
 // LiveView DOM patches).
 window.addEventListener("sanctum:close-drawer", e => { e.target.checked = false })
+
+// Scroll to the URL fragment once async content exists. Pushed by pages that
+// render their anchor targets after mount (e.g. /browse/:pack#<set_code>) —
+// the browser's native fragment scroll fires too early for those.
+window.addEventListener("phx:sanctum:scroll-to-hash", () => {
+  const id = decodeURIComponent(window.location.hash.slice(1))
+  if (!id) return
+  requestAnimationFrame(() =>
+    document.getElementById(id)?.scrollIntoView({behavior: "smooth", block: "start"})
+  )
+})
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})

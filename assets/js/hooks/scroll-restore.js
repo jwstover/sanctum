@@ -69,6 +69,10 @@ export default {
     }
     window.addEventListener("scroll", this.onScroll, {passive: true})
 
+    // An explicit URL fragment (e.g. a global-search set link landing on
+    // /browse/:pack#<set_code>) wins over a saved scroll position.
+    if (window.location.hash) return
+
     const saved = sessionStorage.getItem(storageKey())
     if (!saved) return
 
