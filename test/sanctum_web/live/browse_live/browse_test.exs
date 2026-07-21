@@ -109,9 +109,9 @@ defmodule SanctumWeb.BrowseLiveTest do
       assert html =~ "1 / 1 owned"
       assert Sanctum.Collections.pack_owned?(pack.id, user)
 
-      # The browse index shows the owned chip on the pack tile.
+      # The browse index shows the owned check on the pack tile.
       {:ok, index, _html} = live(conn, ~p"/browse")
-      assert render_async(index) =~ "Owned"
+      assert render_async(index) =~ "Pack in your collection"
     end
 
     test "a per-card toggle records an override without touching the pack", %{

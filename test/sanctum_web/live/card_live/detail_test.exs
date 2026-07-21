@@ -187,12 +187,12 @@ defmodule SanctumWeb.CardLive.DetailTest do
       Sanctum.Collections.add_pack!(pack.id, actor: user)
 
       {:ok, lv, _html} = live(conn, ~p"/cards")
-      assert render_async(lv) =~ "Owned"
+      assert render_async(lv) =~ "In your collection"
 
       {:ok, anon_lv, _html} = live(build_conn(), ~p"/cards")
       anon_html = render_async(anon_lv)
       assert anon_html =~ ~p"/cards/#{card.id}"
-      refute anon_html =~ "Owned"
+      refute anon_html =~ "In your collection"
     end
   end
 end
