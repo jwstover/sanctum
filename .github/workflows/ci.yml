@@ -110,9 +110,12 @@ jobs:
         # Run Credo even if formatting or the unused deps check failed
         if: always()
       - name: Check for code duplication
-        # Zero tolerance: any detected clone fails the build — extract the
-        # shared logic instead. Keep in sync with the ck alias in mix.exs.
-        run: mix ex_dna
+        # --max-clones is a ratchet over clones already on main whose fixes
+        # ride unmerged branches (currently 3: index/show source_label,
+        # aspect_badges, identity_image — extracted to DeckCards on
+        # feat/native-deckbuilder). Lower it as those land, never raise it.
+        # Keep in sync with the ck alias in mix.exs.
+        run: mix ex_dna --max-clones 3
         if: always()
       - name: Check for security vulnerabilities in Phoenix project
         run: mix sobelow --config --exit

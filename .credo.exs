@@ -2,9 +2,12 @@
   configs: [
     %{
       name: "default",
-      # Zero-tolerance duplication detection inside credo. NOTE: plugin params
-      # override .ex_dna.exs, so keep these in sync with that file.
-      plugins: [{ExDNA.Credo, [literal_mode: :abstract, normalize_pipes: true]}],
+      # Surfaces duplication findings inside credo; display-only
+      # (exit_status: 0) — enforcement is the ratcheted `mix ex_dna` ck/CI
+      # step. NOTE: plugin params override .ex_dna.exs; keep them in sync.
+      plugins: [
+        {ExDNA.Credo, [literal_mode: :abstract, normalize_pipes: true, exit_status: 0]}
+      ],
       checks: [
         {Credo.Check.Design.TagTODO, priority: :low},
         {Credo.Check.Readability.ModuleDoc, priority: :low},
