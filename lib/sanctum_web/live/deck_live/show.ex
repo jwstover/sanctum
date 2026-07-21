@@ -208,22 +208,24 @@ defmodule SanctumWeb.DeckLive.Show do
                       navigate={~p"/cards/#{c.card_id}"}
                       class="flex items-center gap-2 px-1 py-1 hover:bg-base-200"
                     >
-                      <span class="w-6 flex-none font-ibm-mono text-[11px] text-base-content/50">
-                        {c.qty}×
-                      </span>
+                      <.row_cost cost={c.cost} />
                       <.icon
                         :if={c.aspect_key == :hero}
                         name="hero-user-solid"
                         class="size-3 flex-none text-aspect-hero"
                       />
                       <span :if={c.aspect_key != :hero} class={["size-2.5 flex-none", c.aspect_bg]}></span>
-                      <span class="truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85">
+                      <span class="min-w-0 truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85">
                         {c.name}
                       </span>
                       <span :if={c.owned == true} title="In your collection" class="flex-none">
                         <.icon name="hero-check" class="size-3 text-success" />
                       </span>
-                      <span :if={c.pips != []} class="ml-auto flex flex-none items-center gap-1">
+                      <span class="flex-1"></span>
+                      <span class="flex-none font-ibm-mono text-[11px] text-base-content/50">
+                        {c.qty}×
+                      </span>
+                      <span class="flex w-8 flex-none items-center justify-end gap-1">
                         <span
                           :for={{color_class, glyph} <- c.pips}
                           class={["font-champions text-[14px] leading-none", color_class]}

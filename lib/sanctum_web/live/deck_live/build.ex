@@ -931,9 +931,7 @@ defmodule SanctumWeb.DeckLive.Build do
 
         <div :if={@card_view == "list"} class="divide-y divide-neutral/40">
           <div :for={row <- g.cards} class="flex min-h-[40px] items-center gap-2 px-1 py-1">
-            <span class="w-6 flex-none font-ibm-mono text-[11px] text-base-content/50">
-              {row.qty}×
-            </span>
+            <.row_cost cost={row.cost} />
             <.icon
               :if={row.hero?}
               name="hero-user-solid"
@@ -942,13 +940,17 @@ defmodule SanctumWeb.DeckLive.Build do
             <span :if={!row.hero?} class={["size-2.5 flex-none", row.aspect_bg]}></span>
             <.link
               navigate={~p"/cards/#{row.card_id}"}
-              class="truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85 hover:text-base-content"
+              class="min-w-0 truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85 hover:text-base-content"
             >
               {row.name}
             </.link>
+            <span class="flex-1"></span>
+            <span class="flex-none font-ibm-mono text-[11px] text-base-content/50">
+              {row.qty}×
+            </span>
             <!-- pips column: always rendered so every row's icons share one
                  right edge, independent of what the controls column holds -->
-            <span class="ml-auto flex flex-none items-center gap-1">
+            <span class="flex w-8 flex-none items-center justify-end gap-1">
               <span
                 :for={{color_class, glyph} <- row.pips}
                 class={["font-champions text-[13px] leading-none", color_class]}

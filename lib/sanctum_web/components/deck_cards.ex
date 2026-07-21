@@ -169,6 +169,21 @@ defmodule SanctumWeb.Components.DeckCards do
   end
 
   @doc """
+  Cost column for list rows — the card pool's cost treatment (plain
+  `font-elektra-med` numeral) at row scale. Costless cards (resources)
+  render an invisible placeholder so name columns stay aligned.
+  """
+  attr :cost, :any, required: true
+
+  def row_cost(assigns) do
+    ~H"""
+    <span class="w-5 flex-none text-center font-elektra-med text-[16px] leading-none text-base-content/90">
+      {@cost}
+    </span>
+    """
+  end
+
+  @doc """
   One half of the images/list segmented toggle. Emits `set_card_view` with
   `phx-value-view`; pair it with `<.card_view_pref />` so the choice persists.
   """
