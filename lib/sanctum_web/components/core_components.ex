@@ -193,7 +193,7 @@ defmodule SanctumWeb.CoreComponents do
     doc: "optional Tailwind bg-* class for a leading square swatch (e.g. bg-aspect-hero)"
 
   attr :class, :string, default: ""
-  attr :rest, :global, include: ~w(href navigate patch phx-click phx-value-key value name)
+  attr :rest, :global, include: ~w(href navigate patch phx-click phx-value-key value name type)
   slot :inner_block, required: true
 
   def filter_pill(assigns) do

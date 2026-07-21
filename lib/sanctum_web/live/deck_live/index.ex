@@ -10,7 +10,7 @@ defmodule SanctumWeb.DeckLive.Index do
 
   import SanctumWeb.Components.QueryInput
 
-  alias SanctumWeb.Components.Card, as: CardComponent
+  alias SanctumWeb.Components.DeckCards
   alias SanctumWeb.InfiniteScroll
 
   @page_size 24
@@ -32,6 +32,11 @@ defmodule SanctumWeb.DeckLive.Index do
         <:subtitle>
           Every deck in the vault. Filter by hero or aspect, then open one for the full list.
         </:subtitle>
+        <:actions>
+          <.button :if={@current_user} variant="primary" navigate={~p"/decks/new"}>
+            <.icon name="hero-plus" /> New Deck
+          </.button>
+        </:actions>
       </.header>
 
       <!-- search + count -->
@@ -71,6 +76,9 @@ defmodule SanctumWeb.DeckLive.Index do
             phx-value-key={key}
           >
             {label}
+          </.filter_pill>
+          <.filter_pill :if={@current_user} active={@mine} phx-click="filter_mine">
+            Mine
           </.filter_pill>
         </div>
         <form
@@ -212,6 +220,7 @@ defmodule SanctumWeb.DeckLive.Index do
       |> assign(:sort, "new")
       |> assign(:aspect, "all")
       |> assign(:hero_id, "all")
+      |> assign(:mine, false)
       # nil until the first async load lands — drives the loading/skeleton UI.
       |> assign(:total, nil)
       |> assign(:count, nil)
@@ -238,10 +247,12 @@ defmodule SanctumWeb.DeckLive.Index do
     sort = if params["sort"] in @sort_keys, do: params["sort"], else: "new"
     aspect = if params["aspect"] in @aspect_keys, do: params["aspect"], else: "all"
     hero_id = valid_hero_id(params["hero_id"])
+    mine = params["mine"] == "true" and socket.assigns.current_user != nil
 
     changed? =
       query != socket.assigns.query or sort != socket.assigns.sort or
-        aspect != socket.assigns.aspect or hero_id != socket.assigns.hero_id
+        aspect != socket.assigns.aspect or hero_id != socket.assigns.hero_id or
+        mine != socket.assigns.mine
 
     socket =
       assign(socket,
@@ -249,6 +260,7 @@ defmodule SanctumWeb.DeckLive.Index do
         sort: sort,
         aspect: aspect,
         hero_id: hero_id,
+        mine: mine,
         search_diagnostics: search_diagnostics(query)
       )
 
@@ -297,6 +309,10 @@ defmodule SanctumWeb.DeckLive.Index do
 
   def handle_event("sort", %{"key" => key}, socket) do
     {:noreply, push_patch(socket, to: decks_path(socket.assigns, sort: key))}
+  end
+
+  def handle_event("filter_mine", _params, socket) do
+    {:noreply, push_patch(socket, to: decks_path(socket.assigns, mine: !socket.assigns.mine))}
   end
 
   def handle_event("filter_aspect", %{"key" => key}, socket) do
@@ -420,11 +436,12 @@ defmodule SanctumWeb.DeckLive.Index do
 
     params =
       Enum.reject(
-        [query: f.query, sort: f.sort, aspect: f.aspect, hero_id: f.hero_id],
+        [query: f.query, sort: f.sort, aspect: f.aspect, hero_id: f.hero_id, mine: f.mine],
         fn {k, v} ->
           case k do
             :query -> v == ""
             :sort -> v == "new"
+            :mine -> v != true
             _ -> v == "all"
           end
         end
@@ -447,7 +464,7 @@ defmodule SanctumWeb.DeckLive.Index do
   defp maybe_assign_count(socket, true, count), do: assign(socket, :count, count)
 
   defp filters(a) do
-    %{query: a.query, aspect: a.aspect, hero_id: a.hero_id, sort: a.sort}
+    %{query: a.query, aspect: a.aspect, hero_id: a.hero_id, sort: a.sort, mine: a.mine}
   end
 
   # Advisory parse/compile problems shown under the query input ("unknown
@@ -461,17 +478,18 @@ defmodule SanctumWeb.DeckLive.Index do
   # Builds the row display map from a loaded Deck.
   defp deck_view(deck) do
     hero = deck.hero
-    author = author(deck)
+    author = DeckCards.author(deck)
+    {gradient_from, gradient_to} = DeckCards.hero_gradient(hero)
 
     %{
       id: deck.id,
       title: deck.title,
       hero_name: hero.display_name,
-      identity_image: identity_image(hero),
-      gradient_from: hero.primary_color || elem(CardComponent.fallback_gradient(hero.set), 0),
-      gradient_to: hero.secondary_color || elem(CardComponent.fallback_gradient(hero.set), 1),
-      aspects: aspect_badges(deck.aspects),
-      source_label: source_label(deck.source),
+      identity_image: DeckCards.identity_image(hero),
+      gradient_from: gradient_from,
+      gradient_to: gradient_to,
+      aspects: DeckCards.aspect_badges(deck.aspects),
+      source_label: DeckCards.source_label(deck.source),
       tagline: excerpt(deck.description_md),
       author: author && author.name,
       author_avatar: author && author.avatar,
@@ -481,38 +499,6 @@ defmodule SanctumWeb.DeckLive.Index do
       updated: format_date(deck.mcdb_date_update || deck.updated_at)
     }
   end
-
-  defp identity_image(%{hero_side: %{image_url: url}}) when is_binary(url), do: url
-  defp identity_image(%{card: %{primary_side: %{image_url: url}}}) when is_binary(url), do: url
-  defp identity_image(_), do: nil
-
-  defp aspect_badges([]), do: [aspect_badge(:basic, "Basic")]
-
-  defp aspect_badges(aspects),
-    do: Enum.map(aspects, &aspect_badge(&1, &1 |> to_string() |> String.capitalize()))
-
-  defp aspect_badge(aspect, label) do
-    ac = CardComponent.aspect_classes(aspect)
-    %{label: label, text: ac.text, border: ac.border}
-  end
-
-  defp source_label(:marvelcdb), do: "MarvelCDB"
-  defp source_label(:native), do: "Native"
-  defp source_label(other), do: other |> to_string() |> String.capitalize()
-
-  # Attribution: imported decks credit the MarvelCDB author; native decks
-  # credit the owner's claimed username (never their email — the field is
-  # policy-hidden). Owners without a username get no attribution row.
-  defp author(%{mcdb_user: %{username: username}}) when is_binary(username) and username != "",
-    do: %{name: "@" <> username, avatar: nil}
-
-  defp author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id),
-    do: %{name: "mcdb ##{id}", avatar: nil}
-
-  defp author(%{owner: %{username: %Ash.CiString{} = username, avatar_url: avatar}}),
-    do: %{name: "@" <> to_string(username), avatar: avatar}
-
-  defp author(_), do: nil
 
   # Turn description markdown into a short plain-text teaser.
   defp excerpt(md) when is_binary(md) and md != "" do

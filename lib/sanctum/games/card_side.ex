@@ -22,6 +22,7 @@ defmodule Sanctum.Games.CardSide do
       argument :query, :string, allow_nil?: true
       argument :aspect, :string, allow_nil?: true
       argument :type, :string, allow_nil?: true
+      argument :scope, :string, allow_nil?: true
 
       pagination offset?: true, default_limit: 24, countable: true, required?: false
 
@@ -31,6 +32,7 @@ defmodule Sanctum.Games.CardSide do
         search = Ash.Query.get_argument(query, :query)
         aspect = Ash.Query.get_argument(query, :aspect)
         type = Ash.Query.get_argument(query, :type)
+        scope = Ash.Query.get_argument(query, :scope)
 
         query =
           query
@@ -38,6 +40,19 @@ defmodule Sanctum.Games.CardSide do
           # Side `code` sorts by base_code across cards and primary-first within
           # a card (the primary side always holds the smallest code).
           |> Ash.Query.sort(code: :asc)
+
+        # The deckbuilder browses the buildable pool only: aspect + basic
+        # player cards, one row per card (primary sides), so a stream keyed
+        # by card_id gets no duplicate rows.
+        query =
+          if scope == "deckbuilding" do
+            Ash.Query.filter(
+              query,
+              ownership in [:player, :basic] and is_primary_side == true
+            )
+          else
+            query
+          end
 
         # Collection status rides the page query as EXISTS subqueries; skipped
         # for anonymous browsing so tiles render no collection UI at all.

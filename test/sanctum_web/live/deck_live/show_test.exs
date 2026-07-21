@@ -88,11 +88,58 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     assert html =~ "Thwart twice"
   end
 
+  describe "edit button" do
+    defp claim_deck(deck, owner) do
+      deck
+      |> Ash.Changeset.for_update(:update, %{owner_id: owner.id})
+      |> Ash.update!(authorize?: false)
+    end
+
+    test "the owner of a native deck sees Edit Deck", %{conn: conn} do
+      owner = Sanctum.AccountsFixtures.user_fixture()
+      deck = claim_deck(make_deck_with_card(), owner)
+
+      {:ok, view, _html} = live(log_in_user(conn, owner), ~p"/decks/#{deck.id}")
+      html = render_async(view)
+
+      assert html =~ "Edit Deck"
+      assert html =~ "/decks/#{deck.id}/build"
+    end
+
+    test "non-owners and anonymous visitors see no Edit Deck", %{conn: conn} do
+      owner = Sanctum.AccountsFixtures.user_fixture()
+      deck = claim_deck(make_deck_with_card(), owner)
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      refute render_async(view) =~ "Edit Deck"
+
+      other = Sanctum.AccountsFixtures.user_fixture()
+      {:ok, view, _html} = live(log_in_user(conn, other), ~p"/decks/#{deck.id}")
+      refute render_async(view) =~ "Edit Deck"
+    end
+
+    test "imported decks show no Edit Deck even for their owner", %{conn: conn} do
+      owner = Sanctum.AccountsFixtures.user_fixture()
+
+      deck =
+        make_deck_with_card()
+        |> Ash.Changeset.for_update(
+          :update,
+          %{owner_id: owner.id, source: :marvelcdb, mcdb_id: "999999", mcdb_type: :decklist}
+        )
+        |> Ash.update!(authorize?: false)
+
+      {:ok, view, _html} = live(log_in_user(conn, owner), ~p"/decks/#{deck.id}")
+      refute render_async(view) =~ "Edit Deck"
+    end
+  end
+
   test "a signed-in user sees collection status on the card list", %{conn: conn} do
     deck = make_deck_with_card()
     user = Sanctum.AccountsFixtures.user_fixture()
 
-    # Own the ally (2 copies) via a card override; the hero card stays unowned.
+    # Own the ally (2 copies) via a card override — fully owned decks show
+    # the summary but no missing-card marks.
     ally = Ash.get!(Sanctum.Games.Card, %{base_code: "90051"}, authorize?: false)
     Sanctum.Collections.set_card_status!(ally.id, :owned, actor: user)
 
@@ -100,7 +147,18 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     html = render_async(view)
 
     assert html =~ "you own 2 / 2"
-    assert html =~ "In your collection"
+    refute html =~ "Not in your collection"
+  end
+
+  test "a signed-in user sees unowned cards flagged on the card list", %{conn: conn} do
+    deck = make_deck_with_card()
+    user = Sanctum.AccountsFixtures.user_fixture()
+
+    {:ok, view, _html} = live(log_in_user(conn, user), ~p"/decks/#{deck.id}")
+    html = render_async(view)
+
+    assert html =~ "you own 0 / 2"
+    assert html =~ "Not in your collection"
   end
 
   test "anonymous visitors see no collection summary", %{conn: conn} do
@@ -110,7 +168,7 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     html = render_async(view)
 
     refute html =~ "you own"
-    refute html =~ "In your collection"
+    refute html =~ "Not in your collection"
   end
 
   test "restore-scroll confirms once the deck content has loaded", %{conn: conn} do

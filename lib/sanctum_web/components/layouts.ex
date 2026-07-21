@@ -122,26 +122,19 @@ defmodule SanctumWeb.Layouts do
               </label>
             </div>
           </div>
-          <div class="hidden px-4 pb-3 peer-checked:block lg:block lg:px-6 lg:py-2.5">
-            <div class="mx-auto w-full max-w-[1480px]">
-              <div class="flex items-center gap-3 lg:max-w-[560px]">
-                <.live_component
-                  module={SanctumWeb.GlobalSearchComponent}
-                  id="global-search-bar"
-                  current_user={@current_user}
-                />
-                <kbd
-                  class="hidden shrink-0 border border-base-content/25 px-1.5 py-0.5 font-ibm-mono text-[11px] text-base-content/45 lg:block"
-                  title="Focus search"
-                >
-                  ⌘K
-                </kbd>
-              </div>
-            </div>
-          </div>
         </header>
 
-        <main class="relative z-10 mx-auto w-full max-w-[1480px] flex-1 px-4 pb-24 pt-7 sm:px-6">
+        <.live_component
+          module={SanctumWeb.GlobalSearchComponent}
+          id="global-search-bar"
+          current_user={@current_user}
+        />
+
+        <%!-- No z-index here: a `z-10` would cap every child in a stacking
+             context below the sticky header (z-30), so page-level overlays
+             (the builder's deck-pane scrim) could never cover the chrome.
+             DOM order alone keeps main above the z-0 halftone layer. --%>
+        <main class="relative mx-auto w-full max-w-[1480px] flex-1 px-4 pb-24 pt-7 sm:px-6">
           {render_slot(@inner_block)}
         </main>
       </div>

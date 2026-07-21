@@ -836,6 +836,41 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
+/* Description-editor pickers (DescriptionEditor hook): qi-option rows with a
+   card thumb (# mentions) or a ChampionsIcons glyph ($ icons) beside a
+   stacked name/detail column. */
+.mention-option {
+  align-items: center;
+}
+.mention-thumb {
+  width: 2rem;
+  aspect-ratio: 63 / 88;
+  flex: none;
+  object-fit: cover;
+  border: 1px solid var(--color-line);
+  background: var(--color-base-300);
+}
+.mention-glyph {
+  width: 2rem;
+  flex: none;
+  font-size: 1.3rem;
+  line-height: 1;
+  text-align: center;
+}
+/* Keyboard-highlighted row/cell in the writeup picker overlay (PickerNav
+   hook). An inset ring so it reads on both the card rows and the bordered
+   icon grid cells. */
+.picker-active {
+  background: var(--color-base-300);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+.mention-text {
+  min-width: 0;
+}
+.mention-text .qi-option-detail {
+  display: block;
+}
+
 /* Global search overlay (GlobalSearch hook): slide-up sheet on mobile,
    static centered dialog on sm+. Navigable result rows share the qi-option
    chrome; gs-active mirrors qi-active for the virtual list. */

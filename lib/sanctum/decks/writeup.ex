@@ -17,7 +17,8 @@ defmodule Sanctum.Decks.Writeup do
       malformed "stat block" tables (`| Player Type: || Johnny` — a stray `||` that
       drops the value), then renders with `MDEx` (CommonMark + GFM) preserving inline
       HTML and sanitizes the output, stripping author inline `style`/`class` so our
-      `.deck-writeup` CSS governs appearance.
+      `.deck-writeup` CSS governs appearance. MarvelCDB `[energy]`-style icon tokens
+      render as ChampionsIcons glyphs (`Sanctum.CardText.icon_span/1`).
 
     * **`:rich`** — a hand-built HTML block rendered into a **sandboxed iframe**
       `srcdoc` instead. The author's styles/layout/`<marquee>` are preserved
@@ -113,13 +114,15 @@ defmodule Sanctum.Decks.Writeup do
 
   defp render_segment({:html, text}), do: %{kind: :rich, srcdoc: rich_srcdoc(text)}
 
-  # sobelow_skip ["XSS.Raw"] — sanitized by MDEx (ammonia) in render_markdown/1.
+  # sobelow_skip ["XSS.Raw"] — sanitized by MDEx (ammonia) in render_markdown/1;
+  # render_icon_tokens/1 only injects CardText's own glyph spans afterwards.
   defp inline_html(md) do
     md
     |> normalize_newlines()
     |> rewrite_card_links()
     |> fix_tables()
     |> render_markdown()
+    |> render_icon_tokens()
     |> Phoenix.HTML.raw()
   end
 
@@ -210,6 +213,16 @@ defmodule Sanctum.Decks.Writeup do
         Regex.match?(@table_row_re, line) -> Regex.replace(~r/\|{2,}/, line, "|")
         true -> line
       end
+    end)
+  end
+
+  # `[energy]`-style MarvelCDB icon tokens become ChampionsIcons glyphs. Runs
+  # after sanitization — which strips author span classes — so the glyph spans
+  # survive. Unknown bracketed text stays literal, and `:rich` iframe segments
+  # are left alone (the sandboxed srcdoc doesn't load the ChampionsIcons font).
+  defp render_icon_tokens(html) do
+    Regex.replace(~r/\[([a-z_]+)\]/, html, fn full, token ->
+      Sanctum.CardText.icon_span(token) || full
     end)
   end
 

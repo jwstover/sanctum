@@ -5,38 +5,17 @@ defmodule SanctumWeb.DeckLive.Show do
   """
   use SanctumWeb, :live_view
 
-  alias SanctumWeb.Components.Card, as: CardComponent
+  import SanctumWeb.Components.CardSideTile
+  import SanctumWeb.Components.DeckCards
 
-  @type_order [:ally, :event, :support, :upgrade, :resource]
-  @type_plural %{
-    ally: "Allies",
-    event: "Events",
-    support: "Supports",
-    upgrade: "Upgrades",
-    resource: "Resources"
-  }
+  alias SanctumWeb.Components.DeckCards
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:decks}>
       <div id="scroll-restore" phx-hook="ScrollRestore"></div>
-      <div id="deck-card-view-pref" phx-hook=".CardViewPref"></div>
-      <script :type={Phoenix.LiveView.ColocatedHook} name=".CardViewPref">
-        const KEY = "sanctum:deck-card-view"
-
-        export default {
-          mounted() {
-            const stored = localStorage.getItem(KEY)
-            if (stored === "list" || stored === "images") {
-              this.pushEvent("restore_card_view", {view: stored})
-            }
-            this.handleEvent("store_card_view", ({view}) => {
-              localStorage.setItem(KEY, view)
-            })
-          }
-        }
-      </script>
+      <.card_view_pref />
       <!-- first-load skeleton -->
       <div :if={@deck == nil}>
         <div class="mb-6 h-9 w-1/2 max-w-md animate-pulse bg-base-300"></div>
@@ -55,6 +34,13 @@ defmodule SanctumWeb.DeckLive.Show do
               </p>
             </div>
             <div class="order-1 flex flex-none items-center gap-2.5 sm:order-2">
+              <.button
+                :if={owner?(@deck, @current_user)}
+                variant="primary"
+                navigate={~p"/decks/#{@deck.id}/build"}
+              >
+                <.icon name="hero-pencil-square" /> Edit Deck
+              </.button>
               <.button
                 :if={mcdb_url(@deck)}
                 href={mcdb_url(@deck)}
@@ -139,7 +125,7 @@ defmodule SanctumWeb.DeckLive.Show do
               <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
                 Deck Notes
               </div>
-              <div :if={@writeup} class="space-y-4">
+              <div :if={@writeup} id="deck-writeup" phx-hook="CardLinkPreview" class="space-y-4">
                 <div :for={seg <- @writeup}>
                   <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
                   <iframe
@@ -209,11 +195,11 @@ defmodule SanctumWeb.DeckLive.Show do
                         show_cost={false}
                       />
                       <span
-                        :if={c.owned == true}
-                        title="In your collection"
-                        class="absolute bottom-0.5 right-0.5 z-[3] flex size-4 items-center justify-center rounded-[4px] bg-base-100/75 text-success"
+                        :if={c.owned == false}
+                        title="Not in your collection"
+                        class="absolute bottom-0.5 right-0.5 z-[3] flex size-4 items-center justify-center rounded-[4px] bg-base-100/75 text-error"
                       >
-                        <.icon name="hero-check" class="size-3" />
+                        <.icon name="hero-x-mark" class="size-3" />
                       </span>
                     </.link>
                   </div>
@@ -223,22 +209,24 @@ defmodule SanctumWeb.DeckLive.Show do
                       navigate={~p"/cards/#{c.card_id}"}
                       class="flex items-center gap-2 px-1 py-1 hover:bg-base-200"
                     >
-                      <span class="w-6 flex-none font-ibm-mono text-[11px] text-base-content/50">
-                        {c.qty}×
-                      </span>
+                      <.row_cost cost={c.cost} />
                       <.icon
                         :if={c.aspect_key == :hero}
                         name="hero-user-solid"
                         class="size-3 flex-none text-aspect-hero"
                       />
                       <span :if={c.aspect_key != :hero} class={["size-2.5 flex-none", c.aspect_bg]}></span>
-                      <span class="truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85">
+                      <span class="min-w-0 truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85">
                         {c.name}
                       </span>
-                      <span :if={c.owned == true} title="In your collection" class="flex-none">
-                        <.icon name="hero-check" class="size-3 text-success" />
+                      <span :if={c.owned == false} title="Not in your collection" class="flex-none">
+                        <.icon name="hero-x-mark" class="size-3 text-error" />
                       </span>
-                      <span :if={c.pips != []} class="ml-auto flex flex-none items-center gap-1">
+                      <span class="flex-1"></span>
+                      <span class="flex-none font-ibm-mono text-[13px] text-base-content/50">
+                        ×{c.qty}
+                      </span>
+                      <span class="flex w-8 flex-none items-center justify-end gap-1">
                         <span
                           :for={{color_class, glyph} <- c.pips}
                           class={["font-champions text-[14px] leading-none", color_class]}
@@ -318,34 +306,16 @@ defmodule SanctumWeb.DeckLive.Show do
           </div>
         </div>
       </div>
+
+      <!-- hover preview for writeup card links; the CardLinkPreview hook
+           positions and toggles it, LiveView only swaps the tile inside -->
+      <div
+        id="card-link-preview"
+        class="pointer-events-none fixed left-0 top-0 z-50 hidden w-[480px] max-w-[calc(100vw-16px)]"
+      >
+        <.card_side_tile :if={@card_preview} side={@card_preview} />
+      </div>
     </Layouts.app>
-    """
-  end
-
-  attr :view, :string, required: true
-  attr :icon, :string, required: true
-  attr :label, :string, required: true
-  attr :active, :boolean, required: true
-
-  defp view_toggle_button(assigns) do
-    ~H"""
-    <button
-      type="button"
-      phx-click="set_card_view"
-      phx-value-view={@view}
-      aria-label={@label}
-      aria-pressed={to_string(@active)}
-      title={@label}
-      class={[
-        "flex size-7 items-center justify-center transition-colors",
-        if(@active,
-          do: "bg-primary text-primary-content",
-          else: "text-base-content/50 hover:bg-base-200 hover:text-base-content"
-        )
-      ]}
-    >
-      <.icon name={@icon} class="size-4" />
-    </button>
     """
   end
 
@@ -377,6 +347,9 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:card_view, "images")
       |> assign(:scroll_restore_pending?, false)
       |> assign(:owned_summary, nil)
+      |> assign(:card_preview, nil)
+      # set -> gradient palette for preview tiles, fetched once on first hover
+      |> assign(:hero_colors, nil)
 
     actor = socket.assigns[:current_user]
 
@@ -391,18 +364,32 @@ defmodule SanctumWeb.DeckLive.Show do
   end
 
   @impl true
-  def handle_event("set_card_view", %{"view" => view}, socket) when view in ~w(images list) do
-    {:noreply,
-     socket
-     |> assign(:card_view, view)
-     |> push_event("store_card_view", %{view: view})}
+  def handle_event(event, params, socket)
+      when event in ["set_card_view", "restore_card_view"] do
+    {:noreply, DeckCards.handle_card_view_event(event, params, socket)}
   end
 
-  # Pushed by the CardViewPref hook on connect with the preference stored in
-  # localStorage (if any).
-  def handle_event("restore_card_view", %{"view" => view}, socket)
-      when view in ~w(images list) do
-    {:noreply, assign(socket, :card_view, view)}
+  # Pushed by the CardLinkPreview hook when a writeup card link is hovered.
+  # Loads the linked card's primary face and renders the same tile the card
+  # pool shows into the #card-link-preview popover; the reply tells the hook
+  # the tile is ready to position. Unresolvable ids reply with an error so the
+  # hook keeps the popover hidden.
+  def handle_event("preview_card", %{"id" => id}, socket) do
+    actor = socket.assigns[:current_user]
+    side_loads = if actor, do: [:owned], else: []
+
+    case Ash.get(Sanctum.Games.Card, id, actor: actor, load: [primary_side: side_loads]) do
+      {:ok, %{primary_side: %Sanctum.Games.CardSide{} = side} = card} ->
+        hero_colors = socket.assigns.hero_colors || Sanctum.Heroes.hero_color_map()
+
+        {:reply, %{},
+         socket
+         |> assign(:hero_colors, hero_colors)
+         |> assign(:card_preview, side_view(%{side | card: card}, hero_colors))}
+
+      _ ->
+        {:reply, %{error: true}, socket}
+    end
   end
 
   # Pushed by the ScrollRestore hook when the user arrives with a saved scroll
@@ -473,21 +460,9 @@ defmodule SanctumWeb.DeckLive.Show do
            ]
          ) do
       {:ok, deck} ->
-        hero_gradient = hero_gradient(deck.hero)
-        card_views = Enum.map(deck.deck_cards, &card_view(&1, hero_gradient))
-
-        groups =
-          card_views
-          |> Enum.group_by(& &1.type)
-          |> Enum.map(fn {type, cards} ->
-            %{
-              type: type,
-              name: type_plural(type),
-              count: Enum.sum(Enum.map(cards, & &1.qty)),
-              cards: Enum.sort_by(cards, &String.downcase(&1.name))
-            }
-          end)
-          |> Enum.sort_by(&type_rank(&1.type))
+        hero_gradient = DeckCards.hero_gradient(deck.hero)
+        card_views = Enum.map(deck.deck_cards, &DeckCards.card_view(&1, hero_gradient))
+        groups = DeckCards.group_by_type(card_views)
 
         {:ok,
          %{
@@ -548,71 +523,11 @@ defmodule SanctumWeb.DeckLive.Show do
     }
   end
 
-  defp card_view(dc, hero_gradient) do
-    side = dc.card.primary_side
-    aspect_key = display_aspect(side)
-    {gf, gt} = if aspect_key == :hero, do: hero_gradient, else: {nil, nil}
+  # Only native decks are editable, and only by their owner.
+  defp owner?(%{source: :native, owner_id: owner_id}, %{id: user_id}) when not is_nil(owner_id),
+    do: owner_id == user_id
 
-    resources =
-      [
-        energy: side.resource_energy_count,
-        mental: side.resource_mental_count,
-        physical: side.resource_physical_count,
-        wild: side.resource_wild_count
-      ]
-      |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
-
-    %{
-      card_id: dc.card.id,
-      qty: dc.quantity,
-      name: side.name,
-      cost: side.cost,
-      type: side.type,
-      aspect_key: aspect_key,
-      aspect_bg: CardComponent.aspect_classes(aspect_key).bg,
-      pips: CardComponent.resource_pips(resources),
-      image_url: side.image_url,
-      gradient_from: gf,
-      gradient_to: gt,
-      owned: owned_flag(dc.card)
-    }
-  end
-
-  # true/false only when the :owned calc was loaded (signed-in); nil renders
-  # no collection UI.
-  defp owned_flag(card) do
-    case Map.get(card, :owned) do
-      value when is_boolean(value) -> value
-      _ -> nil
-    end
-  end
-
-  defp hero_gradient(%{primary_color: from, secondary_color: to, set: set}) do
-    {fallback_from, fallback_to} = CardComponent.fallback_gradient(set)
-    {from || fallback_from, to || fallback_to}
-  end
-
-  defp identity_image(%{hero_side: %{image_url: url}}) when is_binary(url), do: url
-  defp identity_image(%{card: %{primary_side: %{image_url: url}}}) when is_binary(url), do: url
-  defp identity_image(_), do: nil
-
-  # Player-card aspect display key (aspect cards — including pool — use their
-  # aspect; hero/basic ownership pools use their ownership).
-  defp display_aspect(%{ownership: :player, aspect: aspect}) when not is_nil(aspect), do: aspect
-  defp display_aspect(%{ownership: :hero}), do: :hero
-  defp display_aspect(%{ownership: :basic}), do: :basic
-  defp display_aspect(%{aspect: aspect}) when not is_nil(aspect), do: aspect
-  defp display_aspect(_), do: :basic
-
-  defp aspect_badges([]), do: [aspect_badge(:basic, "Basic")]
-
-  defp aspect_badges(aspects),
-    do: Enum.map(aspects, &aspect_badge(&1, &1 |> to_string() |> String.capitalize()))
-
-  defp aspect_badge(aspect, label) do
-    ac = CardComponent.aspect_classes(aspect)
-    %{label: label, text: ac.text, border: ac.border}
-  end
+  defp owner?(_deck, _user), do: false
 
   # Public MarvelCDB URL for the source deck, when this deck came from there.
   # `decklist` and `deck` are separate id spaces with distinct URL paths.
@@ -623,32 +538,4 @@ defmodule SanctumWeb.DeckLive.Show do
     do: "https://marvelcdb.com/deck/view/#{id}"
 
   defp mcdb_url(_), do: nil
-
-  defp source_label(:marvelcdb), do: "MarvelCDB"
-  defp source_label(:native), do: "Native"
-  defp source_label(other), do: other |> to_string() |> String.capitalize()
-
-  # Attribution: imported decks credit the MarvelCDB author; native decks
-  # credit the owner's claimed username (never their email — the field is
-  # policy-hidden). Owners without a username get no attribution row.
-  defp author(%{mcdb_user: %{username: username}}) when is_binary(username) and username != "",
-    do: %{name: "@" <> username, avatar: nil}
-
-  defp author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id),
-    do: %{name: "mcdb ##{id}", avatar: nil}
-
-  defp author(%{owner: %{username: %Ash.CiString{} = username, avatar_url: avatar}}),
-    do: %{name: "@" <> to_string(username), avatar: avatar}
-
-  defp author(_), do: nil
-
-  defp type_plural(type),
-    do: Map.get(@type_plural, type, type |> to_string() |> String.capitalize())
-
-  defp type_rank(type) do
-    case Enum.find_index(@type_order, &(&1 == type)) do
-      nil -> length(@type_order)
-      i -> i
-    end
-  end
 end

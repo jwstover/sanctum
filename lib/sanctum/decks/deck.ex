@@ -40,16 +40,26 @@ defmodule Sanctum.Decks.Deck do
       argument :aspect, :string, allow_nil?: true
       argument :hero_id, :string, allow_nil?: true
       argument :sort, :string, allow_nil?: true
+      argument :mine, :boolean, allow_nil?: true, default: false
 
       pagination offset?: true, default_limit: 24, countable: true, required?: false
 
-      prepare fn query, _context ->
+      prepare fn query, context ->
         require Ash.Query
 
         search = Ash.Query.get_argument(query, :query)
         aspect = Ash.Query.get_argument(query, :aspect)
         hero_id = Ash.Query.get_argument(query, :hero_id)
         sort = Ash.Query.get_argument(query, :sort)
+
+        query =
+          case {Ash.Query.get_argument(query, :mine), context.actor} do
+            {true, %{id: actor_id}} -> Ash.Query.filter(query, owner_id == ^actor_id)
+            # "Mine" without a signed-in actor matches nothing rather than
+            # silently widening to everyone's decks.
+            {true, nil} -> Ash.Query.filter(query, false)
+            _public -> query
+          end
 
         query =
           Ash.Query.load(query, [
@@ -113,6 +123,27 @@ defmodule Sanctum.Decks.Deck do
       require_atomic? false
     end
 
+    # Narrow owner-facing updates for the deckbuilder. Both skip ValidateHero
+    # (the hero can't change through them, so re-fetching it per write only
+    # costs a query and re-rejects alter-ego-less heroes that already exist).
+    update :rename do
+      accept [:title]
+      require_atomic? false
+      skip_global_validations? true
+    end
+
+    update :set_aspects do
+      accept [:aspects]
+      require_atomic? false
+      skip_global_validations? true
+    end
+
+    update :set_description do
+      accept [:description_md]
+      require_atomic? false
+      skip_global_validations? true
+    end
+
     update :set_mcdb_dates do
       description "Backfills the MarvelCDB provenance dates on an already-imported deck."
       accept [:mcdb_date_creation, :mcdb_date_update]
@@ -152,10 +183,11 @@ defmodule Sanctum.Decks.Deck do
         changeset
         |> Ash.Changeset.after_action(fn _changeset, deck ->
           # Remove any existing deck_cards so re-importing the same deck
-          # replaces the card list rather than duplicating it.
+          # replaces the card list rather than duplicating it. System write:
+          # DeckCard's owner policy would reject the actorless import.
           Sanctum.Decks.DeckCard
           |> Ash.Query.filter(deck_id == ^deck.id)
-          |> Ash.bulk_destroy!(:destroy, %{})
+          |> Ash.bulk_destroy!(:destroy, %{}, authorize?: false)
 
           deck_card_attrs =
             Enum.map(slots, fn slot ->
@@ -167,7 +199,7 @@ defmodule Sanctum.Decks.Deck do
               }
             end)
 
-          Ash.bulk_create(deck_card_attrs, Sanctum.Decks.DeckCard, :create)
+          Ash.bulk_create(deck_card_attrs, Sanctum.Decks.DeckCard, :create, authorize?: false)
 
           {:ok, deck}
         end)
@@ -176,11 +208,64 @@ defmodule Sanctum.Decks.Deck do
       upsert? true
       upsert_identity :unique_mcdb_deck
     end
+
+    create :build do
+      description "Creates a native deck for the signed-in user, seeding the hero's signature cards."
+      accept [:title, :hero_id, :aspects]
+
+      change relate_actor(:owner)
+
+      change fn changeset, _context ->
+        changeset
+        |> default_title()
+        |> Ash.Changeset.after_action(fn _changeset, deck ->
+          deck_card_attrs =
+            deck.hero_id
+            |> Sanctum.Decks.signature_cards()
+            |> Enum.map(&%{deck_id: deck.id, card_id: &1.id, quantity: &1.deck_limit || 1})
+
+          # System write on the owner's behalf; the actor already passed the
+          # :build policy.
+          Ash.bulk_create!(deck_card_attrs, Sanctum.Decks.DeckCard, :create,
+            authorize?: false,
+            stop_on_error?: true,
+            return_errors?: true
+          )
+
+          {:ok, deck}
+        end)
+      end
+    end
   end
 
   policies do
-    policy always() do
+    # MarvelCDB imports and backfills run actorless from system code
+    # (deck sync workers, Release tasks).
+    bypass action([:create_with_cards, :set_mcdb_dates]) do
       authorize_if always()
+    end
+
+    bypass actor_attribute_equals(:admin, true) do
+      authorize_if always()
+    end
+
+    # The deck browser and deck pages are public.
+    policy action_type(:read) do
+      authorize_if always()
+    end
+
+    policy action(:build) do
+      authorize_if actor_present()
+    end
+
+    # The bare :create isn't reachable from the UI; tests and seeds use it
+    # actorless.
+    policy action(:create) do
+      authorize_if always()
+    end
+
+    policy action_type([:update, :destroy]) do
+      authorize_if relates_to_actor_via(:owner)
     end
   end
 
@@ -271,5 +356,23 @@ defmodule Sanctum.Decks.Deck do
     String.to_existing_atom(value)
   rescue
     ArgumentError -> :__invalid__
+  end
+
+  # Blank titles on :build get "<Hero> Deck".
+  defp default_title(changeset) do
+    title = Ash.Changeset.get_attribute(changeset, :title)
+    hero_id = Ash.Changeset.get_attribute(changeset, :hero_id)
+
+    if (is_nil(title) or String.trim(title) == "") and not is_nil(hero_id) do
+      case Ash.get(Sanctum.Heroes.Hero, hero_id, load: [:display_name], authorize?: false) do
+        {:ok, hero} ->
+          Ash.Changeset.force_change_attribute(changeset, :title, "#{hero.display_name} Deck")
+
+        _not_found ->
+          changeset
+      end
+    else
+      changeset
+    end
   end
 end

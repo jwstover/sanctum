@@ -87,4 +87,19 @@ defmodule Sanctum.CardTextTest do
                  " - Deal 2 damage."
     end
   end
+
+  describe "icon_span/1" do
+    test "returns the glyph span for known tokens" do
+      assert CardText.icon_span("wild") ==
+               ~s(<span class="font-champions leading-none text-res-wild">W</span>)
+
+      assert CardText.icon_span("crisis") ==
+               ~s(<span class="font-champions leading-none">C</span>)
+    end
+
+    test "returns nil for tokens without a glyph" do
+      assert CardText.icon_span("attack") == nil
+      assert CardText.icon_span("nonsense") == nil
+    end
+  end
 end

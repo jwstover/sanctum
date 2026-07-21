@@ -48,6 +48,34 @@ defmodule Sanctum.Decks.WriteupTest do
     end
   end
 
+  describe "icon tokens" do
+    test "renders known [token] codes as ChampionsIcons glyphs" do
+      html = rendered("Pay [energy][mental] to trigger [acceleration].")
+
+      assert html =~ ~s(<span class="font-champions leading-none text-res-energy">E</span>)
+      assert html =~ ~s(<span class="font-champions leading-none text-res-mental">M</span>)
+      assert html =~ ~s(<span class="font-champions leading-none">A</span>)
+      refute html =~ "[energy]"
+    end
+
+    test "leaves unknown bracketed text literal" do
+      html = rendered("A [homebrew] deck [sic].")
+
+      assert html =~ "[homebrew]"
+      assert html =~ "[sic]"
+      refute html =~ "font-champions"
+    end
+
+    test "does not confuse card links with icon tokens" do
+      card = create(Sanctum.Games.Card, attrs: %{base_code: "01088", code: "01088"})
+
+      html = rendered("Mulligan for [Energy](/card/01088), pitch [energy].")
+
+      assert html =~ ~s(href="/cards/#{card.id}")
+      assert html =~ ~s(<span class="font-champions leading-none text-res-energy">E</span>)
+    end
+  end
+
   defp rendered(md) do
     assert [%{kind: :inline, html: html}] = Writeup.render(md)
     html |> Phoenix.HTML.safe_to_string()
