@@ -25,9 +25,6 @@ defmodule SanctumWeb.DeckLive.Show do
       <div :if={@deck != nil}>
         <.header>
           {@deck.title}
-          <:subtitle>
-            {@cover.hero_name}<span :if={@cover.author}> · by {@cover.author}</span>
-          </:subtitle>
           <:actions>
             <.button
               :if={owner?(@deck, @current_user)}

@@ -9,9 +9,6 @@ defmodule SanctumWeb.CardLive.Sync do
     <Layouts.admin flash={@flash}>
       <.header>
         Card Sync
-        <:subtitle>
-          Pulls the card catalog from MarvelCDB and mirrors card scans into the public bucket.
-        </:subtitle>
         <:actions>
           <.back_button fallback={~p"/admin/cards"} />
         </:actions>

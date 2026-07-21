@@ -455,7 +455,6 @@ defmodule SanctumWeb.CoreComponents do
   Renders a header with title.
   """
   slot :inner_block, required: true
-  slot :subtitle
   slot :actions
 
   def header(assigns) do
@@ -468,9 +467,6 @@ defmodule SanctumWeb.CoreComponents do
           <h1 class="font-anton text-3xl uppercase leading-[0.9] tracking-[0.005em] md:text-[42px]">
             {render_slot(@inner_block)}
           </h1>
-          <p :if={@subtitle != []} class="mt-2 font-barlow text-[15px] text-base-content/60">
-            {render_slot(@subtitle)}
-          </p>
         </div>
         <div
           :if={@actions != []}

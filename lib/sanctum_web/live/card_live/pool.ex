@@ -24,9 +24,6 @@ defmodule SanctumWeb.CardLive.Pool do
       <div id="scroll-restore" phx-hook="ScrollRestore" data-offset={@offset}></div>
       <.header>
         Card Pool
-        <:subtitle>
-          Every card in the game — player and encounter — with full text and stats. Filter by aspect or type to find what you need.
-        </:subtitle>
       </.header>
 
       <!-- controls -->

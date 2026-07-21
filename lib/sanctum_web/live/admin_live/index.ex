@@ -16,7 +16,6 @@ defmodule SanctumWeb.AdminLive.Index do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:admin}>
       <.header>
         Admin
-        <:subtitle>System health and management surfaces.</:subtitle>
       </.header>
 
       <section class="mt-6">

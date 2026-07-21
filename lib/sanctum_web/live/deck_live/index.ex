@@ -28,9 +28,6 @@ defmodule SanctumWeb.DeckLive.Index do
       <div id="scroll-restore" phx-hook="ScrollRestore" data-offset={@offset}></div>
       <.header>
         Browse Decks
-        <:subtitle>
-          Every deck in the vault. Filter by hero or aspect, then open one for the full list.
-        </:subtitle>
         <:actions>
           <.button :if={@current_user} variant="primary" navigate={~p"/decks/new"}>
             <.icon name="hero-plus" /> New Deck
