@@ -5,28 +5,7 @@ defmodule Sanctum.Search.ScenarioFields do
   the global search bar.
   """
 
-  @behaviour Sanctum.Search.Registry
+  use Sanctum.Search.NameRegistry, example: "name:rhino", hint: "scenario name"
 
-  import Ash.Expr
-
-  alias Sanctum.Search.{Builders, Field}
-
-  @impl true
-  def bare_word(value) do
-    expr(ilike(name, ^Builders.pattern(value)))
-  end
-
-  @impl true
-  def fields do
-    [
-      %Field{
-        name: "name",
-        aliases: ["n"],
-        kind: :text,
-        example: "name:rhino",
-        hint: "scenario name",
-        build: Builders.text_build(fn pattern -> expr(ilike(name, ^pattern)) end)
-      }
-    ]
-  end
+  defp name_expr(pattern), do: expr(ilike(name, ^pattern))
 end

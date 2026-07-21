@@ -5,42 +5,32 @@ defmodule Sanctum.Search.CardSetFields do
   the global search bar.
   """
 
-  @behaviour Sanctum.Search.Registry
-
-  import Ash.Expr
+  use Sanctum.Search.NameRegistry,
+    example: ~s(name:"weapon x"),
+    hint: "card set name"
 
   alias Sanctum.Catalog.SetType
   alias Sanctum.Search.{Builders, Field}
 
   @impl true
-  def bare_word(value) do
-    expr(ilike(name, ^Builders.pattern(value)))
+  def fields do
+    super() ++
+      [
+        %Field{
+          name: "set_type",
+          aliases: ["settype"],
+          kind: :enum,
+          values: Enum.map(SetType.values(), &to_string/1),
+          example: "set_type:modular",
+          hint: "role of the set (modular, nemesis, …)",
+          build: fn op, value ->
+            with {:ok, atom} <- Builders.coerce_enum(value, SetType.values()) do
+              {:ok, Builders.cmp(expr(set_type), op, atom)}
+            end
+          end
+        }
+      ]
   end
 
-  @impl true
-  def fields do
-    [
-      %Field{
-        name: "name",
-        aliases: ["n"],
-        kind: :text,
-        example: ~s(name:"weapon x"),
-        hint: "card set name",
-        build: Builders.text_build(fn pattern -> expr(ilike(name, ^pattern)) end)
-      },
-      %Field{
-        name: "set_type",
-        aliases: ["settype"],
-        kind: :enum,
-        values: Enum.map(SetType.values(), &to_string/1),
-        example: "set_type:modular",
-        hint: "role of the set (modular, nemesis, …)",
-        build: fn op, value ->
-          with {:ok, atom} <- Builders.coerce_enum(value, SetType.values()) do
-            {:ok, Builders.cmp(expr(set_type), op, atom)}
-          end
-        end
-      }
-    ]
-  end
+  defp name_expr(pattern), do: expr(ilike(name, ^pattern))
 end

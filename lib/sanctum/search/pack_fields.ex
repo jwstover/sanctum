@@ -4,28 +4,9 @@ defmodule Sanctum.Search.PackFields do
   Minimal on purpose — packs only surface in the global search bar.
   """
 
-  @behaviour Sanctum.Search.Registry
+  use Sanctum.Search.NameRegistry,
+    example: ~s(name:"sinister motives"),
+    hint: "pack name"
 
-  import Ash.Expr
-
-  alias Sanctum.Search.{Builders, Field}
-
-  @impl true
-  def bare_word(value) do
-    expr(ilike(name, ^Builders.pattern(value)))
-  end
-
-  @impl true
-  def fields do
-    [
-      %Field{
-        name: "name",
-        aliases: ["n"],
-        kind: :text,
-        example: ~s(name:"sinister motives"),
-        hint: "pack name",
-        build: Builders.text_build(fn pattern -> expr(ilike(name, ^pattern)) end)
-      }
-    ]
-  end
+  defp name_expr(pattern), do: expr(ilike(name, ^pattern))
 end
