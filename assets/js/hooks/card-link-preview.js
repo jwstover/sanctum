@@ -1,8 +1,10 @@
 // Hover previews for `/cards/:id` links inside the hook element (deck
-// writeups). On hover-intent it asks the LiveView for the card
+// writeups and decklists). On hover-intent it asks the LiveView for the card
 // ("preview_card"), which renders a card tile into #card-link-preview; this
-// hook only positions and toggles that popover. Hover-only devices get the
-// feature; touch devices fall through to the normal link navigation.
+// hook only positions and toggles that popover. Several hook instances can
+// share the one popover — the card id it currently shows is tracked on the
+// popover element itself. Hover-only devices get the feature; touch devices
+// fall through to the normal link navigation.
 const SHOW_DELAY_MS = 150;
 const MARGIN = 8;
 
@@ -11,8 +13,6 @@ const CardLinkPreview = {
     if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
 
     this.timer = null;
-    // Card id currently rendered in the popover — re-hovers skip the server.
-    this.currentId = null;
     this.anchor = null;
 
     this.onOver = (e) => {
@@ -52,12 +52,14 @@ const CardLinkPreview = {
   },
 
   request(id, link) {
-    if (id === this.currentId) return this.show(link);
+    // Re-hovering the card the popover already holds skips the server.
+    if (this.popover()?.dataset.cardId === id) return this.show(link);
 
     this.pushEvent("preview_card", {id}, (reply) => {
       // Stale replies (mouse moved on, or an unresolvable id) are dropped.
       if (reply.error || this.anchor !== link) return;
-      this.currentId = id;
+      const pop = this.popover();
+      if (pop) pop.dataset.cardId = id;
       // The tile patch lands with the reply; wait a frame so we measure it.
       requestAnimationFrame(() => this.anchor === link && this.show(link));
     });

@@ -15,6 +15,7 @@ defmodule SanctumWeb.DeckLive.Build do
 
   require Ash.Query
 
+  import SanctumWeb.Components.CardPreview
   import SanctumWeb.Components.DeckCards
   import SanctumWeb.Components.QueryInput
 
@@ -82,6 +83,7 @@ defmodule SanctumWeb.DeckLive.Build do
     |> assign(:signature_ids, signature_ids)
     |> assign(:staples, load_staples())
     |> recompute_issues()
+    |> assign_card_preview()
     |> assign(:panel_open?, false)
     |> assign(:confirm_delete?, false)
     |> assign(:tab, "cards")
@@ -228,6 +230,11 @@ defmodule SanctumWeb.DeckLive.Build do
     else
       {:noreply, start_load(socket, socket.assigns.offset + @page_size)}
     end
+  end
+
+  # Pushed by the CardLinkPreview hook when a decklist tile/row is hovered.
+  def handle_event("preview_card", %{"id" => id}, socket) do
+    handle_preview_event(id, socket)
   end
 
   def handle_event("inc", %{"card-id" => card_id}, socket) do
@@ -1181,6 +1188,8 @@ defmodule SanctumWeb.DeckLive.Build do
           </span>
         </button>
       </div>
+
+      <.card_preview_popover side={@card_preview} />
     </Layouts.app>
     """
   end
@@ -1199,7 +1208,7 @@ defmodule SanctumWeb.DeckLive.Build do
     assigns = assign(assigns, :size, deck_size(assigns.entries))
 
     ~H"""
-    <div class="flex flex-col gap-4 p-4">
+    <div id={"deck-panel-#{@id}-body"} phx-hook="CardLinkPreview" class="flex flex-col gap-4 p-4">
       <!-- title + count -->
       <div>
         <form id={"rename-#{@id}"} phx-submit="rename" class="flex items-center gap-2">

@@ -5,7 +5,7 @@ defmodule SanctumWeb.DeckLive.Show do
   """
   use SanctumWeb, :live_view
 
-  import SanctumWeb.Components.CardSideTile
+  import SanctumWeb.Components.CardPreview
   import SanctumWeb.Components.DeckCards
 
   alias SanctumWeb.Components.DeckCards
@@ -119,13 +119,18 @@ defmodule SanctumWeb.DeckLive.Show do
             </div>
           </.panel>
 
-          <!-- body: writeup + card list -->
-          <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
+          <!-- body: writeup + card list; the hook previews any /cards link
+               inside — writeup card mentions and decklist tiles/rows alike -->
+          <div
+            id="deck-body"
+            phx-hook="CardLinkPreview"
+            class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]"
+          >
             <.panel class="min-w-0 p-5">
               <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
                 Deck Notes
               </div>
-              <div :if={@writeup} id="deck-writeup" phx-hook="CardLinkPreview" class="space-y-4">
+              <div :if={@writeup} class="space-y-4">
                 <div :for={seg <- @writeup}>
                   <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
                   <iframe
@@ -307,14 +312,7 @@ defmodule SanctumWeb.DeckLive.Show do
         </div>
       </div>
 
-      <!-- hover preview for writeup card links; the CardLinkPreview hook
-           positions and toggles it, LiveView only swaps the tile inside -->
-      <div
-        id="card-link-preview"
-        class="pointer-events-none fixed left-0 top-0 z-50 hidden w-[480px] max-w-[calc(100vw-16px)]"
-      >
-        <.card_side_tile :if={@card_preview} side={@card_preview} />
-      </div>
+      <.card_preview_popover side={@card_preview} />
     </Layouts.app>
     """
   end
@@ -347,9 +345,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:card_view, "images")
       |> assign(:scroll_restore_pending?, false)
       |> assign(:owned_summary, nil)
-      |> assign(:card_preview, nil)
-      # set -> gradient palette for preview tiles, fetched once on first hover
-      |> assign(:hero_colors, nil)
+      |> assign_card_preview()
 
     actor = socket.assigns[:current_user]
 
@@ -369,27 +365,10 @@ defmodule SanctumWeb.DeckLive.Show do
     {:noreply, DeckCards.handle_card_view_event(event, params, socket)}
   end
 
-  # Pushed by the CardLinkPreview hook when a writeup card link is hovered.
-  # Loads the linked card's primary face and renders the same tile the card
-  # pool shows into the #card-link-preview popover; the reply tells the hook
-  # the tile is ready to position. Unresolvable ids reply with an error so the
-  # hook keeps the popover hidden.
+  # Pushed by the CardLinkPreview hook when a /cards link (writeup mention or
+  # decklist tile/row) is hovered.
   def handle_event("preview_card", %{"id" => id}, socket) do
-    actor = socket.assigns[:current_user]
-    side_loads = if actor, do: [:owned], else: []
-
-    case Ash.get(Sanctum.Games.Card, id, actor: actor, load: [primary_side: side_loads]) do
-      {:ok, %{primary_side: %Sanctum.Games.CardSide{} = side} = card} ->
-        hero_colors = socket.assigns.hero_colors || Sanctum.Heroes.hero_color_map()
-
-        {:reply, %{},
-         socket
-         |> assign(:hero_colors, hero_colors)
-         |> assign(:card_preview, side_view(%{side | card: card}, hero_colors))}
-
-      _ ->
-        {:reply, %{error: true}, socket}
-    end
+    handle_preview_event(id, socket)
   end
 
   # Pushed by the ScrollRestore hook when the user arrives with a saved scroll
