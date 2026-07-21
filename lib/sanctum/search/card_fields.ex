@@ -38,7 +38,6 @@ defmodule Sanctum.Search.CardFields do
   ]
 
   @int_fields [
-    {"cost", ["c"], :cost, "cost<=2"},
     {"stage", [], :stage, "stage=3"},
     {"boost", ["b"], :boost, "boost>=2"},
     {"hand_size", ["hand"], :hand_size, "hand_size>=6"},
@@ -70,10 +69,8 @@ defmodule Sanctum.Search.CardFields do
   # what an empty search box offers.
   @impl true
   def fields do
-    {cost_fields, other_int_fields} = Enum.split_with(int_fields(), &(&1.name == "cost"))
-
     primary_fields() ++
-      cost_fields ++ stat_fields() ++ other_int_fields ++ misc_fields()
+      [cost_field()] ++ stat_fields() ++ int_fields() ++ misc_fields()
   end
 
   # -- field groups --------------------------------------------------------
@@ -215,6 +212,24 @@ defmodule Sanctum.Search.CardFields do
     ]
   end
 
+  # Cost is int-shaped but X-aware: a few player cards print an X cost
+  # (stored as MarvelCDB's -1 sentinel), searchable as `cost:x`.
+  defp cost_field do
+    %Field{
+      name: "cost",
+      aliases: ["c"],
+      kind: :integer,
+      example: "cost<=2",
+      hint: ~s(printed cost; "x" matches X-cost cards),
+      ops: @all_ops,
+      build: fn op, value ->
+        with {:ok, n} <- parse_printed_number(op, value) do
+          {:ok, Builders.x_cmp(expr(cost), op, n)}
+        end
+      end
+    }
+  end
+
   defp stat_fields do
     for {name, aliases, attr, example} <- @stat_fields do
       %Field{
@@ -224,11 +239,21 @@ defmodule Sanctum.Search.CardFields do
         example: example,
         ops: @all_ops,
         build: fn op, value ->
-          with {:ok, n} <- Builders.parse_int(value) do
+          with {:ok, n} <- parse_printed_number(op, value) do
             {:ok, Builders.stat_cmp(attr, op, n)}
           end
         end
       }
+    end
+  end
+
+  # A printed X (stored as -1) only makes sense as an exact (in)equality —
+  # an X value satisfies no numeric bound.
+  defp parse_printed_number(op, raw) do
+    case Builders.parse_int_or_x(raw) do
+      {:ok, :x} when op in [:eq, :neq] -> {:ok, -1}
+      {:ok, :x} -> {:error, ~s(X values only support ":" or "!=")}
+      other -> other
     end
   end
 

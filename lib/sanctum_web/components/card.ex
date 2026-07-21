@@ -68,6 +68,13 @@ defmodule SanctumWeb.Components.Card do
   @doc "Whether a card type is printed in landscape orientation."
   def landscape_type?(type), do: type in @landscape_types
 
+  @doc """
+  Display form of a printed card value: MarvelCDB encodes a printed X
+  (X cost, X attack, X threat, …) as `-1` — map it back to `"X"`.
+  """
+  def display_value(-1), do: "X"
+  def display_value(value), do: value
+
   # Fallback gradient when a hero has no stored palette (non-hero sets,
   # un-synced heroes). Hero colors themselves come from MarvelCDB and are
   # passed in via gradient_from/gradient_to.
@@ -131,6 +138,7 @@ defmodule SanctumWeb.Components.Card do
 
     assigns =
       assign(assigns,
+        cost: display_value(assigns.cost),
         aspect_classes: aspect_classes,
         hero?: hero?,
         dims: dims,

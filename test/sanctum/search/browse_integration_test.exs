@@ -96,6 +96,39 @@ defmodule Sanctum.Search.BrowseIntegrationTest do
       assert browse_names("attack<=1") == ["Cheap Ally"]
     end
 
+    test "an X printing (stored as -1) never satisfies an upper bound" do
+      insert_side(%{
+        name: "X Event",
+        type: :event,
+        aspect: :aggression,
+        ownership: :player,
+        cost: -1,
+        attack: nil,
+        traits: [],
+        text: "Do X things."
+      })
+
+      refute "X Event" in browse_names("cost<=2")
+      refute "X Event" in browse_names("cost<0")
+      assert browse_names("cost:x") == ["X Event"]
+    end
+
+    test "an X stat printing matches stat:x but no bounds" do
+      insert_side(%{
+        name: "X Ally",
+        type: :ally,
+        aspect: :aggression,
+        ownership: :player,
+        cost: 3,
+        attack: %{value: -1},
+        traits: [],
+        text: ""
+      })
+
+      refute "X Ally" in browse_names("attack<=1")
+      assert browse_names("attack:x") == ["X Ally"]
+    end
+
     test "trait match is case-insensitive" do
       assert browse_names("trait:avenger") == ["Cheap Ally"]
       assert browse_names("k:AVENGER") == ["Cheap Ally"]

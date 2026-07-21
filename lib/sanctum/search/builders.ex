@@ -20,12 +20,24 @@ defmodule Sanctum.Search.Builders do
   def cmp(target, :gte, value), do: expr(^target >= ^value)
 
   @doc """
+  Comparison against a printed number where `-1` encodes a printed X
+  (MarvelCDB's sentinel). An X value is unknowable, so it satisfies no
+  upper bound — `cost<=2` must not match an X-cost card. Lower bounds and
+  (in)equality need no guard: `-1` already sits below every real value.
+  """
+  def x_cmp(target, op, value) when op in [:lt, :lte] do
+    expr(^cmp(target, op, value) and ^target != -1)
+  end
+
+  def x_cmp(target, op, value), do: cmp(target, op, value)
+
+  @doc """
   Comparison against the printed number of a `Sanctum.Games.Stat` jsonb
-  attribute. Sides where the stat (or its value — a `⭐`/`X` printing) is
-  absent compare as SQL NULL and drop out of the results.
+  attribute (X-aware — see `x_cmp/3`). Sides where the stat is absent
+  compare as SQL NULL and drop out of the results.
   """
   def stat_cmp(attr, op, value) do
-    cmp(expr(fragment("(? ->> 'value')::integer", ^ref(attr))), op, value)
+    x_cmp(expr(fragment("(? ->> 'value')::integer", ^ref(attr))), op, value)
   end
 
   @doc "Case-insensitive substring match, with ILIKE wildcards escaped."
@@ -63,6 +75,15 @@ defmodule Sanctum.Search.Builders do
     case Integer.parse(String.trim(raw)) do
       {n, ""} -> {:ok, n}
       _ -> {:error, ~s("#{raw}" is not a number)}
+    end
+  end
+
+  @doc ~s(Parse an integer, or "x" — a printed X value — as `:x`.)
+  def parse_int_or_x(raw) do
+    if raw |> String.trim() |> String.downcase() == "x" do
+      {:ok, :x}
+    else
+      parse_int(raw)
     end
   end
 

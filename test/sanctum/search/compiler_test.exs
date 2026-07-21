@@ -73,6 +73,20 @@ defmodule Sanctum.Search.CompilerTest do
       assert codes(result) == [:invalid_value]
     end
 
+    test "x matches a printed X on cost and stat fields" do
+      assert %{expr: expr, diagnostics: []} = compile("cost:x")
+      assert inspect(expr) =~ "-1"
+
+      assert %{expr: expr, diagnostics: []} = compile("attack!=X")
+      assert inspect(expr) =~ "-1"
+    end
+
+    test "x rejects numeric bounds" do
+      result = compile("cost<x")
+      assert result.expr == false
+      assert codes(result) == [:invalid_value]
+    end
+
     test "unsupported operator on a field" do
       result = compile("aspect>2")
       assert result.expr == nil
