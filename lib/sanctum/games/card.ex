@@ -75,7 +75,8 @@ defmodule Sanctum.Games.Card do
     # Official-only by intent — even published homebrew shouldn't pollute the
     # guessing pool (the read policy would otherwise admit it).
     read :guessable do
-      prepare build(load: [:primary_side])
+      # pack_ref + wave feed the hint ladder's release rungs.
+      prepare build(load: [:primary_side, pack_ref: [:wave]])
 
       filter expr(
                origin == :official and

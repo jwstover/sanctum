@@ -54,7 +54,7 @@ defmodule SanctumWeb.GuessLive.PlayTest do
       view |> form(~s(form[phx-submit="guess"]), %{guess: "Definitely Wrong"}) |> render_submit()
 
     assert html =~ "Hints"
-    assert html =~ "This is a player card."
+    assert html =~ "It comes from the “Core” pack."
     assert html =~ "Missed guesses: Definitely Wrong"
   end
 

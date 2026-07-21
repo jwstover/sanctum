@@ -6,15 +6,15 @@ defmodule Sanctum.Games.CardGuess do
 
   This module is otherwise pure: it picks a random card that has flavor text
   (`random_guessable_card/0`, the only DB call), builds an ordered ladder of
-  hints that narrow from broad ("it's a player card") to specific ("it comes
-  from the Spider-Man pack") via `build_hints/1`, and decides whether a typed
+  direct hints that narrow from release info ("it was released in Wave 5")
+  down to the card's own text via `build_hints/1`, and decides whether a typed
   guess names the card via `correct?/2` (exact-normalized or a close Jaro match,
   so typos still count).
   """
 
   require Ash.Query
 
-  alias Sanctum.Games.{Card, Stat}
+  alias Sanctum.Games.Card
 
   # A normalized guess this similar (0..1, via String.jaro_distance/2) to any
   # candidate name counts as correct — forgiving of typos/pluralization. Single
@@ -23,8 +23,6 @@ defmodule Sanctum.Games.CardGuess do
 
   @player_ownerships [:player, :basic, :hero]
   @encounter_ownerships [:encounter, :campaign]
-  @character_types [:hero, :alter_ego, :ally, :minion, :villain]
-  @scheme_types [:main_scheme, :side_scheme]
 
   @doc """
   Fetches a random card that has flavor text, with its primary side loaded.
@@ -91,28 +89,44 @@ defmodule Sanctum.Games.CardGuess do
   end
 
   @doc """
-  Ordered list of `%{key: atom, text: String.t()}` hints for the card, broadest
-  first. Rungs that don't apply to the card are skipped, so a player card and an
-  encounter card each get a sensible ~10-hint ladder.
+  Ordered list of `%{key: atom, text: String.t()}` hints for the card — a
+  direct ladder from release info (wave, pack) through classification (player
+  vs encounter, pool, exact type) down to the card itself (cost + resources,
+  traits, body text). Rungs that don't apply to the card are skipped.
+
+  The wave and pack rungs read `card.pack_ref` (+ its wave), so load them
+  when hints matter — the `:guessable` read does.
   """
   def build_hints(%Card{primary_side: side} = card) do
     [
+      wave_hint(card),
+      pack_hint(card),
       allegiance_hint(side),
-      nature_hint(side),
-      aspect_hint(side),
+      pool_hint(side),
       type_hint(side),
+      cost_resources_hint(side),
       traits_hint(side),
-      cost_hint(side),
-      resources_hint(side),
-      stats_hint(side),
-      uniqueness_hint(card),
-      set_hint(card),
-      name_shape_hint(side)
+      text_hint(side)
     ]
     |> Enum.reject(&is_nil/1)
   end
 
-  # 1. Allegiance — player vs encounter.
+  # 1. Release wave (curated taxonomy; not every pack belongs to one).
+  defp wave_hint(%Card{pack_ref: %{wave: %{name: name}}}) when is_binary(name) and name != "",
+    do: hint(:wave, "It was released in #{name}.")
+
+  defp wave_hint(_), do: nil
+
+  # 2. Pack — the synced catalog name, falling back to the card's pack slug.
+  defp pack_hint(%Card{pack_ref: %{name: name}}) when is_binary(name) and name != "",
+    do: hint(:pack, "It comes from the “#{name}” pack.")
+
+  defp pack_hint(%Card{pack: pack}) when is_binary(pack) and pack != "",
+    do: hint(:pack, "It comes from the “#{humanize_slug(pack)}” pack.")
+
+  defp pack_hint(_), do: nil
+
+  # 3. Allegiance — player vs encounter.
   defp allegiance_hint(%{ownership: ownership}) when ownership in @player_ownerships,
     do: hint(:allegiance, "This is a player card.")
 
@@ -121,112 +135,111 @@ defmodule Sanctum.Games.CardGuess do
 
   defp allegiance_hint(_), do: nil
 
-  # 2. Broad nature — character / scheme / support-style.
-  defp nature_hint(%{type: type}) when type in @character_types,
-    do: hint(:nature, "It's a character card — something with hit points.")
+  # 4. The specific pool the card belongs to.
+  defp pool_hint(%{type: :villain}), do: hint(:pool, "This is a villain card.")
 
-  defp nature_hint(%{type: type}) when type in @scheme_types,
-    do: hint(:nature, "It's a scheme.")
-
-  defp nature_hint(%{type: type}) when not is_nil(type),
-    do: hint(:nature, "It's not a character or a scheme — more of a support-style card.")
-
-  defp nature_hint(_), do: nil
-
-  # 3. Aspect / origin.
-  defp aspect_hint(%{aspect: aspect}) when not is_nil(aspect),
-    do: hint(:aspect, "Its aspect is #{aspect_label(aspect)}.")
-
-  defp aspect_hint(%{ownership: :hero}), do: hint(:aspect, "It's a hero signature card.")
-
-  defp aspect_hint(%{ownership: :basic}),
-    do: hint(:aspect, "It's a Basic card — any deck can include it.")
-
-  defp aspect_hint(_), do: nil
-
-  # 4. Exact card type.
-  defp type_hint(%{type: type}) when not is_nil(type) do
-    label = type_label(type)
-    hint(:type, "It's #{article(label)} #{label}.")
+  defp pool_hint(%{aspect: aspect}) when not is_nil(aspect) do
+    label = aspect_label(aspect)
+    hint(:pool, "This is #{article(label)} #{label} card.")
   end
 
-  defp type_hint(_), do: nil
+  defp pool_hint(%{ownership: :hero}), do: hint(:pool, "This is a hero-specific card.")
 
-  # 5. Traits.
-  defp traits_hint(%{traits: traits}) when is_list(traits) and traits != [],
-    do: hint(:traits, "Traits: #{Enum.join(traits, ", ")}.")
+  defp pool_hint(%{ownership: :basic}),
+    do: hint(:pool, "This is a Basic card — any deck can include it.")
 
-  defp traits_hint(_), do: nil
+  defp pool_hint(%{ownership: :campaign}), do: hint(:pool, "This is a campaign card.")
 
-  # 6. Resource cost.
-  defp cost_hint(%{cost: cost}) when is_integer(cost),
-    do: hint(:cost, "Its resource cost is #{cost}.")
+  defp pool_hint(%{ownership: :encounter}), do: hint(:pool, "This is an encounter card.")
 
-  defp cost_hint(_), do: nil
+  defp pool_hint(_), do: nil
 
-  # 7. Resource icons it provides.
-  defp resources_hint(side) do
+  # 5. The exact card type, qualified by its pool ("an Aggression event").
+  defp type_hint(%{type: nil}), do: nil
+
+  defp type_hint(side) do
+    label = String.trim("#{pool_word(side)} #{String.downcase(type_label(side.type))}")
+    hint(:type, "Specifically, it's #{article(label)} #{label}.")
+  end
+
+  # The pool qualifier for the type rung. Villains skip it — "a villain"
+  # already says everything.
+  defp pool_word(%{type: :villain}), do: ""
+  defp pool_word(%{aspect: aspect}) when not is_nil(aspect), do: aspect_label(aspect)
+  defp pool_word(%{ownership: :hero}), do: "hero-specific"
+  defp pool_word(%{ownership: :basic}), do: "Basic"
+  defp pool_word(%{ownership: :campaign}), do: "campaign"
+  defp pool_word(%{ownership: :encounter}), do: "encounter"
+  defp pool_word(_), do: ""
+
+  # 6. Cost and the resource icons it provides, together.
+  defp cost_resources_hint(side) do
+    cost = cost_text(side.cost)
+    resources = resource_counts(side)
+    icons = Enum.map_join(resources, ", ", fn {label, n} -> "#{n} #{label}" end)
+
+    case {cost, resources} do
+      {nil, []} ->
+        nil
+
+      {cost, []} ->
+        hint(:cost, "Its resource cost is #{cost}.")
+
+      {nil, resources} ->
+        hint(:cost, "It provides #{icons} #{icon_word(resources)}.")
+
+      {cost, resources} ->
+        hint(:cost, "It costs #{cost} and provides #{icons} #{icon_word(resources)}.")
+    end
+  end
+
+  # MarvelCDB encodes a printed X cost as -1.
+  defp cost_text(-1), do: "X"
+  defp cost_text(cost) when is_integer(cost), do: Integer.to_string(cost)
+  defp cost_text(_), do: nil
+
+  defp resource_counts(side) do
     [
       {"energy", side.resource_energy_count},
       {"physical", side.resource_physical_count},
       {"mental", side.resource_mental_count},
       {"wild", side.resource_wild_count}
     ]
-    |> Enum.flat_map(fn {label, n} ->
-      if is_integer(n) and n > 0, do: ["#{n} #{label}"], else: []
-    end)
-    |> case do
-      [] -> nil
-      list -> hint(:resources, "Resource icons it provides: #{Enum.join(list, ", ")}.")
-    end
+    |> Enum.filter(fn {_label, n} -> is_integer(n) and n > 0 end)
   end
 
-  # 8. Stats (character combat stats or scheme threat).
-  defp stats_hint(side) do
-    [
-      {"ATK", side.attack},
-      {"THW", side.thwart},
-      {"DEF", side.defense},
-      {"HP", side.health},
-      {"REC", side.recover},
-      {"Starting threat", side.base_threat},
-      {"Max threat", side.max_threat}
-    ]
-    |> Enum.flat_map(&stat_pair/1)
-    |> case do
-      [] -> nil
-      list -> hint(:stats, "Stats — #{Enum.join(list, ", ")}.")
-    end
+  defp icon_word(resources) do
+    total = resources |> Enum.map(&elem(&1, 1)) |> Enum.sum()
+    if total == 1, do: "resource icon", else: "resource icons"
   end
 
-  defp stat_pair({label, %Stat{value: value}}) when is_integer(value), do: ["#{label} #{value}"]
-  defp stat_pair(_), do: []
+  # 7. Traits.
+  defp traits_hint(%{traits: traits}) when is_list(traits) and traits != [],
+    do: hint(:traits, "Traits: #{Enum.join(traits, ", ")}.")
 
-  # 9. Uniqueness / deck limit.
-  defp uniqueness_hint(%{unique: true}), do: hint(:uniqueness, "This card is unique.")
+  defp traits_hint(_), do: nil
 
-  defp uniqueness_hint(%{deck_limit: limit}) when is_integer(limit) and limit > 0,
-    do: hint(:uniqueness, "It's not unique — a deck can include up to #{limit} #{copies(limit)}.")
-
-  defp uniqueness_hint(_), do: nil
-
-  # 10. Set / pack it comes from.
-  defp set_hint(%{set: set}) when is_binary(set) and set != "",
-    do: hint(:set, "It comes from the “#{humanize_slug(set)}” set.")
-
-  defp set_hint(%{pack: pack}) when is_binary(pack) and pack != "",
-    do: hint(:set, "It comes from the “#{humanize_slug(pack)}” pack.")
-
-  defp set_hint(_), do: nil
-
-  # 11. Name shape — the last-resort giveaway.
-  defp name_shape_hint(%{name: name}) when is_binary(name) and name != "" do
-    words = name |> String.split(~r/\s+/, trim: true) |> length()
-    first = name |> String.trim() |> String.first() |> String.upcase()
-    hint(:name_shape, "The name has #{words} #{word_word(words)} and starts with “#{first}”.")
+  # 8. The card's own rules text, name redacted — the final giveaway.
+  defp text_hint(%{text: text, name: name}) when is_binary(text) and text != "" do
+    hint(:text, "Its text reads: “#{text |> strip_markup() |> redact_name(name)}”")
   end
 
-  defp name_shape_hint(_), do: nil
+  defp text_hint(_), do: nil
+
+  # MarvelCDB text carries simple HTML tags (<b>, <i>, <em>); hints render as
+  # plain text, so drop them and collapse the whitespace they leave behind.
+  defp strip_markup(text) do
+    text
+    |> String.replace(~r/<[^>]+>/, "")
+    |> String.replace(~r/\s+/, " ")
+    |> String.trim()
+  end
+
+  defp redact_name(text, name) when is_binary(name) and name != "" do
+    Regex.replace(~r/#{Regex.escape(name)}/iu, text, "____")
+  end
+
+  defp redact_name(text, _name), do: text
 
   defp hint(key, text), do: %{key: key, text: text}
 
@@ -241,10 +254,4 @@ defmodule Sanctum.Games.CardGuess do
   defp article(word) do
     if String.downcase(String.first(word)) in ~w(a e i o u), do: "an", else: "a"
   end
-
-  defp copies(1), do: "copy"
-  defp copies(_), do: "copies"
-
-  defp word_word(1), do: "word"
-  defp word_word(_), do: "words"
 end
