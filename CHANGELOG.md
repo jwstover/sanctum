@@ -1,3 +1,12 @@
+# [1.61.0](https://github.com/jwstover/sanctum/compare/v1.60.2...v1.61.0) (2026-07-22)
+
+
+### Features
+
+* **cards:** prev/next card navigation on the detail page ([3e344f4](https://github.com/jwstover/sanctum/commit/3e344f49413530ea10e3bf70833cfaa609b136fe))
+
+
+
 ## [1.60.2](https://github.com/jwstover/sanctum/compare/v1.60.1...v1.60.2) (2026-07-21)
 
 
@@ -43,16 +52,6 @@
 ### Bug Fixes
 
 * **cards:** render printed X values instead of -1 and make search X-aware ([995f32f](https://github.com/jwstover/sanctum/commit/995f32f561074fef96f9e435a715c97359d82e07))
-
-
-
-# [1.59.0](https://github.com/jwstover/sanctum/compare/v1.58.0...v1.59.0) (2026-07-21)
-
-
-### Features
-
-* **decks:** extend hover card previews to decklists ([0c2f84b](https://github.com/jwstover/sanctum/commit/0c2f84baf3bf22299ab750727d45aecc1b052a95))
-* **ui:** render timestamps in the browser's timezone ([57212eb](https://github.com/jwstover/sanctum/commit/57212eb07ca3f13605e7c69e6815cb38ed3ad636))
 
 
 
