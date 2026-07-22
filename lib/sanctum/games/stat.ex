@@ -23,6 +23,30 @@ defmodule Sanctum.Games.Stat do
 
   defstruct value: nil, star: false, scaling: :flat, consequential: nil
 
+  @doc """
+  The bare value for a number input editing this stat. Tolerates the raw
+  string/integer/map params a form round-trips between validates.
+  """
+  def input_value(%__MODULE__{value: value}), do: value
+  def input_value(%{} = params), do: fetch(params, :value)
+  def input_value(value) when is_integer(value) or is_binary(value), do: value
+  def input_value(_), do: nil
+
+  @doc "Whether the ★ box should be checked; tolerates form params."
+  def input_star(%__MODULE__{star: star}), do: star
+  def input_star(%{} = params), do: truthy(fetch(params, :star))
+  def input_star(_), do: false
+
+  @doc "The consequential-damage input value; tolerates form params."
+  def input_consequential(%__MODULE__{consequential: consequential}), do: consequential
+  def input_consequential(%{} = params), do: fetch(params, :consequential)
+  def input_consequential(_), do: nil
+
+  @doc "The scaling select value; tolerates form params."
+  def input_scaling(%__MODULE__{scaling: scaling}), do: scaling
+  def input_scaling(%{} = params), do: to_scaling(fetch(params, :scaling))
+  def input_scaling(_), do: :flat
+
   @scalings [:flat, :per_player, :per_group]
 
   @impl true
@@ -46,7 +70,15 @@ defmodule Sanctum.Games.Stat do
     end
   end
 
-  def cast_input(%{} = map, _), do: {:ok, from_map(map)}
+  # An all-default map (blank form inputs) collapses to nil so an untouched
+  # stat stays "absent" rather than becoming an empty struct.
+  def cast_input(%{} = map, _) do
+    case from_map(map) do
+      %__MODULE__{value: nil, star: false, scaling: :flat, consequential: nil} -> {:ok, nil}
+      stat -> {:ok, stat}
+    end
+  end
+
   def cast_input(_, _), do: :error
 
   @impl true
