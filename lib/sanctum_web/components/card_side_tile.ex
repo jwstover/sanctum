@@ -130,7 +130,13 @@ defmodule SanctumWeb.Components.CardSideTile do
 
         <div :if={@side.is_villain or @side.is_minion} class="flex items-start gap-2 w-full">
           <div class="flex flex-grow items-start justify-start">
-            <.stat_badge stat={:thw} value={@side.scheme} label="SCH" size={64} />
+            <.stat_badge
+              stat={:thw}
+              value={@side.scheme}
+              label="SCH"
+              star={@side.scheme_star}
+              size={64}
+            />
             <.stat_badge stat={:atk} value={@side.attack} star={@side.attack_star} size={64} />
           </div>
           <div :if={@side.health} class="flex items-start justify-end">
@@ -319,6 +325,7 @@ defmodule SanctumWeb.Components.CardSideTile do
       health: stat_value(side.health),
       health_per_player: stat_per_player(side.health),
       scheme: display_value(side.scheme),
+      scheme_star: side.scheme_star,
       is_main_scheme: side.type == :main_scheme,
       threat_target: threat_target(side),
       threat_per_player: threat_target_per_player?(side),

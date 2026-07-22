@@ -92,7 +92,8 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
                 "cost" => "2",
                 "traits_string" => "Aerial, Attack",
                 "attack" => %{"value" => "3", "star" => "true", "consequential" => "1"},
-                "scheme" => "2"
+                "scheme" => "2",
+                "scheme_star" => "true"
               }
             }
           }
@@ -106,6 +107,7 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
       assert updated_side.traits == ["Aerial", "Attack"]
       assert %Sanctum.Games.Stat{value: 3, star: true, consequential: 1} = updated_side.attack
       assert updated_side.scheme == 2
+      assert updated_side.scheme_star
 
       # Stayed on the page; the art frame follows the new landscape type.
       assert html =~ "All changes saved"

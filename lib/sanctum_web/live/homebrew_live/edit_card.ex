@@ -367,12 +367,10 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
                   </div>
                   <.stat_row form={side} stat={:attack} label="ATK" consequential />
                   <.stat_row form={side} stat={:thwart} label="THW" consequential />
-                  <.stat_row form={side} stat={:defense} label="DEF" consequential />
-                  <.stat_row form={side} stat={:health} label="HP" scaling />
-                  <.stat_row form={side} stat={:recover} label="REC" />
-                  <%!-- A villain/minion's scheme power — a plain integer, no
-                       star/consequential/scaling axes, so it takes a flat
-                       field input rather than the nested-map stat row. --%>
+                  <%!-- A villain/minion's scheme power — flat integer +
+                       boolean columns (the boost/boost_star shape), so it
+                       takes field inputs rather than the nested-map stat
+                       row. --%>
                   <div class="grid grid-cols-[42px_1fr_52px_1fr] items-center gap-2">
                     <span class={stat_col_label_class()}>SCH</span>
                     <.input
@@ -381,9 +379,18 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
                       aria-label="scheme power"
                       phx-debounce="500"
                     />
-                    <span></span>
+                    <div class="flex justify-center">
+                      <.input
+                        field={side[:scheme_star]}
+                        type="checkbox"
+                        aria-label="scheme star effect"
+                      />
+                    </div>
                     <span></span>
                   </div>
+                  <.stat_row form={side} stat={:defense} label="DEF" consequential />
+                  <.stat_row form={side} stat={:health} label="HP" scaling />
+                  <.stat_row form={side} stat={:recover} label="REC" />
                 </div>
                 <.input
                   type="text"
