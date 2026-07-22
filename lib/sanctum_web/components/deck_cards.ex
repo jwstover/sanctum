@@ -13,6 +13,7 @@ defmodule SanctumWeb.Components.DeckCards do
   import SanctumWeb.CoreComponents, only: [icon: 1]
 
   alias SanctumWeb.Components.Card, as: CardComponent
+  alias SanctumWeb.Components.ChampionsIcons
 
   @type_order [:ally, :event, :support, :upgrade, :resource, :player_side_scheme]
   @type_labels %{
@@ -43,7 +44,7 @@ defmodule SanctumWeb.Components.DeckCards do
       hero?: side.ownership == :hero,
       aspect_key: aspect_key,
       aspect_bg: CardComponent.aspect_classes(aspect_key).bg,
-      pips: CardComponent.resource_pips(side_resources(side)),
+      pips: ChampionsIcons.resource_pips(side_resources(side)),
       image_url: side.image_url,
       gradient_from: gf,
       gradient_to: gt,

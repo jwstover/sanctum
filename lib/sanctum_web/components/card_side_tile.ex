@@ -11,6 +11,7 @@ defmodule SanctumWeb.Components.CardSideTile do
   use Phoenix.Component
 
   import SanctumWeb.Components.Card
+  import SanctumWeb.Components.ChampionsIcons
   import SanctumWeb.Components.Collection
   import SanctumWeb.Components.HandSizeBadge
   import SanctumWeb.Components.HealthBadge
@@ -187,12 +188,7 @@ defmodule SanctumWeb.Components.CardSideTile do
           :if={@side.pips != [] or (@side.is_hero and @side.hand_size)}
           class={["flex items-center gap-1", (@lg? && "mt-4") || "mt-2.5"]}
         >
-          <span
-            :for={{color_class, glyph} <- @side.pips}
-            class={["font-champions text-2xl leading-none", color_class]}
-          >
-            {glyph}
-          </span>
+          <.champions_icon :for={token <- @side.pips} token={token} class="text-2xl" />
           <.hand_size_badge
             :if={@side.is_hero and @side.hand_size}
             value={@side.hand_size}
@@ -241,9 +237,7 @@ defmodule SanctumWeb.Components.CardSideTile do
     ~H"""
     <div class="flex skew-x-[9deg] items-baseline gap-0.5 px-2 font-elektra-med text-2xl/snug">
       {scheme_value(@value, @sign)}
-      <span :if={@per_player} class="font-champions text-xs leading-none text-white">
-        v
-      </span>
+      <.player_icon :if={@per_player} class="text-xs text-white" />
     </div>
     """
   end

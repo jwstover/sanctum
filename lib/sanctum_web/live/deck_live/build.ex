@@ -1042,9 +1042,7 @@ defmodule SanctumWeb.DeckLive.Build do
                   phx-value-index={i}
                   class="flex min-h-[64px] cursor-pointer flex-col items-center justify-center gap-1.5 border-2 border-neutral bg-base-200 px-2 py-2 transition-colors hover:border-primary"
                 >
-                  <span class={["font-champions text-2xl leading-none", icon.color]}>
-                    {icon.glyph}
-                  </span>
+                  <.champions_icon token={icon.token} class="text-2xl" />
                   <span class="font-barlow-condensed text-xs font-bold uppercase tracking-[0.06em] text-base-content/70">
                     {icon.label}
                   </span>
@@ -1276,12 +1274,7 @@ defmodule SanctumWeb.DeckLive.Build do
             <!-- pips column: always rendered so every row's icons share one
                  right edge, independent of what the controls column holds -->
             <span class="flex w-8 flex-none items-center justify-end gap-1">
-              <span
-                :for={{color_class, glyph} <- row.pips}
-                class={["font-champions text-sm leading-none", color_class]}
-              >
-                {glyph}
-              </span>
+              <.champions_icon :for={token <- row.pips} token={token} class="text-sm" />
             </span>
             <!-- controls column: fixed width whether it holds a lock or steppers -->
             <span class="flex w-[84px] flex-none items-center justify-end gap-0.5 sm:w-[52px]">

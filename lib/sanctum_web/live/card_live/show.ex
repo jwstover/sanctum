@@ -84,12 +84,7 @@ defmodule SanctumWeb.CardLive.Show do
 
             <!-- resource pips -->
             <div :if={side.pips != []} class="mt-3 flex items-center gap-1.5">
-              <span
-                :for={{color_class, glyph} <- side.pips}
-                class={["font-champions text-lg leading-none", color_class]}
-              >
-                {glyph}
-              </span>
+              <.champions_icon :for={token <- side.pips} token={token} class="text-lg" />
             </div>
 
             <div
@@ -452,7 +447,7 @@ defmodule SanctumWeb.CardLive.Show do
       aspect_text_class:
         CardComponent.aspect_classes(if(hero_face?, do: :hero, else: side.aspect)).text,
       resources: resources,
-      pips: CardComponent.resource_pips(resources),
+      pips: SanctumWeb.Components.ChampionsIcons.resource_pips(resources),
       traits: format_traits(side.traits),
       text: side.text,
       image_url: side.image_url,

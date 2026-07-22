@@ -13,6 +13,8 @@ defmodule SanctumWeb.Components.Card do
   """
   use Phoenix.Component
 
+  import SanctumWeb.Components.ChampionsIcons
+
   # Tailwind color-class trio per aspect (backed by the --color-aspect-*
   # tokens in app.css). Full literal class names so Tailwind's source
   # scanner detects them; do not build these by interpolation.
@@ -45,13 +47,6 @@ defmodule SanctumWeb.Components.Card do
       bg: "bg-aspect-encounter",
       border: "border-aspect-encounter"
     }
-  }
-
-  @res %{
-    "energy" => {"text-res-energy", "E"},
-    "mental" => {"text-res-mental", "M"},
-    "physical" => {"text-res-physical", "P"},
-    "wild" => {"text-res-wild", "W"}
   }
 
   @dims %{
@@ -113,11 +108,7 @@ defmodule SanctumWeb.Components.Card do
     aspect_classes = aspect_classes(aspect)
     dims = Map.get(@dims, assigns.size, @dims["md"])
 
-    pips =
-      assigns.resources
-      |> Enum.map(&to_s/1)
-      |> Enum.map(&Map.get(@res, &1))
-      |> Enum.reject(&is_nil/1)
+    pips = resource_pips(assigns.resources)
 
     has_cost? = assigns.show_cost and assigns.cost not in [nil, ""] and type != "resource"
 
@@ -199,13 +190,11 @@ defmodule SanctumWeb.Components.Card do
 
       <!-- resource pips -->
       <div :if={@show_res?} class="absolute right-[6px] top-[6px] z-[3] flex gap-[3px]">
-        <span
-          :for={{color_class, glyph} <- @pips}
-          class={["font-champions leading-none", color_class]}
+        <.champions_icon
+          :for={token <- @pips}
+          token={token}
           style={"font-size:#{@dims.res}px;text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.8);"}
-        >
-          {glyph}
-        </span>
+        />
       </div>
 
       <!-- quantity badge -->
@@ -240,19 +229,6 @@ defmodule SanctumWeb.Components.Card do
       </div>
     </div>
     """
-  end
-
-  @doc """
-  Maps a list of resource atoms/strings to `{text_color_class, glyph}` tuples
-  for rendering ChampionsIcons pips outside a card face (e.g. a detail row).
-  The class (e.g. `"text-res-energy"`) goes on the element's `class`, not an
-  inline style. Unknown resources are dropped.
-  """
-  def resource_pips(resources) do
-    resources
-    |> Enum.map(&to_s/1)
-    |> Enum.map(&Map.get(@res, &1))
-    |> Enum.reject(&is_nil/1)
   end
 
   @doc """
