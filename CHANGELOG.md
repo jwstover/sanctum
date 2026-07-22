@@ -1,3 +1,14 @@
+# [1.64.0](https://github.com/jwstover/sanctum/compare/v1.63.0...v1.64.0) (2026-07-22)
+
+
+### Features
+
+* **cards:** Stat form-input helpers + empty-input collapse ([41d677c](https://github.com/jwstover/sanctum/commit/41d677c27d6f4abfea7bf5643cf9a9c90eadb764))
+* **homebrew:** enrichment sheet + pairing UI on the project page ([c4487c9](https://github.com/jwstover/sanctum/commit/c4487c9b521135fd0a7408aec55bcd25dbeee3ae))
+* **homebrew:** enrichment, pairing, and unpairing actions for custom cards ([ad5e37d](https://github.com/jwstover/sanctum/commit/ad5e37dd2e04c70054e3675521c40163f389dfb4))
+
+
+
 # [1.63.0](https://github.com/jwstover/sanctum/compare/v1.62.0...v1.63.0) (2026-07-22)
 
 
@@ -36,15 +47,6 @@
 * **ui:** keep collection progress and fix subtitle test fallout ([6fbab25](https://github.com/jwstover/sanctum/commit/6fbab258d73642e9f8563ffb67e57b55270a9d4c))
 * **ui:** move header actions below the title on mobile ([438beb9](https://github.com/jwstover/sanctum/commit/438beb9e71d7a7b95085c1cd93cfec3c14ef32bc))
 * **ui:** stack header actions above title on mobile ([c4e775e](https://github.com/jwstover/sanctum/commit/c4e775e3dde5951942bd245869a793c02174bb59))
-
-
-
-## [1.60.1](https://github.com/jwstover/sanctum/compare/v1.60.0...v1.60.1) (2026-07-21)
-
-
-### Bug Fixes
-
-* **search:** keep mobile search sheet on-screen when keyboard opens ([e152f8c](https://github.com/jwstover/sanctum/commit/e152f8ce01b0e258edb07c9fe47c1cf2917a3e8b))
 
 
 
