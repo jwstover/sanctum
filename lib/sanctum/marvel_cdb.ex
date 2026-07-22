@@ -1046,6 +1046,7 @@ defmodule Sanctum.MarvelCdb do
       # Villain fields (health scaling lives in health.scaling)
       stage: stage_to_integer(mcdb_card["stage"]),
       scheme: mcdb_card["scheme"],
+      scheme_star: mcdb_card["scheme_star"] || false,
 
       # Scheme fields (structured value/star/scaling)
       base_threat:

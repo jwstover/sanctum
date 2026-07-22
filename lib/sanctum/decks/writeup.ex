@@ -181,8 +181,10 @@ defmodule Sanctum.Decks.Writeup do
           %{}
 
         _ ->
+          # Same pinning as the Card query above: never resolve through a
+          # user's custom alt.
           Sanctum.Games.CardAlt
-          |> Ash.Query.filter(code in ^missing)
+          |> Ash.Query.filter(code in ^missing and origin == :official)
           |> Ash.read!(authorize?: false)
           |> Map.new(&{&1.code, &1.card_id})
       end

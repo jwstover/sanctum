@@ -102,6 +102,7 @@ defmodule Sanctum.Games.CardSide do
         :health,
         :recover,
         :scheme,
+        :scheme_star,
         :traits,
         :text,
         :flavor
@@ -207,6 +208,7 @@ defmodule Sanctum.Games.CardSide do
     # Villain Fields (health scaling lives in `health.scaling`)
     attribute :stage, :integer, public?: true
     attribute :scheme, :integer, public?: true
+    attribute :scheme_star, :boolean, public?: true, default: false
 
     # Scheme Fields (structured: value / star / scaling)
     attribute :base_threat, Sanctum.Games.Stat, public?: true

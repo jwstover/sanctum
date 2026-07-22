@@ -29,6 +29,9 @@ defmodule SanctumWeb.Components.CardSideTile do
     default: nil,
     doc: "card detail path; when set, the art and name link to it"
 
+  slot :actions,
+    doc: "management controls (and optional caption) anchored to the tile's bottom edge"
+
   def card_side_tile(assigns) do
     assigns = assign(assigns, :lg?, assigns.size == "lg")
 
@@ -128,7 +131,13 @@ defmodule SanctumWeb.Components.CardSideTile do
 
         <div :if={@side.is_villain or @side.is_minion} class="flex items-start gap-2 w-full">
           <div class="flex flex-grow items-start justify-start">
-            <.stat_badge stat={:thw} value={@side.scheme} label="SCH" size={64} />
+            <.stat_badge
+              stat={:thw}
+              value={@side.scheme}
+              label="SCH"
+              star={@side.scheme_star}
+              size={64}
+            />
             <.stat_badge stat={:atk} value={@side.attack} star={@side.attack_star} size={64} />
           </div>
           <div :if={@side.health} class="flex items-start justify-end">
@@ -194,6 +203,17 @@ defmodule SanctumWeb.Components.CardSideTile do
             value={@side.hand_size}
             class="ml-auto text-base-content/75"
           />
+        </div>
+
+        <div
+          :if={@actions != []}
+          class={[
+            "mt-auto flex items-center gap-2 border-t border-line/70",
+            (@lg? && "pt-4") || "pt-2.5",
+            (@lg? && "mt-4") || "mt-2.5"
+          ]}
+        >
+          {render_slot(@actions)}
         </div>
       </div>
     </div>
@@ -299,6 +319,7 @@ defmodule SanctumWeb.Components.CardSideTile do
       health: stat_value(side.health),
       health_per_player: stat_per_player(side.health),
       scheme: display_value(side.scheme),
+      scheme_star: side.scheme_star,
       is_main_scheme: side.type == :main_scheme,
       threat_target: threat_target(side),
       threat_per_player: threat_target_per_player?(side),

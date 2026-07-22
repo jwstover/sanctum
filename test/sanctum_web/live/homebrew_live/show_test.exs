@@ -8,6 +8,8 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
 
   alias Sanctum.Homebrew
 
+  require Ash.Query
+
   defp project_fixture(actor) do
     Homebrew.create_project!(%{name: "Test Pack", attestation: true}, actor: actor)
   end
@@ -27,8 +29,11 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
     Ash.load!(card, [:card_sides, :primary_side], authorize?: false)
   end
 
+  # Homebrew is TEMPORARILY admin-gated at the router (see router.ex), so the
+  # page tests act as an admin. Cross-user privacy semantics stay covered by
+  # the data-layer tests (card_privacy_test etc.), which use plain users.
   setup %{conn: conn} do
-    creator = user_fixture()
+    creator = admin_user_fixture()
     project = project_fixture(creator)
     %{conn: log_in_user(conn, creator), creator: creator, project: project}
   end
@@ -38,129 +43,78 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/homebrew/#{project.id}")
   end
 
-  test "another user's project is not found", %{project: project} do
+  test "non-admins are redirected away", %{project: project} do
     conn = Phoenix.ConnTest.build_conn() |> log_in_user(user_fixture())
 
-    assert {:error, {:live_redirect, %{to: "/homebrew"}}} =
-             live(conn, ~p"/homebrew/#{project.id}")
+    assert {:error, {:redirect, %{to: "/"}}} = live(conn, ~p"/homebrew/#{project.id}")
+    assert {:error, {:redirect, %{to: "/"}}} = live(conn, ~p"/homebrew")
   end
 
-  describe "enrichment sheet" do
-    test "opens with prefilled fields and full enum options", ctx do
-      card = card_fixture(ctx.project, ctx.creator)
-      {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+  test "card tiles link to the card's edit page", ctx do
+    card = card_fixture(ctx.project, ctx.creator)
+    {:ok, _lv, html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
 
-      html =
-        lv
-        |> element("button[phx-click='edit_card'][phx-value-id='#{card.id}']")
-        |> render_click()
+    assert html =~ ~p"/homebrew/#{ctx.project.id}/cards/#{card.id}"
+    assert html =~ "Test Card"
+  end
 
-      assert html =~ "enrichment-form-#{card.id}"
-      assert html =~ "Test Card"
-      assert html =~ "player_side_scheme"
-    end
+  describe "alt art management" do
+    defp official_fixture do
+      import Sanctum.Factory
 
-    test "submitting enrichment persists and updates the grid tile", ctx do
-      card = card_fixture(ctx.project, ctx.creator)
-      [side] = card.card_sides
-      {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+      card = create(Sanctum.Games.Card, attrs: %{code: "91001", base_code: "91001"})
 
-      lv
-      |> element("button[phx-click='edit_card'][phx-value-id='#{card.id}']")
-      |> render_click()
-
-      html =
-        lv
-        |> form("#enrichment-form-#{card.id}", %{
-          "card" => %{
-            "deck_limit" => "1",
-            "card_sides" => %{
-              "0" => %{
-                "id" => side.id,
-                "name" => "Web Kick",
-                "type" => "side_scheme",
-                "cost" => "2",
-                "traits_string" => "Aerial, Attack",
-                "attack" => %{"value" => "3", "star" => "true", "consequential" => "1"},
-                "health" => %{"value" => "4", "star" => "false", "scaling" => "per_player"}
-              }
-            }
-          }
-        })
-        |> render_submit()
-
-      updated_side = Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false)
-      assert updated_side.name == "Web Kick"
-      assert updated_side.type == :side_scheme
-      assert updated_side.cost == 2
-      assert updated_side.traits == ["Aerial", "Attack"]
-
-      assert %Sanctum.Games.Stat{value: 3, star: true, consequential: 1} = updated_side.attack
-      assert %Sanctum.Games.Stat{value: 4, scaling: :per_player} = updated_side.health
-
-      # Scheme types render landscape; the sheet closed on save.
-      assert html =~ "aspect-[88/63]"
-      assert html =~ "Web Kick"
-    end
-
-    test "blank optional fields stay blank", ctx do
-      card = card_fixture(ctx.project, ctx.creator)
-      [side] = card.card_sides
-      {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
-
-      lv
-      |> element("button[phx-click='edit_card'][phx-value-id='#{card.id}']")
-      |> render_click()
-
-      lv
-      |> form("#enrichment-form-#{card.id}", %{
-        "card" => %{
-          "card_sides" => %{
-            "0" => %{
-              "id" => side.id,
-              "cost" => "",
-              "traits_string" => "",
-              # An untouched stat row submits all-blank map params — the stat
-              # must collapse back to absent, not an empty struct.
-              "attack" => %{"value" => "", "star" => "false", "consequential" => ""},
-              "health" => %{"value" => "", "star" => "false", "scaling" => "flat"}
-            }
-          }
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: card.id,
+          name: "Official Target",
+          code: "91001a",
+          side_identifier: "a",
+          is_primary_side: true,
+          ownership: :player
         }
-      })
-      |> render_submit()
+      )
 
-      updated_side = Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false)
-      assert is_nil(updated_side.cost)
-      assert is_nil(updated_side.attack)
-      assert is_nil(updated_side.health)
-      assert updated_side.traits == []
+      card
     end
 
-    test "two-sided cards show both fieldsets and can be split", ctx do
-      front = card_fixture(ctx.project, ctx.creator, %{filename: "front.png"})
-      back = card_fixture(ctx.project, ctx.creator, %{filename: "back.png"})
-      {:ok, paired} = Homebrew.pair_custom_cards(front.id, back.id, ctx.creator)
+    test "alts render as target tiles with credit; revert brings the card back", ctx do
+      official = official_fixture()
+      card = card_fixture(ctx.project, ctx.creator, %{filename: "reverted-fan.png"})
+
+      {:ok, alt} =
+        Homebrew.declare_alt_art(card.id, official.id, [artist: "Jane Doe"], ctx.creator)
+
+      {:ok, lv, html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+
+      assert html =~ "Alt Art (1)"
+      assert html =~ "Official Target"
+      assert html =~ "by Jane Doe"
+      assert html =~ "1 alt"
+
+      html =
+        lv
+        |> element("button[phx-click='revert_alt'][phx-value-id='#{alt.id}']")
+        |> render_click()
+
+      refute html =~ "Alt Art (1)"
+      assert html =~ "Official Target"
+    end
+
+    test "delete removes the alt without minting a card", ctx do
+      official = official_fixture()
+      card = card_fixture(ctx.project, ctx.creator, %{filename: "deleted-fan.png"})
+      {:ok, alt} = Homebrew.declare_alt_art(card.id, official.id, [], ctx.creator)
 
       {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
 
       html =
         lv
-        |> element("button[phx-click='edit_card'][phx-value-id='#{paired.id}']")
+        |> element("button[phx-click='delete_alt'][phx-value-id='#{alt.id}']")
         |> render_click()
 
-      assert html =~ "Side A"
-      assert html =~ "Side B"
-      assert html =~ "Split into two cards"
-
-      lv
-      |> element("button[phx-click='unpair_card']")
-      |> render_click()
-
-      # Two single-sided tiles again.
-      html = render(lv)
-      assert html =~ "2 cards"
-      refute html =~ "Side B"
+      refute html =~ "Alt Art (1)"
+      refute html =~ "Official Target"
     end
   end
 

@@ -88,11 +88,6 @@ defmodule SanctumWeb.Router do
       live "/decks/:id", DeckLive.Show, :show
       live "/decks/:id/build", DeckLive.Build, :build
 
-      # Homebrew (custom content) projects — creator's own projects only for
-      # now; the public directory comes with the publish phase.
-      live "/homebrew", HomebrewLive.Index, :index
-      live "/homebrew/:id", HomebrewLive.Show, :show
-
       # Reference page for the card/deck search query language.
       live "/search-help", SearchHelpLive, :index
 
@@ -115,6 +110,13 @@ defmodule SanctumWeb.Router do
       ] do
       # Admin landing page — system health + links to admin surfaces.
       live "/admin", AdminLive.Index, :index
+
+      # Homebrew (custom content) — TEMPORARILY admin-only while the feature
+      # incubates; move these back to :authenticated_routes to open it up.
+      # Resource policies stay creator-scoped, so nothing else changes then.
+      live "/homebrew", HomebrewLive.Index, :index
+      live "/homebrew/:id", HomebrewLive.Show, :show
+      live "/homebrew/:id/cards/:card_id", HomebrewLive.EditCard, :edit
 
       # Admin card catalog management (data table + CRUD + sync).
       live "/admin/cards", CardLive.Index, :index
