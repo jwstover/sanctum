@@ -1,3 +1,14 @@
+# [1.63.0](https://github.com/jwstover/sanctum/compare/v1.62.0...v1.63.0) (2026-07-22)
+
+
+### Features
+
+* **homebrew:** /homebrew project pages with drag-drop card upload ([a734dbf](https://github.com/jwstover/sanctum/commit/a734dbf166c669763f3c41b3df26e7e253775691))
+* **homebrew:** content-addressed image storage in the public bucket ([a098842](https://github.com/jwstover/sanctum/commit/a0988426ed846d7f18e12161f33d8eb055b0d4c9))
+* **homebrew:** Sanctum.Homebrew domain with private-by-construction custom cards ([0bff3d8](https://github.com/jwstover/sanctum/commit/0bff3d836fb97e084b3006ae36f0fb30c6b62d04))
+
+
+
 # [1.62.0](https://github.com/jwstover/sanctum/compare/v1.61.0...v1.62.0) (2026-07-22)
 
 
@@ -34,24 +45,6 @@
 ### Bug Fixes
 
 * **search:** keep mobile search sheet on-screen when keyboard opens ([e152f8c](https://github.com/jwstover/sanctum/commit/e152f8ce01b0e258edb07c9fe47c1cf2917a3e8b))
-
-
-
-# [1.60.0](https://github.com/jwstover/sanctum/compare/v1.59.1...v1.60.0) (2026-07-21)
-
-
-### Bug Fixes
-
-* **filters:** stack filter button below search on mobile, pin sheet footer ([d1e51bb](https://github.com/jwstover/sanctum/commit/d1e51bbcf4f0b45e09c56203856d7f4ee2f87926))
-
-
-### Features
-
-* **builder:** move deckbuilder card picker filters into the filter sheet ([eb5bf8d](https://github.com/jwstover/sanctum/commit/eb5bf8d6a76c3e506d541fac2f196cdbb84e813b))
-* **cards:** replace card pool filter pills with unified filter sheet ([ed4c0a3](https://github.com/jwstover/sanctum/commit/ed4c0a370cc5804c9d12dcb13724b63c43052374))
-* **decks:** move deck browser filters into the unified filter sheet ([8f0a038](https://github.com/jwstover/sanctum/commit/8f0a038d8b6630ee04c3b68577020a902bd729dc))
-* **filters:** typeahead vocabulary inputs + aligned, separated sections ([4504b86](https://github.com/jwstover/sanctum/commit/4504b868fb016e4b6bdf643bf0ee18db927f273b))
-* **search:** add FormSync/FormSchema for two-way filter form sync ([7990779](https://github.com/jwstover/sanctum/commit/7990779202ac54bea1633d4a231efd12b40d328c))
 
 
 
