@@ -29,6 +29,61 @@ defmodule SanctumWeb.CardLive.Detail do
 
           <:actions>
             <.back_button fallback={~p"/cards"} />
+            <div id="card-nav" phx-hook=".CardNav" class="flex items-center gap-2">
+              <.button
+                :if={@prev}
+                navigate={~p"/cards/#{@prev.id}"}
+                replace
+                data-card-nav="prev"
+                aria-label="Previous card"
+                title={"#{card_name(@prev)} (←)"}
+              >
+                <.icon name="hero-chevron-left" />
+              </.button>
+              <.button :if={!@prev} disabled aria-label="Previous card">
+                <.icon name="hero-chevron-left" />
+              </.button>
+              <.button
+                :if={@next}
+                navigate={~p"/cards/#{@next.id}"}
+                replace
+                data-card-nav="next"
+                aria-label="Next card"
+                title={"#{card_name(@next)} (→)"}
+              >
+                <.icon name="hero-chevron-right" />
+              </.button>
+              <.button :if={!@next} disabled aria-label="Next card">
+                <.icon name="hero-chevron-right" />
+              </.button>
+            </div>
+            <script :type={Phoenix.LiveView.ColocatedHook} name=".CardNav">
+              // Window-level arrow keys drive prev/next so they work without
+              // focusing the buttons. Chorded keys and keystrokes inside form
+              // fields (the global search input, etc.) pass through untouched;
+              // matches route through the real links so it's plain live
+              // navigation.
+              export default {
+                mounted() {
+                  this.onKeydown = (e) => {
+                    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
+                    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+                    if (e.target?.closest?.("input, textarea, select, [contenteditable]")) return
+                    const dir = e.key === "ArrowLeft" ? "prev" : "next"
+                    const link = this.el.querySelector(`[data-card-nav="${dir}"]`)
+                    if (link) {
+                      e.preventDefault()
+                      link.click()
+                    }
+                  }
+                  window.addEventListener("keydown", this.onKeydown)
+                },
+
+                destroyed() {
+                  window.removeEventListener("keydown", this.onKeydown)
+                },
+              }
+            </script>
             <.button
               :if={@current_user && @current_user.admin}
               variant="primary"
@@ -196,6 +251,8 @@ defmodule SanctumWeb.CardLive.Detail do
       |> assign(:pack, nil)
       |> assign(:sides, [])
       |> assign(:alts, [])
+      |> assign(:prev, nil)
+      |> assign(:next, nil)
       |> assign(:owned, nil)
       |> assign(:pack_owned, false)
 
@@ -221,6 +278,8 @@ defmodule SanctumWeb.CardLive.Detail do
      |> assign(:pack, data.pack)
      |> assign(:sides, data.sides)
      |> assign(:alts, data.alts)
+     |> assign(:prev, data.prev)
+     |> assign(:next, data.next)
      |> assign(:owned, data.owned)
      |> assign(:pack_owned, data.pack_owned)}
   end
@@ -317,6 +376,8 @@ defmodule SanctumWeb.CardLive.Detail do
            pack: card.pack_ref,
            sides: sides,
            alts: alts,
+           prev: adjacent_card(card, actor, :prev),
+           next: adjacent_card(card, actor, :next),
            owned: actor && card.owned,
            pack_owned: pack_owned == true
          }}
@@ -325,6 +386,33 @@ defmodule SanctumWeb.CardLive.Detail do
         :not_found
     end
   end
+
+  # The neighboring catalog entry in card-code order.
+  defp adjacent_card(card, actor, direction) do
+    query =
+      case direction do
+        :prev ->
+          Sanctum.Games.Card
+          |> Ash.Query.filter(code < ^card.code)
+          |> Ash.Query.sort(code: :desc)
+
+        :next ->
+          Sanctum.Games.Card
+          |> Ash.Query.filter(code > ^card.code)
+          |> Ash.Query.sort(code: :asc)
+      end
+
+    query
+    |> Ash.Query.load(:primary_side)
+    |> Ash.Query.limit(1)
+    |> Ash.read_one(actor: actor)
+    |> case do
+      {:ok, neighbor} -> neighbor
+      _ -> nil
+    end
+  end
+
+  defp card_name(card), do: (card.primary_side && card.primary_side.name) || card.base_code
 
   # pack code -> pack name for the packs the alternate printings came from.
   defp pack_names([]), do: %{}
