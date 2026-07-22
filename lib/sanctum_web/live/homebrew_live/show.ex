@@ -275,7 +275,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
   end
 
   defp stat_col_label_class,
-    do: "font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/60"
+    do: "font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/60"
 
   # One editable stat: value + ★ + (consequential damage | health scaling).
   # Inputs are nested-map params (e.g. side[attack][consequential]) so
@@ -365,7 +365,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
       <%!-- Not a header subtitle (that slot was dropped): the meta line is page
            content, and the "unofficial fan content" labeling is required on all
            homebrew surfaces (IP posture). --%>
-      <p class="-mt-4 mb-5 font-barlow-condensed text-[14px] text-base-content/55">
+      <p class="-mt-4 mb-5 font-barlow-condensed text-sm text-base-content/55">
         {length(@cards)} {if length(@cards) == 1, do: "card", else: "cards"} &middot; {@project.visibility} &middot; unofficial fan content
       </p>
 
@@ -398,7 +398,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
 
           <ul
             :if={@uploads.card_images.entries != []}
-            class="w-full max-w-md text-left font-barlow-condensed text-[13px]"
+            class="w-full max-w-md text-left font-barlow-condensed text-sm"
           >
             <li
               :for={entry <- @uploads.card_images.entries}
@@ -439,7 +439,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
         <.button phx-click="toggle_pair_mode">
           {(@pair_mode? && "Cancel pairing") || "Pair fronts & backs"}
         </.button>
-        <span :if={@pair_mode?} class="font-barlow-condensed text-[13px] text-base-content/60">
+        <span :if={@pair_mode?} class="font-barlow-condensed text-sm text-base-content/60">
           Tap two cards to pair them as one two-sided card.
         </span>
       </div>
@@ -488,13 +488,13 @@ defmodule SanctumWeb.HomebrewLive.Show do
 
           <span
             :if={role = pair_role(card.id, @pair_selection)}
-            class="absolute left-1 top-1 z-[4] border-2 border-neutral bg-primary px-1.5 font-barlow-condensed text-[11px] font-bold text-primary-content"
+            class="absolute left-1 top-1 z-[4] border-2 border-neutral bg-primary px-1.5 font-barlow-condensed text-xs font-bold text-primary-content"
           >
             {role}
           </span>
           <span
             :if={@pair_mode? && card.is_multi_sided}
-            class="absolute left-1 top-1 z-[4] border-2 border-neutral bg-base-300 px-1.5 font-barlow-condensed text-[11px] font-bold text-base-content/70"
+            class="absolute left-1 top-1 z-[4] border-2 border-neutral bg-base-300 px-1.5 font-barlow-condensed text-xs font-bold text-base-content/70"
           >
             2-SIDED
           </span>
@@ -530,7 +530,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
     ~H"""
     <div class="fixed inset-x-0 bottom-0 z-20 border-t-2 border-neutral bg-base-100/95 px-4 py-3 backdrop-blur sm:sticky sm:bottom-4 sm:border-2 sm:bg-base-200 sm:px-5 sm:py-4 sm:shadow-comic">
       <div class="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <span class="font-barlow-condensed text-[14px] font-bold uppercase tracking-[0.05em]">
+        <span class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.05em]">
           Front: {card_name(@cards, Enum.at(@pair_selection, 0))}
           <span class="text-base-content/50">→</span>
           Back: {card_name(@cards, Enum.at(@pair_selection, 1))}
@@ -589,7 +589,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
       </button>
 
       <header class="hidden flex-none items-center justify-between border-b-2 border-line px-5 py-3 sm:flex">
-        <h2 class="font-bangers text-[22px] tracking-[0.02em] text-primary">Edit Card</h2>
+        <h2 class="font-bangers text-2xl tracking-[0.02em] text-primary">Edit Card</h2>
         <button
           type="button"
           phx-click="close_enrichment"
@@ -610,7 +610,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
       >
         <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
           <section class="mb-6">
-            <h3 class="mb-2.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45">
+            <h3 class="mb-2.5 font-anton text-sm uppercase tracking-[0.08em] text-base-content/45">
               Card
             </h3>
             <div class="grid grid-cols-2 gap-3">
@@ -625,7 +625,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
             <section class="mb-6 border-t border-line/70 pt-4">
               <h3
                 :if={@editing_card.is_multi_sided}
-                class="mb-2.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45"
+                class="mb-2.5 font-anton text-sm uppercase tracking-[0.08em] text-base-content/45"
               >
                 Side {String.upcase(side[:side_identifier].value || "")}
               </h3>
@@ -657,7 +657,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
                     options={enum_options(Sanctum.Games.CardAspect)}
                   />
                 </div>
-                <p class="-mt-1 font-barlow-condensed text-[12px] text-base-content/45">
+                <p class="-mt-1 font-barlow-condensed text-xs text-base-content/45">
                   Schemes render landscape.
                 </p>
                 <div class="grid grid-cols-3 gap-3">
@@ -676,7 +676,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
                          normal-case so the label style can't uppercase it into
                          a different glyph. --%>
                     <span
-                      class="text-center font-champions text-[13px] normal-case text-base-content/60"
+                      class="text-center font-champions text-sm normal-case text-base-content/60"
                       aria-label="star effect"
                     >
                       s
@@ -709,7 +709,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
             phx-click="unpair_card"
             phx-value-id={@editing_card.id}
             data-confirm="Split this card into two single-sided cards?"
-            class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-error/80 hover:text-error"
+            class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-error/80 hover:text-error"
           >
             Split into two cards
           </button>

@@ -23,8 +23,8 @@ defmodule SanctumWeb.GuessLive.GameComponent do
     ~H"""
     <div id={@id}>
       <.panel :if={@status == :empty} class="px-6 py-12 text-center">
-        <div class="font-bangers text-[30px] tracking-[0.02em] text-primary">No cards to guess</div>
-        <div class="mt-1.5 font-barlow text-[14px] text-base-content/55">
+        <div class="font-bangers text-3xl tracking-[0.02em] text-primary">No cards to guess</div>
+        <div class="mt-1.5 font-barlow text-sm text-base-content/55">
           No cards with flavor text are loaded yet. Sync the catalog and come back.
         </div>
       </.panel>
@@ -48,22 +48,22 @@ defmodule SanctumWeb.GuessLive.GameComponent do
         <!-- flavor prompt — the hero of the round -->
         <.panel class="relative overflow-hidden px-5 py-9 sm:px-6 sm:py-8">
           <div
-            class="pointer-events-none absolute -left-1 -top-5 font-bangers text-[90px] leading-none text-primary/15 select-none sm:text-[70px]"
+            class="pointer-events-none absolute -left-1 -top-5 font-bangers text-8xl leading-none text-primary/15 select-none sm:text-7xl"
             aria-hidden="true"
           >
             “
           </div>
-          <div class="relative font-ibm-mono text-[10px] uppercase tracking-[0.25em] text-base-content/45">
+          <div class="relative font-ibm-mono text-xs uppercase tracking-[0.25em] text-base-content/45">
             Flavor text
           </div>
-          <blockquote class="relative mt-3 font-barlow text-[23px] italic leading-[1.42] text-base-content/90 [text-wrap:balance] sm:text-[20px] sm:leading-[1.5]">
+          <blockquote class="relative mt-3 font-barlow text-2xl italic leading-[1.42] text-base-content/90 [text-wrap:balance] sm:text-xl sm:leading-[1.5]">
             {CardGuess.display_flavor(@card.primary_side.flavor)}
           </blockquote>
         </.panel>
 
         <!-- hint progress HUD (persistent during play) -->
         <div :if={@status == :playing and @hints != []} class="mt-4 flex items-center gap-2.5">
-          <span class="font-ibm-mono text-[10px] uppercase tracking-[0.25em] text-base-content/45">
+          <span class="font-ibm-mono text-xs uppercase tracking-[0.25em] text-base-content/45">
             Hints
           </span>
           <div class="flex items-center gap-1.5">
@@ -76,7 +76,7 @@ defmodule SanctumWeb.GuessLive.GameComponent do
             />
           </div>
           <span class={[
-            "ml-auto font-ibm-mono text-[10px] uppercase tracking-[0.15em]",
+            "ml-auto font-ibm-mono text-xs uppercase tracking-[0.15em]",
             (@revealed_count >= length(@hints) && "text-error") || "text-base-content/45"
           ]}>
             {hint_hud_label(@hints, @revealed_count)}
@@ -90,8 +90,8 @@ defmodule SanctumWeb.GuessLive.GameComponent do
               :for={{hint, i} <- Enum.with_index(Enum.take(@hints, @revealed_count), 1)}
               class="flex gap-3 border-2 border-neutral bg-base-200 px-3.5 py-3 shadow-comic-sm"
             >
-              <span class="font-anton text-[15px] text-primary">{i}.</span>
-              <span class="font-barlow text-[15px] leading-[1.4] text-base-content/90">
+              <span class="font-anton text-base text-primary">{i}.</span>
+              <span class="font-barlow text-base leading-[1.4] text-base-content/90">
                 {hint.text}
               </span>
             </li>
@@ -99,7 +99,7 @@ defmodule SanctumWeb.GuessLive.GameComponent do
         </div>
 
         <!-- missed guesses -->
-        <div :if={@guesses != []} class="mt-4 font-barlow text-[13px] text-base-content/50">
+        <div :if={@guesses != []} class="mt-4 font-barlow text-sm text-base-content/50">
           Missed guesses: {Enum.join(@guesses, ", ")}
         </div>
 
@@ -122,7 +122,7 @@ defmodule SanctumWeb.GuessLive.GameComponent do
                 autocomplete="off"
                 phx-mounted={@mode == :full && JS.focus()}
                 placeholder="Name the card…"
-                class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 font-barlow text-base text-base-content outline-none focus:border-primary placeholder:text-base-content/40 sm:text-[15px]"
+                class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 font-barlow text-base text-base-content outline-none focus:border-primary placeholder:text-base-content/40"
               />
               <.button variant="primary" type="submit">Guess</.button>
             </form>
@@ -131,7 +131,7 @@ defmodule SanctumWeb.GuessLive.GameComponent do
                 type="button"
                 phx-click="give-up"
                 phx-target={@myself}
-                class="inline-flex min-h-[44px] items-center font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/40 hover:text-base-content/70 sm:min-h-0"
+                class="inline-flex min-h-[44px] items-center font-ibm-mono text-xs uppercase tracking-[0.15em] text-base-content/40 hover:text-base-content/70 sm:min-h-0"
               >
                 Give up
               </button>
@@ -142,12 +142,12 @@ defmodule SanctumWeb.GuessLive.GameComponent do
         <!-- result + reveal -->
         <.panel :if={@status in [:won, :lost]} class="mt-6 px-5 py-7 text-center sm:px-6 sm:py-6">
           <div class={[
-            "font-bangers text-[38px] tracking-[0.02em] sm:text-[34px]",
+            "font-bangers text-4xl tracking-[0.02em]",
             (@status == :won && "text-success") || "text-error"
           ]}>
             {(@status == :won && "You got it!") || "Out of guesses!"}
           </div>
-          <div class="mt-1.5 font-barlow text-[14px] text-base-content/55">
+          <div class="mt-1.5 font-barlow text-sm text-base-content/55">
             {(@status == :won && win_label(@revealed_count)) || "The answer was:"}
           </div>
 
@@ -168,12 +168,12 @@ defmodule SanctumWeb.GuessLive.GameComponent do
               />
             </div>
             <div>
-              <div class="font-anton text-[26px] uppercase leading-[0.95]">
+              <div class="font-anton text-2xl uppercase leading-[0.95]">
                 {@card.primary_side.name}
               </div>
               <div
                 :if={@card.primary_side.subname not in [nil, ""]}
-                class="font-barlow italic text-[14px] text-base-content/60"
+                class="font-barlow italic text-sm text-base-content/60"
               >
                 {@card.primary_side.subname}
               </div>

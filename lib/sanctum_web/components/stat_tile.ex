@@ -15,7 +15,7 @@ defmodule SanctumWeb.Components.StatTile do
     ~H"""
     <div class="border-[3px] border-neutral bg-base-300 px-4 py-3">
       <div class={["font-bangers text-3xl leading-none", @color]}>{format_count(@value)}</div>
-      <div class="mt-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/55">
+      <div class="mt-1 font-ibm-mono text-xs uppercase tracking-[0.15em] text-base-content/55">
         {@label}
       </div>
     </div>
