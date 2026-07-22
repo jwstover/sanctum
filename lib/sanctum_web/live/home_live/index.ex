@@ -44,7 +44,7 @@ defmodule SanctumWeb.HomeLive.Index do
         <section>
           <div class="flex items-baseline justify-between gap-3">
             <h2 class="font-anton text-lg uppercase tracking-[0.05em]">Card of the Day</h2>
-            <span class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+            <span class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
               {Calendar.strftime(Date.utc_today(), "%b %-d")}
             </span>
           </div>
@@ -62,7 +62,7 @@ defmodule SanctumWeb.HomeLive.Index do
             :if={@home != nil && @home.card == nil}
             class="mt-3 border-dashed !border-[#2a2a30] px-6 py-10 text-center !shadow-none"
           >
-            <div class="font-bangers text-[26px] tracking-[0.02em] text-primary">
+            <div class="font-bangers text-2xl tracking-[0.02em] text-primary">
               No cards in the vault yet
             </div>
           </.panel>
@@ -84,7 +84,7 @@ defmodule SanctumWeb.HomeLive.Index do
             <h2 class="font-anton text-lg uppercase tracking-[0.05em]">Latest Decks</h2>
             <.link
               navigate={~p"/decks"}
-              class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/55 hover:text-primary"
+              class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/55 hover:text-primary"
             >
               Browse all decks →
             </.link>
@@ -120,7 +120,7 @@ defmodule SanctumWeb.HomeLive.Index do
                   <span
                     :for={a <- deck.aspects}
                     class={[
-                      "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]",
+                      "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
                       a.text,
                       a.border
                     ]}
@@ -128,17 +128,17 @@ defmodule SanctumWeb.HomeLive.Index do
                     {a.label}
                   </span>
                 </div>
-                <div class="mt-1.5 break-words font-anton text-[20px] uppercase leading-[0.95]">
+                <div class="mt-1.5 break-words font-anton text-xl uppercase leading-[0.95]">
                   {deck.title}
                 </div>
                 <div class="mt-1.5 flex items-center gap-2">
                   <span
                     :if={deck.author}
-                    class="font-barlow-condensed text-[13px] font-bold text-primary"
+                    class="font-barlow-condensed text-sm font-bold text-primary"
                   >
                     {deck.author}
                   </span>
-                  <span class="font-ibm-mono text-[11px] text-base-content/40">
+                  <span class="font-ibm-mono text-xs text-base-content/40">
                     {deck.updated}
                   </span>
                 </div>
@@ -150,13 +150,94 @@ defmodule SanctumWeb.HomeLive.Index do
             :if={@home != nil && @home.decks == []}
             class="mt-3 border-dashed !border-[#2a2a30] px-6 py-10 text-center !shadow-none"
           >
-            <div class="font-bangers text-[26px] tracking-[0.02em] text-primary">
+            <div class="font-bangers text-2xl tracking-[0.02em] text-primary">
               No decks in the vault yet
             </div>
           </.panel>
         </section>
       </div>
+
+      <!-- about: full-width band below the grid -->
+      <section class="mt-10">
+        <h2 class="font-anton text-lg uppercase tracking-[0.05em]">About Sanctum</h2>
+
+        <.panel class="space-y-8 relative mt-3 overflow-hidden bg-halftone text-lg px-5 py-7 sm:px-8 sm:py-8">
+          <div class="space-y-4">
+            <.about_heading>Another deck-builder for Marvel Champions?</.about_heading>
+
+            <p>
+              There are already some great tools for building decks for Marvel Champions.
+              The big one is obviously <.about_link href="https://marvelcdb.com">MarvelCDB</.about_link>, but there are also
+              sites like <.about_link href="https://mcquick.pages.dev/">MCQuick</.about_link>
+              and <.about_link href="https://mc4db.merlindumesnil.net/">MC4DB</.about_link>.
+              Sanctum is another alternative, but tries to maintain parity with MarvelCDB, the community standard.
+            </p>
+          </div>
+
+          <div class="space-y-4">
+            <.about_heading>Two-way Sync</.about_heading>
+
+            <p>
+              Public decks created on MarvelCDB are automatically synced over to this app. Essentially every public deck on MarvelCDB, you'll also find here.
+              Once deckbuilding is more fleshed out here, the goal is to also allow publishing decks created in Sanctum back to MCDB. Thus using one over the other is really
+              just a personal preference and you can freely swap between the two.
+            </p>
+          </div>
+
+          <div class="space-y-4">
+            <.about_heading>Fast as Quicksilver</.about_heading>
+
+            <p>
+              A key priority as I'm building this app is speed. I want the entire application to feel snappy, to the point
+              where you should not notice the app slowing you down. If you do find certain searches or pages are slow to load
+              let me know by opening an issue on <.about_link href="https://github.com/jwstover/sanctum/issues">GitHub</.about_link>.
+            </p>
+          </div>
+
+          <div class="space-y-4">
+            <.about_heading>Custom Content</.about_heading>
+
+            <p>
+              There is a large and amazing custom content community for this game. However, I have found that
+              it is a little difficult to find all of the custom content that is available because it's scattered
+              across Discord servers, forums, and Google Drives. One of my main motivations for starting this project
+              was to build a home for all custom content. A place where creators can store and share their work with tools
+              to support versioning, validation, testing, and eventually release to the wider community. Plus that custom content
+              will be available for use in deck-building if you so desire.
+            </p>
+          </div>
+        </.panel>
+      </section>
     </Layouts.app>
+    """
+  end
+
+  # Comic caption-box heading for the About band's sections.
+  slot :inner_block, required: true
+
+  defp about_heading(assigns) do
+    ~H"""
+    <div class="inline-block -rotate-1 border-2 border-neutral bg-primary px-3.5 py-1.5 font-bangers text-2xl leading-none tracking-[0.02em] text-primary-content shadow-comic-sm">
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  # External link in the About prose — new tab, the footer's dotted-underline
+  # treatment in the accent color.
+  attr :href, :string, required: true
+  slot :inner_block, required: true
+
+  defp about_link(assigns) do
+    ~H"""
+    <a
+      href={@href}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="text-primary underline decoration-dotted underline-offset-2 transition-colors hover:text-primary/75"
+    >
+      {render_slot(@inner_block)}
+    </a>
     """
   end
 
