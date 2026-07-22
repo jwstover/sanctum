@@ -1,3 +1,15 @@
+# [1.66.0](https://github.com/jwstover/sanctum/compare/v1.65.0...v1.66.0) (2026-07-22)
+
+
+### Features
+
+* **cards:** scheme star on card sides ([21462c1](https://github.com/jwstover/sanctum/commit/21462c1ee3368f73cac0c712a398c049cb8c8cd7))
+* **homebrew:** alt-art declare sheet, alt grid, and fan-art strip ([463b074](https://github.com/jwstover/sanctum/commit/463b07490ce213cebc8f03d9480eb811c99a146e))
+* **homebrew:** declare custom cards as alt art for official cards ([aebeeb5](https://github.com/jwstover/sanctum/commit/aebeeb5450ed09816a1267d90925bf8abb6b805f))
+* **homebrew:** gate homebrew behind admin access for now ([b9b3a78](https://github.com/jwstover/sanctum/commit/b9b3a788d226a09271dea214992de5fbcca9dc96))
+
+
+
 # [1.65.0](https://github.com/jwstover/sanctum/compare/v1.64.0...v1.65.0) (2026-07-22)
 
 
@@ -46,15 +58,6 @@
 ### Features
 
 * **cards:** prev/next nav replaces the history entry ([57d50bb](https://github.com/jwstover/sanctum/commit/57d50bb7fca27ba6d7c420442294bc618668a42c))
-
-
-
-# [1.61.0](https://github.com/jwstover/sanctum/compare/v1.60.2...v1.61.0) (2026-07-22)
-
-
-### Features
-
-* **cards:** prev/next card navigation on the detail page ([3e344f4](https://github.com/jwstover/sanctum/commit/3e344f49413530ea10e3bf70833cfaa609b136fe))
 
 
 
