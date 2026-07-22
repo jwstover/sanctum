@@ -21,24 +21,32 @@ defmodule Sanctum.CardText do
   """
   import Phoenix.HTML, only: [html_escape: 1, safe_to_string: 1]
 
-  # token => {glyph, resource-color class | nil}. The glyph letters are the
-  # ChampionsIcons cmap, verified against MarvelCDB's own icon CSS.
+  # token => glyph. The glyph letters are the ChampionsIcons cmap, verified
+  # against MarvelCDB's own icon CSS.
   @icons %{
-    "energy" => {"E", "text-res-energy"},
-    "mental" => {"M", "text-res-mental"},
-    "physical" => {"P", "text-res-physical"},
-    "wild" => {"W", "text-res-wild"},
-    "cost" => {"D", nil},
-    "star" => {"S", nil},
-    "boost" => {"B", nil},
-    "crisis" => {"C", nil},
-    "hazard" => {"H", nil},
-    "acceleration" => {"A", nil},
-    "amplify" => {"F", nil},
-    "per_hero" => {"G", nil},
-    "per_group" => {"T", nil},
-    "unique" => {"U", nil}
+    "energy" => "E",
+    "mental" => "M",
+    "physical" => "P",
+    "wild" => "W",
+    "cost" => "D",
+    "star" => "S",
+    "boost" => "B",
+    "crisis" => "C",
+    "hazard" => "H",
+    "acceleration" => "A",
+    "amplify" => "F",
+    "per_hero" => "G",
+    "per_group" => "T",
+    "unique" => "U"
   }
+
+  # The four resource glyphs render in their resource color: `icon_span/1`
+  # emits `text-res-<token>` for these. This module is outside Tailwind's
+  # `@source` scan path, so the literal class names that keep those utilities
+  # in the compiled CSS live in `SanctumWeb.Components.ChampionsIcons`
+  # (`resource_color/1`) — a class name that appears only here would be
+  # purged from production builds.
+  @resources ~w(energy mental physical wild)
 
   # Splits a line into whitelisted tags (`<b>`/`<i>`/`<em>` emphasis and the
   # `<hr />` divider), `[[Trait]]` references, icon tokens, and the plain text
@@ -55,23 +63,23 @@ defmodule Sanctum.CardText do
   @trait ~r/^\[\[(.+)\]\]$/
 
   @doc """
-  The `token => {glyph, color class | nil}` map of ChampionsIcons tokens.
-  Consumers outside card text (the deck writeup renderer, the description
-  editor's icon picker) share this as the single source of truth.
+  The `token => glyph` map of ChampionsIcons tokens. Consumers outside card
+  text (the deck writeup renderer, the description editor's icon picker)
+  share this as the single source of truth for which tokens have a glyph.
   """
   def icons, do: @icons
 
   @doc """
   The ChampionsIcons `<span>` for `token`, or `nil` when the font has no
-  glyph for it.
+  glyph for it. Resource glyphs carry their `text-res-*` color class.
   """
   def icon_span(token) do
     case Map.fetch(@icons, token) do
-      {:ok, {glyph, nil}} ->
-        ~s(<span class="font-champions leading-none">#{glyph}</span>)
+      {:ok, glyph} when token in @resources ->
+        ~s(<span class="font-champions leading-none text-res-#{token}">#{glyph}</span>)
 
-      {:ok, {glyph, color}} ->
-        ~s(<span class="font-champions leading-none #{color}">#{glyph}</span>)
+      {:ok, glyph} ->
+        ~s(<span class="font-champions leading-none">#{glyph}</span>)
 
       :error ->
         nil
