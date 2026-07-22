@@ -43,6 +43,7 @@ defmodule SanctumWeb.Layouts do
       :cards,
       :guess,
       :decks,
+      :events,
       :homebrew,
       :stats,
       :profile,
@@ -204,6 +205,9 @@ defmodule SanctumWeb.Layouts do
             </.sidebar_link>
             <.sidebar_link navigate={~p"/flavor-town"} active={@active_tab == :guess}>
               Flavor Town
+            </.sidebar_link>
+            <.sidebar_link navigate={~p"/events"} active={@active_tab == :events}>
+              Events
             </.sidebar_link>
             <.sidebar_link navigate={~p"/stats"} active={@active_tab == :stats}>
               Stats
