@@ -88,6 +88,7 @@ defmodule SanctumWeb do
       import SanctumWeb.CoreComponents
       import SanctumWeb.Components.Avatar
       import SanctumWeb.Components.Card
+      import SanctumWeb.Components.ChampionsIcons
       import SanctumWeb.Components.Collection
       import SanctumWeb.Components.DeckBuilder
       import SanctumWeb.Components.Skeleton

@@ -223,12 +223,7 @@ defmodule SanctumWeb.DeckLive.Show do
                         ×{c.qty}
                       </span>
                       <span class="flex w-8 flex-none items-center justify-end gap-1">
-                        <span
-                          :for={{color_class, glyph} <- c.pips}
-                          class={["font-champions text-sm leading-none", color_class]}
-                        >
-                          {glyph}
-                        </span>
+                        <.champions_icon :for={token <- c.pips} token={token} class="text-sm" />
                       </span>
                     </.link>
                   </div>
