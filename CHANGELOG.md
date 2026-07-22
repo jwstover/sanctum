@@ -1,3 +1,12 @@
+## [1.66.1](https://github.com/jwstover/sanctum/compare/v1.66.0...v1.66.1) (2026-07-22)
+
+
+### Bug Fixes
+
+* **icons:** keep text-res-* utilities in prod CSS by owning colors in the web layer ([2691463](https://github.com/jwstover/sanctum/commit/26914637652a4faf638e4292ebfa53dd3e10ff82))
+
+
+
 # [1.66.0](https://github.com/jwstover/sanctum/compare/v1.65.0...v1.66.0) (2026-07-22)
 
 
@@ -49,15 +58,6 @@
 * **homebrew:** /homebrew project pages with drag-drop card upload ([a734dbf](https://github.com/jwstover/sanctum/commit/a734dbf166c669763f3c41b3df26e7e253775691))
 * **homebrew:** content-addressed image storage in the public bucket ([a098842](https://github.com/jwstover/sanctum/commit/a0988426ed846d7f18e12161f33d8eb055b0d4c9))
 * **homebrew:** Sanctum.Homebrew domain with private-by-construction custom cards ([0bff3d8](https://github.com/jwstover/sanctum/commit/0bff3d836fb97e084b3006ae36f0fb30c6b62d04))
-
-
-
-# [1.62.0](https://github.com/jwstover/sanctum/compare/v1.61.0...v1.62.0) (2026-07-22)
-
-
-### Features
-
-* **cards:** prev/next nav replaces the history entry ([57d50bb](https://github.com/jwstover/sanctum/commit/57d50bb7fca27ba6d7c420442294bc618668a42c))
 
 
 
