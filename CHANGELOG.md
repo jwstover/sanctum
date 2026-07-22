@@ -1,3 +1,12 @@
+# [1.62.0](https://github.com/jwstover/sanctum/compare/v1.61.0...v1.62.0) (2026-07-22)
+
+
+### Features
+
+* **cards:** prev/next nav replaces the history entry ([57d50bb](https://github.com/jwstover/sanctum/commit/57d50bb7fca27ba6d7c420442294bc618668a42c))
+
+
+
 # [1.61.0](https://github.com/jwstover/sanctum/compare/v1.60.2...v1.61.0) (2026-07-22)
 
 
@@ -43,15 +52,6 @@
 * **decks:** move deck browser filters into the unified filter sheet ([8f0a038](https://github.com/jwstover/sanctum/commit/8f0a038d8b6630ee04c3b68577020a902bd729dc))
 * **filters:** typeahead vocabulary inputs + aligned, separated sections ([4504b86](https://github.com/jwstover/sanctum/commit/4504b868fb016e4b6bdf643bf0ee18db927f273b))
 * **search:** add FormSync/FormSchema for two-way filter form sync ([7990779](https://github.com/jwstover/sanctum/commit/7990779202ac54bea1633d4a231efd12b40d328c))
-
-
-
-## [1.59.1](https://github.com/jwstover/sanctum/compare/v1.59.0...v1.59.1) (2026-07-21)
-
-
-### Bug Fixes
-
-* **cards:** render printed X values instead of -1 and make search X-aware ([995f32f](https://github.com/jwstover/sanctum/commit/995f32f561074fef96f9e435a715c97359d82e07))
 
 
 
