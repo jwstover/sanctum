@@ -581,8 +581,13 @@ defmodule SanctumWeb.DeckLive.Build do
   defp mention_icons do
     Sanctum.CardText.icons()
     |> Enum.sort_by(fn {token, _} -> {Map.get(@icon_order, token, 99), token} end)
-    |> Enum.map(fn {token, {glyph, color}} ->
-      %{token: token, glyph: glyph, color: color, label: Phoenix.Naming.humanize(token)}
+    |> Enum.map(fn {token, glyph} ->
+      %{
+        token: token,
+        glyph: glyph,
+        color: SanctumWeb.Components.ChampionsIcons.resource_color(token),
+        label: Phoenix.Naming.humanize(token)
+      }
     end)
   end
 

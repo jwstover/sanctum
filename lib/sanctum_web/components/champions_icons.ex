@@ -25,11 +25,24 @@ defmodule SanctumWeb.Components.ChampionsIcons do
   # glyphs that only appear outside card text: the per-player marker ("v",
   # threat plates / health badges) and the stat-effect star ("s", stat badges).
   @glyphs Map.merge(Sanctum.CardText.icons(), %{
-            "player" => {"v", nil},
-            "stat_star" => {"s", nil}
+            "player" => "v",
+            "stat_star" => "s"
           })
 
   @resources ~w(energy mental physical wild)
+
+  # token => color utility for the four resource glyphs. These literal class
+  # names — written out, never interpolated — are load-bearing for Tailwind:
+  # this file is inside the `@source` scan path in assets/css/app.css, so they
+  # are what keep the `text-res-*` utilities in the compiled CSS.
+  # `Sanctum.CardText.icon_span/1` emits the same class names at runtime but
+  # lives outside the scan path, so this map must stay in the web layer.
+  @resource_colors %{
+    "energy" => "text-res-energy",
+    "mental" => "text-res-mental",
+    "physical" => "text-res-physical",
+    "wild" => "text-res-wild"
+  }
 
   @doc """
   Renders the icon for a ChampionsIcons token — for call sites that pick the
@@ -46,18 +59,20 @@ defmodule SanctumWeb.Components.ChampionsIcons do
   attr :rest, :global
 
   def champions_icon(assigns) do
-    case Map.get(@glyphs, to_string(assigns.token)) do
-      {glyph, color} ->
-        assigns = assign(assigns, glyph: glyph, color: color)
+    token = to_string(assigns.token)
+
+    case Map.get(@glyphs, token) do
+      nil ->
+        ~H""
+
+      glyph ->
+        assigns = assign(assigns, glyph: glyph, color: resource_color(token))
 
         ~H"""
         <span class={["font-champions normal-case leading-none", @color, @class]} {@rest}>
           {@glyph}
         </span>
         """
-
-      nil ->
-        ~H""
     end
   end
 
@@ -142,8 +157,7 @@ defmodule SanctumWeb.Components.ChampionsIcons do
   def stat_star_icon(assigns), do: icon(assigns, "stat_star")
 
   defp icon(assigns, token) do
-    {glyph, color} = Map.fetch!(@glyphs, token)
-    assigns = assign(assigns, glyph: glyph, color: color)
+    assigns = assign(assigns, glyph: Map.fetch!(@glyphs, token), color: resource_color(token))
 
     ~H"""
     <span class={["font-champions normal-case leading-none", @color, @class]} {@rest}>
@@ -151,6 +165,13 @@ defmodule SanctumWeb.Components.ChampionsIcons do
     </span>
     """
   end
+
+  @doc """
+  The `text-res-*` color class for a resource token, or `nil` for tokens
+  that render uncolored. The map behind this is where the class names appear
+  literally for Tailwind's source scan — see the comment on `@resource_colors`.
+  """
+  def resource_color(token), do: Map.get(@resource_colors, to_string(token))
 
   @doc """
   Normalizes a list of resource atoms/strings into pip tokens for
