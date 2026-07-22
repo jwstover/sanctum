@@ -62,7 +62,7 @@ defmodule SanctumWeb.AdminLive.Index do
           <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <span class={[
-                "inline-flex items-center border-2 px-3 py-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em]",
+                "inline-flex items-center border-2 px-3 py-1 font-ibm-mono text-xs uppercase tracking-[0.15em]",
                 deck_status_class(@deck_sync.status)
               ]}>
                 {deck_status_label(@deck_sync.status)}
@@ -78,7 +78,7 @@ defmodule SanctumWeb.AdminLive.Index do
               type="button"
               phx-click="sync_decks"
               disabled={@deck_sync.status == :running}
-              class="inline-flex -rotate-1 items-center gap-2 border-2 border-neutral bg-base-300 bg-halftone px-3 py-2 font-barlow-condensed text-[15px] font-bold uppercase tracking-[0.1em] text-primary shadow-comic-sm transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50 lg:px-2.5 lg:py-1.5 lg:text-[13px]"
+              class="inline-flex -rotate-1 items-center gap-2 border-2 border-neutral bg-base-300 bg-halftone px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.1em] text-primary shadow-comic-sm transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50 lg:px-2.5 lg:py-1.5 lg:text-sm"
             >
               <.icon name="hero-arrow-path" class="size-4" />
               {if @deck_sync.status == :running, do: "Syncing…", else: "Sync now"}
@@ -119,7 +119,7 @@ defmodule SanctumWeb.AdminLive.Index do
           </div>
 
           <div :if={@deck_sync.failures != []}>
-            <h3 class="mb-2 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-error">
+            <h3 class="mb-2 font-ibm-mono text-xs uppercase tracking-[0.15em] text-error">
               Recent failures ({length(@deck_sync.failures)})
             </h3>
             <ul class="space-y-1 font-ibm-mono text-xs text-base-content/70">
@@ -237,7 +237,7 @@ defmodule SanctumWeb.AdminLive.Index do
       ]}>
         {@value}
       </div>
-      <div class="mt-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/55">
+      <div class="mt-1 font-ibm-mono text-xs uppercase tracking-[0.15em] text-base-content/55">
         {@label}
       </div>
     </div>
@@ -253,7 +253,7 @@ defmodule SanctumWeb.AdminLive.Index do
       <div class="truncate font-barlow-condensed text-xl font-bold leading-none text-primary">
         {@value}
       </div>
-      <div class="mt-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/55">
+      <div class="mt-1 font-ibm-mono text-xs uppercase tracking-[0.15em] text-base-content/55">
         {@label}
       </div>
     </div>

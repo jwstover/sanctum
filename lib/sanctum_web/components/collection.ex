@@ -70,7 +70,7 @@ defmodule SanctumWeb.Components.Collection do
       <.icon name={(@owned && "hero-check") || "hero-plus"} class="size-3.5 flex-none" />
       <span
         :if={!@compact}
-        class="font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.07em]"
+        class="font-barlow-condensed text-xs font-bold uppercase tracking-[0.07em]"
       >
         {(@owned && "In Collection") || "Add to Collection"}
       </span>

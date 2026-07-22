@@ -46,7 +46,7 @@ defmodule SanctumWeb.CardLive.Pool do
             class="w-full min-h-[46px] flex-none sm:w-auto sm:min-h-[46px]"
           />
         </div>
-        <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
+        <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-base uppercase tracking-[0.05em]">
           <.icon
             :if={@loading?}
             name="hero-arrow-path"
@@ -99,8 +99,8 @@ defmodule SanctumWeb.CardLive.Pool do
         :if={@count == 0}
         class="mt-2 border-dashed !border-[#2a2a30] px-6 py-12 text-center !shadow-none"
       >
-        <div class="font-bangers text-[30px] tracking-[0.02em] text-primary">No cards found</div>
-        <div class="mt-1.5 font-barlow text-[14px] text-base-content/55">
+        <div class="font-bangers text-3xl tracking-[0.02em] text-primary">No cards found</div>
+        <div class="mt-1.5 font-barlow text-sm text-base-content/55">
           Try a different search or clear your filters.
         </div>
         <.button variant="primary" phx-click="clear" class="mt-4">Clear filters</.button>

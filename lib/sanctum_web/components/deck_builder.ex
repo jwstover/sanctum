@@ -33,8 +33,8 @@ defmodule SanctumWeb.Components.DeckBuilder do
         icon_class: (assigns.size == "md" && "size-5 sm:size-4") || "size-4 sm:size-3.5",
         add_icon_class: (assigns.size == "md" && "size-6 sm:size-5") || "size-5 sm:size-4",
         count_class:
-          (assigns.size == "md" && "min-w-7 text-[15px] sm:min-w-6 sm:text-[13px]") ||
-            "min-w-6 text-[13px] sm:min-w-5 sm:text-[12px]"
+          (assigns.size == "md" && "min-w-7 text-base sm:min-w-6 sm:text-sm") ||
+            "min-w-6 text-sm sm:min-w-5 sm:text-xs"
       )
 
     ~H"""

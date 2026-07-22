@@ -177,7 +177,7 @@ defmodule SanctumWeb.Components.DeckCards do
 
   def row_cost(assigns) do
     ~H"""
-    <span class="w-5 flex-none text-center font-elektra-med text-[16px] leading-none text-base-content/90">
+    <span class="w-5 flex-none text-center font-elektra-med text-base leading-none text-base-content/90">
       {@cost}
     </span>
     """

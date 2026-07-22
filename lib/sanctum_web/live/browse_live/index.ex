@@ -151,7 +151,7 @@ defmodule SanctumWeb.BrowseLive.Index do
           placeholder="Search products and sets — try “spider”, “kang”, or “bomb scare”"
           phx-hook="ResponsivePlaceholder"
           data-placeholder-short="Search products and sets — try “kang”"
-          class="min-h-[44px] w-full border-[2.5px] border-line bg-black px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.04em] text-base-content outline-none placeholder:normal-case placeholder:font-normal placeholder:text-base-content/40 focus:border-primary sm:min-h-0 sm:text-[14px]"
+          class="min-h-[44px] w-full border-[2.5px] border-line bg-black px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.04em] text-base-content outline-none placeholder:normal-case placeholder:font-normal placeholder:text-base-content/40 focus:border-primary sm:min-h-0 sm:text-sm"
         />
       </form>
 
@@ -176,7 +176,7 @@ defmodule SanctumWeb.BrowseLive.Index do
         </section>
 
         <section :if={@filtered_other != []}>
-          <h2 class="mb-3.5 font-anton text-[22px] uppercase tracking-[0.03em]">Other</h2>
+          <h2 class="mb-3.5 font-anton text-2xl uppercase tracking-[0.03em]">Other</h2>
           <.pack_grid packs={@filtered_other} covers={@covers} owned_pack_ids={@owned_pack_ids} />
         </section>
 
@@ -201,7 +201,7 @@ defmodule SanctumWeb.BrowseLive.Index do
 
     ~H"""
     <div class="mb-3.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-neutral pb-2">
-      <h2 class="font-anton text-[26px] uppercase leading-none tracking-[0.03em] text-primary">
+      <h2 class="font-anton text-2xl uppercase leading-none tracking-[0.03em] text-primary">
         {@wave.name}
       </h2>
       <span :if={@campaign} class="font-barlow-condensed text-lg uppercase text-base-content/55">
@@ -232,7 +232,7 @@ defmodule SanctumWeb.BrowseLive.Index do
             class="h-full w-full object-cover object-top opacity-90 transition group-hover:opacity-100"
           />
           <div :if={!@covers[pack.id]} class="h-full w-full bg-hatch"></div>
-          <span class="absolute left-1.5 top-1.5 border border-neutral bg-base-100/90 px-1.5 py-0.5 font-ibm-mono text-[10px] uppercase tracking-wide text-base-content/70">
+          <span class="absolute left-1.5 top-1.5 border border-neutral bg-base-100/90 px-1.5 py-0.5 font-ibm-mono text-xs uppercase tracking-wide text-base-content/70">
             {type_label(pack.product_type)}
           </span>
           <.owned_badge
@@ -242,10 +242,10 @@ defmodule SanctumWeb.BrowseLive.Index do
           />
         </div>
         <div class="flex flex-1 flex-col gap-1 p-2.5">
-          <span class="font-anton text-[15px] uppercase leading-tight tracking-[0.02em] group-hover:text-primary">
+          <span class="font-anton text-base uppercase leading-tight tracking-[0.02em] group-hover:text-primary">
             {pack.name}
           </span>
-          <span class="mt-auto font-ibm-mono text-[11px] text-base-content/45">
+          <span class="mt-auto font-ibm-mono text-xs text-base-content/45">
             {pack.card_total || 0} cards<span :if={pack.released_on}> · {pack.released_on.year}</span>
           </span>
         </div>

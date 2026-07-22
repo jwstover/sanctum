@@ -40,7 +40,7 @@ defmodule SanctumWeb.SearchHelpLive do
       <div class="max-w-4xl space-y-8">
         <section>
           <.section_title>Basics</.section_title>
-          <div class="space-y-2.5 font-barlow text-[15px] leading-relaxed text-base-content/85">
+          <div class="space-y-2.5 font-barlow text-base leading-relaxed text-base-content/85">
             <p>
               A bare word like <.q c="spider" /> searches card names and subtitles
               (deck titles and heroes on the deck browser). Use <.q c={~s("quotes")} />
@@ -99,7 +99,7 @@ defmodule SanctumWeb.SearchHelpLive do
 
         <section id="global">
           <.section_title>Global search</.section_title>
-          <div class="space-y-2.5 font-barlow text-[15px] leading-relaxed text-base-content/85">
+          <div class="space-y-2.5 font-barlow text-base leading-relaxed text-base-content/85">
             <p>
               The Search button (in the sidebar or the mobile header — or press <.q c="⌘K" />
               anywhere) opens a search palette that searches the whole
@@ -151,7 +151,7 @@ defmodule SanctumWeb.SearchHelpLive do
 
   defp section_title(assigns) do
     ~H"""
-    <h2 class="mb-2.5 font-anton text-[19px] uppercase tracking-[0.05em] text-primary">
+    <h2 class="mb-2.5 font-anton text-lg uppercase tracking-[0.05em] text-primary">
       {render_slot(@inner_block)}
     </h2>
     """
@@ -160,7 +160,7 @@ defmodule SanctumWeb.SearchHelpLive do
   # An inline query snippet.
   defp q(assigns) do
     ~H"""
-    <code class="whitespace-nowrap bg-base-300 px-1.5 py-0.5 font-mono text-[13px] text-base-content">{@c}</code>
+    <code class="whitespace-nowrap bg-base-300 px-1.5 py-0.5 font-mono text-sm text-base-content">{@c}</code>
     """
   end
 
@@ -169,7 +169,7 @@ defmodule SanctumWeb.SearchHelpLive do
     ~H"""
     <.link
       navigate={"#{@base_path}?#{URI.encode_query(query: @query)}"}
-      class="whitespace-nowrap bg-base-300 px-1.5 py-0.5 font-mono text-[13px] text-secondary underline decoration-secondary/40 underline-offset-2 hover:text-primary"
+      class="whitespace-nowrap bg-base-300 px-1.5 py-0.5 font-mono text-sm text-secondary underline decoration-secondary/40 underline-offset-2 hover:text-primary"
     >
       {@query}
     </.link>
@@ -196,7 +196,7 @@ defmodule SanctumWeb.SearchHelpLive do
             </span>
           </td>
           <td class="!whitespace-normal">{matches(field)}</td>
-          <td class="whitespace-nowrap font-mono text-[12.5px]">{ops(field)}</td>
+          <td class="whitespace-nowrap font-mono text-sm">{ops(field)}</td>
           <td>
             <.try_link :if={field.example} query={field.example} base_path={@base_path} />
           </td>

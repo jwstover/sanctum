@@ -82,7 +82,7 @@ defmodule SanctumWeb.AuthSignInLive do
       <Layouts.flash_group flash={@flash} />
       <div class={AuthOverrides.panel_class()}>
         <div class="w-full pb-6 mb-6 border-b-2 border-neutral text-center">
-          <.link navigate="/" class="font-bangers text-[40px] leading-none tracking-wide text-primary">
+          <.link navigate="/" class="font-bangers text-4xl leading-none tracking-wide text-primary">
             SANCTUM
           </.link>
         </div>
@@ -127,7 +127,7 @@ defmodule SanctumWeb.AuthSignInLive do
           <div class="relative my-5">
             <div class="w-full border-t-2 border-neutral"></div>
             <div class="absolute inset-0 flex items-center justify-center -top-2">
-              <span class="px-3 bg-base-200 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+              <span class="px-3 bg-base-200 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                 or
               </span>
             </div>
@@ -213,7 +213,7 @@ defmodule SanctumWeb.AuthSignInLive do
     ~H"""
     <.link
       navigate={@navigate}
-      class="flex-none px-2 first:pl-0 last:pr-0 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.06em] text-primary hover:underline underline-offset-4"
+      class="flex-none px-2 first:pl-0 last:pr-0 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-primary hover:underline underline-offset-4"
     >
       {render_slot(@inner_block)}
     </.link>

@@ -64,10 +64,10 @@ defmodule SanctumWeb.DeckLive.Show do
             </div>
 
             <div class="flex min-w-0 flex-1 flex-col">
-              <div class="font-ibm-mono text-[11px] uppercase tracking-[0.25em] text-primary">
+              <div class="font-ibm-mono text-xs uppercase tracking-[0.25em] text-primary">
                 {@cover.source_label} · {@cover.hero_name}
               </div>
-              <h1 class="mt-1.5 font-anton text-[34px] uppercase leading-[0.9] [text-wrap:balance] sm:text-[46px] sm:leading-[0.88]">
+              <h1 class="mt-1.5 font-anton text-4xl uppercase leading-[0.9] [text-wrap:balance] sm:text-5xl sm:leading-[0.88]">
                 {@deck.title}
               </h1>
 
@@ -75,7 +75,7 @@ defmodule SanctumWeb.DeckLive.Show do
                 <span
                   :for={a <- @cover.aspects}
                   class={[
-                    "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]",
+                    "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
                     a.text,
                     a.border
                   ]}
@@ -86,21 +86,21 @@ defmodule SanctumWeb.DeckLive.Show do
 
               <div class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
                 <div>
-                  <div class="font-anton text-[30px] leading-none">{@cover.total_cards}</div>
-                  <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
+                  <div class="font-anton text-3xl leading-none">{@cover.total_cards}</div>
+                  <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
                     Cards
                   </div>
                 </div>
                 <div>
-                  <div class="font-anton text-[30px] leading-none">{@cover.unique_cards}</div>
-                  <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
+                  <div class="font-anton text-3xl leading-none">{@cover.unique_cards}</div>
+                  <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
                     Unique
                   </div>
                 </div>
                 <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
                 <div :if={@cover.author} class="flex items-center gap-2 self-center">
                   <.avatar name={@cover.author} url={@cover.author_avatar} size="md" />
-                  <span class="font-barlow-condensed text-[13px] font-bold text-primary">
+                  <span class="font-barlow-condensed text-sm font-bold text-primary">
                     {@cover.author}
                   </span>
                 </div>
@@ -118,7 +118,7 @@ defmodule SanctumWeb.DeckLive.Show do
             class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]"
           >
             <.panel class="min-w-0 p-5">
-              <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+              <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                 Deck Notes
               </div>
               <div :if={@writeup} class="space-y-4">
@@ -135,7 +135,7 @@ defmodule SanctumWeb.DeckLive.Show do
                   ></iframe>
                 </div>
               </div>
-              <div :if={!@writeup} class="font-barlow text-[14px] italic text-base-content/45">
+              <div :if={!@writeup} class="font-barlow text-sm italic text-base-content/45">
                 No writeup for this deck.
               </div>
             </.panel>
@@ -143,8 +143,8 @@ defmodule SanctumWeb.DeckLive.Show do
             <div class="min-w-0 space-y-5">
               <.panel class="p-4">
                 <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
-                  <div class="font-anton text-[17px] uppercase tracking-[0.05em]">In This Deck</div>
-                  <div class="ml-auto font-ibm-mono text-[11px] text-base-content/45">
+                  <div class="font-anton text-lg uppercase tracking-[0.05em]">In This Deck</div>
+                  <div class="ml-auto font-ibm-mono text-xs text-base-content/45">
                     {@cover.total_cards} cards<span
                       :if={@owned_summary}
                       class="text-primary"
@@ -167,7 +167,7 @@ defmodule SanctumWeb.DeckLive.Show do
                 </div>
 
                 <div :for={g <- @groups} class="mb-4 last:mb-0">
-                  <div class="mb-2 font-anton text-[12px] uppercase tracking-[0.06em] text-primary">
+                  <div class="mb-2 font-anton text-xs uppercase tracking-[0.06em] text-primary">
                     {g.name} · {g.count}
                   </div>
                   <div
@@ -212,20 +212,20 @@ defmodule SanctumWeb.DeckLive.Show do
                         class="size-3 flex-none text-aspect-hero"
                       />
                       <span :if={c.aspect_key != :hero} class={["size-2.5 flex-none", c.aspect_bg]}></span>
-                      <span class="min-w-0 truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85">
+                      <span class="min-w-0 truncate font-barlow-condensed text-sm font-semibold text-base-content/85">
                         {c.name}
                       </span>
                       <span :if={c.owned == false} title="Not in your collection" class="flex-none">
                         <.icon name="hero-x-mark" class="size-3 text-error" />
                       </span>
                       <span class="flex-1"></span>
-                      <span class="flex-none font-ibm-mono text-[13px] text-base-content/50">
+                      <span class="flex-none font-ibm-mono text-sm text-base-content/50">
                         ×{c.qty}
                       </span>
                       <span class="flex w-8 flex-none items-center justify-end gap-1">
                         <span
                           :for={{color_class, glyph} <- c.pips}
-                          class={["font-champions text-[14px] leading-none", color_class]}
+                          class={["font-champions text-sm leading-none", color_class]}
                         >
                           {glyph}
                         </span>
@@ -237,7 +237,7 @@ defmodule SanctumWeb.DeckLive.Show do
 
               <!-- similar decks -->
               <.panel :if={@similar != []} class="p-4">
-                <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+                <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                   Similar Decks
                 </div>
                 <div class="space-y-2">
@@ -247,14 +247,14 @@ defmodule SanctumWeb.DeckLive.Show do
                     class="mc-tile flex items-center gap-3 border-2 border-neutral bg-black p-2.5 shadow-comic-sm"
                   >
                     <div class="min-w-0 flex-1">
-                      <div class="truncate font-anton text-[16px] uppercase leading-tight">
+                      <div class="truncate font-anton text-base uppercase leading-tight">
                         {s.title}
                       </div>
                       <div class="mt-1 flex flex-wrap gap-1">
                         <span
                           :for={a <- s.aspects}
                           class={[
-                            "border bg-base-200 px-1.5 font-barlow-condensed text-[10px] font-bold uppercase tracking-[0.06em]",
+                            "border bg-base-200 px-1.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.06em]",
                             a.text,
                             a.border
                           ]}
@@ -264,8 +264,8 @@ defmodule SanctumWeb.DeckLive.Show do
                       </div>
                     </div>
                     <div class="flex-none text-right">
-                      <div class="font-anton text-[20px] leading-none text-primary">{s.match}%</div>
-                      <div class="font-barlow-condensed text-[10px] font-bold uppercase tracking-[0.1em] text-base-content/45">
+                      <div class="font-anton text-xl leading-none text-primary">{s.match}%</div>
+                      <div class="font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/45">
                         Match
                       </div>
                     </div>
@@ -275,20 +275,20 @@ defmodule SanctumWeb.DeckLive.Show do
 
               <!-- details -->
               <.panel class="p-4">
-                <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+                <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                   Details
                 </div>
                 <div class="grid grid-cols-2 gap-x-6 gap-y-3">
                   <.meta label="Source" value={@cover.source_label} />
                   <div :if={mcdb_url(@deck)}>
-                    <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+                    <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
                       MarvelCDB
                     </div>
                     <a
                       href={mcdb_url(@deck)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="mt-0.5 inline-flex items-center gap-1 font-barlow-condensed text-[15px] font-semibold text-primary hover:underline"
+                      class="mt-0.5 inline-flex items-center gap-1 font-barlow-condensed text-base font-semibold text-primary hover:underline"
                     >
                       {@deck.mcdb_type}/{@deck.mcdb_id}
                       <.icon name="hero-arrow-top-right-on-square" class="size-3" />
@@ -314,10 +314,10 @@ defmodule SanctumWeb.DeckLive.Show do
   defp meta(assigns) do
     ~H"""
     <div :if={@value not in [nil, ""]}>
-      <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+      <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
         {@label}
       </div>
-      <div class="mt-0.5 font-barlow-condensed text-[15px] font-semibold">{@value}</div>
+      <div class="mt-0.5 font-barlow-condensed text-base font-semibold">{@value}</div>
     </div>
     """
   end

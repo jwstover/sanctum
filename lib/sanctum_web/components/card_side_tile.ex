@@ -60,7 +60,7 @@ defmodule SanctumWeb.Components.CardSideTile do
       </.maybe_link>
 
       <div class="flex min-w-0 flex-1 flex-col">
-        <div class="h-12 flex items-start gap-3">
+        <div class="min-h-12 flex items-start gap-3">
           <div
             :if={@side.show_cost}
             class="flex flex-none items-center justify-center rounded-full font-elektra-med text-4xl/normal"
@@ -70,7 +70,7 @@ defmodule SanctumWeb.Components.CardSideTile do
           <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-2">
               <div class={[
-                "font-ibm-mono text-[9px] uppercase tracking-[0.2em]",
+                "font-ibm-mono text-xs uppercase tracking-[0.2em]",
                 @side.aspect_text_class
               ]}>
                 {@side.type_name} · {@side.aspect_name}
@@ -78,7 +78,7 @@ defmodule SanctumWeb.Components.CardSideTile do
               <.owned_badge :if={@side.owned == true} />
             </div>
             <div class="mt-[3px] flex items-baseline gap-2">
-              <div class="min-w-0 flex-1 font-anton text-[22px] uppercase leading-[0.94]">
+              <div class="min-w-0 flex-1 font-anton text-2xl uppercase leading-[0.94]">
                 <.link :if={@navigate} navigate={@navigate} class="hover:text-primary">
                   {@side.name}
                 </.link>
@@ -86,7 +86,7 @@ defmodule SanctumWeb.Components.CardSideTile do
               </div>
               <div
                 :if={@side.stage_label}
-                class="flex-none font-elektra-med text-[18px] leading-none text-white"
+                class="flex-none font-elektra-med text-lg leading-none text-white"
               >
                 {@side.stage_label}
               </div>
@@ -137,7 +137,7 @@ defmodule SanctumWeb.Components.CardSideTile do
 
         <div
           :if={@side.is_scheme and (@side.start_threat || @side.escalation_threat)}
-          class="mb-1 w-full"
+          class="mt-2 mb-1 w-full"
         >
           <div class="inline-flex -skew-x-[9deg] border-2 border-white bg-base-100 shadow-comic-sm">
             <.scheme_cell value={@side.start_threat} per_player={@side.start_threat_pp} />
@@ -169,14 +169,14 @@ defmodule SanctumWeb.Components.CardSideTile do
           {@side.traits}
         </div>
 
-        <div class="font-barlow text-[13.5px] leading-[1.5] text-base-content/85">
+        <div class="font-barlow text-base-content/85">
           {Sanctum.CardText.to_html(@side.text)}
         </div>
 
         <div
           :if={@side.flavor}
           class={[
-            "text-center font-barlow italic text-xs text-base-content/65",
+            "text-center font-barlow italic text-sm text-base-content/65",
             (@lg? && "my-3.5") || "my-2"
           ]}
         >
