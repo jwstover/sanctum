@@ -94,6 +94,12 @@ defmodule SanctumWeb.Router do
       # Public "Flavor Town" flavor-text guessing mini-game.
       live "/flavor-town", GuessLive.Play, :index
 
+      # Loki epic-multiplayer event organizer dashboard. /new before /:id.
+      live "/events", EventLive.Index, :index
+      live "/events/new", EventLive.New, :new
+      live "/events/:id/setup", EventLive.Setup, :setup
+      live "/events/:id", EventLive.Show, :show
+
       # Public deck-collection stats.
       live "/stats", StatsLive.Index, :index
 
