@@ -33,6 +33,7 @@ defmodule SanctumWeb.CardLive.Detail do
               <.button
                 :if={@prev}
                 navigate={~p"/cards/#{@prev.id}"}
+                replace
                 data-card-nav="prev"
                 aria-label="Previous card"
                 title={"#{card_name(@prev)} (←)"}
@@ -45,6 +46,7 @@ defmodule SanctumWeb.CardLive.Detail do
               <.button
                 :if={@next}
                 navigate={~p"/cards/#{@next.id}"}
+                replace
                 data-card-nav="next"
                 aria-label="Next card"
                 title={"#{card_name(@next)} (→)"}
