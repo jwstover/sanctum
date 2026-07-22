@@ -32,8 +32,11 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
 
   defp edit_path(project, card), do: ~p"/homebrew/#{project.id}/cards/#{card.id}"
 
+  # Homebrew is TEMPORARILY admin-gated at the router (see router.ex), so the
+  # page tests act as an admin. Cross-user privacy semantics stay covered by
+  # the data-layer tests, which use plain users.
   setup %{conn: conn} do
-    creator = user_fixture()
+    creator = admin_user_fixture()
     project = project_fixture(creator)
     %{conn: log_in_user(conn, creator), creator: creator, project: project}
   end
@@ -46,12 +49,11 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
              live(conn, edit_path(ctx.project, card))
   end
 
-  test "another user's card is not found", ctx do
+  test "non-admins are redirected away", ctx do
     card = card_fixture(ctx.project, ctx.creator)
     conn = Phoenix.ConnTest.build_conn() |> log_in_user(user_fixture())
 
-    assert {:error, {:live_redirect, %{to: "/homebrew"}}} =
-             live(conn, edit_path(ctx.project, card))
+    assert {:error, {:redirect, %{to: "/"}}} = live(conn, edit_path(ctx.project, card))
   end
 
   test "a card from a different project is not found", ctx do

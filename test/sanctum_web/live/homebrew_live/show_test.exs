@@ -29,8 +29,11 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
     Ash.load!(card, [:card_sides, :primary_side], authorize?: false)
   end
 
+  # Homebrew is TEMPORARILY admin-gated at the router (see router.ex), so the
+  # page tests act as an admin. Cross-user privacy semantics stay covered by
+  # the data-layer tests (card_privacy_test etc.), which use plain users.
   setup %{conn: conn} do
-    creator = user_fixture()
+    creator = admin_user_fixture()
     project = project_fixture(creator)
     %{conn: log_in_user(conn, creator), creator: creator, project: project}
   end
@@ -40,11 +43,11 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/homebrew/#{project.id}")
   end
 
-  test "another user's project is not found", %{project: project} do
+  test "non-admins are redirected away", %{project: project} do
     conn = Phoenix.ConnTest.build_conn() |> log_in_user(user_fixture())
 
-    assert {:error, {:live_redirect, %{to: "/homebrew"}}} =
-             live(conn, ~p"/homebrew/#{project.id}")
+    assert {:error, {:redirect, %{to: "/"}}} = live(conn, ~p"/homebrew/#{project.id}")
+    assert {:error, {:redirect, %{to: "/"}}} = live(conn, ~p"/homebrew")
   end
 
   test "card tiles link to the card's edit page", ctx do
