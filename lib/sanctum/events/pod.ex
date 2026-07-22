@@ -37,8 +37,13 @@ defmodule Sanctum.Events.Pod do
   end
 
   policies do
-    policy always() do
+    bypass actor_attribute_equals(:admin, true) do
       authorize_if always()
+    end
+
+    # A pod is only reachable through an event the actor owns.
+    policy always() do
+      authorize_if relates_to_actor_via([:event, :user])
     end
   end
 

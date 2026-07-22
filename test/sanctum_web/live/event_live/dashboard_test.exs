@@ -139,7 +139,15 @@ defmodule SanctumWeb.EventLive.DashboardTest do
       assert updated.loki_hp == 45
       assert updated.loki_flipped
 
-      assert render(lv) =~ "Flipped"
+      # Flip is surfaced by the banner and the stage line.
+      html = render(lv)
+      assert html =~ "Loki has flipped"
+      assert html =~ "Stage II"
+
+      # The banner can be cleared without un-flipping Loki.
+      render_click(lv, "dismiss_flip")
+      refute render(lv) =~ "Loki has flipped"
+      assert Events.get_event!(event.id, actor: user).loki_flipped
     end
 
     test "group-level triggers each add 1 threat to Worlds Collide", %{conn: conn, user: user} do
@@ -180,13 +188,17 @@ defmodule SanctumWeb.EventLive.DashboardTest do
 
       {:ok, lv, _html} = live(conn, ~p"/events/#{event.id}")
 
-      render_click(lv, "toggle_mangog", %{"id" => group.id})
+      render_click(lv, "put_mangog", %{"id" => group.id})
       render_click(lv, "mangog_delta", %{"id" => group.id, "amount" => "-4"})
 
       reloaded = Events.get_group!(group.id, actor: user, load: [:mangog_hp_max])
-      assert reloaded.mangog_active
+      assert reloaded.mangog_status == :in_play
       assert reloaded.mangog_hp_max == 20
       assert reloaded.mangog_hp == 16
+
+      # Resolving marks it defeated.
+      render_click(lv, "defeat_mangog", %{"id" => group.id})
+      assert Events.get_group!(group.id, actor: user).mangog_status == :defeated
     end
 
     test "a group's Door Between Worlds enters with 7 threat per group in its pod",
@@ -197,13 +209,17 @@ defmodule SanctumWeb.EventLive.DashboardTest do
 
       {:ok, lv, _html} = live(conn, ~p"/events/#{event.id}")
 
-      render_click(lv, "toggle_door", %{"id" => group.id})
+      render_click(lv, "put_door", %{"id" => group.id})
       render_click(lv, "door_delta", %{"id" => group.id, "amount" => "-5"})
 
       reloaded = Events.get_group!(group.id, actor: user, load: [:door_threat_max])
-      assert reloaded.door_active
+      assert reloaded.door_status == :in_play
       assert reloaded.door_threat_max == 14
       assert reloaded.door_threat == 9
+
+      # Resolving marks it cleared.
+      render_click(lv, "clear_door", %{"id" => group.id})
+      assert Events.get_group!(group.id, actor: user).door_status == :cleared
     end
 
     test "groups are grouped under their pod so same-named groups are distinguishable",
@@ -228,6 +244,56 @@ defmodule SanctumWeb.EventLive.DashboardTest do
       # Not started yet -> dashboard should bounce to setup.
       assert {:error, {:live_redirect, %{to: to}}} = live(conn, ~p"/events/#{event.id}")
       assert to =~ "/setup"
+    end
+  end
+
+  describe "authorization policies" do
+    test "creating an event requires a logged-in actor", %{user: user} do
+      assert {:ok, _event} = Events.create_event(%{name: "Mine"}, actor: user)
+      # No actor → cannot become the owner, so the create is rejected.
+      assert {:error, %Ash.Error.Invalid{}} = Events.create_event(%{name: "Anon"}, actor: nil)
+    end
+
+    test "a non-owner cannot read or modify another user's event or its state", %{user: owner} do
+      other = user_fixture()
+      %{event: event, pod: pod} = seed_event(owner, start: true)
+      group = first_group(event, owner)
+
+      # Reads are filtered to the owner: a non-owner simply doesn't find it.
+      assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+               Events.get_event(event.id, actor: other)
+
+      # Every mutation of the event / pod / group is forbidden for a non-owner.
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Events.adjust_loki_hp(event, %{amount: -5}, actor: other)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Events.update_event(event, %{name: "hijacked"}, actor: other)
+
+      assert {:error, %Ash.Error.Forbidden{}} = Events.destroy_event(event, actor: other)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Events.create_pod(%{name: "X", event_id: event.id}, actor: other)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Events.create_group(%{name: "X", pod_id: pod.id}, actor: other)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Events.update_group(group, %{mangog_status: :defeated}, actor: other)
+
+      # The owner can still do all of these.
+      assert {:ok, _} = Events.adjust_loki_hp(event, %{amount: -5}, actor: owner)
+    end
+
+    test "the events index lists only the current user's events", %{conn: conn, user: user} do
+      {:ok, _mine} = Events.create_event(%{name: "My Saturday Event"}, actor: user)
+      other = user_fixture()
+      {:ok, _theirs} = Events.create_event(%{name: "Someone Elses Event"}, actor: other)
+
+      {:ok, _lv, html} = live(conn, ~p"/events")
+
+      assert html =~ "My Saturday Event"
+      refute html =~ "Someone Elses Event"
     end
   end
 end

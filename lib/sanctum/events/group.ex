@@ -48,9 +48,9 @@ defmodule Sanctum.Events.Group do
         :player_count,
         :difficulty,
         :status,
-        :mangog_active,
+        :mangog_status,
         :mangog_hp,
-        :door_active,
+        :door_status,
         :door_threat
       ]
     end
@@ -63,7 +63,7 @@ defmodule Sanctum.Events.Group do
 
       change fn changeset, _context ->
         amount = Ash.Changeset.get_argument(changeset, :amount)
-        group = Ash.load!(changeset.data, [:mangog_hp_max])
+        group = Ash.load!(changeset.data, [:mangog_hp_max], authorize?: false)
         max = group.mangog_hp_max || 0
         new_hp = (changeset.data.mangog_hp || 0) |> Kernel.+(amount) |> max(0) |> min(max)
 
@@ -79,7 +79,7 @@ defmodule Sanctum.Events.Group do
 
       change fn changeset, _context ->
         amount = Ash.Changeset.get_argument(changeset, :amount)
-        group = Ash.load!(changeset.data, [:door_threat_max])
+        group = Ash.load!(changeset.data, [:door_threat_max], authorize?: false)
         max = group.door_threat_max || 0
         new_threat = (changeset.data.door_threat || 0) |> Kernel.+(amount) |> max(0) |> min(max)
 
@@ -89,8 +89,13 @@ defmodule Sanctum.Events.Group do
   end
 
   policies do
-    policy always() do
+    bypass actor_attribute_equals(:admin, true) do
       authorize_if always()
+    end
+
+    # A group is only reachable through an event the actor owns.
+    policy always() do
+      authorize_if relates_to_actor_via([:pod, :event, :user])
     end
   end
 
@@ -113,10 +118,22 @@ defmodule Sanctum.Events.Group do
       allow_nil?: false,
       default: :playing
 
-    attribute :mangog_active, :boolean, public?: true, allow_nil?: false, default: false
+    # The Mangog / Door Between Worlds lifecycle: out of play → in play →
+    # resolved (defeated for the Mangog, cleared for the Door).
+    attribute :mangog_status, :atom,
+      constraints: [one_of: [:out, :in_play, :defeated]],
+      public?: true,
+      allow_nil?: false,
+      default: :out
+
     attribute :mangog_hp, :integer, public?: true, allow_nil?: false, default: 0
 
-    attribute :door_active, :boolean, public?: true, allow_nil?: false, default: false
+    attribute :door_status, :atom,
+      constraints: [one_of: [:out, :in_play, :cleared]],
+      public?: true,
+      allow_nil?: false,
+      default: :out
+
     attribute :door_threat, :integer, public?: true, allow_nil?: false, default: 0
 
     timestamps()

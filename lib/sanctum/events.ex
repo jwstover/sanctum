@@ -24,6 +24,7 @@ defmodule Sanctum.Events do
       define :start_event, action: :start
       define :adjust_loki_hp, action: :adjust_loki_hp
       define :adjust_worlds_collide, action: :adjust_worlds_collide
+      define :reset_timer, action: :reset_timer
       define :destroy_event, action: :destroy
     end
 

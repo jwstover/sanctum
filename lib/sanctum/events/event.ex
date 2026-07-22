@@ -41,13 +41,22 @@ defmodule Sanctum.Events.Event do
       accept [:name, :time_limit_minutes]
     end
 
+    # Restart the countdown from the full time limit.
+    update :reset_timer do
+      require_atomic? false
+
+      change fn changeset, _context ->
+        Ash.Changeset.change_attribute(changeset, :started_at, DateTime.utc_now())
+      end
+    end
+
     # Locks the roster in and starts the clocks: seed Loki's HP from the roster,
     # zero out Worlds Collide, stamp the start time.
     update :start do
       require_atomic? false
 
       change fn changeset, _context ->
-        event = Ash.load!(changeset.data, [:total_players])
+        event = Ash.load!(changeset.data, [:total_players], authorize?: false)
         players = event.total_players || 0
 
         changeset
@@ -67,7 +76,7 @@ defmodule Sanctum.Events.Event do
 
       change fn changeset, _context ->
         amount = Ash.Changeset.get_argument(changeset, :amount)
-        event = Ash.load!(changeset.data, [:loki_hp_max, :loki_flip_threshold])
+        event = Ash.load!(changeset.data, [:loki_hp_max, :loki_flip_threshold], authorize?: false)
         max = event.loki_hp_max || 0
         current = changeset.data.loki_hp || max
         new_hp = current |> Kernel.+(amount) |> max(0) |> min(max)
@@ -89,7 +98,7 @@ defmodule Sanctum.Events.Event do
 
       change fn changeset, _context ->
         amount = Ash.Changeset.get_argument(changeset, :amount)
-        event = Ash.load!(changeset.data, [:worlds_collide_target])
+        event = Ash.load!(changeset.data, [:worlds_collide_target], authorize?: false)
         target = event.worlds_collide_target || 0
         current = changeset.data.worlds_collide_threat || 0
         new_threat = current |> Kernel.+(amount) |> max(0) |> min(target)
@@ -100,8 +109,19 @@ defmodule Sanctum.Events.Event do
   end
 
   policies do
-    policy always() do
+    # Admins can moderate any event. System operations run with authorize?: false.
+    bypass actor_attribute_equals(:admin, true) do
       authorize_if always()
+    end
+
+    # Any logged-in user may create an event (they become its owner).
+    policy action_type(:create) do
+      authorize_if actor_present()
+    end
+
+    # Only the owner may read, modify, or delete their event and its state.
+    policy action_type([:read, :update, :destroy]) do
+      authorize_if relates_to_actor_via(:user)
     end
   end
 
