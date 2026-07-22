@@ -103,4 +103,58 @@ defmodule Sanctum.Homebrew do
       {:ok, {updated, updated.__metadata__.unpaired_card}}
     end
   end
+
+  @doc """
+  Declares one of the actor's single-sided custom cards as alternate art for
+  an official card. CONVERT semantics: the card row (and its side) is
+  destroyed and a CardAlt is minted — enrichment metadata does not survive
+  the round trip. Opts: `:artist`, `:side_identifier` (default "a", the
+  target side the art depicts).
+  """
+  def declare_alt_art(source_card_id, target_card_id, opts \\ [], actor) do
+    Sanctum.Games.CardAlt
+    |> Ash.Changeset.for_create(
+      :declare_custom,
+      %{
+        source_card_id: source_card_id,
+        target_card_id: target_card_id,
+        artist: opts[:artist],
+        side_identifier: opts[:side_identifier] || "a"
+      },
+      actor: actor
+    )
+    |> Ash.create()
+  end
+
+  @doc """
+  Converts a custom alt back into a plain image-only custom card in its
+  project. Returns `{:ok, new_card}` (not-found for anyone else's alt).
+  """
+  def revert_alt_art(alt_id, actor) do
+    with {:ok, alt} <- Ash.get(Sanctum.Games.CardAlt, alt_id, actor: actor),
+         {:ok, destroyed} <-
+           Ash.destroy(alt, action: :revert_custom, actor: actor, return_destroyed?: true) do
+      {:ok, destroyed.__metadata__.reverted_card}
+    end
+  end
+
+  @doc "Deletes one of the actor's custom alts outright (not-found for anyone else's)."
+  def destroy_alt_art(alt_id, actor) do
+    with {:ok, alt} <- Ash.get(Sanctum.Games.CardAlt, alt_id, actor: actor) do
+      Ash.destroy(alt, action: :destroy_custom, actor: actor)
+    end
+  end
+
+  @doc """
+  Custom alts belonging to a project, oldest first, with the target card and
+  its sides loaded (the project page renders the target side's tile wearing
+  the alt's art).
+  """
+  def list_project_alts(project_id, actor) do
+    Sanctum.Games.CardAlt
+    |> Ash.Query.filter(homebrew_project_id == ^project_id)
+    |> Ash.Query.load(card: [:card_sides, :primary_side])
+    |> Ash.Query.sort(inserted_at: :asc)
+    |> Ash.read!(actor: actor)
+  end
 end

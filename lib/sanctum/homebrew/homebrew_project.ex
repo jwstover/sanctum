@@ -141,9 +141,15 @@ defmodule Sanctum.Homebrew.HomebrewProject do
       destination_attribute :homebrew_project_id
       public? true
     end
+
+    has_many :card_alts, Sanctum.Games.CardAlt do
+      destination_attribute :homebrew_project_id
+      public? true
+    end
   end
 
   aggregates do
     count :card_count, :cards
+    count :alt_count, :card_alts
   end
 end
