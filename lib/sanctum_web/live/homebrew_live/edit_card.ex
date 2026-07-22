@@ -354,15 +354,10 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
                   <div class="grid grid-cols-[42px_1fr_52px_1fr] items-end gap-2">
                     <span></span>
                     <span class={stat_col_label_class()}>Value</span>
-                    <%!-- "s" is the ChampionsIcons star glyph (see stat_badge);
-                         normal-case so the label style can't uppercase it into
-                         a different glyph. --%>
-                    <span
-                      class="text-center font-champions text-sm normal-case text-base-content/60"
+                    <.stat_star_icon
+                      class="text-center text-sm text-base-content/60"
                       aria-label="star effect"
-                    >
-                      s
-                    </span>
+                    />
                     <span class={stat_col_label_class()}>Conseq. dmg</span>
                   </div>
                   <.stat_row form={side} stat={:attack} label="ATK" consequential />
