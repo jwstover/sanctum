@@ -133,8 +133,11 @@ defmodule Sanctum.Decks.Uniqueness do
   defp load_decks_for_display(ids) do
     require Ash.Query
 
+    # authorize?: false bypasses the visibility policy, so re-filter here:
+    # "Similar Decks" renders on public deck pages and must never surface
+    # someone's private deck.
     Sanctum.Decks.Deck
-    |> Ash.Query.filter(id in ^ids)
+    |> Ash.Query.filter(id in ^ids and visibility == :published)
     |> Ash.Query.load([:total_card_count, hero: [:hero_side, card: [:primary_side]]])
     |> Ash.read!(authorize?: false)
     |> Map.new(&{&1.id, &1})

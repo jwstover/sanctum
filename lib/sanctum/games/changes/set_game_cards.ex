@@ -5,15 +5,22 @@ defmodule Sanctum.Games.Changes.SetGameCards do
 
   use Ash.Resource.Change
 
-  def change(changeset, _opts, _context) do
+  def change(changeset, _opts, context) do
     game_player_id = Changeset.get_attribute(changeset, :id)
     game_id = Changeset.get_attribute(changeset, :game_id)
 
     case Changeset.fetch_attribute(changeset, :deck_id) do
       {:ok, deck_id} when is_binary(deck_id) ->
+        # Read as the acting user (Ash.Context.to_opts carries actor and
+        # authorize? through): the deck visibility policy then decides what a
+        # player can bring into a game — published decks or their own private
+        # drafts — instead of an actorless read rejecting the drafts.
         deck =
-          Sanctum.Decks.get_deck!(deck_id,
-            load: [deck_cards: [card: [:primary_side]], hero: [card: [:card_sides]]]
+          Sanctum.Decks.get_deck!(
+            deck_id,
+            Ash.Context.to_opts(context,
+              load: [deck_cards: [card: [:primary_side]], hero: [card: [:card_sides]]]
+            )
           )
 
         changeset = Changeset.put_context(changeset, :loaded_deck, deck)

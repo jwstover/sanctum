@@ -317,6 +317,30 @@ defmodule SanctumWeb.DeckLive.Build do
     end
   end
 
+  # Deck lifecycle phases: draft → finalize → publish; reopen/unpublish walk
+  # back. The actions live on the resource (publish requires :final there).
+  def handle_event("set_status", %{"action" => action}, socket)
+      when action in ["finalize", "reopen", "publish", "unpublish"] do
+    %{deck: deck, current_user: user} = socket.assigns
+
+    result =
+      case action do
+        "finalize" -> Decks.finalize_deck(deck, actor: user)
+        "reopen" -> Decks.reopen_deck(deck, actor: user)
+        "publish" -> Decks.publish_deck(deck, actor: user)
+        "unpublish" -> Decks.unpublish_deck(deck, actor: user)
+      end
+
+    case result do
+      {:ok, updated} ->
+        {:noreply,
+         assign(socket, :deck, %{deck | state: updated.state, visibility: updated.visibility})}
+
+      {:error, _error} ->
+        {:noreply, put_flash(socket, :error, "Couldn’t update the deck’s status.")}
+    end
+  end
+
   def handle_event("confirm_delete", _params, socket) do
     {:noreply, assign(socket, :confirm_delete?, true)}
   end
@@ -1192,6 +1216,62 @@ defmodule SanctumWeb.DeckLive.Build do
         </div>
       </div>
 
+      <!-- lifecycle: draft → finalize → publish -->
+      <div class="border-2 border-neutral bg-black/30 px-3 py-2.5">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="mr-1 font-anton text-xs uppercase tracking-[0.06em] text-base-content/45">
+            Status
+          </span>
+          <span class={[
+            "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
+            (@deck.state == :draft && "border-warning/60 text-warning") ||
+              "border-success/60 text-success"
+          ]}>
+            {(@deck.state == :draft && "Draft") || "Final"}
+          </span>
+          <span class={[
+            "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
+            (@deck.visibility == :published && "border-primary/60 text-primary") ||
+              "border-neutral text-base-content/60"
+          ]}>
+            {(@deck.visibility == :published && "Published") || "Private"}
+          </span>
+        </div>
+
+        <div class="mt-2.5 flex flex-wrap items-center gap-2">
+          <.button
+            :if={@deck.state == :draft}
+            variant="primary"
+            phx-click="set_status"
+            phx-value-action="finalize"
+          >
+            <.icon name="hero-check" /> Finalize Deck
+          </.button>
+          <.button
+            :if={@deck.state == :final and @deck.visibility == :private}
+            variant="primary"
+            phx-click="set_status"
+            phx-value-action="publish"
+          >
+            <.icon name="hero-globe-alt" /> Publish
+          </.button>
+          <.button
+            :if={@deck.visibility == :published}
+            phx-click="set_status"
+            phx-value-action="unpublish"
+          >
+            Unpublish
+          </.button>
+          <.button :if={@deck.state == :final} phx-click="set_status" phx-value-action="reopen">
+            Back to Draft
+          </.button>
+        </div>
+
+        <p class="mt-2 font-barlow-condensed text-xs text-base-content/45">
+          {status_hint(@deck)}
+        </p>
+      </div>
+
       <!-- advisory issues -->
       <div
         :if={@issues != []}
@@ -1352,6 +1432,14 @@ defmodule SanctumWeb.DeckLive.Build do
 
   defp deck_size_class(size) when size >= 40 and size <= 50, do: "text-success"
   defp deck_size_class(_size), do: "text-base-content"
+
+  defp status_hint(%{state: :draft}),
+    do: "Drafts are private. Finalize the list, then publish to share it."
+
+  defp status_hint(%{visibility: :private}),
+    do: "Finalized and private — publish to share it in the deck browser."
+
+  defp status_hint(_deck), do: "Published — anyone can view this deck."
 
   defp staples_status(staples, entries) do
     have = Enum.count(staples, &match?(%{quantity: q} when q > 0, entries[&1.id]))

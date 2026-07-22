@@ -20,6 +20,10 @@ defmodule Sanctum.Decks do
       define :rename_deck, action: :rename
       define :set_deck_aspects, action: :set_aspects
       define :set_deck_description, action: :set_description
+      define :finalize_deck, action: :finalize
+      define :reopen_deck, action: :reopen
+      define :publish_deck, action: :publish
+      define :unpublish_deck, action: :unpublish
       define :destroy_deck, action: :destroy
     end
 

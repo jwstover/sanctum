@@ -4,8 +4,9 @@ defmodule Sanctum.Decks.Stats do
 
   These are group-by aggregates over the decks table, which Ash read actions
   don't model — schemaless Ecto (the admin health snapshot's pattern) keeps
-  each one a single round trip. Deck reads are public, so nothing here
-  bypasses a policy that would apply through Ash.
+  each one a single round trip. That bypasses the Deck visibility policy, so
+  every deck query here scopes to `visibility = 'published'` by hand — the
+  stats page is public and must not count private drafts.
 
   Deck dates use the MarvelCDB publish date when we have it (imported decks),
   falling back to our own insert time (native decks).
@@ -27,6 +28,7 @@ defmodule Sanctum.Decks.Stats do
     this_month =
       Repo.one(
         from d in "decks",
+          where: d.visibility == "published",
           where:
             fragment(
               "coalesce(?, ?) >= ?",
@@ -38,7 +40,7 @@ defmodule Sanctum.Decks.Stats do
       )
 
     %{
-      decks: count_all("decks"),
+      decks: Repo.one(from d in "decks", where: d.visibility == "published", select: count(d.id)),
       this_month: this_month,
       cards: count_all("cards"),
       heroes: count_all("heroes"),
@@ -56,6 +58,7 @@ defmodule Sanctum.Decks.Stats do
   """
   def by_month do
     from(d in "decks",
+      where: d.visibility == "published",
       group_by: selected_as(:month),
       order_by: selected_as(:month),
       select:
@@ -84,6 +87,7 @@ defmodule Sanctum.Decks.Stats do
         from d in "decks",
           join: h in "heroes",
           on: h.id == d.hero_id,
+          where: d.visibility == "published",
           group_by: [
             h.id,
             h.hero_name,
@@ -128,12 +132,13 @@ defmodule Sanctum.Decks.Stats do
   def by_aspect(nil) do
     rows =
       Repo.query!(
-        "SELECT a.aspect::text, count(*) FROM decks d CROSS JOIN LATERAL unnest(d.aspects) AS a(aspect) GROUP BY 1"
+        "SELECT a.aspect::text, count(*) FROM decks d CROSS JOIN LATERAL unnest(d.aspects) AS a(aspect) WHERE d.visibility = 'published' GROUP BY 1"
       ).rows
 
     basic =
       Repo.one(
         from d in "decks",
+          where: d.visibility == "published",
           where: fragment("cardinality(?) = 0", d.aspects),
           select: count(d.id)
       )
@@ -146,13 +151,14 @@ defmodule Sanctum.Decks.Stats do
 
     rows =
       Repo.query!(
-        "SELECT a.aspect::text, count(*) FROM decks d CROSS JOIN LATERAL unnest(d.aspects) AS a(aspect) WHERE d.hero_id = $1 GROUP BY 1",
+        "SELECT a.aspect::text, count(*) FROM decks d CROSS JOIN LATERAL unnest(d.aspects) AS a(aspect) WHERE d.hero_id = $1 AND d.visibility = 'published' GROUP BY 1",
         [uuid]
       ).rows
 
     basic =
       Repo.one(
         from d in "decks",
+          where: d.visibility == "published",
           where: fragment("cardinality(?) = 0", d.aspects),
           where: d.hero_id == type(^hero_id, Ecto.UUID),
           select: count(d.id)
@@ -184,6 +190,7 @@ defmodule Sanctum.Decks.Stats do
       JOIN cards c ON c.id = dc.card_id
       JOIN card_sides cs ON cs.card_id = c.id AND cs.is_primary_side
       WHERE d.hero_id = $1
+        AND d.visibility = 'published'
         AND cardinality(d.aspects) = 0
         AND cs.ownership = 'basic'
       GROUP BY c.id, cs.name
@@ -204,6 +211,7 @@ defmodule Sanctum.Decks.Stats do
       JOIN cards c ON c.id = dc.card_id
       JOIN card_sides cs ON cs.card_id = c.id AND cs.is_primary_side
       WHERE d.hero_id = $1
+        AND d.visibility = 'published'
         AND $2 = ANY(d.aspects::text[])
         AND cs.aspect::text = $2
       GROUP BY c.id, cs.name

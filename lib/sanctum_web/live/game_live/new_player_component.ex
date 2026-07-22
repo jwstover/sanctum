@@ -40,8 +40,9 @@ defmodule SanctumWeb.GameLive.NewPlayerComponent do
     end
   end
 
+  # Actor-scoped read: published decks plus the user's own private drafts.
   defp assign_decks(socket) do
-    case Decks.list_decks() do
+    case Decks.list_decks(actor: socket.assigns.current_user) do
       {:ok, decks} when is_list(decks) ->
         assign(socket, :decks, decks |> Enum.map(&{&1.title, &1.id}))
 
