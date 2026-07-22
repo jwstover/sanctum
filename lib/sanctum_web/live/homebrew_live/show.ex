@@ -1,17 +1,15 @@
 defmodule SanctumWeb.HomebrewLive.Show do
   @moduledoc """
-  A homebrew project page: drag-drop image upload, the project's cards as an
-  art grid, per-card enrichment (a bottom sheet — never a modal — editing
-  optional metadata), and front/back pairing of two single-sided cards.
-  Every uploaded image immediately becomes a playable custom card; metadata
-  is progressive and never required.
+  A homebrew project page: drag-drop image upload, the project's cards and
+  alt art as dossier-tile grids, and front/back pairing of two single-sided
+  cards. Every uploaded image immediately becomes a playable custom card;
+  editing happens on the card's own page (`HomebrewLive.EditCard`).
   """
 
   use SanctumWeb, :live_view
 
   import SanctumWeb.Components.CardSideTile
 
-  alias Sanctum.Games.Stat
   alias Sanctum.Homebrew
   alias Sanctum.HomebrewImages
 
@@ -27,14 +25,8 @@ defmodule SanctumWeb.HomebrewLive.Show do
          |> assign(:project, project)
          |> assign(:hero_colors, Sanctum.Heroes.hero_color_map())
          |> assign(:uploads_configured?, HomebrewImages.configured?())
-         |> assign(:editing_card, nil)
-         |> assign(:enrich_form, nil)
          |> assign(:pair_mode?, false)
          |> assign(:pair_selection, [])
-         |> assign(:alt_declare_card, nil)
-         |> assign(:alt_search, "")
-         |> assign(:alt_results, [])
-         |> assign(:alt_target, nil)
          |> assign_cards()
          |> assign_alts()
          |> allow_upload(:card_images,
@@ -84,135 +76,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
     end
   end
 
-  # -- Enrichment sheet -----------------------------------------------------
-
-  def handle_event("edit_card", %{"id" => id}, socket) do
-    case Ash.get(Sanctum.Games.Card, id,
-           actor: socket.assigns.current_user,
-           load: [:card_sides, :primary_side]
-         ) do
-      {:ok, card} ->
-        form =
-          AshPhoenix.Form.for_update(card, :update_custom,
-            as: "card",
-            actor: socket.assigns.current_user
-          )
-
-        {:noreply,
-         socket
-         |> assign(:editing_card, card)
-         |> assign(:enrich_form, to_form(form))}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Card not found.")}
-    end
-  end
-
-  def handle_event("close_enrichment", _params, socket) do
-    {:noreply, socket |> assign(:editing_card, nil) |> assign(:enrich_form, nil)}
-  end
-
-  def handle_event("enrich_validate", %{"card" => params}, socket) do
-    params = splice_traits(params)
-
-    {:noreply,
-     assign(socket, :enrich_form, AshPhoenix.Form.validate(socket.assigns.enrich_form, params))}
-  end
-
-  def handle_event("enrich_save", %{"card" => params}, socket) do
-    params = splice_traits(params)
-
-    case AshPhoenix.Form.submit(socket.assigns.enrich_form, params: params) do
-      {:ok, _card} ->
-        {:noreply,
-         socket
-         |> assign(:editing_card, nil)
-         |> assign(:enrich_form, nil)
-         |> assign_cards()
-         |> put_flash(:info, "Card updated.")}
-
-      {:error, form} ->
-        {:noreply, assign(socket, :enrich_form, form)}
-    end
-  end
-
-  def handle_event("unpair_card", %{"id" => id}, socket) do
-    case Homebrew.unpair_custom_card(id, socket.assigns.current_user) do
-      {:ok, {_updated, _new_card}} ->
-        {:noreply,
-         socket
-         |> assign(:editing_card, nil)
-         |> assign(:enrich_form, nil)
-         |> assign_cards()
-         |> put_flash(:info, "Card split into two.")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Could not split the card.")}
-    end
-  end
-
   # -- Alt art ----------------------------------------------------------------
-
-  def handle_event("open_declare_alt", _params, socket) do
-    case socket.assigns.editing_card do
-      %{is_multi_sided: false} = card ->
-        {:noreply,
-         socket
-         |> assign(:editing_card, nil)
-         |> assign(:enrich_form, nil)
-         |> assign(:alt_declare_card, card)
-         |> assign(:alt_search, "")
-         |> assign(:alt_results, [])
-         |> assign(:alt_target, nil)}
-
-      _no_card_or_multi_sided ->
-        {:noreply, socket}
-    end
-  end
-
-  def handle_event("close_declare_alt", _params, socket) do
-    {:noreply, reset_alt_declare(socket)}
-  end
-
-  def handle_event("alt_search", %{"q" => q}, socket) do
-    {:noreply,
-     socket
-     |> assign(:alt_search, q)
-     |> assign(:alt_results, search_official_sides(q, socket.assigns.current_user))}
-  end
-
-  def handle_event("pick_alt_target", %{"id" => id}, socket) do
-    target = Enum.find(socket.assigns.alt_results, &(&1.id == id))
-    {:noreply, assign(socket, :alt_target, target)}
-  end
-
-  def handle_event("clear_alt_target", _params, socket) do
-    {:noreply, assign(socket, :alt_target, nil)}
-  end
-
-  def handle_event("declare_alt", params, socket) do
-    %{alt_declare_card: card, alt_target: target, current_user: user} = socket.assigns
-
-    with %{} <- card,
-         %{} <- target,
-         {:ok, _alt} <-
-           Homebrew.declare_alt_art(
-             card.id,
-             target.card_id,
-             [artist: presence(params["artist"]), side_identifier: target.side_identifier],
-             user
-           ) do
-      {:noreply,
-       socket
-       |> reset_alt_declare()
-       |> assign_cards()
-       |> assign_alts()
-       |> put_flash(:info, "Declared as alt art for #{target.name}.")}
-    else
-      _missing_or_error ->
-        {:noreply, put_flash(socket, :error, "Could not declare the alt art.")}
-    end
-  end
 
   def handle_event("revert_alt", %{"id" => id}, socket) do
     case Homebrew.revert_alt_art(id, socket.assigns.current_user) do
@@ -241,10 +105,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
     {:noreply,
      socket
      |> assign(:pair_mode?, !socket.assigns.pair_mode?)
-     |> assign(:pair_selection, [])
-     |> assign(:editing_card, nil)
-     |> assign(:enrich_form, nil)
-     |> reset_alt_declare()}
+     |> assign(:pair_selection, [])}
   end
 
   def handle_event("toggle_pair_select", %{"id" => id}, socket) do
@@ -362,128 +223,6 @@ defmodule SanctumWeb.HomebrewLive.Show do
         card.primary_side
 
     %{side_view(%{side | card: card}, hero_colors) | image_url: alt.image_url}
-  end
-
-  defp reset_alt_declare(socket) do
-    socket
-    |> assign(:alt_declare_card, nil)
-    |> assign(:alt_search, "")
-    |> assign(:alt_results, [])
-    |> assign(:alt_target, nil)
-  end
-
-  # Official-card picker for the declare sheet: the shared :browse search
-  # (name/subname + query syntax) pinned to the official catalog — the
-  # actor's own customs must not be targetable.
-  defp search_official_sides(q, actor) do
-    if is_binary(q) and String.trim(q) != "" do
-      require Ash.Query
-
-      Sanctum.Games.CardSide
-      |> Ash.Query.for_read(:browse, %{query: q}, actor: actor)
-      |> Ash.Query.filter(card.origin == :official)
-      |> Ash.read!(actor: actor, page: [limit: 10])
-      |> Map.get(:results)
-    else
-      []
-    end
-  end
-
-  defp presence(value) when is_binary(value) do
-    case String.trim(value) do
-      "" -> nil
-      trimmed -> trimmed
-    end
-  end
-
-  defp presence(_value), do: nil
-
-  # -- Form helpers -----------------------------------------------------------
-
-  # Splices each side's comma-separated traits_string into the traits array.
-  # Runs on validate AND submit so the traits input round-trips morphdom
-  # re-renders (splicing only pre-submit reverts the input on every validate).
-  defp splice_traits(%{"card_sides" => %{}} = params) do
-    Map.update!(params, "card_sides", fn sides ->
-      Map.new(sides, fn {index, side} -> {index, put_side_traits(side)} end)
-    end)
-  end
-
-  defp splice_traits(params), do: params
-
-  defp put_side_traits(%{"traits_string" => traits_string} = side) do
-    traits =
-      traits_string
-      |> String.split(",")
-      |> Enum.map(&String.trim/1)
-      |> Enum.reject(&(&1 == ""))
-
-    Map.put(side, "traits", traits)
-  end
-
-  defp put_side_traits(side), do: side
-
-  defp traits_value(side_form) do
-    side_form.params["traits_string"] ||
-      case side_form[:traits].value do
-        traits when is_list(traits) -> Enum.join(traits, ", ")
-        traits when is_binary(traits) -> traits
-        _ -> ""
-      end
-  end
-
-  defp stat_col_label_class,
-    do: "font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/60"
-
-  # One editable stat: value + ★ + (consequential damage | health scaling).
-  # Inputs are nested-map params (e.g. side[attack][consequential]) so
-  # Stat.cast_input's map branch rebuilds the full struct on save.
-  attr :form, Phoenix.HTML.Form, required: true
-  attr :stat, :atom, required: true
-  attr :label, :string, required: true
-  attr :consequential, :boolean, default: false
-  attr :scaling, :boolean, default: false
-
-  defp stat_row(assigns) do
-    assigns =
-      assigns
-      |> assign(:base, assigns.form.name <> "[#{assigns.stat}]")
-      |> assign(:current, assigns.form[assigns.stat].value)
-
-    ~H"""
-    <div class="grid grid-cols-[42px_1fr_52px_1fr] items-center gap-2">
-      <span class={stat_col_label_class()}>{@label}</span>
-      <.input type="number" name={@base <> "[value]"} value={Stat.input_value(@current)} />
-      <div class="flex justify-center">
-        <.input
-          type="checkbox"
-          name={@base <> "[star]"}
-          checked={Stat.input_star(@current)}
-          aria-label={"#{@label} star effect"}
-        />
-      </div>
-      <.input
-        :if={@consequential}
-        type="number"
-        name={@base <> "[consequential]"}
-        value={Stat.input_consequential(@current)}
-        aria-label={"#{@label} consequential damage"}
-      />
-      <.input
-        :if={@scaling}
-        type="select"
-        name={@base <> "[scaling]"}
-        value={to_string(Stat.input_scaling(@current))}
-        options={[{"Flat", "flat"}, {"Per player", "per_player"}, {"Per group", "per_group"}]}
-        aria-label={"#{@label} scaling"}
-      />
-      <span :if={!@consequential && !@scaling}></span>
-    </div>
-    """
-  end
-
-  defp enum_options(enum_module) do
-    Enum.map(enum_module.values(), &{Phoenix.Naming.humanize(&1), to_string(&1)})
   end
 
   defp pair_role(id, [id | _]), do: "FRONT"
@@ -617,8 +356,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
                 <.button
                   :if={!@pair_mode?}
                   variant="ghost"
-                  phx-click="edit_card"
-                  phx-value-id={card.id}
+                  navigate={~p"/homebrew/#{@project.id}/cards/#{card.id}"}
                   class="px-3 py-1.5"
                 >
                   Edit
@@ -704,15 +442,6 @@ defmodule SanctumWeb.HomebrewLive.Show do
         pair_selection={@pair_selection}
         cards={@cards}
       />
-
-      <.enrichment_sheet editing_card={@editing_card} enrich_form={@enrich_form} />
-
-      <.declare_alt_sheet
-        alt_declare_card={@alt_declare_card}
-        alt_search={@alt_search}
-        alt_results={@alt_results}
-        alt_target={@alt_target}
-      />
     </Layouts.app>
     """
   end
@@ -736,331 +465,6 @@ defmodule SanctumWeb.HomebrewLive.Show do
         </div>
       </div>
     </div>
-    """
-  end
-
-  # The enrichment bottom sheet (filter_sheet's shell recipe): rendered once,
-  # unconditionally, so the mobile slide-up transition works; openness keys
-  # off @editing_card. All input values derive from @enrich_form so upload-
-  # progress re-renders can't clobber in-flight edits.
-  defp enrichment_sheet(assigns) do
-    ~H"""
-    <div
-      :if={@editing_card}
-      phx-click="close_enrichment"
-      phx-window-keydown="close_enrichment"
-      phx-key="escape"
-      aria-hidden="true"
-      class="fixed inset-0 z-40 bg-black/60"
-    >
-    </div>
-    <section
-      id="enrichment-sheet"
-      phx-hook="PaneDrag"
-      data-dismiss-event="close_enrichment"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Edit card"
-      inert={!@editing_card}
-      class={[
-        "fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col border-t-2 border-neutral bg-base-100",
-        "transition-transform duration-200",
-        "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[7dvh] sm:max-h-[86dvh] sm:w-[560px]",
-        "sm:-translate-x-1/2 sm:border-2 sm:shadow-comic sm:transition-none",
-        (@editing_card && "translate-y-0") || "translate-y-full sm:hidden"
-      ]}
-    >
-      <button
-        type="button"
-        data-drag-handle
-        data-haptic
-        class="flex w-full flex-none cursor-grab touch-none items-center justify-center gap-2 py-3 text-base-content/50 sm:hidden"
-        title="Close editor"
-      >
-        <span class="h-1 w-10 rounded-full bg-base-content/25"></span>
-        <.icon name="hero-chevron-down" class="size-4" />
-      </button>
-
-      <header class="hidden flex-none items-center justify-between border-b-2 border-line px-5 py-3 sm:flex">
-        <h2 class="font-bangers text-2xl tracking-[0.02em] text-primary">Edit Card</h2>
-        <button
-          type="button"
-          phx-click="close_enrichment"
-          aria-label="Close editor"
-          class="grid size-8 cursor-pointer place-items-center text-base-content/50 hover:text-white"
-        >
-          <.icon name="hero-x-mark" class="size-5" />
-        </button>
-      </header>
-
-      <.form
-        :if={@enrich_form}
-        for={@enrich_form}
-        id={"enrichment-form-#{@editing_card.id}"}
-        phx-change="enrich_validate"
-        phx-submit="enrich_save"
-        class="flex min-h-0 flex-1 flex-col"
-      >
-        <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
-          <section class="mb-6">
-            <h3 class="mb-2.5 font-anton text-sm uppercase tracking-[0.08em] text-base-content/45">
-              Card
-            </h3>
-            <div class="grid grid-cols-2 gap-3">
-              <.input field={@enrich_form[:deck_limit]} type="number" label="Deck limit" />
-              <div class="self-end pb-1">
-                <.input field={@enrich_form[:unique]} type="checkbox" label="Unique" />
-              </div>
-            </div>
-          </section>
-
-          <.inputs_for :let={side} field={@enrich_form[:card_sides]}>
-            <section class="mb-6 border-t border-line/70 pt-4">
-              <h3
-                :if={@editing_card.is_multi_sided}
-                class="mb-2.5 font-anton text-sm uppercase tracking-[0.08em] text-base-content/45"
-              >
-                Side {String.upcase(side[:side_identifier].value || "")}
-              </h3>
-              <div class="flex flex-col gap-3">
-                <div class="grid grid-cols-2 gap-3">
-                  <.input field={side[:name]} type="text" label="Name" />
-                  <.input field={side[:subname]} type="text" label="Subname" />
-                </div>
-                <div class="grid grid-cols-3 gap-3">
-                  <.input
-                    field={side[:ownership]}
-                    type="select"
-                    label="Pool"
-                    prompt="—"
-                    options={enum_options(Sanctum.Games.CardOwnership)}
-                  />
-                  <.input
-                    field={side[:type]}
-                    type="select"
-                    label="Type"
-                    prompt="—"
-                    options={enum_options(Sanctum.Games.CardType)}
-                  />
-                  <.input
-                    field={side[:aspect]}
-                    type="select"
-                    label="Aspect"
-                    prompt="—"
-                    options={enum_options(Sanctum.Games.CardAspect)}
-                  />
-                </div>
-                <p class="-mt-1 font-barlow-condensed text-xs text-base-content/45">
-                  Schemes render landscape.
-                </p>
-                <div class="grid grid-cols-3 gap-3">
-                  <.input field={side[:cost]} type="number" label="Cost" />
-                </div>
-
-                <%!-- Full stat axes: value, ★ (a star effect relates to the
-                     stat), consequential damage (atk/thw/def), and health
-                     scaling. Nested-map params cast through Stat.cast_input;
-                     all-blank rows collapse back to an absent stat. --%>
-                <div class="flex flex-col gap-2">
-                  <div class="grid grid-cols-[42px_1fr_52px_1fr] items-end gap-2">
-                    <span></span>
-                    <span class={stat_col_label_class()}>Value</span>
-                    <%!-- "s" is the ChampionsIcons star glyph (see stat_badge);
-                         normal-case so the label style can't uppercase it into
-                         a different glyph. --%>
-                    <span
-                      class="text-center font-champions text-sm normal-case text-base-content/60"
-                      aria-label="star effect"
-                    >
-                      s
-                    </span>
-                    <span class={stat_col_label_class()}>Conseq. dmg</span>
-                  </div>
-                  <.stat_row form={side} stat={:attack} label="ATK" consequential />
-                  <.stat_row form={side} stat={:thwart} label="THW" consequential />
-                  <.stat_row form={side} stat={:defense} label="DEF" consequential />
-                  <.stat_row form={side} stat={:health} label="HP" scaling />
-                  <.stat_row form={side} stat={:recover} label="REC" />
-                </div>
-                <.input
-                  type="text"
-                  name={side.name <> "[traits_string]"}
-                  label="Traits (comma-separated)"
-                  value={traits_value(side)}
-                />
-                <.input field={side[:text]} type="textarea" label="Text" />
-                <.input field={side[:flavor]} type="textarea" label="Flavor" />
-              </div>
-            </section>
-          </.inputs_for>
-        </div>
-
-        <footer class="flex flex-none items-center gap-3 border-t-2 border-line bg-base-100 px-4 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-5">
-          <button
-            :if={@editing_card && @editing_card.is_multi_sided}
-            type="button"
-            phx-click="unpair_card"
-            phx-value-id={@editing_card.id}
-            data-confirm="Split this card into two single-sided cards?"
-            class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-error/80 hover:text-error"
-          >
-            Split into two cards
-          </button>
-          <button
-            :if={@editing_card && !@editing_card.is_multi_sided}
-            type="button"
-            phx-click="open_declare_alt"
-            class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
-          >
-            Use as alt art…
-          </button>
-          <.button variant="primary" type="submit" class="ml-auto">Save</.button>
-        </footer>
-      </.form>
-    </section>
-    """
-  end
-
-  # The declare-alt bottom sheet (same shell recipe as the enrichment sheet):
-  # search an official card, pick a printed side, credit the artist, convert.
-  # Openness keys off @alt_declare_card; the enrichment sheet is always closed
-  # first, so the two sheets never overlap.
-  defp declare_alt_sheet(assigns) do
-    ~H"""
-    <div
-      :if={@alt_declare_card}
-      phx-click="close_declare_alt"
-      phx-window-keydown="close_declare_alt"
-      phx-key="escape"
-      aria-hidden="true"
-      class="fixed inset-0 z-40 bg-black/60"
-    >
-    </div>
-    <section
-      id="declare-alt-sheet"
-      phx-hook="PaneDrag"
-      data-dismiss-event="close_declare_alt"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Use as alt art"
-      inert={!@alt_declare_card}
-      class={[
-        "fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col border-t-2 border-neutral bg-base-100",
-        "transition-transform duration-200",
-        "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[7dvh] sm:max-h-[86dvh] sm:w-[560px]",
-        "sm:-translate-x-1/2 sm:border-2 sm:shadow-comic sm:transition-none",
-        (@alt_declare_card && "translate-y-0") || "translate-y-full sm:hidden"
-      ]}
-    >
-      <button
-        type="button"
-        data-drag-handle
-        data-haptic
-        class="flex w-full flex-none cursor-grab touch-none items-center justify-center gap-2 py-3 text-base-content/50 sm:hidden"
-        title="Close"
-      >
-        <span class="h-1 w-10 rounded-full bg-base-content/25"></span>
-        <.icon name="hero-chevron-down" class="size-4" />
-      </button>
-
-      <header class="hidden flex-none items-center justify-between border-b-2 border-line px-5 py-3 sm:flex">
-        <h2 class="font-bangers text-[22px] tracking-[0.02em] text-primary">Use as Alt Art</h2>
-        <button
-          type="button"
-          phx-click="close_declare_alt"
-          aria-label="Close"
-          class="grid size-8 cursor-pointer place-items-center text-base-content/50 hover:text-white"
-        >
-          <.icon name="hero-x-mark" class="size-5" />
-        </button>
-      </header>
-
-      <div :if={@alt_declare_card} class="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-        <div class="mb-4 flex items-center gap-3">
-          <div class="aspect-[5/7] w-16 shrink-0 overflow-hidden border-2 border-neutral">
-            <img
-              :if={@alt_declare_card.primary_side && @alt_declare_card.primary_side.image_url}
-              src={@alt_declare_card.primary_side.image_url}
-              alt="custom card art"
-              class="h-full w-full object-cover"
-            />
-          </div>
-          <p class="font-barlow-condensed text-[14px] text-base-content/70">
-            Declare this image as alternate art for an official card. It leaves your
-            card list (any card details are discarded) and appears on that card's page.
-          </p>
-        </div>
-
-        <form :if={is_nil(@alt_target)} phx-change="alt_search" onsubmit="return false">
-          <.input
-            type="text"
-            name="q"
-            value={@alt_search}
-            label="Official card"
-            placeholder="Search by name…"
-            autocomplete="off"
-            phx-debounce="250"
-          />
-        </form>
-
-        <div :if={is_nil(@alt_target)} class="mt-3 flex flex-col">
-          <button
-            :for={side <- @alt_results}
-            type="button"
-            phx-click="pick_alt_target"
-            phx-value-id={side.id}
-            class="flex cursor-pointer items-center gap-3 border-b border-neutral/40 py-2 text-left hover:bg-base-200"
-          >
-            <div class="aspect-[5/7] w-10 shrink-0 overflow-hidden border border-neutral">
-              <img
-                :if={side.image_url}
-                src={side.image_url}
-                alt={side.name}
-                loading="lazy"
-                class="h-full w-full object-cover"
-              />
-            </div>
-            <span class="min-w-0 flex-1 truncate font-barlow-condensed text-[14px] font-bold uppercase tracking-[0.04em]">
-              {side.name}
-            </span>
-            <span class="shrink-0 font-ibm-mono text-[11px] text-base-content/50">
-              {side.code}<span :if={side.card && side.card.pack}> · {side.card.pack}</span>
-            </span>
-          </button>
-        </div>
-
-        <div :if={@alt_target} class="flex flex-col gap-4">
-          <div class="flex items-center justify-between gap-3 border-2 border-neutral bg-base-200 px-3 py-2">
-            <span class="font-barlow-condensed text-[14px] font-bold uppercase tracking-[0.04em]">
-              Alt art for {@alt_target.name}
-              <span class="font-ibm-mono text-[11px] font-normal text-base-content/50">
-                ({@alt_target.code})
-              </span>
-            </span>
-            <button
-              type="button"
-              phx-click="clear_alt_target"
-              class="shrink-0 cursor-pointer font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
-            >
-              Change
-            </button>
-          </div>
-
-          <form phx-submit="declare_alt" class="flex flex-col gap-4">
-            <.input
-              type="text"
-              name="artist"
-              value=""
-              label="Artist credit (optional)"
-              autocomplete="off"
-            />
-            <.button variant="primary" type="submit" class="self-end">
-              Declare alt art
-            </.button>
-          </form>
-        </div>
-      </div>
-    </section>
     """
   end
 end

@@ -92,6 +92,7 @@ defmodule SanctumWeb.Router do
       # now; the public directory comes with the publish phase.
       live "/homebrew", HomebrewLive.Index, :index
       live "/homebrew/:id", HomebrewLive.Show, :show
+      live "/homebrew/:id/cards/:card_id", HomebrewLive.EditCard, :edit
 
       # Reference page for the card/deck search query language.
       live "/search-help", SearchHelpLive, :index
