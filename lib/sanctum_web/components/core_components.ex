@@ -89,7 +89,7 @@ defmodule SanctumWeb.CoreComponents do
       <.button navigate={~p"/"}>Home</.button>
   """
   attr :rest, :global,
-    include: ~w(href navigate patch method download name value disabled type target rel)
+    include: ~w(href navigate patch replace method download name value disabled type target rel)
 
   attr :class, :string, default: ""
   attr :variant, :string, values: ~w(primary ghost icon)
