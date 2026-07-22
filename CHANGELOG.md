@@ -1,3 +1,23 @@
+# [1.65.0](https://github.com/jwstover/sanctum/compare/v1.64.0...v1.65.0) (2026-07-22)
+
+
+### Bug Fixes
+
+* **guess:** pool hint names the encounter set role, never repeats rung 3 ([4211fb7](https://github.com/jwstover/sanctum/commit/4211fb776092fd80e8e5cd86e102aeac8aa9c079))
+
+
+### Features
+
+* **guess:** clean flavor prompt and simpler hero type hint ([5ddd2f2](https://github.com/jwstover/sanctum/commit/5ddd2f26a0dfbccfe865f9fdc90c8ab97d813263))
+* **guess:** direct eight-rung hint ladder for Flavor Town ([df08aab](https://github.com/jwstover/sanctum/commit/df08aabd0ba8eaef567b67a1efc07f00237ccabf))
+* **guess:** scenario set-name hint, pool exclusions, reveal polish ([e131df2](https://github.com/jwstover/sanctum/commit/e131df25eb091dd50d3abebf432cd015cb595c23))
+* **home:** dossier card of the day + Flavor Town teaser ([418dff1](https://github.com/jwstover/sanctum/commit/418dff11dc97cfd8554f53d4ddf68ca76dd9b729))
+* **home:** embed a playable Flavor Town round on the homepage ([c09d454](https://github.com/jwstover/sanctum/commit/c09d4543f0dfa043eb02d34f6f2463eface86668))
+* **home:** full-width About Sanctum band ([b8fa67e](https://github.com/jwstover/sanctum/commit/b8fa67e06888a9c5b7e28de69779495c3e5cb214))
+* **home:** landing page with card of the day and newest decks ([ca5bdd5](https://github.com/jwstover/sanctum/commit/ca5bdd5fc8a9c9ad98a25aeb0a8a1e5c32146306))
+
+
+
 # [1.64.0](https://github.com/jwstover/sanctum/compare/v1.63.0...v1.64.0) (2026-07-22)
 
 
@@ -35,18 +55,6 @@
 ### Features
 
 * **cards:** prev/next card navigation on the detail page ([3e344f4](https://github.com/jwstover/sanctum/commit/3e344f49413530ea10e3bf70833cfaa609b136fe))
-
-
-
-## [1.60.2](https://github.com/jwstover/sanctum/compare/v1.60.1...v1.60.2) (2026-07-21)
-
-
-### Bug Fixes
-
-* **decks:** move sort options into the filter sheet body ([8762b5b](https://github.com/jwstover/sanctum/commit/8762b5bf046916aab56ef130239100078eaac0d2))
-* **ui:** keep collection progress and fix subtitle test fallout ([6fbab25](https://github.com/jwstover/sanctum/commit/6fbab258d73642e9f8563ffb67e57b55270a9d4c))
-* **ui:** move header actions below the title on mobile ([438beb9](https://github.com/jwstover/sanctum/commit/438beb9e71d7a7b95085c1cd93cfec3c14ef32bc))
-* **ui:** stack header actions above title on mobile ([c4e775e](https://github.com/jwstover/sanctum/commit/c4e775e3dde5951942bd245869a793c02174bb59))
 
 
 
