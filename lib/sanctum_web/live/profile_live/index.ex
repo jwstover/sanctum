@@ -19,7 +19,7 @@ defmodule SanctumWeb.ProfileLive.Index do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:profile}>
       <div class="mx-auto max-w-xl">
-        <h1 class="font-anton text-3xl uppercase leading-[0.9] tracking-[0.005em] md:text-[42px]">
+        <h1 class="font-anton text-3xl uppercase leading-[0.9] tracking-[0.005em] md:text-4xl">
           Profile
         </h1>
 
@@ -32,7 +32,7 @@ defmodule SanctumWeb.ProfileLive.Index do
               size="lg"
             />
             <div class="min-w-0">
-              <div class="truncate font-bangers text-[26px] leading-none tracking-wide text-primary">
+              <div class="truncate font-bangers text-2xl leading-none tracking-wide text-primary">
                 {display_name(@current_user)}
               </div>
               <div class="mt-1.5 truncate font-ibm-mono text-xs text-base-content/50">
@@ -49,7 +49,7 @@ defmodule SanctumWeb.ProfileLive.Index do
               autocomplete="username"
               placeholder="e.g. web_head"
             />
-            <p class="mt-2 font-barlow-condensed text-[13px] text-base-content/50">
+            <p class="mt-2 font-barlow-condensed text-sm text-base-content/50">
               3–20 characters: letters, numbers, and underscores. Shown on your decks.
             </p>
             <.button variant="primary" type="submit" class="mt-4">
@@ -62,14 +62,14 @@ defmodule SanctumWeb.ProfileLive.Index do
              product in the catalog with a checkbox — the one-place manager. -->
         <.panel class="mt-6 p-5">
           <div class="flex items-baseline justify-between border-b-2 border-neutral pb-3">
-            <h2 class="font-anton text-[20px] uppercase tracking-[0.03em]">Collection</h2>
-            <span class="font-ibm-mono text-[11px] text-base-content/45">
+            <h2 class="font-anton text-xl uppercase tracking-[0.03em]">Collection</h2>
+            <span class="font-ibm-mono text-xs text-base-content/45">
               {@owned_card_count} cards owned
             </span>
           </div>
 
           <div :for={group <- @collection_groups} class="mt-4">
-            <div class="mb-1.5 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+            <div class="mb-1.5 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
               {group.label} · {group.owned_count} / {length(group.packs)}
             </div>
             <div class="divide-y divide-neutral/50">
@@ -85,12 +85,12 @@ defmodule SanctumWeb.ProfileLive.Index do
                   class="checkbox checkbox-sm"
                 />
                 <span class={[
-                  "min-w-0 flex-1 truncate font-barlow-condensed text-[15px] font-semibold",
+                  "min-w-0 flex-1 truncate font-barlow-condensed text-base font-semibold",
                   !MapSet.member?(@owned_pack_ids, pack.id) && "text-base-content/60"
                 ]}>
                   {pack.name || pack.code}
                 </span>
-                <span :if={pack.released_on} class="font-ibm-mono text-[11px] text-base-content/40">
+                <span :if={pack.released_on} class="font-ibm-mono text-xs text-base-content/40">
                   {pack.released_on.year}
                 </span>
                 <.link
@@ -106,7 +106,7 @@ defmodule SanctumWeb.ProfileLive.Index do
 
           <p
             :if={@override_counts != %{}}
-            class="mt-4 font-barlow-condensed text-[13px] text-base-content/50"
+            class="mt-4 font-barlow-condensed text-sm text-base-content/50"
           >
             <span :if={@override_counts[:owned]}>
               Plus {@override_counts[:owned]} individually added {(@override_counts[:owned] == 1 &&
@@ -119,7 +119,7 @@ defmodule SanctumWeb.ProfileLive.Index do
 
           <.link
             navigate={~p"/browse"}
-            class="mt-4 inline-flex items-center gap-1 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-primary"
+            class="mt-4 inline-flex items-center gap-1 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-primary"
           >
             Fine-tune individual cards in Browse <.icon name="hero-arrow-right" class="size-3.5" />
           </.link>

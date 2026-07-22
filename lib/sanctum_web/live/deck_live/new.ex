@@ -169,13 +169,13 @@ defmodule SanctumWeb.DeckLive.New do
       >
         <div class="mx-auto flex max-w-3xl flex-col gap-3">
           <div class="flex items-center justify-between gap-3">
-            <span class="font-anton text-[15px] uppercase tracking-[0.05em]">
+            <span class="font-anton text-base uppercase tracking-[0.05em]">
               {@selected.name}
             </span>
             <button
               type="button"
               phx-click="clear_hero"
-              class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+              class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
             >
               Change hero
             </button>
@@ -200,7 +200,7 @@ defmodule SanctumWeb.DeckLive.New do
             >
               {label}
             </.filter_pill>
-            <span class="ml-1 font-barlow-condensed text-[12px] uppercase tracking-[0.06em] text-base-content/45">
+            <span class="ml-1 font-barlow-condensed text-xs uppercase tracking-[0.06em] text-base-content/45">
               none = basic deck
             </span>
           </div>

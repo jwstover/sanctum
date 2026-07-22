@@ -49,7 +49,7 @@ defmodule SanctumWeb.Components.FilterSheet do
       <.icon name="hero-funnel" class="size-4" /> Filters
       <span
         :if={@count > 0}
-        class="grid min-w-5 place-items-center bg-primary px-1 font-anton text-[12px] leading-5 text-primary-content"
+        class="grid min-w-5 place-items-center bg-primary px-1 font-anton text-xs leading-5 text-primary-content"
       >
         {@count}
       </span>
@@ -123,7 +123,7 @@ defmodule SanctumWeb.Components.FilterSheet do
       </button>
 
       <header class="hidden flex-none items-center justify-between border-b-2 border-line px-5 py-3 sm:flex">
-        <h2 class="font-bangers text-[22px] tracking-[0.02em] text-primary">Filters</h2>
+        <h2 class="font-bangers text-2xl tracking-[0.02em] text-primary">Filters</h2>
         <button
           type="button"
           phx-click={@on_toggle}
@@ -150,7 +150,7 @@ defmodule SanctumWeb.Components.FilterSheet do
             :for={{group, controls} <- @groups}
             class="mb-6 border-t border-line/70 pt-4 first:border-t-0 first:pt-1 last:mb-2"
           >
-            <h3 class="mb-2.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45">
+            <h3 class="mb-2.5 font-anton text-sm uppercase tracking-[0.08em] text-base-content/45">
               {group}
             </h3>
             <div class={group_layout(controls)}>
@@ -160,10 +160,10 @@ defmodule SanctumWeb.Components.FilterSheet do
 
           <div
             :if={@sync.residual != ""}
-            class="mb-2 border border-dashed border-line px-3 py-2 font-barlow text-[13px] text-base-content/55"
+            class="mb-2 border border-dashed border-line px-3 py-2 font-barlow text-sm text-base-content/55"
           >
             Also filtering:
-            <span class="font-ibm-mono text-[12.5px] text-base-content/80">{@sync.residual}</span>
+            <span class="font-ibm-mono text-sm text-base-content/80">{@sync.residual}</span>
             — edit in the search bar.
           </div>
         </div>
@@ -259,7 +259,7 @@ defmodule SanctumWeb.Components.FilterSheet do
         autocomplete="off"
         spellcheck="false"
         phx-debounce="300"
-        class="min-w-0 border-2 border-line bg-black px-2.5 py-1.5 font-barlow text-[14px] text-base-content outline-none placeholder:text-base-content/35 focus:border-primary"
+        class="min-w-0 border-2 border-line bg-black px-2.5 py-1.5 font-barlow text-sm text-base-content outline-none placeholder:text-base-content/35 focus:border-primary"
       />
     </label>
     <datalist id={@list_id}>
@@ -293,7 +293,7 @@ defmodule SanctumWeb.Components.FilterSheet do
         value={@current.value}
         phx-debounce="300"
         aria-label={@control.label}
-        class="w-14 border-2 border-line bg-black px-2 py-1.5 text-center font-barlow text-[14px] text-base-content outline-none focus:border-primary"
+        class="w-14 border-2 border-line bg-black px-2 py-1.5 text-center font-barlow text-sm text-base-content outline-none focus:border-primary"
       />
     </div>
     """
@@ -315,7 +315,7 @@ defmodule SanctumWeb.Components.FilterSheet do
     ~H"""
     <label class={[
       "inline-flex min-h-[40px] cursor-pointer items-center gap-1.5 border-2 px-3.5 py-1.5 sm:min-h-0 sm:px-3",
-      "font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] transition-colors sm:text-[12px]",
+      "font-barlow-condensed text-sm font-bold uppercase tracking-[0.07em] transition-colors sm:text-xs",
       (@checked && "border-transparent bg-primary text-primary-content") ||
         "border-neutral bg-base-300 text-base-content hover:text-white"
     ]}>
@@ -356,10 +356,9 @@ defmodule SanctumWeb.Components.FilterSheet do
   defp op_symbol(op), do: Map.fetch!(@op_symbols, op)
 
   defp control_label_classes,
-    do:
-      "font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] text-base-content/70"
+    do: "font-barlow-condensed text-sm font-bold uppercase tracking-[0.07em] text-base-content/70"
 
   defp select_classes,
     do:
-      "cursor-pointer border-2 border-line bg-black px-2 py-1.5 font-barlow text-[14px] text-base-content outline-none focus:border-primary"
+      "cursor-pointer border-2 border-line bg-black px-2 py-1.5 font-barlow text-sm text-base-content outline-none focus:border-primary"
 end

@@ -58,12 +58,12 @@ defmodule SanctumWeb.Layouts do
         <span class="font-bangers text-lg leading-none tracking-wide text-primary">
           Update your profile!
         </span>
-        <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60">
+        <span class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60">
           Pick a username to get credit on your decks
         </span>
         <.link
           navigate={~p"/profile"}
-          class="ml-auto border-2 border-neutral bg-primary px-3 py-1 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.1em] text-primary-content shadow-comic-sm"
+          class="ml-auto border-2 border-neutral bg-primary px-3 py-1 font-barlow-condensed text-sm font-bold uppercase tracking-[0.1em] text-primary-content shadow-comic-sm"
         >
           Go to profile
         </.link>
@@ -101,7 +101,7 @@ defmodule SanctumWeb.Layouts do
         <!-- slim top bar (mobile only) -->
         <header class="sticky top-0 z-30 border-b-[3px] border-neutral bg-base-100/90 backdrop-blur lg:hidden">
           <div class="flex items-center justify-between gap-3 px-4 py-3.5">
-            <a href="/" class="font-bangers text-[28px] leading-none tracking-wide text-primary">
+            <a href="/" class="font-bangers text-3xl leading-none tracking-wide text-primary">
               SANCTUM
             </a>
             <div class="flex items-center gap-2">
@@ -146,7 +146,7 @@ defmodule SanctumWeb.Layouts do
           <div class="flex items-center justify-between border-b-2 border-neutral pb-4 lg:pb-3">
             <a
               href="/"
-              class="font-bangers text-[28px] leading-none tracking-wide text-primary lg:text-[24px]"
+              class="font-bangers text-3xl leading-none tracking-wide text-primary lg:text-2xl"
             >
               SANCTUM
             </a>
@@ -162,12 +162,12 @@ defmodule SanctumWeb.Layouts do
             <button
               type="button"
               phx-click={open_search()}
-              class="hidden cursor-pointer items-center justify-between border-2 border-transparent px-3 py-2 font-barlow-condensed text-[15px] font-bold uppercase tracking-[0.1em] text-base-content/55 transition-colors hover:text-white lg:flex lg:px-2.5 lg:py-1.5 lg:text-[13px]"
+              class="hidden cursor-pointer items-center justify-between border-2 border-transparent px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.1em] text-base-content/55 transition-colors hover:text-white lg:flex lg:px-2.5 lg:py-1.5 lg:text-sm"
             >
               <span class="flex items-center gap-2">
                 <.icon name="hero-magnifying-glass" class="size-3.5" /> Search
               </span>
-              <kbd class="border border-base-content/20 px-1 font-ibm-mono text-[10px] normal-case tracking-normal text-base-content/35">
+              <kbd class="border border-base-content/20 px-1 font-ibm-mono text-xs normal-case tracking-normal text-base-content/35">
                 ⌘K
               </kbd>
             </button>
@@ -264,7 +264,7 @@ defmodule SanctumWeb.Layouts do
     ~H"""
     <.link
       class={[
-        "border-2 px-3 py-2 font-barlow-condensed text-[15px] font-bold uppercase tracking-[0.1em] transition-colors lg:px-2.5 lg:py-1.5 lg:text-[13px]",
+        "border-2 px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.1em] transition-colors lg:px-2.5 lg:py-1.5 lg:text-sm",
         (@active && "-rotate-1 border-neutral bg-base-300 bg-halftone text-primary shadow-comic-sm") ||
           "border-transparent text-base-content/55 hover:text-white"
       ]}
@@ -305,14 +305,14 @@ defmodule SanctumWeb.Layouts do
           </p>
         </div>
 
-        <p class="mt-6 max-w-3xl font-barlow-condensed text-[13px] leading-relaxed text-base-content/40">
+        <p class="mt-6 max-w-3xl font-barlow-condensed text-sm leading-relaxed text-base-content/40">
           Sanctum is an unofficial, fan-made project. The information presented on this site about
           Marvel Champions: The Card Game, both literal and graphical, is copyrighted by Fantasy
           Flight Games and/or Marvel. This website is not produced, endorsed, supported, or
           affiliated with Fantasy Flight Games or Marvel.
         </p>
 
-        <p class="mt-4 font-ibm-mono text-[11px] uppercase tracking-[0.18em] text-base-content/30">
+        <p class="mt-4 font-ibm-mono text-xs uppercase tracking-[0.18em] text-base-content/30">
           © {Date.utc_today().year} Sanctum · Go play some Champs
         </p>
       </div>

@@ -25,7 +25,7 @@ defmodule SanctumWeb.CardLive.Show do
       <div class="space-y-5">
         <!-- card-level info -->
         <.panel class="p-4">
-          <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+          <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
             Card Info
           </div>
           <div class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -72,13 +72,13 @@ defmodule SanctumWeb.CardLive.Show do
             </div>
 
             <div class={[
-              "mt-2 font-ibm-mono text-[10px] uppercase tracking-[0.2em]",
+              "mt-2 font-ibm-mono text-xs uppercase tracking-[0.2em]",
               side.aspect_text_class
             ]}>
               {side.type_name}<span :if={side.aspect_name}> · {side.aspect_name}</span>
             </div>
-            <h2 class="mt-1 font-anton text-[30px] uppercase leading-[0.92]">{side.name}</h2>
-            <div :if={side.subname} class="font-barlow text-[14px] italic text-base-content/55">
+            <h2 class="mt-1 font-anton text-3xl uppercase leading-[0.92]">{side.name}</h2>
+            <div :if={side.subname} class="font-barlow text-sm italic text-base-content/55">
               {side.subname}
             </div>
 
@@ -86,7 +86,7 @@ defmodule SanctumWeb.CardLive.Show do
             <div :if={side.pips != []} class="mt-3 flex items-center gap-1.5">
               <span
                 :for={{color_class, glyph} <- side.pips}
-                class={["font-champions text-[18px] leading-none", color_class]}
+                class={["font-champions text-lg leading-none", color_class]}
               >
                 {glyph}
               </span>
@@ -94,14 +94,14 @@ defmodule SanctumWeb.CardLive.Show do
 
             <div
               :if={side.traits != ""}
-              class="mt-3 font-barlow-condensed text-[12px] font-semibold uppercase tracking-[0.02em] text-base-content/55"
+              class="mt-3 font-barlow-condensed text-xs font-semibold uppercase tracking-[0.02em] text-base-content/55"
             >
               {side.traits}
             </div>
 
             <div class="my-3 h-px bg-neutral"></div>
 
-            <div :if={side.text} class="font-barlow text-[14px] leading-[1.55] text-base-content/85">
+            <div :if={side.text} class="font-barlow text-sm leading-[1.55] text-base-content/85">
               {Sanctum.CardText.to_html(side.text)}
             </div>
 
@@ -124,7 +124,7 @@ defmodule SanctumWeb.CardLive.Show do
 
         <!-- alternate printings -->
         <.panel :if={@alts != []} class="p-4">
-          <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+          <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
             Alternate Printings ({length(@alts)})
           </div>
           <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -137,7 +137,7 @@ defmodule SanctumWeb.CardLive.Show do
                   class="h-full w-full object-cover"
                 />
               </div>
-              <figcaption class="font-ibm-mono text-[10px] uppercase tracking-[0.16em] text-base-content/50">
+              <figcaption class="font-ibm-mono text-xs uppercase tracking-[0.16em] text-base-content/50">
                 {alt.code}<span :if={alt.pack}> · {alt.pack}</span>
               </figcaption>
             </figure>
@@ -154,10 +154,10 @@ defmodule SanctumWeb.CardLive.Show do
   defp meta(assigns) do
     ~H"""
     <div :if={present?(@value)}>
-      <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+      <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
         {@label}
       </div>
-      <div class="mt-0.5 font-barlow-condensed text-[15px] font-semibold">{@value}</div>
+      <div class="mt-0.5 font-barlow-condensed text-base font-semibold">{@value}</div>
     </div>
     """
   end
@@ -172,8 +172,8 @@ defmodule SanctumWeb.CardLive.Show do
       class="border-2 border-neutral bg-base-100 px-0.5 py-1.5 text-center"
       style={"border-top:3px solid #{@color};"}
     >
-      <div class="font-anton text-[20px] leading-[0.9]">{@value}</div>
-      <div class="mt-[3px] text-[8px] font-extrabold uppercase tracking-[0.12em] text-base-content/50">
+      <div class="font-anton text-xl leading-[0.9]">{@value}</div>
+      <div class="mt-[3px] text-xs font-extrabold uppercase tracking-[0.12em] text-base-content/50">
         {@label}
       </div>
     </div>
@@ -189,7 +189,7 @@ defmodule SanctumWeb.CardLive.Show do
 
     ~H"""
     <span class={[
-      "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]",
+      "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
       (@badge_classes && [@badge_classes.text, @badge_classes.border]) ||
         "border-neutral text-base-content/80"
     ]}>
@@ -215,7 +215,7 @@ defmodule SanctumWeb.CardLive.Show do
         type="button"
         phx-click="start_replace"
         phx-value-side={@side.id}
-        class="flex w-full items-center justify-center gap-1.5 border-2 border-neutral bg-black px-2 py-1.5 font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.08em] text-base-content/70 hover:text-primary"
+        class="flex w-full items-center justify-center gap-1.5 border-2 border-neutral bg-black px-2 py-1.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-base-content/70 hover:text-primary"
       >
         <.icon name="hero-arrow-up-tray" class="size-3.5" /> Replace image
       </button>
@@ -227,14 +227,14 @@ defmodule SanctumWeb.CardLive.Show do
         phx-submit="save_image"
         class="flex flex-col gap-2 border-2 border-primary bg-black p-2"
       >
-        <.live_file_input upload={@upload} class="w-full text-[11px] text-base-content/70" />
+        <.live_file_input upload={@upload} class="w-full text-xs text-base-content/70" />
 
-        <p :for={err <- upload_errors(@upload)} class="font-ibm-mono text-[10px] text-error">
+        <p :for={err <- upload_errors(@upload)} class="font-ibm-mono text-xs text-error">
           {upload_error_to_string(err)}
         </p>
 
         <div :for={entry <- @upload.entries} class="flex flex-col gap-1">
-          <p :for={err <- upload_errors(@upload, entry)} class="font-ibm-mono text-[10px] text-error">
+          <p :for={err <- upload_errors(@upload, entry)} class="font-ibm-mono text-xs text-error">
             {upload_error_to_string(err)}
           </p>
         </div>
@@ -243,14 +243,14 @@ defmodule SanctumWeb.CardLive.Show do
           <button
             type="submit"
             disabled={@upload.entries == []}
-            class="flex-1 border-2 border-neutral bg-primary px-2 py-1 font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.08em] text-black disabled:opacity-40"
+            class="flex-1 border-2 border-neutral bg-primary px-2 py-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-black disabled:opacity-40"
           >
             Save
           </button>
           <button
             type="button"
             phx-click="cancel_replace"
-            class="border-2 border-neutral bg-black px-2 py-1 font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.08em] text-base-content/70 hover:text-primary"
+            class="border-2 border-neutral bg-black px-2 py-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-base-content/70 hover:text-primary"
           >
             Cancel
           </button>

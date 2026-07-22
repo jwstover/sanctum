@@ -619,7 +619,7 @@ textarea::placeholder {
 
 .deck-writeup {
   font-family: 'Barlow', sans-serif;
-  font-size: 15px;
+  font-size: var(--text-base);
   line-height: 1.7;
   color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 }
@@ -652,13 +652,13 @@ textarea::placeholder {
   color: var(--color-base-content);
   margin: 1.75rem 0 0.75rem;
 }
-.deck-writeup h1 { font-size: 1.7rem; }
-.deck-writeup h2 { font-size: 1.45rem; }
+.deck-writeup h1 { font-size: var(--text-3xl); }
+.deck-writeup h2 { font-size: var(--text-2xl); }
 .deck-writeup h3,
-.deck-writeup center { font-size: 1.25rem; }
+.deck-writeup center { font-size: var(--text-xl); }
 .deck-writeup h4,
 .deck-writeup h5,
-.deck-writeup h6 { font-size: 1.1rem; }
+.deck-writeup h6 { font-size: var(--text-lg); }
 
 .deck-writeup a {
   color: var(--color-primary);
@@ -718,7 +718,7 @@ textarea::placeholder {
 
 .deck-writeup code {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.85em;
+  font-size: var(--text-sm);
   background: var(--color-base-300);
   padding: 0.1em 0.35em;
   border: 1px solid var(--color-line);
@@ -755,7 +755,7 @@ textarea::placeholder {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 0.8rem;
+  font-size: var(--text-xs);
 }
 .deck-writeup tbody td:first-child {
   font-weight: 600;
@@ -804,7 +804,7 @@ textarea::placeholder {
   padding: 0.45rem 0.8rem;
   cursor: pointer;
   font-family: var(--font-barlow, 'Barlow Condensed', sans-serif);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   border-bottom: 1px solid var(--color-line);
 }
 .qi-option:last-child {
@@ -829,7 +829,7 @@ textarea::placeholder {
 }
 .qi-option-detail {
   color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
-  font-size: 0.8rem;
+  font-size: var(--text-xs);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -853,7 +853,7 @@ textarea::placeholder {
 .mention-glyph {
   width: 2rem;
   flex: none;
-  font-size: 1.3rem;
+  font-size: var(--text-xl);
   line-height: 1;
   text-align: center;
 }
@@ -911,7 +911,7 @@ a.qi-option {
   width: 100%;
   border-collapse: collapse;
   font-family: 'Barlow', sans-serif;
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 .qh-table th,
 .qh-table td {
@@ -929,7 +929,7 @@ a.qi-option {
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
 }
 .qh-table tbody td {

@@ -97,7 +97,7 @@ defmodule SanctumWeb.CoreComponents do
 
   def button(%{rest: rest} = assigns) do
     base =
-      "inline-flex min-h-[44px] items-center justify-center gap-2 cursor-pointer font-barlow-condensed font-extrabold uppercase tracking-[0.08em] text-[13px] transition-all active:translate-x-px active:translate-y-px disabled:opacity-40 disabled:pointer-events-none sm:min-h-0"
+      "inline-flex min-h-[44px] items-center justify-center gap-2 cursor-pointer font-barlow-condensed font-extrabold uppercase tracking-[0.08em] text-sm transition-all active:translate-x-px active:translate-y-px disabled:opacity-40 disabled:pointer-events-none sm:min-h-0"
 
     variants = %{
       "primary" =>
@@ -201,7 +201,7 @@ defmodule SanctumWeb.CoreComponents do
     <button
       class={[
         "inline-flex min-h-[44px] items-center gap-1.5 cursor-pointer border-2 px-3.5 py-1.5 sm:min-h-0 sm:px-3",
-        "font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] transition-colors sm:text-[12px]",
+        "font-barlow-condensed text-sm font-bold uppercase tracking-[0.07em] transition-colors sm:text-xs",
         (@active && "border-transparent bg-primary text-primary-content") ||
           "border-neutral bg-base-300 text-base-content hover:text-white",
         @class
@@ -252,11 +252,11 @@ defmodule SanctumWeb.CoreComponents do
       <div class="flex items-baseline gap-1">
         <span class={[
           "font-anton leading-none text-primary",
-          (@size == "lg" && "text-[30px]") || "text-[22px]"
+          (@size == "lg" && "text-3xl") || "text-2xl"
         ]}>
           {@percentile}
         </span>
-        <span class="font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em] text-base-content/40">
+        <span class="font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-base-content/40">
           /100
         </span>
       </div>
@@ -266,7 +266,7 @@ defmodule SanctumWeb.CoreComponents do
       ]}>
         <div class="h-full bg-primary" style={"width:#{@percentile}%"}></div>
       </div>
-      <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
+      <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
         Uniqueness
       </div>
     </div>
@@ -367,7 +367,7 @@ defmodule SanctumWeb.CoreComponents do
     <div class="flex flex-col gap-1.5">
       <span
         :if={@label}
-        class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/60"
+        class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/60"
       >
         {@label}
       </span>
@@ -395,7 +395,7 @@ defmodule SanctumWeb.CoreComponents do
     <div class="flex flex-col gap-1.5">
       <span
         :if={@label}
-        class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/60"
+        class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/60"
       >
         {@label}
       </span>
@@ -420,7 +420,7 @@ defmodule SanctumWeb.CoreComponents do
     <div class="flex flex-col gap-1.5">
       <span
         :if={@label}
-        class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/60"
+        class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/60"
       >
         {@label}
       </span>
@@ -464,7 +464,7 @@ defmodule SanctumWeb.CoreComponents do
         @actions != [] && "flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6"
       ]}>
         <div class="min-w-0">
-          <h1 class="font-anton text-3xl uppercase leading-[0.9] tracking-[0.005em] md:text-[42px]">
+          <h1 class="font-anton text-3xl uppercase leading-[0.9] tracking-[0.005em] md:text-4xl">
             {render_slot(@inner_block)}
           </h1>
         </div>

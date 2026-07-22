@@ -27,7 +27,7 @@ defmodule SanctumWeb.AuthOverrides do
 
   # Comic button primitives (mirrors CoreComponents.button/1 variants).
   @button_base "w-full inline-flex min-h-[44px] items-center justify-center gap-2 cursor-pointer " <>
-                 "px-4 py-2.5 font-barlow-condensed font-extrabold uppercase tracking-[0.08em] text-[13px] " <>
+                 "px-4 py-2.5 font-barlow-condensed font-extrabold uppercase tracking-[0.08em] text-sm " <>
                  "transition-all active:translate-x-px active:translate-y-px disabled:opacity-40 disabled:pointer-events-none"
   @button_primary @button_base <>
                     " bg-primary text-primary-content border-2 border-transparent shadow-comic-sm hover:shadow-comic"
@@ -35,8 +35,8 @@ defmodule SanctumWeb.AuthOverrides do
                   " bg-base-300 text-base-content border-2 border-neutral shadow-comic-sm hover:text-white"
 
   # Form primitives (mirrors CoreComponents.input/1).
-  @heading_class "font-anton text-[24px] uppercase tracking-[0.03em] leading-none text-base-content mt-2 mb-5"
-  @field_label_class "block font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/60 mb-1.5"
+  @heading_class "font-anton text-2xl uppercase tracking-[0.03em] leading-none text-base-content mt-2 mb-5"
+  @field_label_class "block font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/60 mb-1.5"
   @input_base "appearance-none block w-full bg-black border-[2.5px] text-base-content font-barlow " <>
                 "px-3.5 py-2.5 text-sm outline-none placeholder:text-base-content/40"
   @input_class @input_base <> " border-line focus:border-primary"
@@ -113,7 +113,7 @@ defmodule SanctumWeb.AuthOverrides do
     set :dark_image_url, nil
     set :href_url, "/"
     set :text, "SANCTUM"
-    set :text_class, "font-bangers text-[40px] leading-none tracking-wide text-primary"
+    set :text_class, "font-bangers text-4xl leading-none tracking-wide text-primary"
   end
 
   override Components.HorizontalRule do
@@ -121,7 +121,7 @@ defmodule SanctumWeb.AuthOverrides do
     set :hr_inner_class, "w-full border-t-2 border-neutral"
 
     set :text_inner_class,
-        "px-3 bg-base-200 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50"
+        "px-3 bg-base-200 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50"
   end
 
   override Components.MagicLink do
@@ -135,7 +135,7 @@ defmodule SanctumWeb.AuthOverrides do
     set :checkbox_class, "checkbox checkbox-sm"
 
     set :checkbox_label_class,
-        "font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.06em] text-base-content/70"
+        "font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/70"
   end
 
   override Components.Password do
@@ -143,7 +143,7 @@ defmodule SanctumWeb.AuthOverrides do
     set :interstitial_class, "flex flex-row justify-between content-between mt-3"
 
     set :toggler_class,
-        "flex-none px-2 first:pl-0 last:pr-0 font-barlow-condensed text-[13px] font-bold " <>
+        "flex-none px-2 first:pl-0 last:pr-0 font-barlow-condensed text-sm font-bold " <>
           "uppercase tracking-[0.06em] text-primary hover:underline underline-offset-4"
   end
 
@@ -170,7 +170,7 @@ defmodule SanctumWeb.AuthOverrides do
     set :checkbox_class, "checkbox checkbox-sm"
 
     set :checkbox_label_class,
-        "font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.06em] text-base-content/70"
+        "font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/70"
   end
 
   override Components.OAuth2 do

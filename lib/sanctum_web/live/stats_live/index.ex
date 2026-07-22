@@ -172,13 +172,13 @@ defmodule SanctumWeb.StatsLive.Index do
       >
       </div>
       <details class="mt-3">
-        <summary class="cursor-pointer font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/55">
+        <summary class="cursor-pointer font-ibm-mono text-xs uppercase tracking-[0.15em] text-base-content/55">
           View data
         </summary>
         <div class="mt-2 max-h-64 overflow-y-auto">
           <table class="font-barlow-condensed text-sm">
             <thead>
-              <tr class="font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/55">
+              <tr class="font-ibm-mono text-xs uppercase tracking-[0.15em] text-base-content/55">
                 {render_slot(@table_head)}
               </tr>
             </thead>

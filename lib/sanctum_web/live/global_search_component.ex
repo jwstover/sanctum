@@ -79,7 +79,7 @@ defmodule SanctumWeb.GlobalSearchComponent do
               <div :if={@groups != []} data-gs-content>
                 <div :for={group <- @groups}>
                   <div class="flex items-baseline justify-between border-b border-line bg-base-300/60 px-3 py-1">
-                    <span class="font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.14em] text-base-content/60">
+                    <span class="font-barlow-condensed text-xs font-bold uppercase tracking-[0.14em] text-base-content/60">
                       {group.label}
                     </span>
                     <.link
@@ -87,7 +87,7 @@ defmodule SanctumWeb.GlobalSearchComponent do
                       navigate={group.more_url}
                       id={"gs-more-#{group.type}"}
                       data-gs-nav
-                      class="gs-more font-barlow-condensed text-[12px] uppercase tracking-wide text-primary/80 hover:text-primary"
+                      class="gs-more font-barlow-condensed text-xs uppercase tracking-wide text-primary/80 hover:text-primary"
                     >
                       all {String.downcase(group.label)} results →
                     </.link>
@@ -113,14 +113,14 @@ defmodule SanctumWeb.GlobalSearchComponent do
               <div
                 :if={@groups == [] and @loading?}
                 data-gs-content
-                class="px-3 py-2.5 font-barlow text-[13px] text-base-content/50"
+                class="px-3 py-2.5 font-barlow text-sm text-base-content/50"
               >
                 Searching…
               </div>
               <div
                 :if={@groups == [] and not @loading? and String.trim(@query) != ""}
                 data-gs-content
-                class="px-3 py-2.5 font-barlow text-[13px] text-base-content/50"
+                class="px-3 py-2.5 font-barlow text-sm text-base-content/50"
               >
                 <span :if={@diagnostics == []}>No matches for this search.</span>
                 <span :if={@diagnostics != []} class="text-primary/90">

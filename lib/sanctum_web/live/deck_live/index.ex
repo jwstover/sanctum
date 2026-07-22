@@ -55,7 +55,7 @@ defmodule SanctumWeb.DeckLive.Index do
             class="w-full min-h-[46px] flex-none sm:w-auto sm:min-h-[46px]"
           />
         </div>
-        <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
+        <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-base uppercase tracking-[0.05em]">
           <.icon
             :if={@loading?}
             name="hero-arrow-path"
@@ -77,7 +77,7 @@ defmodule SanctumWeb.DeckLive.Index do
         hide={(@current_user && []) || ["mine"]}
       >
         <:body_extra>
-          <h3 class="mb-2.5 font-anton text-[13px] uppercase tracking-[0.08em] text-base-content/45">
+          <h3 class="mb-2.5 font-anton text-sm uppercase tracking-[0.08em] text-base-content/45">
             Sort
           </h3>
           <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Sort decks">
@@ -131,32 +131,32 @@ defmodule SanctumWeb.DeckLive.Index do
                 <span
                   :for={a <- deck.aspects}
                   class={[
-                    "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em]",
+                    "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
                     a.text,
                     a.border
                   ]}
                 >
                   {a.label}
                 </span>
-                <span class="border-2 border-neutral bg-black px-2 py-0.5 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em] text-base-content/70">
+                <span class="border-2 border-neutral bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-base-content/70">
                   {deck.source_label}
                 </span>
               </div>
 
-              <div class="mt-2 break-words font-anton text-[26px] uppercase leading-[0.95]">
+              <div class="mt-2 break-words font-anton text-2xl uppercase leading-[0.95]">
                 {deck.title}
               </div>
 
               <div
                 :if={deck.tagline}
-                class="mt-1.5 break-words font-barlow text-[14px] leading-[1.42] text-base-content/60"
+                class="mt-1.5 break-words font-barlow text-sm leading-[1.42] text-base-content/60"
               >
                 {deck.tagline}
               </div>
 
               <div :if={deck.author} class="mt-auto flex items-center gap-2 pt-3">
                 <.avatar name={deck.author} url={deck.author_avatar} />
-                <span class="font-barlow-condensed text-[13px] font-bold text-primary">
+                <span class="font-barlow-condensed text-sm font-bold text-primary">
                   {deck.author}
                 </span>
               </div>
@@ -165,12 +165,12 @@ defmodule SanctumWeb.DeckLive.Index do
             <div class="flex flex-none items-center gap-4 border-t-2 border-neutral pt-3 sm:w-[120px] sm:flex-col sm:items-start sm:justify-center sm:gap-2 sm:border-l-2 sm:border-t-0 sm:pl-4 sm:pt-0">
               <.uniqueness_meter percentile={deck.uniqueness} class="w-[110px] sm:w-full" />
               <div>
-                <div class="font-anton text-[26px] leading-none">{deck.total_card_count}</div>
-                <div class="mt-1 font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.1em] text-base-content/50">
+                <div class="font-anton text-2xl leading-none">{deck.total_card_count}</div>
+                <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
                   Cards
                 </div>
               </div>
-              <div class="ml-auto font-ibm-mono text-[11px] leading-[1.5] text-base-content/40 sm:ml-0">
+              <div class="ml-auto font-ibm-mono text-xs leading-[1.5] text-base-content/40 sm:ml-0">
                 {deck.updated}
               </div>
             </div>
@@ -183,8 +183,8 @@ defmodule SanctumWeb.DeckLive.Index do
         :if={@count == 0}
         class="mt-2 border-dashed !border-[#2a2a30] px-6 py-12 text-center !shadow-none"
       >
-        <div class="font-bangers text-[30px] tracking-[0.02em] text-primary">No decks found</div>
-        <div class="mt-1.5 font-barlow text-[14px] text-base-content/55">
+        <div class="font-bangers text-3xl tracking-[0.02em] text-primary">No decks found</div>
+        <div class="mt-1.5 font-barlow text-sm text-base-content/55">
           Try a different search or clear your filters.
         </div>
         <.button variant="primary" phx-click="clear" class="mt-4">Clear filters</.button>

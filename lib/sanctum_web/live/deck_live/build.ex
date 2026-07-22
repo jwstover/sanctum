@@ -648,7 +648,7 @@ defmodule SanctumWeb.DeckLive.Build do
           </div>
           <!-- two-step confirm, inline (no modal) -->
           <div :if={@confirm_delete?} class="flex items-center gap-2.5">
-            <span class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-error">
+            <span class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-error">
               Really delete?
             </span>
             <.button phx-click="delete_deck" class="!text-error">
@@ -667,7 +667,7 @@ defmodule SanctumWeb.DeckLive.Build do
           phx-click="set_tab"
           phx-value-key={key}
           class={[
-            "-mb-[2px] cursor-pointer border-b-[3px] px-4 py-2.5 font-anton text-[14px] uppercase tracking-[0.06em] transition-colors",
+            "-mb-[2px] cursor-pointer border-b-[3px] px-4 py-2.5 font-anton text-sm uppercase tracking-[0.06em] transition-colors",
             (@tab == key && "border-primary text-primary") ||
               "border-transparent text-base-content/55 hover:text-base-content"
           ]}
@@ -706,7 +706,7 @@ defmodule SanctumWeb.DeckLive.Build do
                 class="w-full min-h-[46px] flex-none sm:w-auto sm:min-h-[46px]"
               />
             </div>
-            <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-[15px] uppercase tracking-[0.05em]">
+            <div class="mt-2 flex items-center gap-2 whitespace-nowrap font-anton text-base uppercase tracking-[0.05em]">
               <.icon
                 :if={@loading?}
                 name="hero-arrow-path"
@@ -731,11 +731,11 @@ defmodule SanctumWeb.DeckLive.Build do
               type="button"
               data-haptic
               phx-click="add_staples"
-              class="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 border-2 border-neutral bg-base-300 px-3.5 py-1.5 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.07em] text-base-content transition-colors hover:border-primary hover:text-primary sm:min-h-0 sm:px-3 sm:text-[12px]"
+              class="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 border-2 border-neutral bg-base-300 px-3.5 py-1.5 font-barlow-condensed text-sm font-bold uppercase tracking-[0.07em] text-base-content transition-colors hover:border-primary hover:text-primary sm:min-h-0 sm:px-3 sm:text-xs"
             >
               <.icon name="hero-bolt" class="size-3.5" /> Add Energy · Genius · Strength
             </button>
-            <span class="font-barlow-condensed text-[12px] uppercase tracking-[0.06em] text-base-content/45">
+            <span class="font-barlow-condensed text-xs uppercase tracking-[0.06em] text-base-content/45">
               {staples_status(@staples, @entries)}
             </span>
           </div>
@@ -783,10 +783,10 @@ defmodule SanctumWeb.DeckLive.Build do
             :if={@count == 0}
             class="mt-2 border-dashed !border-[#2a2a30] px-6 py-12 text-center !shadow-none"
           >
-            <div class="font-bangers text-[30px] tracking-[0.02em] text-primary">
+            <div class="font-bangers text-3xl tracking-[0.02em] text-primary">
               No cards found
             </div>
-            <div class="mt-1.5 font-barlow text-[14px] text-base-content/55">
+            <div class="mt-1.5 font-barlow text-sm text-base-content/55">
               Try a different search or clear your filters.
             </div>
             <.button variant="primary" phx-click="clear" class="mt-4">Clear filters</.button>
@@ -867,7 +867,7 @@ defmodule SanctumWeb.DeckLive.Build do
               name="description"
               phx-debounce="300"
               placeholder="Write up your deck — how it plays, key combos, mulligan advice… Markdown supported; type #cardname to link a card, $icon for symbols."
-              class="block min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-[13px] leading-relaxed text-base-content outline-none focus:border-primary"
+              class="block min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-sm leading-relaxed text-base-content outline-none focus:border-primary"
             >{@description_draft}</textarea>
             <div
               data-mention-listbox
@@ -895,7 +895,7 @@ defmodule SanctumWeb.DeckLive.Build do
               ></iframe>
             </div>
           </div>
-          <div :if={!@description_preview} class="font-barlow text-[14px] italic text-base-content/45">
+          <div :if={!@description_preview} class="font-barlow text-sm italic text-base-content/45">
             Nothing to preview yet.
           </div>
         </.panel>
@@ -977,7 +977,7 @@ defmodule SanctumWeb.DeckLive.Build do
           <div class="absolute inset-0 bg-black/60" phx-click="close_picker" aria-hidden="true"></div>
           <div class="absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-hidden border-t-[3px] border-neutral bg-base-100 p-3 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12vh] sm:w-[min(92vw,560px)] sm:-translate-x-1/2 sm:border-2 sm:shadow-comic-lg">
             <div class="mb-2.5 flex items-center justify-between gap-3">
-              <span class="font-anton text-[15px] uppercase tracking-[0.05em]">
+              <span class="font-anton text-base uppercase tracking-[0.05em]">
                 {(@picker == "card" && "Link a Card") || "Insert an Icon"}
               </span>
               <button
@@ -998,7 +998,7 @@ defmodule SanctumWeb.DeckLive.Build do
                 phx-debounce="150"
                 phx-mounted={JS.focus()}
                 autocomplete="off"
-                class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 font-barlow text-base text-base-content outline-none placeholder:text-base-content/35 focus:border-primary sm:text-[15px]"
+                class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 font-barlow text-base text-base-content outline-none placeholder:text-base-content/35 focus:border-primary"
               />
             </form>
             <div class="mt-3 max-h-[calc(85dvh-9rem)] overflow-y-auto overscroll-contain pb-[max(env(safe-area-inset-bottom),0.5rem)] sm:max-h-[55vh] sm:pb-0">
@@ -1024,10 +1024,10 @@ defmodule SanctumWeb.DeckLive.Build do
                   >
                   </div>
                   <div class="min-w-0">
-                    <div class="truncate font-barlow-condensed text-[15px] font-semibold">
+                    <div class="truncate font-barlow-condensed text-base font-semibold">
                       {item.name}
                     </div>
-                    <div class="truncate font-barlow-condensed text-[13px] text-base-content/55">
+                    <div class="truncate font-barlow-condensed text-sm text-base-content/55">
                       {[item.subname, item.type] |> Enum.filter(& &1) |> Enum.join(" · ")}
                     </div>
                   </div>
@@ -1042,17 +1042,17 @@ defmodule SanctumWeb.DeckLive.Build do
                   phx-value-index={i}
                   class="flex min-h-[64px] cursor-pointer flex-col items-center justify-center gap-1.5 border-2 border-neutral bg-base-200 px-2 py-2 transition-colors hover:border-primary"
                 >
-                  <span class={["font-champions text-[22px] leading-none", icon.color]}>
+                  <span class={["font-champions text-2xl leading-none", icon.color]}>
                     {icon.glyph}
                   </span>
-                  <span class="font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.06em] text-base-content/70">
+                  <span class="font-barlow-condensed text-xs font-bold uppercase tracking-[0.06em] text-base-content/70">
                     {icon.label}
                   </span>
                 </button>
               </div>
               <div
                 :if={@picker_results == []}
-                class="px-2 py-6 text-center font-barlow text-[14px] italic text-base-content/45"
+                class="px-2 py-6 text-center font-barlow text-sm italic text-base-content/45"
               >
                 {(@picker == "card" && @picker_query == "" && "Search the card catalog…") ||
                   "No matches."}
@@ -1113,17 +1113,17 @@ defmodule SanctumWeb.DeckLive.Build do
           phx-click="toggle_panel"
           class="flex min-h-[48px] w-full cursor-pointer items-center justify-between gap-3"
         >
-          <span class="font-anton text-[19px] uppercase tracking-[0.05em]">
+          <span class="font-anton text-lg uppercase tracking-[0.05em]">
             <span class={deck_size_class(deck_size(@entries))}>{deck_size(@entries)}</span>
             <span class="text-base-content/45">/ 40–50 cards</span>
           </span>
           <span
             :if={@issues != []}
-            class="inline-flex items-center gap-1 font-barlow-condensed text-[15px] font-bold uppercase tracking-[0.07em] text-warning"
+            class="inline-flex items-center gap-1 font-barlow-condensed text-base font-bold uppercase tracking-[0.07em] text-warning"
           >
             <.icon name="hero-exclamation-triangle" class="size-4" /> {length(@issues)}
           </span>
-          <span class="inline-flex items-center gap-1.5 border-2 border-neutral bg-primary px-3.5 py-2 font-barlow-condensed text-[14px] font-bold uppercase tracking-[0.08em] text-primary-content shadow-comic-sm">
+          <span class="inline-flex items-center gap-1.5 border-2 border-neutral bg-primary px-3.5 py-2 font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-primary-content shadow-comic-sm">
             Deck <.icon name="hero-chevron-up" class="size-4" />
           </span>
         </button>
@@ -1158,17 +1158,17 @@ defmodule SanctumWeb.DeckLive.Build do
             value={@deck.title}
             phx-blur="rename"
             autocomplete="off"
-            class="min-h-[44px] w-full border-[2.5px] border-transparent bg-transparent px-1 font-anton text-[18px] uppercase tracking-[0.04em] text-base-content outline-none focus:border-line focus:bg-black sm:min-h-0"
+            class="min-h-[44px] w-full border-[2.5px] border-transparent bg-transparent px-1 font-anton text-lg uppercase tracking-[0.04em] text-base-content outline-none focus:border-line focus:bg-black sm:min-h-0"
           />
         </form>
         <div class="mt-1 flex items-center gap-2 px-1">
-          <span class="font-anton text-[14px] uppercase tracking-[0.05em]">
+          <span class="font-anton text-sm uppercase tracking-[0.05em]">
             <span class={deck_size_class(@size)}>{@size}</span>
             <span class="text-base-content/45">/ 40–50 cards</span>
           </span>
           <.link
             navigate={~p"/decks/#{@deck.id}"}
-            class="ml-auto font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+            class="ml-auto font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
           >
             View deck →
           </.link>
@@ -1194,14 +1194,14 @@ defmodule SanctumWeb.DeckLive.Build do
         :if={@issues != []}
         class="border-2 border-warning/40 bg-warning/5 px-3 py-2.5"
       >
-        <div class="mb-1.5 flex items-center gap-1.5 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-warning">
+        <div class="mb-1.5 flex items-center gap-1.5 font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-warning">
           <.icon name="hero-exclamation-triangle" class="size-3.5" /> Deck issues (advisory)
         </div>
         <ul class="flex flex-col gap-1">
           <li
             :for={issue <- @issues}
             class={[
-              "font-barlow-condensed text-[13px]",
+              "font-barlow-condensed text-sm",
               (issue.severity == :error && "text-error/90") || "text-base-content/70"
             ]}
           >
@@ -1212,7 +1212,7 @@ defmodule SanctumWeb.DeckLive.Build do
 
       <!-- grouped card list (mirrors the deck page's "In This Deck") -->
       <div :for={g <- @groups}>
-        <div class="mb-2 font-anton text-[12px] uppercase tracking-[0.06em] text-primary">
+        <div class="mb-2 font-anton text-xs uppercase tracking-[0.06em] text-primary">
           {g.name} · {g.count}
         </div>
 
@@ -1265,12 +1265,12 @@ defmodule SanctumWeb.DeckLive.Build do
             <span :if={!row.hero?} class={["size-2.5 flex-none", row.aspect_bg]}></span>
             <.link
               navigate={~p"/cards/#{row.card_id}"}
-              class="min-w-0 truncate font-barlow-condensed text-[14px] font-semibold text-base-content/85 hover:text-base-content"
+              class="min-w-0 truncate font-barlow-condensed text-sm font-semibold text-base-content/85 hover:text-base-content"
             >
               {row.name}
             </.link>
             <span class="flex-1"></span>
-            <span class="flex-none font-ibm-mono text-[13px] text-base-content/50">
+            <span class="flex-none font-ibm-mono text-sm text-base-content/50">
               ×{row.qty}
             </span>
             <!-- pips column: always rendered so every row's icons share one
@@ -1278,7 +1278,7 @@ defmodule SanctumWeb.DeckLive.Build do
             <span class="flex w-8 flex-none items-center justify-end gap-1">
               <span
                 :for={{color_class, glyph} <- row.pips}
-                class={["font-champions text-[13px] leading-none", color_class]}
+                class={["font-champions text-sm leading-none", color_class]}
               >
                 {glyph}
               </span>
@@ -1322,7 +1322,7 @@ defmodule SanctumWeb.DeckLive.Build do
 
       <p
         :if={@groups == []}
-        class="font-barlow-condensed text-[14px] text-base-content/50"
+        class="font-barlow-condensed text-sm text-base-content/50"
       >
         No cards yet — tap + on a card to add it.
       </p>
@@ -1345,7 +1345,7 @@ defmodule SanctumWeb.DeckLive.Build do
       data-haptic
       title={@title}
       aria-label={@title}
-      class="flex h-11 min-w-11 cursor-pointer items-center justify-center px-2 font-barlow-condensed text-[14px] font-bold text-base-content/60 transition-colors hover:text-primary sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-[13px]"
+      class="flex h-11 min-w-11 cursor-pointer items-center justify-center px-2 font-barlow-condensed text-sm font-bold text-base-content/60 transition-colors hover:text-primary sm:h-7 sm:min-w-7 sm:px-1.5"
     >
       {render_slot(@inner_block)}
     </button>

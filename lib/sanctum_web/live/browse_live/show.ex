@@ -215,7 +215,7 @@ defmodule SanctumWeb.BrowseLive.Show do
           <:actions :if={@current_user}>
             <span
               :if={@owned_ids}
-              class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-primary"
+              class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-primary"
             >
               {MapSet.size(@owned_ids)} / {@total_cards} owned
             </span>
@@ -289,7 +289,7 @@ defmodule SanctumWeb.BrowseLive.Show do
     ~H"""
     <section :if={@groups != []}>
       <h2 class={[
-        "font-anton text-[22px] uppercase tracking-[0.03em] text-primary",
+        "font-anton text-2xl uppercase tracking-[0.03em] text-primary",
         (@description && "mb-1") || "mb-4"
       ]}>
         {@title}
@@ -327,15 +327,15 @@ defmodule SanctumWeb.BrowseLive.Show do
       <div class="mb-3.5 flex flex-wrap items-baseline gap-x-3 border-b-2 border-neutral pb-2">
         <h2 class={[
           "font-anton uppercase leading-none tracking-[0.03em]",
-          @level == :top && "text-[22px] text-primary",
-          @level == :sub && "text-[17px] text-base-content/85"
+          @level == :top && "text-2xl text-primary",
+          @level == :sub && "text-lg text-base-content/85"
         ]}>
           {@title}
         </h2>
         <span :if={@subtitle} class="font-barlow-condensed text-base uppercase text-base-content/45">
           {@subtitle}
         </span>
-        <span class="ml-auto font-ibm-mono text-[11px] text-base-content/40">
+        <span class="ml-auto font-ibm-mono text-xs text-base-content/40">
           {Enum.sum_by(@cards, & &1.quantity)} cards
         </span>
       </div>

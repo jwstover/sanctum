@@ -91,7 +91,7 @@ defmodule SanctumWeb.DevLive.StatBadges do
               consequential={@consequential}
               star={@star}
             />
-            <span class="text-[11px] uppercase tracking-widest text-white/50 font-bold">{stat}</span>
+            <span class="text-xs uppercase tracking-widest text-white/50 font-bold">{stat}</span>
           </div>
         </div>
       </section>
@@ -119,17 +119,17 @@ defmodule SanctumWeb.DevLive.StatBadges do
         <div class="bg-base-200 bg-halftone flex flex-wrap items-center gap-8 rounded-xl p-8">
           <div class="flex flex-col items-center gap-2">
             <.health_badge value={@value} size={@size} />
-            <span class="text-[11px] uppercase tracking-widest text-white/50 font-bold">hp</span>
+            <span class="text-xs uppercase tracking-widest text-white/50 font-bold">hp</span>
           </div>
           <div class="flex flex-col items-center gap-2">
             <.health_badge value="12" size={@size} />
-            <span class="text-[11px] uppercase tracking-widest text-white/50 font-bold">
+            <span class="text-xs uppercase tracking-widest text-white/50 font-bold">
               two digits
             </span>
           </div>
           <div class="flex flex-col items-center gap-2">
             <.health_badge value={@value} size={@size} player />
-            <span class="text-[11px] uppercase tracking-widest text-white/50 font-bold">
+            <span class="text-xs uppercase tracking-widest text-white/50 font-bold">
               per player
             </span>
           </div>

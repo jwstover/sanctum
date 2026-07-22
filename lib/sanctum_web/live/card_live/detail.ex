@@ -104,18 +104,18 @@ defmodule SanctumWeb.CardLive.Detail do
 
             <!-- metadata side panel -->
             <.panel class="p-4">
-              <div class="mb-3 border-b-2 border-neutral pb-2 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+              <div class="mb-3 border-b-2 border-neutral pb-2 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                 Card File
               </div>
 
               <div class="flex flex-col gap-3">
                 <div :if={@pack}>
-                  <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+                  <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
                     Pack
                   </div>
                   <.link
                     navigate={~p"/browse/#{@pack.code}"}
-                    class="mt-0.5 block font-barlow-condensed text-[15px] font-semibold hover:text-primary"
+                    class="mt-0.5 block font-barlow-condensed text-base font-semibold hover:text-primary"
                   >
                     {@pack.name || @pack.code}
                   </.link>
@@ -149,7 +149,7 @@ defmodule SanctumWeb.CardLive.Detail do
 
                 <div :if={@current_user}>
                   <div class="mb-1.5 flex items-center justify-between">
-                    <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+                    <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
                       Collection
                     </div>
                     <.owned_badge :if={@owned} />
@@ -167,7 +167,7 @@ defmodule SanctumWeb.CardLive.Detail do
                       :if={@pack}
                       phx-click="toggle_pack_owned"
                       phx-value-id={@pack.id}
-                      class="cursor-pointer text-left font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.06em] text-base-content/50 hover:text-primary"
+                      class="cursor-pointer text-left font-barlow-condensed text-xs font-bold uppercase tracking-[0.06em] text-base-content/50 hover:text-primary"
                     >
                       {if @pack_owned,
                         do: "✓ #{@pack.name || @pack.code} in collection — remove",
@@ -182,7 +182,7 @@ defmodule SanctumWeb.CardLive.Detail do
                   href={"https://marvelcdb.com/card/#{@card.code}"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="flex items-center gap-1.5 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-primary"
+                  class="flex items-center gap-1.5 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-primary"
                 >
                   <.icon name="hero-arrow-top-right-on-square" class="size-3.5" /> View on MarvelCDB
                 </a>
@@ -192,7 +192,7 @@ defmodule SanctumWeb.CardLive.Detail do
 
           <!-- alternate printings -->
           <.panel :if={@alts != []} class="p-4">
-            <div class="mb-3 font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/50">
+            <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
               Alternate Printings ({length(@alts)})
             </div>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -209,12 +209,12 @@ defmodule SanctumWeb.CardLive.Detail do
                     :if={!alt.image_url}
                     class="bg-card-hatch flex h-full w-full items-center justify-center"
                   >
-                    <span class="whitespace-nowrap font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-white/[0.32]">
+                    <span class="whitespace-nowrap font-ibm-mono text-xs uppercase tracking-[0.2em] text-white/[0.32]">
                       no scan
                     </span>
                   </div>
                 </div>
-                <figcaption class="font-ibm-mono text-[10px] uppercase tracking-[0.16em] text-base-content/50">
+                <figcaption class="font-ibm-mono text-xs uppercase tracking-[0.16em] text-base-content/50">
                   {alt.code}<span :if={alt.pack}> · {alt.pack}</span>
                 </figcaption>
               </figure>
@@ -232,10 +232,10 @@ defmodule SanctumWeb.CardLive.Detail do
   defp meta(assigns) do
     ~H"""
     <div :if={@value not in [nil, ""]}>
-      <div class="font-ibm-mono text-[10px] uppercase tracking-[0.2em] text-base-content/45">
+      <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
         {@label}
       </div>
-      <div class="mt-0.5 font-barlow-condensed text-[15px] font-semibold">{@value}</div>
+      <div class="mt-0.5 font-barlow-condensed text-base font-semibold">{@value}</div>
     </div>
     """
   end
