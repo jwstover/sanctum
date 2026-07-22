@@ -94,7 +94,7 @@ defmodule SanctumWeb.HomebrewLive.Index do
               <button
                 type="button"
                 phx-click="cancel_create"
-                class="font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+                class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
               >
                 Cancel
               </button>
@@ -117,14 +117,14 @@ defmodule SanctumWeb.HomebrewLive.Index do
         <.link :for={project <- @projects} navigate={~p"/homebrew/#{project.id}"}>
           <.panel class="flex items-center justify-between gap-4 p-4 transition-transform hover:-translate-y-0.5">
             <div class="min-w-0">
-              <div class="truncate font-anton text-[15px] uppercase tracking-[0.05em]">
+              <div class="truncate font-anton text-base uppercase tracking-[0.05em]">
                 {project.name}
               </div>
-              <div class="font-barlow-condensed text-[13px] text-base-content/60">
+              <div class="font-barlow-condensed text-sm text-base-content/60">
                 {project.card_count} {if project.card_count == 1, do: "card", else: "cards"}
               </div>
             </div>
-            <span class="shrink-0 border-2 border-neutral bg-base-300 px-2 py-0.5 font-barlow-condensed text-[12px] font-bold uppercase tracking-[0.07em]">
+            <span class="shrink-0 border-2 border-neutral bg-base-300 px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.07em]">
               {project.visibility}
             </span>
           </.panel>

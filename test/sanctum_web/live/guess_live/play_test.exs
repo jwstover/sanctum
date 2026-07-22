@@ -44,6 +44,16 @@ defmodule SanctumWeb.GuessLive.PlayTest do
     refute html =~ "You got it!"
   end
 
+  test "the prompt hides the quote's speaker attribution", %{conn: conn} do
+    seed_card("Domino", ~s("I dare you to call me 'Peaches' again!" —Domino))
+
+    {:ok, view, _html} = live(conn, ~p"/flavor-town")
+    html = render_async(view)
+
+    assert html =~ "call me &#39;Peaches&#39; again!"
+    refute html =~ "—Domino"
+  end
+
   test "a wrong guess reveals the first hint", %{conn: conn} do
     seed_card("Nick Fury", "The ultimate spy.")
 
@@ -54,7 +64,7 @@ defmodule SanctumWeb.GuessLive.PlayTest do
       view |> form(~s(form[phx-submit="guess"]), %{guess: "Definitely Wrong"}) |> render_submit()
 
     assert html =~ "Hints"
-    assert html =~ "This is a player card."
+    assert html =~ "It comes from the “Core” pack."
     assert html =~ "Missed guesses: Definitely Wrong"
   end
 
@@ -75,5 +85,30 @@ defmodule SanctumWeb.GuessLive.PlayTest do
     seed_card("Nick Fury", "The ultimate spy.")
 
     assert {:ok, _view, _html} = live(conn, ~p"/flavor-town")
+  end
+
+  test "the reveal frames landscape types (side schemes) in landscape", %{conn: conn} do
+    card = create(Sanctum.Games.Card, attrs: %{base_code: "95002", code: "95002"})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: card.id,
+        code: "95002a",
+        name: "Alpha Flight Station",
+        type: :side_scheme,
+        ownership: :encounter,
+        aspect: nil,
+        cost: nil,
+        flavor: "Keep your sensors locked."
+      }
+    )
+
+    {:ok, view, _html} = live(conn, ~p"/flavor-town")
+    render_async(view)
+
+    html = view |> element(~s(button[phx-click="give-up"])) |> render_click()
+
+    assert html =~ "h-[200px] w-[280px]"
+    refute html =~ "h-[280px] w-[200px]"
   end
 end

@@ -71,15 +71,37 @@ defmodule Sanctum.Games.Card do
     end
 
     # Random-pickable pool for the "Name That Card" guessing game: any card
-    # whose primary side has flavor text. Backs SanctumWeb.GuessLive.Play.
+    # whose primary side has flavor text, except main schemes (their names are
+    # scenario titles, not really guessable). Backs SanctumWeb.GuessLive.Play.
     # Official-only by intent — even published homebrew shouldn't pollute the
     # guessing pool (the read policy would otherwise admit it).
     read :guessable do
-      prepare build(load: [:primary_side])
+      # pack_ref + wave feed the hint ladder's release rungs; card_set feeds
+      # the encounter set-role rung.
+      prepare build(load: [:primary_side, :card_set, pack_ref: [:wave]])
 
       filter expr(
                origin == :official and
-                 not is_nil(primary_side.flavor) and primary_side.flavor != ""
+                 not is_nil(primary_side.flavor) and primary_side.flavor != "" and
+                 (is_nil(primary_side.type) or primary_side.type != :main_scheme)
+             )
+
+      pagination offset?: true, default_limit: 1, countable: true, required?: false
+    end
+
+    # Pool for the homepage's "card of the day": official aspect/basic player
+    # cards (no hero-specific signature cards) whose primary side has a scan.
+    # Stable-sorted so a date-hashed offset lands on the same card for the
+    # whole day. Backs Sanctum.Games.CardOfTheDay.
+    read :daily_pool do
+      prepare build(sort: [base_code: :asc], load: [:primary_side])
+
+      # Spelled as ORs — `ownership in [...]` fails Ash's expr type resolution
+      # against the related enum. Pool-aspect cards are ownership :player.
+      filter expr(
+               origin == :official and
+                 (primary_side.ownership == :player or primary_side.ownership == :basic) and
+                 not is_nil(primary_side.image_url)
              )
 
       pagination offset?: true, default_limit: 1, countable: true, required?: false

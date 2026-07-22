@@ -5,7 +5,10 @@ defmodule Sanctum.Games.CardGuessTest do
 
   import Sanctum.Factory
 
-  alias Sanctum.Games.{Card, CardGuess, CardSide, Stat}
+  alias Sanctum.Catalog.CardSet, as: CatalogCardSet
+  alias Sanctum.Catalog.Pack
+  alias Sanctum.Catalog.Wave
+  alias Sanctum.Games.{Card, CardGuess, CardSide}
 
   describe "normalize/1" do
     test "lowercases, strips a leading 'the', and drops punctuation" do
@@ -13,6 +16,43 @@ defmodule Sanctum.Games.CardGuessTest do
       assert CardGuess.normalize("  Spider-Man  ") == "spiderman"
       assert CardGuess.normalize("M'Baku") == "mbaku"
       assert CardGuess.normalize(nil) == ""
+    end
+  end
+
+  describe "strip_attribution/1" do
+    test "drops a trailing speaker after the closing quote" do
+      assert CardGuess.strip_attribution(~s("I dare you to call me 'Peaches' again!" —Domino)) ==
+               ~s("I dare you to call me 'Peaches' again!")
+
+      assert CardGuess.strip_attribution(~s("That's enough!" - Carol Danvers)) ==
+               ~s("That's enough!")
+    end
+
+    test "leaves a dash inside the quote alone" do
+      quote_text = ~s("Turn around gentlemen, and meet —the Hellcat!")
+      assert CardGuess.strip_attribution(quote_text) == quote_text
+    end
+
+    test "strips only the trailing attribution when the quote also contains a dash" do
+      assert CardGuess.strip_attribution(~s("So we fight — and we win." —Captain America)) ==
+               ~s("So we fight — and we win.")
+    end
+
+    test "unquoted or attribution-less flavor passes through" do
+      assert CardGuess.strip_attribution("The city trembles.") == "The city trembles."
+      assert CardGuess.strip_attribution(nil) == nil
+    end
+  end
+
+  describe "display_flavor/1" do
+    test "drops markup tags and the speaker attribution" do
+      assert CardGuess.display_flavor(~s(<b><i>The office is under attack!</i></b>)) ==
+               "The office is under attack!"
+
+      assert CardGuess.display_flavor(~s(<i>"That's enough!"</i> —Carol Danvers)) ==
+               ~s("That's enough!")
+
+      assert CardGuess.display_flavor(nil) == nil
     end
   end
 
@@ -53,36 +93,48 @@ defmodule Sanctum.Games.CardGuessTest do
         traits: ["Android", "Avenger"],
         cost: 4,
         resource_mental_count: 1,
-        attack: %Stat{value: 3},
-        thwart: %Stat{value: 2},
-        health: %Stat{value: 4}
+        text: "<b>Response</b>: After The Vision thwarts, deal 1 damage to a minion."
       }
 
-      card = %Card{unique: true, deck_limit: 3, set: "core", pack: "core", primary_side: side}
+      card = %Card{
+        unique: true,
+        deck_limit: 3,
+        set: "core",
+        pack: "core",
+        pack_ref: %Pack{name: "Core Set", wave: %Wave{number: 1, name: "Wave 1"}},
+        primary_side: side
+      }
+
       hints = CardGuess.build_hints(card)
 
       assert Enum.map(hints, & &1.key) ==
-               [
-                 :allegiance,
-                 :nature,
-                 :aspect,
-                 :type,
-                 :traits,
-                 :cost,
-                 :resources,
-                 :stats,
-                 :uniqueness,
-                 :set,
-                 :name_shape
-               ]
+               [:wave, :pack, :allegiance, :pool, :type, :cost, :traits, :text]
 
-      assert hd(hints).text =~ "player card"
-      assert Enum.find(hints, &(&1.key == :aspect)).text =~ "Leadership"
-      assert Enum.find(hints, &(&1.key == :type)).text =~ "Ally"
-      assert Enum.find(hints, &(&1.key == :stats)).text =~ "ATK 3"
+      assert Enum.at(hints, 0).text == "It was released in Wave 1."
+      assert Enum.at(hints, 1).text == "It comes from the “Core Set” pack."
+      assert Enum.at(hints, 2).text == "This is a player card."
+      assert Enum.at(hints, 3).text == "This is a Leadership card."
+      assert Enum.at(hints, 4).text == "Specifically, it's a Leadership ally."
+      assert Enum.at(hints, 5).text == "It costs 4 and provides 1 mental resource icon."
+      assert Enum.at(hints, 6).text == "Traits: Android, Avenger."
+
+      # Markup stripped, the card's own name redacted.
+      assert Enum.at(hints, 7).text ==
+               "Its text reads: “Response: After ____ thwarts, deal 1 damage to a minion.”"
     end
 
-    test "an encounter card skips the aspect/cost/resource/stat rungs" do
+    test "without a synced pack the release rungs fall back to the pack slug" do
+      side = %CardSide{name: "Foresight", type: :event, ownership: :player, aspect: :justice}
+      card = %Card{pack: "mutant_genesis", primary_side: side}
+
+      hints = CardGuess.build_hints(card)
+
+      assert Enum.map(hints, & &1.key) == [:pack, :allegiance, :pool, :type]
+      assert hd(hints).text == "It comes from the “Mutant Genesis” pack."
+      assert Enum.at(hints, 4) == nil
+    end
+
+    test "an encounter card names its set's role instead of repeating rung 3" do
       side = %CardSide{
         name: "Shadow of the Past",
         type: :treachery,
@@ -90,19 +142,70 @@ defmodule Sanctum.Games.CardGuessTest do
         traits: []
       }
 
-      card = %Card{unique: false, deck_limit: nil, set: "rhino", pack: "core", primary_side: side}
-      hints = CardGuess.build_hints(card)
-      keys = Enum.map(hints, & &1.key)
+      card = %Card{
+        set: "rhino",
+        pack: "core",
+        card_set: %CatalogCardSet{set_type: :villain, name: "Rhino"},
+        primary_side: side
+      }
 
-      assert hd(hints).text =~ "encounter card"
-      assert :allegiance in keys
-      assert :set in keys
-      assert :name_shape in keys
-      refute :aspect in keys
-      refute :cost in keys
-      refute :resources in keys
-      refute :stats in keys
-      refute :uniqueness in keys
+      hints = CardGuess.build_hints(card)
+
+      assert Enum.map(hints, & &1.key) == [:pack, :allegiance, :pool, :type, :set_name]
+      assert Enum.at(hints, 1).text == "This is an encounter card."
+      assert Enum.at(hints, 2).text == "It's part of a villain's encounter set."
+      assert Enum.at(hints, 3).text == "Specifically, it's an encounter treachery."
+      assert Enum.at(hints, 4).text == "It belongs to the “Rhino” villain set."
+
+      modular = %Card{card | card_set: %CatalogCardSet{set_type: :modular, name: "Bomb Scare"}}
+      modular_hints = CardGuess.build_hints(modular)
+
+      assert Enum.find(modular_hints, &(&1.key == :pool)).text ==
+               "It's part of a modular encounter set."
+
+      assert Enum.find(modular_hints, &(&1.key == :set_name)).text ==
+               "It belongs to the “Bomb Scare” modular set."
+    end
+
+    test "the set-name rung is skipped when it would give the card away" do
+      side = %CardSide{name: "Rhino", type: :villain, ownership: :encounter}
+
+      card = %Card{
+        pack: "core",
+        card_set: %CatalogCardSet{set_type: :villain, name: "Rhino"},
+        primary_side: side
+      }
+
+      keys = card |> CardGuess.build_hints() |> Enum.map(& &1.key)
+
+      refute :set_name in keys
+    end
+
+    test "an encounter card with no synced set skips the pool rung" do
+      side = %CardSide{name: "Shadow of the Past", type: :treachery, ownership: :encounter}
+      card = %Card{pack: "core", primary_side: side}
+
+      keys = card |> CardGuess.build_hints() |> Enum.map(& &1.key)
+
+      assert keys == [:pack, :allegiance, :type]
+    end
+
+    test "a villain-type card is called a villain, not a generic encounter card" do
+      side = %CardSide{name: "Rhino", type: :villain, ownership: :encounter}
+      card = %Card{pack: "core", primary_side: side}
+
+      hints = CardGuess.build_hints(card)
+
+      assert Enum.find(hints, &(&1.key == :pool)).text == "This is a villain card."
+      assert Enum.find(hints, &(&1.key == :type)).text == "Specifically, it's a villain."
+    end
+
+    test "an X cost renders as X" do
+      side = %CardSide{name: "Gambit", type: :event, ownership: :player, aspect: :pool, cost: -1}
+      card = %Card{pack: "deadpool", primary_side: side}
+
+      assert Enum.find(CardGuess.build_hints(card), &(&1.key == :cost)).text ==
+               "Its resource cost is X."
     end
   end
 
@@ -130,6 +233,25 @@ defmodule Sanctum.Games.CardGuessTest do
 
       create(CardSide,
         attrs: %{card_id: card.id, code: "90002a", is_primary_side: true, flavor: nil}
+      )
+
+      assert CardGuess.random_guessable_card() == nil
+    end
+
+    test "main schemes are excluded even when they carry flavor text" do
+      card = create(Card, attrs: %{base_code: "90003", code: "90003"})
+
+      create(CardSide,
+        attrs: %{
+          card_id: card.id,
+          code: "90003a",
+          is_primary_side: true,
+          type: :main_scheme,
+          ownership: :encounter,
+          aspect: nil,
+          cost: nil,
+          flavor: "The city trembles."
+        }
       )
 
       assert CardGuess.random_guessable_card() == nil

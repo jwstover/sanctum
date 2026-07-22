@@ -397,7 +397,7 @@ defmodule SanctumWeb.GameLive.Show do
 
         socket
         |> assign(:game, nil)
-        |> push_navigate(to: ~p"/")
+        |> push_navigate(to: ~p"/games")
     end
   end
 
@@ -845,7 +845,7 @@ defmodule SanctumWeb.GameLive.Show do
           </a>
         </li>
         <li>
-          <.link navigate={~p"/"}>
+          <.link navigate={~p"/games"}>
             Leave Game
           </.link>
         </li>

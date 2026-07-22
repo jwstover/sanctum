@@ -6,6 +6,8 @@ defmodule SanctumWeb.StatsLive.Index do
   """
   use SanctumWeb, :live_view
 
+  import SanctumWeb.Components.StatTile, only: [stat_tile: 1]
+
   on_mount {SanctumWeb.LiveUserAuth, :live_user_optional}
 
   alias Sanctum.Decks.Stats
@@ -190,28 +192,6 @@ defmodule SanctumWeb.StatsLive.Index do
       </details>
     </.panel>
     """
-  end
-
-  attr :label, :string, required: true
-  attr :value, :integer, required: true
-  attr :color, :string, default: "text-primary"
-
-  defp stat_tile(assigns) do
-    ~H"""
-    <div class="border-[3px] border-neutral bg-base-300 px-4 py-3">
-      <div class={["font-bangers text-3xl leading-none", @color]}>{format_count(@value)}</div>
-      <div class="mt-1 font-ibm-mono text-[11px] uppercase tracking-[0.15em] text-base-content/55">
-        {@label}
-      </div>
-    </div>
-    """
-  end
-
-  # 51461 → "51,461"
-  defp format_count(n) do
-    n
-    |> Integer.to_string()
-    |> String.replace(~r/(?<=\d)(?=(\d{3})+$)/, ",")
   end
 
   @impl true
