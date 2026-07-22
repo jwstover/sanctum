@@ -85,6 +85,11 @@ defmodule SanctumWeb.Router do
       live "/decks/:id", DeckLive.Show, :show
       live "/decks/:id/build", DeckLive.Build, :build
 
+      # Homebrew (custom content) projects — creator's own projects only for
+      # now; the public directory comes with the publish phase.
+      live "/homebrew", HomebrewLive.Index, :index
+      live "/homebrew/:id", HomebrewLive.Show, :show
+
       # Reference page for the card/deck search query language.
       live "/search-help", SearchHelpLive, :index
 

@@ -48,9 +48,11 @@ defmodule Sanctum.Decks do
   def signature_cards(hero_id) do
     hero = Ash.get!(Sanctum.Heroes.Hero, hero_id, authorize?: false)
 
+    # authorize?: false bypasses the Card read policy, so pin to the official
+    # catalog (defense-in-depth — customs have a nil set today anyway).
     Sanctum.Games.Card
     |> Ash.Query.filter(
-      set == ^hero.set and
+      origin == :official and set == ^hero.set and
         exists(card_sides, is_primary_side == true and ownership == :hero) and
         not exists(card_sides, type in [:hero, :alter_ego])
     )
