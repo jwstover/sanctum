@@ -192,11 +192,11 @@ defmodule SanctumWeb.Layouts do
             <.sidebar_link navigate={~p"/cards"} active={@active_tab == :cards}>
               Cards
             </.sidebar_link>
-            <.sidebar_link navigate={~p"/homebrew"} active={@active_tab == :homebrew}>
-              Homebrew
-            </.sidebar_link>
             <.sidebar_link navigate={~p"/decks"} active={@active_tab == :decks}>
               Decks
+            </.sidebar_link>
+            <.sidebar_link navigate={~p"/homebrew"} active={@active_tab == :homebrew}>
+              Homebrew
             </.sidebar_link>
             <.sidebar_link navigate={~p"/flavor-town"} active={@active_tab == :guess}>
               Flavor Town

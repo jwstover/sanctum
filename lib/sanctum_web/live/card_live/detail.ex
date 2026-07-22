@@ -138,7 +138,10 @@ defmodule SanctumWeb.CardLive.Detail do
 
                 <div class="grid grid-cols-2 gap-x-4 gap-y-3">
                   <.meta label="Code" value={@card.base_code} />
-                  <.meta label="Printings" value={1 + length(@card.alts)} />
+                  <.meta
+                    label="Printings"
+                    value={1 + Enum.count(@alts, &(&1.origin == :official))}
+                  />
                   <.meta label="Deck Limit" value={@card.deck_limit} />
                   <.meta label="Unique" value={yes_no(@card.unique)} />
                   <.meta label="Permanent" value={yes_no(@card.permanent)} />
@@ -201,7 +204,7 @@ defmodule SanctumWeb.CardLive.Detail do
                   <img
                     :if={alt.image_url}
                     src={alt.image_url}
-                    alt={alt.code}
+                    alt={alt_caption(alt)}
                     loading="lazy"
                     class="h-full w-full object-cover"
                   />
@@ -215,7 +218,7 @@ defmodule SanctumWeb.CardLive.Detail do
                   </div>
                 </div>
                 <figcaption class="font-ibm-mono text-xs uppercase tracking-[0.16em] text-base-content/50">
-                  {alt.code}<span :if={alt.pack}> · {alt.pack}</span>
+                  {alt_caption(alt)}
                 </figcaption>
               </figure>
             </div>
@@ -354,15 +357,17 @@ defmodule SanctumWeb.CardLive.Detail do
           |> Enum.sort_by(& &1.side_identifier)
           |> Enum.map(&side_view(%{&1 | card: card}, hero_colors))
 
-        # Every alternate printing. MarvelCDB has no scan for many reprints
+        # Every alternate printing plus visible custom alt art (the :alts
+        # load is actor-aware — CardAlt's read policy hides other users'
+        # private customs). MarvelCDB has no scan for many reprints
         # (imagesrc is null there, so our mirrored image_url is too) — those
-        # render as placeholders, sorted after the printings that have art.
-        # Pack codes resolve to catalog pack names when the pack has been synced.
+        # render as placeholders: officials with art, officials without,
+        # then fan art. Pack codes resolve to catalog pack names when synced.
         pack_names = pack_names(card.alts)
 
         alts =
           card.alts
-          |> Enum.sort_by(&{is_nil(&1.image_url), &1.code})
+          |> Enum.sort_by(&{&1.origin != :official, is_nil(&1.image_url), &1.code})
           |> Enum.map(&%{&1 | pack: Map.get(pack_names, &1.pack, &1.pack)})
 
         pack_owned =
@@ -438,6 +443,15 @@ defmodule SanctumWeb.CardLive.Detail do
 
   defp format_date(nil), do: nil
   defp format_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
+
+  # Custom alts carry synthetic custom-<uuid> codes — never render those;
+  # show the fan-art credit instead.
+  defp alt_caption(%{origin: :custom, artist: artist}) when artist not in [nil, ""],
+    do: "fan art · by #{artist}"
+
+  defp alt_caption(%{origin: :custom}), do: "fan art"
+  defp alt_caption(%{pack: pack} = alt) when pack not in [nil, ""], do: "#{alt.code} · #{pack}"
+  defp alt_caption(alt), do: alt.code
 
   defp yes_no(true), do: "Yes"
   defp yes_no(_), do: "No"

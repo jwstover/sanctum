@@ -8,6 +8,8 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
 
   alias Sanctum.Homebrew
 
+  require Ash.Query
+
   defp project_fixture(actor) do
     Homebrew.create_project!(%{name: "Test Pack", attestation: true}, actor: actor)
   end
@@ -98,8 +100,9 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
       assert %Sanctum.Games.Stat{value: 3, star: true, consequential: 1} = updated_side.attack
       assert %Sanctum.Games.Stat{value: 4, scaling: :per_player} = updated_side.health
 
-      # Scheme types render landscape; the sheet closed on save.
-      assert html =~ "aspect-[88/63]"
+      # Scheme types render in the tile's landscape art frame; the sheet
+      # closed on save.
+      assert html =~ "w-[210px]"
       assert html =~ "Web Kick"
     end
 
@@ -161,6 +164,135 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
       html = render(lv)
       assert html =~ "2 cards"
       refute html =~ "Side B"
+    end
+  end
+
+  describe "alt art" do
+    defp official_fixture do
+      import Sanctum.Factory
+
+      card = create(Sanctum.Games.Card, attrs: %{code: "91001", base_code: "91001"})
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: card.id,
+          name: "Official Target",
+          code: "91001a",
+          side_identifier: "a",
+          is_primary_side: true,
+          ownership: :player
+        }
+      )
+
+      card
+    end
+
+    test "declare flow: search, pick, credit, convert", ctx do
+      official = official_fixture()
+      card = card_fixture(ctx.project, ctx.creator, %{filename: "fan-piece.png"})
+
+      {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+
+      lv
+      |> element("button[phx-click='edit_card'][phx-value-id='#{card.id}']")
+      |> render_click()
+
+      html = lv |> element("button[phx-click='open_declare_alt']") |> render_click()
+      assert html =~ "declare-alt-sheet"
+
+      lv
+      |> element("#declare-alt-sheet form[phx-change='alt_search']")
+      |> render_change(%{"q" => "Official Target"})
+
+      assert has_element?(lv, "#declare-alt-sheet button[phx-click='pick_alt_target']")
+      # The picker is pinned to official cards — the custom card is absent
+      # even though its name would match the query.
+      refute has_element?(
+               lv,
+               "#declare-alt-sheet button[phx-click='pick_alt_target']",
+               "Fan Piece"
+             )
+
+      side_id =
+        Sanctum.Games.CardSide
+        |> Ash.Query.filter(code == "91001a")
+        |> Ash.read_one!(authorize?: false)
+        |> Map.fetch!(:id)
+
+      html =
+        lv
+        |> element("button[phx-click='pick_alt_target'][phx-value-id='#{side_id}']")
+        |> render_click()
+
+      assert html =~ "Alt art for Official Target"
+
+      html =
+        lv
+        |> element("#declare-alt-sheet form[phx-submit='declare_alt']")
+        |> render_submit(%{"artist" => "Jane Doe"})
+
+      assert html =~ "Declared as alt art for Official Target."
+      refute has_element?(lv, "button[phx-click='edit_card'][phx-value-id='#{card.id}']")
+      assert html =~ "Alt Art (1)"
+      assert html =~ "by Jane Doe"
+      assert html =~ "1 alt"
+
+      alt =
+        Sanctum.Games.CardAlt
+        |> Ash.Query.filter(origin == :custom and homebrew_project_id == ^ctx.project.id)
+        |> Ash.read_one!(authorize?: false)
+
+      assert alt.card_id == official.id
+      assert {:error, _} = Ash.get(Sanctum.Games.Card, card.id, authorize?: false)
+    end
+
+    test "multi-sided cards do not offer the alt-art action", ctx do
+      a = card_fixture(ctx.project, ctx.creator)
+      b = card_fixture(ctx.project, ctx.creator)
+      {:ok, paired} = Homebrew.pair_custom_cards(a.id, b.id, ctx.creator)
+
+      {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+
+      html =
+        lv
+        |> element("button[phx-click='edit_card'][phx-value-id='#{paired.id}']")
+        |> render_click()
+
+      assert html =~ "Split into two cards"
+      refute has_element?(lv, "button[phx-click='open_declare_alt']")
+    end
+
+    test "revert brings the card back; delete does not", ctx do
+      official = official_fixture()
+      card = card_fixture(ctx.project, ctx.creator, %{filename: "reverted-fan.png"})
+      {:ok, alt} = Homebrew.declare_alt_art(card.id, official.id, [], ctx.creator)
+
+      {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+
+      html =
+        lv
+        |> element("button[phx-click='revert_alt'][phx-value-id='#{alt.id}']")
+        |> render_click()
+
+      refute html =~ "Alt Art (1)"
+      assert html =~ "Official Target"
+
+      # Declare again, then delete outright.
+      new_card =
+        Sanctum.Games.Card
+        |> Ash.Query.filter(origin == :custom and homebrew_project_id == ^ctx.project.id)
+        |> Ash.read_one!(authorize?: false)
+
+      {:ok, alt} = Homebrew.declare_alt_art(new_card.id, official.id, [], ctx.creator)
+      {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+
+      html =
+        lv
+        |> element("button[phx-click='delete_alt'][phx-value-id='#{alt.id}']")
+        |> render_click()
+
+      refute html =~ "Alt Art (1)"
+      refute html =~ "Official Target"
     end
   end
 

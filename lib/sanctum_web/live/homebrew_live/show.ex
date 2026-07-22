@@ -9,10 +9,11 @@ defmodule SanctumWeb.HomebrewLive.Show do
 
   use SanctumWeb, :live_view
 
+  import SanctumWeb.Components.CardSideTile
+
   alias Sanctum.Games.Stat
   alias Sanctum.Homebrew
   alias Sanctum.HomebrewImages
-  alias SanctumWeb.Components.Card, as: CardComponents
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
@@ -24,12 +25,18 @@ defmodule SanctumWeb.HomebrewLive.Show do
          socket
          |> assign(:page_title, project.name)
          |> assign(:project, project)
+         |> assign(:hero_colors, Sanctum.Heroes.hero_color_map())
          |> assign(:uploads_configured?, HomebrewImages.configured?())
          |> assign(:editing_card, nil)
          |> assign(:enrich_form, nil)
          |> assign(:pair_mode?, false)
          |> assign(:pair_selection, [])
+         |> assign(:alt_declare_card, nil)
+         |> assign(:alt_search, "")
+         |> assign(:alt_results, [])
+         |> assign(:alt_target, nil)
          |> assign_cards()
+         |> assign_alts()
          |> allow_upload(:card_images,
            accept: ~w(.png .jpg .jpeg .webp),
            max_entries: 30,
@@ -82,7 +89,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
   def handle_event("edit_card", %{"id" => id}, socket) do
     case Ash.get(Sanctum.Games.Card, id,
            actor: socket.assigns.current_user,
-           load: [:card_sides]
+           load: [:card_sides, :primary_side]
          ) do
       {:ok, card} ->
         form =
@@ -144,6 +151,90 @@ defmodule SanctumWeb.HomebrewLive.Show do
     end
   end
 
+  # -- Alt art ----------------------------------------------------------------
+
+  def handle_event("open_declare_alt", _params, socket) do
+    case socket.assigns.editing_card do
+      %{is_multi_sided: false} = card ->
+        {:noreply,
+         socket
+         |> assign(:editing_card, nil)
+         |> assign(:enrich_form, nil)
+         |> assign(:alt_declare_card, card)
+         |> assign(:alt_search, "")
+         |> assign(:alt_results, [])
+         |> assign(:alt_target, nil)}
+
+      _no_card_or_multi_sided ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_declare_alt", _params, socket) do
+    {:noreply, reset_alt_declare(socket)}
+  end
+
+  def handle_event("alt_search", %{"q" => q}, socket) do
+    {:noreply,
+     socket
+     |> assign(:alt_search, q)
+     |> assign(:alt_results, search_official_sides(q, socket.assigns.current_user))}
+  end
+
+  def handle_event("pick_alt_target", %{"id" => id}, socket) do
+    target = Enum.find(socket.assigns.alt_results, &(&1.id == id))
+    {:noreply, assign(socket, :alt_target, target)}
+  end
+
+  def handle_event("clear_alt_target", _params, socket) do
+    {:noreply, assign(socket, :alt_target, nil)}
+  end
+
+  def handle_event("declare_alt", params, socket) do
+    %{alt_declare_card: card, alt_target: target, current_user: user} = socket.assigns
+
+    with %{} <- card,
+         %{} <- target,
+         {:ok, _alt} <-
+           Homebrew.declare_alt_art(
+             card.id,
+             target.card_id,
+             [artist: presence(params["artist"]), side_identifier: target.side_identifier],
+             user
+           ) do
+      {:noreply,
+       socket
+       |> reset_alt_declare()
+       |> assign_cards()
+       |> assign_alts()
+       |> put_flash(:info, "Declared as alt art for #{target.name}.")}
+    else
+      _missing_or_error ->
+        {:noreply, put_flash(socket, :error, "Could not declare the alt art.")}
+    end
+  end
+
+  def handle_event("revert_alt", %{"id" => id}, socket) do
+    case Homebrew.revert_alt_art(id, socket.assigns.current_user) do
+      {:ok, _new_card} ->
+        {:noreply,
+         socket
+         |> assign_cards()
+         |> assign_alts()
+         |> put_flash(:info, "Converted back to a card.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Could not revert the alt art.")}
+    end
+  end
+
+  def handle_event("delete_alt", %{"id" => id}, socket) do
+    case Homebrew.destroy_alt_art(id, socket.assigns.current_user) do
+      :ok -> {:noreply, socket |> assign_alts() |> put_flash(:info, "Alt art deleted.")}
+      _error -> {:noreply, put_flash(socket, :error, "Could not delete the alt art.")}
+    end
+  end
+
   # -- Pairing --------------------------------------------------------------
 
   def handle_event("toggle_pair_mode", _params, socket) do
@@ -152,7 +243,8 @@ defmodule SanctumWeb.HomebrewLive.Show do
      |> assign(:pair_mode?, !socket.assigns.pair_mode?)
      |> assign(:pair_selection, [])
      |> assign(:editing_card, nil)
-     |> assign(:enrich_form, nil)}
+     |> assign(:enrich_form, nil)
+     |> reset_alt_declare()}
   end
 
   def handle_event("toggle_pair_select", %{"id" => id}, socket) do
@@ -237,8 +329,74 @@ defmodule SanctumWeb.HomebrewLive.Show do
     cards =
       Homebrew.list_project_cards(socket.assigns.project.id, socket.assigns.current_user)
 
-    assign(socket, :cards, cards)
+    # The pool's dossier tile, fed the primary side. side_view/2 degrades on
+    # missing metadata (nil type/ownership/stats render nothing); customs have
+    # no hero palette, so the color map misses and yields the fallback gradient.
+    tiles =
+      Enum.map(cards, fn card ->
+        {card, side_view(%{card.primary_side | card: card}, socket.assigns.hero_colors)}
+      end)
+
+    socket
+    |> assign(:cards, cards)
+    |> assign(:card_tiles, tiles)
   end
+
+  defp assign_alts(socket) do
+    alts = Homebrew.list_project_alts(socket.assigns.project.id, socket.assigns.current_user)
+
+    # An alt IS the official card wearing different art: render the targeted
+    # side's real tile with the alt's image swapped in.
+    tiles = Enum.map(alts, &{&1, alt_tile_view(&1, socket.assigns.hero_colors)})
+
+    socket
+    |> assign(:project_alts, alts)
+    |> assign(:alt_tiles, tiles)
+  end
+
+  defp alt_tile_view(alt, hero_colors) do
+    card = alt.card
+
+    side =
+      Enum.find(card.card_sides, &(&1.side_identifier == alt.side_identifier)) ||
+        card.primary_side
+
+    %{side_view(%{side | card: card}, hero_colors) | image_url: alt.image_url}
+  end
+
+  defp reset_alt_declare(socket) do
+    socket
+    |> assign(:alt_declare_card, nil)
+    |> assign(:alt_search, "")
+    |> assign(:alt_results, [])
+    |> assign(:alt_target, nil)
+  end
+
+  # Official-card picker for the declare sheet: the shared :browse search
+  # (name/subname + query syntax) pinned to the official catalog — the
+  # actor's own customs must not be targetable.
+  defp search_official_sides(q, actor) do
+    if is_binary(q) and String.trim(q) != "" do
+      require Ash.Query
+
+      Sanctum.Games.CardSide
+      |> Ash.Query.for_read(:browse, %{query: q}, actor: actor)
+      |> Ash.Query.filter(card.origin == :official)
+      |> Ash.read!(actor: actor, page: [limit: 10])
+      |> Map.get(:results)
+    else
+      []
+    end
+  end
+
+  defp presence(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp presence(_value), do: nil
 
   # -- Form helpers -----------------------------------------------------------
 
@@ -328,14 +486,6 @@ defmodule SanctumWeb.HomebrewLive.Show do
     Enum.map(enum_module.values(), &{Phoenix.Naming.humanize(&1), to_string(&1)})
   end
 
-  defp tile_frame_class(card) do
-    if CardComponents.landscape_type?(card.primary_side && card.primary_side.type) do
-      "aspect-[88/63]"
-    else
-      "aspect-[63/88]"
-    end
-  end
-
   defp pair_role(id, [id | _]), do: "FRONT"
   defp pair_role(id, [_, id]), do: "BACK"
   defp pair_role(_id, _selection), do: nil
@@ -366,7 +516,12 @@ defmodule SanctumWeb.HomebrewLive.Show do
            content, and the "unofficial fan content" labeling is required on all
            homebrew surfaces (IP posture). --%>
       <p class="-mt-4 mb-5 font-barlow-condensed text-sm text-base-content/55">
-        {length(@cards)} {if length(@cards) == 1, do: "card", else: "cards"} &middot; {@project.visibility} &middot; unofficial fan content
+        {length(@cards)} {if length(@cards) == 1, do: "card", else: "cards"}<span :if={
+          @project_alts != []
+        }> &middot; {length(@project_alts)} {if length(@project_alts) == 1,
+          do: "alt",
+          else: "alts"}</span>
+        &middot; {@project.visibility} &middot; unofficial fan content
       </p>
 
       <.panel :if={!@uploads_configured?} class="mb-6 p-5">
@@ -450,39 +605,44 @@ defmodule SanctumWeb.HomebrewLive.Show do
         </p>
       </div>
 
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2.5 pb-28">
-        <div :for={card <- @cards} class="group relative">
+      <div class="grid grid-cols-1 items-start gap-[18px] pb-28 sm:grid-cols-[repeat(auto-fill,minmax(452px,1fr))]">
+        <div :for={{card, side} <- @card_tiles} class="relative">
           <div class={[
-            "border-2 border-neutral shadow-comic-sm",
-            tile_frame_class(card),
             pair_role(card.id, @pair_selection) &&
               "outline outline-[3px] outline-primary -translate-y-0.5",
             @pair_mode? && card.is_multi_sided && "opacity-40"
           ]}>
-            <.mc_card
-              name={card.primary_side && card.primary_side.name}
-              image_url={card.primary_side && card.primary_side.image_url}
-              cost={card.primary_side && card.primary_side.cost}
-              type={(card.primary_side && card.primary_side.type) || "event"}
-              aspect={(card.primary_side && card.primary_side.aspect) || :hero}
-              size="md"
-            />
+            <.card_side_tile side={side} size="md">
+              <:actions>
+                <.button
+                  :if={!@pair_mode?}
+                  variant="ghost"
+                  phx-click="edit_card"
+                  phx-value-id={card.id}
+                  class="px-3 py-1.5"
+                >
+                  Edit
+                </.button>
+                <.button
+                  :if={!@pair_mode?}
+                  variant="ghost"
+                  phx-click="delete_card"
+                  phx-value-id={card.id}
+                  data-confirm="Delete this card?"
+                  class="px-3 py-1.5 text-error hover:text-error"
+                >
+                  Delete
+                </.button>
+              </:actions>
+            </.card_side_tile>
           </div>
 
-          <button
-            :if={!@pair_mode?}
-            type="button"
-            phx-click="edit_card"
-            phx-value-id={card.id}
-            aria-label={"Edit #{(card.primary_side && card.primary_side.name) || "card"}"}
-            class="absolute inset-0 z-[3] cursor-pointer"
-          ></button>
           <button
             :if={@pair_mode? && !card.is_multi_sided}
             type="button"
             phx-click="toggle_pair_select"
             phx-value-id={card.id}
-            aria-label={"Select #{(card.primary_side && card.primary_side.name) || "card"} for pairing"}
+            aria-label={"Select #{side.name} for pairing"}
             class="absolute inset-0 z-[3] cursor-pointer"
           ></button>
 
@@ -498,18 +658,44 @@ defmodule SanctumWeb.HomebrewLive.Show do
           >
             2-SIDED
           </span>
+        </div>
+      </div>
 
-          <button
-            :if={!@pair_mode?}
-            type="button"
-            phx-click="delete_card"
-            phx-value-id={card.id}
-            data-confirm="Delete this card?"
-            aria-label="delete card"
-            class="absolute right-1 top-1 z-[4] hidden border-2 border-neutral bg-base-100/90 px-1.5 font-bold text-error group-hover:block"
+      <div :if={@project_alts != []} class="mt-8">
+        <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+          Alt Art ({length(@project_alts)})
+        </h2>
+        <div class="grid grid-cols-1 items-start gap-[18px] sm:grid-cols-[repeat(auto-fill,minmax(452px,1fr))]">
+          <.card_side_tile
+            :for={{alt, side} <- @alt_tiles}
+            side={side}
+            size="md"
+            navigate={~p"/cards/#{alt.card_id}"}
           >
-            &times;
-          </button>
+            <:actions>
+              <span class="font-ibm-mono text-xs uppercase tracking-[0.16em] text-base-content/50">
+                fan art{alt.artist && " · by #{alt.artist}"}
+              </span>
+              <.button
+                variant="ghost"
+                phx-click="revert_alt"
+                phx-value-id={alt.id}
+                data-confirm="Convert back to a standalone card in this project?"
+                class="ml-auto px-3 py-1.5"
+              >
+                Revert
+              </.button>
+              <.button
+                variant="ghost"
+                phx-click="delete_alt"
+                phx-value-id={alt.id}
+                data-confirm="Delete this alt art permanently?"
+                class="px-3 py-1.5 text-error hover:text-error"
+              >
+                Delete
+              </.button>
+            </:actions>
+          </.card_side_tile>
         </div>
       </div>
 
@@ -520,6 +706,13 @@ defmodule SanctumWeb.HomebrewLive.Show do
       />
 
       <.enrichment_sheet editing_card={@editing_card} enrich_form={@enrich_form} />
+
+      <.declare_alt_sheet
+        alt_declare_card={@alt_declare_card}
+        alt_search={@alt_search}
+        alt_results={@alt_results}
+        alt_target={@alt_target}
+      />
     </Layouts.app>
     """
   end
@@ -713,9 +906,160 @@ defmodule SanctumWeb.HomebrewLive.Show do
           >
             Split into two cards
           </button>
+          <button
+            :if={@editing_card && !@editing_card.is_multi_sided}
+            type="button"
+            phx-click="open_declare_alt"
+            class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+          >
+            Use as alt art…
+          </button>
           <.button variant="primary" type="submit" class="ml-auto">Save</.button>
         </footer>
       </.form>
+    </section>
+    """
+  end
+
+  # The declare-alt bottom sheet (same shell recipe as the enrichment sheet):
+  # search an official card, pick a printed side, credit the artist, convert.
+  # Openness keys off @alt_declare_card; the enrichment sheet is always closed
+  # first, so the two sheets never overlap.
+  defp declare_alt_sheet(assigns) do
+    ~H"""
+    <div
+      :if={@alt_declare_card}
+      phx-click="close_declare_alt"
+      phx-window-keydown="close_declare_alt"
+      phx-key="escape"
+      aria-hidden="true"
+      class="fixed inset-0 z-40 bg-black/60"
+    >
+    </div>
+    <section
+      id="declare-alt-sheet"
+      phx-hook="PaneDrag"
+      data-dismiss-event="close_declare_alt"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Use as alt art"
+      inert={!@alt_declare_card}
+      class={[
+        "fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col border-t-2 border-neutral bg-base-100",
+        "transition-transform duration-200",
+        "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[7dvh] sm:max-h-[86dvh] sm:w-[560px]",
+        "sm:-translate-x-1/2 sm:border-2 sm:shadow-comic sm:transition-none",
+        (@alt_declare_card && "translate-y-0") || "translate-y-full sm:hidden"
+      ]}
+    >
+      <button
+        type="button"
+        data-drag-handle
+        data-haptic
+        class="flex w-full flex-none cursor-grab touch-none items-center justify-center gap-2 py-3 text-base-content/50 sm:hidden"
+        title="Close"
+      >
+        <span class="h-1 w-10 rounded-full bg-base-content/25"></span>
+        <.icon name="hero-chevron-down" class="size-4" />
+      </button>
+
+      <header class="hidden flex-none items-center justify-between border-b-2 border-line px-5 py-3 sm:flex">
+        <h2 class="font-bangers text-[22px] tracking-[0.02em] text-primary">Use as Alt Art</h2>
+        <button
+          type="button"
+          phx-click="close_declare_alt"
+          aria-label="Close"
+          class="grid size-8 cursor-pointer place-items-center text-base-content/50 hover:text-white"
+        >
+          <.icon name="hero-x-mark" class="size-5" />
+        </button>
+      </header>
+
+      <div :if={@alt_declare_card} class="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="aspect-[5/7] w-16 shrink-0 overflow-hidden border-2 border-neutral">
+            <img
+              :if={@alt_declare_card.primary_side && @alt_declare_card.primary_side.image_url}
+              src={@alt_declare_card.primary_side.image_url}
+              alt="custom card art"
+              class="h-full w-full object-cover"
+            />
+          </div>
+          <p class="font-barlow-condensed text-[14px] text-base-content/70">
+            Declare this image as alternate art for an official card. It leaves your
+            card list (any card details are discarded) and appears on that card's page.
+          </p>
+        </div>
+
+        <form :if={is_nil(@alt_target)} phx-change="alt_search" onsubmit="return false">
+          <.input
+            type="text"
+            name="q"
+            value={@alt_search}
+            label="Official card"
+            placeholder="Search by name…"
+            autocomplete="off"
+            phx-debounce="250"
+          />
+        </form>
+
+        <div :if={is_nil(@alt_target)} class="mt-3 flex flex-col">
+          <button
+            :for={side <- @alt_results}
+            type="button"
+            phx-click="pick_alt_target"
+            phx-value-id={side.id}
+            class="flex cursor-pointer items-center gap-3 border-b border-neutral/40 py-2 text-left hover:bg-base-200"
+          >
+            <div class="aspect-[5/7] w-10 shrink-0 overflow-hidden border border-neutral">
+              <img
+                :if={side.image_url}
+                src={side.image_url}
+                alt={side.name}
+                loading="lazy"
+                class="h-full w-full object-cover"
+              />
+            </div>
+            <span class="min-w-0 flex-1 truncate font-barlow-condensed text-[14px] font-bold uppercase tracking-[0.04em]">
+              {side.name}
+            </span>
+            <span class="shrink-0 font-ibm-mono text-[11px] text-base-content/50">
+              {side.code}<span :if={side.card && side.card.pack}> · {side.card.pack}</span>
+            </span>
+          </button>
+        </div>
+
+        <div :if={@alt_target} class="flex flex-col gap-4">
+          <div class="flex items-center justify-between gap-3 border-2 border-neutral bg-base-200 px-3 py-2">
+            <span class="font-barlow-condensed text-[14px] font-bold uppercase tracking-[0.04em]">
+              Alt art for {@alt_target.name}
+              <span class="font-ibm-mono text-[11px] font-normal text-base-content/50">
+                ({@alt_target.code})
+              </span>
+            </span>
+            <button
+              type="button"
+              phx-click="clear_alt_target"
+              class="shrink-0 cursor-pointer font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+            >
+              Change
+            </button>
+          </div>
+
+          <form phx-submit="declare_alt" class="flex flex-col gap-4">
+            <.input
+              type="text"
+              name="artist"
+              value=""
+              label="Artist credit (optional)"
+              autocomplete="off"
+            />
+            <.button variant="primary" type="submit" class="self-end">
+              Declare alt art
+            </.button>
+          </form>
+        </div>
+      </div>
     </section>
     """
   end

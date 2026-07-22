@@ -28,6 +28,9 @@ defmodule SanctumWeb.Components.CardSideTile do
     default: nil,
     doc: "card detail path; when set, the art and name link to it"
 
+  slot :actions,
+    doc: "management controls (and optional caption) anchored to the tile's bottom edge"
+
   def card_side_tile(assigns) do
     assigns = assign(assigns, :lg?, assigns.size == "lg")
 
@@ -198,6 +201,17 @@ defmodule SanctumWeb.Components.CardSideTile do
             value={@side.hand_size}
             class="ml-auto text-base-content/75"
           />
+        </div>
+
+        <div
+          :if={@actions != []}
+          class={[
+            "mt-auto flex items-center gap-2 border-t border-line/70",
+            (@lg? && "pt-4") || "pt-2.5",
+            (@lg? && "mt-4") || "mt-2.5"
+          ]}
+        >
+          {render_slot(@actions)}
         </div>
       </div>
     </div>

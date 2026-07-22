@@ -110,6 +110,65 @@ defmodule SanctumWeb.CardLive.DetailTest do
     assert html =~ "no scan"
   end
 
+  describe "custom alt art in the printings strip" do
+    setup %{conn: conn} do
+      {card, _hero, _alter_ego} = make_card()
+
+      creator = Sanctum.AccountsFixtures.user_fixture()
+
+      project =
+        Sanctum.Homebrew.create_project!(%{name: "Fan Pack", attestation: true}, actor: creator)
+
+      {:ok, source} =
+        Sanctum.Homebrew.create_custom_card(
+          %{
+            homebrew_project_id: project.id,
+            card_sides: [%{image_url: "https://img.test/fan.png", filename: "fan.png"}]
+          },
+          creator
+        )
+
+      {:ok, alt} =
+        Sanctum.Homebrew.declare_alt_art(source.id, card.id, [artist: "Jane Doe"], creator)
+
+      %{conn: conn, card: card, creator: creator, project: project, alt: alt}
+    end
+
+    test "creator sees the fan art with credit, never the synthetic code", ctx do
+      conn = log_in_user(ctx.conn, ctx.creator)
+      {:ok, lv, _html} = live(conn, ~p"/cards/#{ctx.card.id}")
+      html = render_async(lv)
+
+      assert html =~ "fan art · by Jane Doe"
+      assert html =~ "https://img.test/fan.png"
+      refute html =~ "custom-"
+      # Fan art is not a printing.
+      assert html =~ "Alternate Printings (1)"
+    end
+
+    test "private fan art is hidden from other users and anonymous visitors", ctx do
+      other_conn =
+        log_in_user(Phoenix.ConnTest.build_conn(), Sanctum.AccountsFixtures.user_fixture())
+
+      for conn <- [other_conn, ctx.conn] do
+        {:ok, lv, _html} = live(conn, ~p"/cards/#{ctx.card.id}")
+        html = render_async(lv)
+
+        refute html =~ "fan art"
+        refute html =~ "https://img.test/fan.png"
+      end
+    end
+
+    test "published fan art is visible to everyone", ctx do
+      Sanctum.Homebrew.set_project_visibility!(ctx.project, :published, actor: ctx.creator)
+
+      {:ok, lv, _html} = live(ctx.conn, ~p"/cards/#{ctx.card.id}")
+      html = render_async(lv)
+
+      assert html =~ "fan art · by Jane Doe"
+    end
+  end
+
   test "card pool tiles link to the card detail page", %{conn: conn} do
     {card, _hero, _alter_ego} = make_card()
 
