@@ -364,13 +364,19 @@ defmodule SanctumWeb.HomebrewLive.Show do
                 <.button
                   :if={!@pair_mode?}
                   variant="ghost"
-                  phx-click="delete_card"
-                  phx-value-id={card.id}
-                  data-confirm="Delete this card?"
+                  phx-click={open_confirm("confirm-del-card-#{card.id}")}
                   class="px-3 py-1.5 text-error hover:text-error"
                 >
                   Delete
                 </.button>
+                <.confirm_dialog
+                  :if={!@pair_mode?}
+                  id={"confirm-del-card-#{card.id}"}
+                  message="Delete this card?"
+                  confirm_label="Delete card"
+                  phx-click="delete_card"
+                  phx-value-id={card.id}
+                />
               </:actions>
             </.card_side_tile>
           </div>
@@ -416,22 +422,32 @@ defmodule SanctumWeb.HomebrewLive.Show do
               </span>
               <.button
                 variant="ghost"
-                phx-click="revert_alt"
-                phx-value-id={alt.id}
-                data-confirm="Convert back to a standalone card in this project?"
+                phx-click={open_confirm("confirm-revert-alt-#{alt.id}")}
                 class="ml-auto px-3 py-1.5"
               >
                 Revert
               </.button>
+              <.confirm_dialog
+                id={"confirm-revert-alt-#{alt.id}"}
+                message="Convert back to a standalone card in this project?"
+                confirm_label="Revert"
+                phx-click="revert_alt"
+                phx-value-id={alt.id}
+              />
               <.button
                 variant="ghost"
-                phx-click="delete_alt"
-                phx-value-id={alt.id}
-                data-confirm="Delete this alt art permanently?"
+                phx-click={open_confirm("confirm-del-alt-#{alt.id}")}
                 class="px-3 py-1.5 text-error hover:text-error"
               >
                 Delete
               </.button>
+              <.confirm_dialog
+                id={"confirm-del-alt-#{alt.id}"}
+                message="Delete this alt art permanently?"
+                confirm_label="Delete alt art"
+                phx-click="delete_alt"
+                phx-value-id={alt.id}
+              />
             </:actions>
           </.card_side_tile>
         </div>
