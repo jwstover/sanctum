@@ -173,7 +173,7 @@ defmodule SanctumWeb.EventLive.Show do
         <%!-- Worlds Collide doomsday clock --%>
         <div class="flex flex-col border-t-2 border-neutral p-6 lg:border-l-2 lg:border-t-0">
           <span class="font-ibm-mono text-sm uppercase tracking-[0.24em] text-primary">
-            Doomsday Clock
+            Worlds Collide
           </span>
           <div class="mt-3 flex items-baseline gap-1.5">
             <span class="font-anton text-5xl leading-none text-white">
