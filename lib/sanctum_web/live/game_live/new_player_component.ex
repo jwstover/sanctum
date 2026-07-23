@@ -91,7 +91,7 @@ defmodule SanctumWeb.GameLive.NewPlayerComponent do
               prompt="Select a Deck"
               field={@form[:deck_id]}
               options={@decks}
-              class="w-full input rounded text-base-content"
+              class="w-full input rounded text-base-content cursor-pointer"
             />
             <div>
               <.button type="submit">Select</.button>

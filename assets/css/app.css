@@ -532,6 +532,23 @@ main, #game-board {
     color: var(--sanctum-ink);
     font-family: 'Barlow Condensed', system-ui, sans-serif;
   }
+
+  /* Tailwind v4 preflight dropped the default pointer cursor on buttons.
+     Restore it for everything clickable — including LiveView phx-click
+     targets on non-button elements. Utility classes (cursor-default,
+     cursor-grab, …) still win because they live in a later cascade layer. */
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  input[type='submit']:not(:disabled),
+  input[type='button']:not(:disabled),
+  input[type='reset']:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  select:not(:disabled),
+  summary,
+  [phx-click] {
+    cursor: pointer;
+  }
 }
 
 /* Global comic-dossier chrome (kept outside @layer so it wins over
