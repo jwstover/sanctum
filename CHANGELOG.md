@@ -1,3 +1,12 @@
+## [1.67.1](https://github.com/jwstover/sanctum/compare/v1.67.0...v1.67.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* **events:** PWA-safe confirmation dialogs ([a8a0c2d](https://github.com/jwstover/sanctum/commit/a8a0c2d112e5f17075ef024a06d036d9752e5fb8))
+
+
+
 # [1.67.0](https://github.com/jwstover/sanctum/compare/v1.66.1...v1.67.0) (2026-07-22)
 
 
@@ -46,17 +55,6 @@
 * **home:** embed a playable Flavor Town round on the homepage ([c09d454](https://github.com/jwstover/sanctum/commit/c09d4543f0dfa043eb02d34f6f2463eface86668))
 * **home:** full-width About Sanctum band ([b8fa67e](https://github.com/jwstover/sanctum/commit/b8fa67e06888a9c5b7e28de69779495c3e5cb214))
 * **home:** landing page with card of the day and newest decks ([ca5bdd5](https://github.com/jwstover/sanctum/commit/ca5bdd5fc8a9c9ad98a25aeb0a8a1e5c32146306))
-
-
-
-# [1.64.0](https://github.com/jwstover/sanctum/compare/v1.63.0...v1.64.0) (2026-07-22)
-
-
-### Features
-
-* **cards:** Stat form-input helpers + empty-input collapse ([41d677c](https://github.com/jwstover/sanctum/commit/41d677c27d6f4abfea7bf5643cf9a9c90eadb764))
-* **homebrew:** enrichment sheet + pairing UI on the project page ([c4487c9](https://github.com/jwstover/sanctum/commit/c4487c9b521135fd0a7408aec55bcd25dbeee3ae))
-* **homebrew:** enrichment, pairing, and unpairing actions for custom cards ([ad5e37d](https://github.com/jwstover/sanctum/commit/ad5e37dd2e04c70054e3675521c40163f389dfb4))
 
 
 
