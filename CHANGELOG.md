@@ -1,3 +1,12 @@
+# [1.68.0](https://github.com/jwstover/sanctum/compare/v1.67.4...v1.68.0) (2026-07-23)
+
+
+### Features
+
+* **decks:** phased deck lifecycle with private drafts ([48b97f0](https://github.com/jwstover/sanctum/commit/48b97f0ea480e34b93eff822655ad2fef4b93ce8))
+
+
+
 ## [1.67.4](https://github.com/jwstover/sanctum/compare/v1.67.3...v1.67.4) (2026-07-23)
 
 
@@ -32,16 +41,6 @@
 ### Bug Fixes
 
 * **events:** PWA-safe confirmation dialogs ([a8a0c2d](https://github.com/jwstover/sanctum/commit/a8a0c2d112e5f17075ef024a06d036d9752e5fb8))
-
-
-
-# [1.67.0](https://github.com/jwstover/sanctum/compare/v1.66.1...v1.67.0) (2026-07-22)
-
-
-### Features
-
-* **events:** Loki Control Center redesign, card lifecycle, owner policies ([6f99eef](https://github.com/jwstover/sanctum/commit/6f99eef689179a8de41cf2f342dbb5a1d808a5cc))
-* **events:** Loki epic-multiplayer organizer dashboard ([7eed109](https://github.com/jwstover/sanctum/commit/7eed109da1ee907557a957c9a710f8c6710bf957))
 
 
 
