@@ -402,15 +402,16 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
         </.inputs_for>
 
         <div class="flex items-center gap-3 pb-16">
-          <button
+          <.confirm_button
             :if={@card.is_multi_sided}
-            type="button"
+            id="confirm-split-card"
+            message="Split this card into two single-sided cards?"
+            confirm_label="Split card"
             phx-click="unpair_card"
-            data-confirm="Split this card into two single-sided cards?"
-            class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-error/80 hover:text-error"
+            class="cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-error/80 hover:text-error"
           >
             Split into two cards
-          </button>
+          </.confirm_button>
           <button
             :if={!@card.is_multi_sided}
             type="button"

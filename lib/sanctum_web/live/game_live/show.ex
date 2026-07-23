@@ -835,7 +835,7 @@ defmodule SanctumWeb.GameLive.Show do
         class="dropdown-content menu bg-gray-900 rounded-box z-1 w-52 p-2 shadow-sm"
       >
         <li class="hover:text-orange-400">
-          <a data-confirm="Are you sure? This will reset the game." phx-click="show-player-form">
+          <a phx-click={open_confirm("confirm-change-deck")}>
             Change Deck
           </a>
         </li>
@@ -850,6 +850,12 @@ defmodule SanctumWeb.GameLive.Show do
           </.link>
         </li>
       </ul>
+      <.confirm_dialog
+        id="confirm-change-deck"
+        message="Are you sure? This will reset the game."
+        confirm_label="Change deck"
+        phx-click="show-player-form"
+      />
     </div>
     """
   end

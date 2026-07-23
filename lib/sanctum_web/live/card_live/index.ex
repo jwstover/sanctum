@@ -79,12 +79,15 @@ defmodule SanctumWeb.CardLive.Index do
           </:action>
 
           <:action :let={{id, card}}>
-            <.link
-              phx-click={JS.push("delete", value: %{id: card.id}) |> hide("##{id}")}
-              data-confirm="Are you sure?"
-            >
+            <.link phx-click={open_confirm("confirm-delete-card-#{card.id}")}>
               Delete
             </.link>
+            <.confirm_dialog
+              id={"confirm-delete-card-#{card.id}"}
+              message="Delete this card? This cannot be undone."
+              confirm_label="Delete card"
+              phx-click={JS.push("delete", value: %{id: card.id}) |> hide("##{id}")}
+            />
           </:action>
         </.table>
       </div>

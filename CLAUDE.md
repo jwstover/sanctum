@@ -16,6 +16,14 @@ personal use, designed with room to grow into multiplayer.
   migrations to model domain data — change the resource and run codegen.
 - **Single dark theme.** The UI is a pinned dark "comic-dossier" design. There is
   no light/dark toggle — do not reintroduce daisyUI theme switching.
+- **Never use `data-confirm` for confirmations.** It calls `window.confirm`,
+  which WebKit **suppresses in iOS standalone / Add-to-Home-Screen (PWA) mode** —
+  the dialog never shows, `confirm()` returns false, and LiveView silently
+  cancels the action (the button appears dead). Use the PWA-safe
+  `confirm_button` / `confirm_dialog` components (with `open_confirm/1`) in
+  `SanctumWeb.CoreComponents` instead — they use a native `<dialog>` opened by a
+  colocated JS hook. Put the real `phx-click` / `phx-value-*` on the component;
+  it fires only after the user confirms.
 - There are often several agents making changes and working in the single shared gitbutler workspace. Make sure that when you are committing your change you FIRST STAGE THE SPECIFIC HUNK and then review the staged changes before committing. We have already gotten into situations where work got mixed up. 
 
 ## Technical Stack
