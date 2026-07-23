@@ -695,17 +695,21 @@ defmodule SanctumWeb.EventLive.Show do
         {@put_label}
       </button>
 
-      <div :if={@in_play} class="flex items-center gap-1.5">
-        <.delta_button event={@delta_event} id={@id} amount="-1" label="−1" />
-        <span class={["flex-1 text-center font-anton text-xl leading-none", tone_value(@tone)]}>
-          {@value}<span class="font-barlow-condensed text-xs text-base-content/40">{@unit}</span>
-        </span>
-        <.delta_button event={@delta_event} id={@id} amount="1" label="+1" />
+      <%!-- The −1 / value / +1 stepper stays together; the resolve button
+           wraps below it when the card is too narrow to fit on one row. --%>
+      <div :if={@in_play} class="flex flex-wrap items-center gap-1.5">
+        <div class="flex min-w-[7.5rem] flex-1 items-center gap-1.5">
+          <.delta_button event={@delta_event} id={@id} amount="-1" label="−1" />
+          <span class={["flex-1 text-center font-anton text-xl leading-none", tone_value(@tone)]}>
+            {@value}<span class="font-barlow-condensed text-xs text-base-content/40">{@unit}</span>
+          </span>
+          <.delta_button event={@delta_event} id={@id} amount="1" label="+1" />
+        </div>
         <button
           type="button"
           phx-click={@resolve_event}
           phx-value-id={@id}
-          class="border-2 border-secondary bg-secondary/15 px-2.5 py-1.5 font-barlow-condensed text-[0.7rem] font-bold uppercase tracking-[0.05em] text-secondary hover:bg-secondary/25"
+          class="shrink-0 border-2 border-secondary bg-secondary/15 px-2.5 py-1.5 font-barlow-condensed text-[0.7rem] font-bold uppercase tracking-[0.05em] text-secondary hover:bg-secondary/25"
         >
           {@resolve_label}
         </button>
