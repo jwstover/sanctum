@@ -132,6 +132,32 @@ defmodule SanctumWeb.Components.DeckCards do
     %{label: label, text: ac.text, border: ac.border}
   end
 
+  @doc """
+  Lifecycle chips for a deck: "Draft" and/or "Private" when the deck hasn't
+  completed the phased flow. Final + published decks (the norm — every
+  imported deck) render nothing. Only owners ever see these — private decks
+  are policy-filtered for everyone else.
+  """
+  attr :state, :atom, required: true
+  attr :visibility, :atom, required: true
+
+  def deck_status_badges(assigns) do
+    ~H"""
+    <span
+      :if={@state == :draft}
+      class="border-2 border-warning/60 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-warning"
+    >
+      Draft
+    </span>
+    <span
+      :if={@visibility == :private}
+      class="border-2 border-neutral bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-base-content/60"
+    >
+      Private
+    </span>
+    """
+  end
+
   @doc "Human label for a deck's source."
   def source_label(:marvelcdb), do: "MarvelCDB"
   def source_label(:native), do: "Native"

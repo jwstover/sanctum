@@ -268,10 +268,115 @@ defmodule Sanctum.Decks.DeckBuildTest do
                Decks.rename_deck!(deck, %{title: "Moderated"}, actor: admin)
     end
 
-    test "anonymous reads still work", %{deck: deck} do
+    test "anonymous reads see published decks but not private drafts", %{
+      owner: owner,
+      deck: deck
+    } do
+      # Fresh builds are private drafts — invisible to anonymous readers.
+      assert {:error, %Ash.Error.Invalid{}} = Decks.get_deck(deck.id)
+
+      deck = Decks.finalize_deck!(deck, actor: owner)
+      deck = Decks.publish_deck!(deck, actor: owner)
+
       assert {:ok, fetched} = Decks.get_deck(deck.id)
       assert fetched.id == deck.id
       assert deck_card_rows(deck.id) != []
+    end
+  end
+
+  describe "deck lifecycle (draft → finalize → publish)" do
+    setup do
+      %{hero: hero} = make_hero("build_lifecycle")
+      owner = user_fixture()
+      deck = Decks.build_deck!(%{hero_id: hero.id}, actor: owner)
+
+      %{owner: owner, deck: deck}
+    end
+
+    test "builds start as a private draft", %{deck: deck} do
+      assert deck.visibility == :private
+      assert deck.state == :draft
+    end
+
+    test "finalize then publish", %{owner: owner, deck: deck} do
+      deck = Decks.finalize_deck!(deck, actor: owner)
+      assert deck.state == :final
+      assert deck.visibility == :private
+
+      deck = Decks.publish_deck!(deck, actor: owner)
+      assert deck.visibility == :published
+    end
+
+    test "a draft cannot be published", %{owner: owner, deck: deck} do
+      assert {:error, %Ash.Error.Invalid{}} = Decks.publish_deck(deck, actor: owner)
+    end
+
+    test "reopening a published deck withdraws it", %{owner: owner, deck: deck} do
+      deck = Decks.finalize_deck!(deck, actor: owner)
+      deck = Decks.publish_deck!(deck, actor: owner)
+
+      deck = Decks.reopen_deck!(deck, actor: owner)
+      assert deck.state == :draft
+      assert deck.visibility == :private
+    end
+
+    test "unpublish keeps the deck final but private", %{owner: owner, deck: deck} do
+      deck = Decks.finalize_deck!(deck, actor: owner)
+      deck = Decks.publish_deck!(deck, actor: owner)
+
+      deck = Decks.unpublish_deck!(deck, actor: owner)
+      assert deck.state == :final
+      assert deck.visibility == :private
+    end
+
+    test "non-owners cannot drive the lifecycle", %{owner: owner, deck: deck} do
+      other = user_fixture()
+
+      assert_raise Ash.Error.Forbidden, fn -> Decks.finalize_deck!(deck, actor: other) end
+
+      deck = Decks.finalize_deck!(deck, actor: owner)
+      assert_raise Ash.Error.Forbidden, fn -> Decks.publish_deck!(deck, actor: other) end
+    end
+
+    test ":browse silently drops others' private decks", %{owner: owner, deck: deck} do
+      other = user_fixture()
+
+      browse_ids = fn actor ->
+        Deck
+        |> Ash.Query.for_read(:browse, %{}, actor: actor)
+        |> Ash.read!()
+        |> Enum.map(& &1.id)
+      end
+
+      admin = admin_user_fixture()
+
+      assert deck.id in browse_ids.(owner)
+      refute deck.id in browse_ids.(other)
+      refute deck.id in browse_ids.(nil)
+      refute deck.id in browse_ids.(admin)
+
+      deck = Decks.finalize_deck!(deck, actor: owner)
+      deck = Decks.publish_deck!(deck, actor: owner)
+
+      assert deck.id in browse_ids.(other)
+      assert deck.id in browse_ids.(nil)
+      assert deck.id in browse_ids.(admin)
+    end
+
+    test "private decks are visible to their owner but filtered for others", %{
+      owner: owner,
+      deck: deck
+    } do
+      other = user_fixture()
+
+      assert {:ok, _} = Decks.get_deck(deck.id, actor: owner)
+      assert {:error, %Ash.Error.Invalid{}} = Decks.get_deck(deck.id, actor: other)
+      assert {:error, %Ash.Error.Invalid{}} = Decks.get_deck(deck.id)
+
+      # The admin bypass covers moderation writes only — reads go through the
+      # same visibility policy as everyone else.
+      admin = admin_user_fixture()
+      assert {:error, %Ash.Error.Invalid{}} = Decks.get_deck(deck.id, actor: admin)
     end
   end
 
@@ -319,5 +424,9 @@ defmodule Sanctum.Decks.DeckBuildTest do
              )
 
     assert length(deck.deck_cards) == 2
+
+    # Imported decks are public decklists on MarvelCDB — they stay published.
+    assert deck.visibility == :published
+    assert deck.state == :final
   end
 end

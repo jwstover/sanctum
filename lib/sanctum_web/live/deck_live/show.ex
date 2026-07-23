@@ -72,6 +72,7 @@ defmodule SanctumWeb.DeckLive.Show do
               </h1>
 
               <div class="mt-3 flex flex-wrap items-center gap-1.5">
+                <.deck_status_badges state={@cover.state} visibility={@cover.visibility} />
                 <span
                   :for={a <- @cover.aspects}
                   class={[
@@ -476,6 +477,8 @@ defmodule SanctumWeb.DeckLive.Show do
     %{
       hero_name: hero.display_name,
       identity_image: identity_image(hero),
+      state: deck.state,
+      visibility: deck.visibility,
       gradient_from: gradient_from,
       gradient_to: gradient_to,
       aspects: aspect_badges(deck.aspects),

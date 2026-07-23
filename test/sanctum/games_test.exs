@@ -563,6 +563,71 @@ defmodule Sanctum.GamesTest do
       refute Enum.empty?(player_cards)
       assert Enum.all?(player_cards, &(&1.game_id == game.id))
     end
+
+    test "a player can bring their own private draft deck into a game", %{
+      scenario: scenario,
+      user: user
+    } do
+      # A buildable hero: identity card with hero + alter-ego sides.
+      {:ok, hero_card} =
+        create_card_with_side(
+          %{base_code: "phero1", code: "phero1", set: "test_priv_hero", pack: "test_priv_hero"},
+          %{name: "Private Hero", type: :hero, hand_size: 5}
+        )
+
+      {:ok, _alter_side} =
+        Sanctum.Games.CardSide
+        |> Ash.Changeset.for_create(:create, %{
+          card_id: hero_card.id,
+          code: "phero1b",
+          side_identifier: "B",
+          is_primary_side: false,
+          name: "Private Alter Ego",
+          type: :alter_ego,
+          hand_size: 6
+        })
+        |> Ash.create(authorize?: false)
+
+      {:ok, hero} =
+        Sanctum.Heroes.find_or_create_hero(%{
+          hero_name: "Private Hero",
+          alter_ego_name: "Private Alter Ego",
+          set: "test_priv_hero",
+          base_code: hero_card.base_code,
+          card_id: hero_card.id
+        })
+
+      deck = Sanctum.Decks.build_deck!(%{hero_id: hero.id}, actor: user)
+      assert deck.visibility == :private
+
+      {:ok, game} =
+        Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
+
+      game = Games.get_game!(game.id, load: [:game_players])
+      game_player = hd(game.game_players)
+
+      # SetGameCards reads the deck as the acting user, so the owner's own
+      # private draft is selectable…
+      assert {:ok, _updated} = Games.select_deck(game_player, %{deck_id: deck.id}, actor: user)
+
+      # …but someone else's private deck reads as nonexistent.
+      other = Sanctum.AccountsFixtures.user_fixture()
+
+      {:ok, other_game} =
+        Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: other)
+
+      other_game = Games.get_game!(other_game.id, load: [:game_players])
+      other_player = hd(other_game.game_players)
+
+      result =
+        try do
+          Games.select_deck(other_player, %{deck_id: deck.id}, actor: other)
+        rescue
+          error in [Ash.Error.Invalid] -> {:error, error}
+        end
+
+      assert {:error, _error} = result
+    end
   end
 
   describe "main scheme game cards" do

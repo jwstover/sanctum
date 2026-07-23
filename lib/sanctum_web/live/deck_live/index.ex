@@ -141,6 +141,7 @@ defmodule SanctumWeb.DeckLive.Index do
                 <span class="border-2 border-neutral bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-base-content/70">
                   {deck.source_label}
                 </span>
+                <DeckCards.deck_status_badges state={deck.state} visibility={deck.visibility} />
               </div>
 
               <div class="mt-2 break-words font-anton text-2xl uppercase leading-[0.95]">
@@ -468,6 +469,8 @@ defmodule SanctumWeb.DeckLive.Index do
       gradient_to: gradient_to,
       aspects: DeckCards.aspect_badges(deck.aspects),
       source_label: DeckCards.source_label(deck.source),
+      state: deck.state,
+      visibility: deck.visibility,
       tagline: excerpt(deck.description_md),
       author: author && author.name,
       author_avatar: author && author.avatar,

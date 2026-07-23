@@ -111,6 +111,41 @@ defmodule Sanctum.Decks.Deck do
       skip_global_validations? true
     end
 
+    # Deck lifecycle: draft → finalize → publish. Each is a narrow owner
+    # action (same policy as the other builder updates) that skips
+    # ValidateHero for the same reason :rename does.
+    update :finalize do
+      require_atomic? false
+      skip_global_validations? true
+      change set_attribute(:state, :final)
+    end
+
+    # Back to draft also withdraws the deck — a published draft isn't a
+    # state the phased flow allows.
+    update :reopen do
+      require_atomic? false
+      skip_global_validations? true
+      change set_attribute(:state, :draft)
+      change set_attribute(:visibility, :private)
+    end
+
+    update :publish do
+      require_atomic? false
+      skip_global_validations? true
+
+      validate attribute_equals(:state, :final) do
+        message "finalize the deck before publishing"
+      end
+
+      change set_attribute(:visibility, :published)
+    end
+
+    update :unpublish do
+      require_atomic? false
+      skip_global_validations? true
+      change set_attribute(:visibility, :private)
+    end
+
     update :set_mcdb_dates do
       description "Backfills the MarvelCDB provenance dates on an already-imported deck."
       accept [:mcdb_date_creation, :mcdb_date_update]
@@ -182,6 +217,11 @@ defmodule Sanctum.Decks.Deck do
 
       change relate_actor(:owner)
 
+      # Native decks start life as a private draft; the owner finalizes and
+      # publishes explicitly from the builder.
+      change set_attribute(:visibility, :private)
+      change set_attribute(:state, :draft)
+
       change fn changeset, _context ->
         changeset
         |> default_title()
@@ -212,13 +252,19 @@ defmodule Sanctum.Decks.Deck do
       authorize_if always()
     end
 
-    bypass actor_attribute_equals(:admin, true) do
+    # Moderation writes only — reads fall through to the visibility policy
+    # below, so admins browse like everyone else and never see private decks
+    # they don't own. (System reads that need everything use authorize?: false.)
+    bypass [actor_attribute_equals(:admin, true), action_type([:create, :update, :destroy])] do
       authorize_if always()
     end
 
-    # The deck browser and deck pages are public.
+    # The deck browser and deck pages are public — but private decks are
+    # visible only to their owner (filter check; system reads run with
+    # authorize?: false).
     policy action_type(:read) do
-      authorize_if always()
+      authorize_if expr(visibility == :published)
+      authorize_if expr(owner_id == ^actor(:id))
     end
 
     policy action(:build) do
@@ -260,6 +306,20 @@ defmodule Sanctum.Decks.Deck do
 
     # Aspect cards the deck draws from. Empty list = a basic deck.
     attribute :aspects, {:array, Sanctum.Decks.DeckAspect}, public?: true, default: []
+
+    # Deck lifecycle. Defaults are :published/:final so imported decks (public
+    # decklists on MarvelCDB) and pre-existing rows keep their old always-public
+    # behavior; the builder's :build action opts new native decks into
+    # :private/:draft explicitly.
+    attribute :visibility, Sanctum.Decks.DeckVisibility,
+      public?: true,
+      allow_nil?: false,
+      default: :published
+
+    attribute :state, Sanctum.Decks.DeckState,
+      public?: true,
+      allow_nil?: false,
+      default: :final
 
     attribute :meta, :map, public?: true
     attribute :tags, :string, public?: true

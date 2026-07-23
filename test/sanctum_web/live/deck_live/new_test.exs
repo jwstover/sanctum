@@ -143,14 +143,28 @@ defmodule SanctumWeb.DeckLive.NewTest do
     assert html =~ deck.title
   end
 
-  test "the builder redirects non-owners to the deck page", %{conn: conn} do
+  test "the builder redirects non-owners of a published deck to the deck page", %{conn: conn} do
     %{hero: hero} = make_hero("new_deck_hero_d", "Grid Hero D")
     owner = user_fixture()
     deck = Sanctum.Decks.build_deck!(%{hero_id: hero.id}, actor: owner)
+    deck = Sanctum.Decks.finalize_deck!(deck, actor: owner)
+    deck = Sanctum.Decks.publish_deck!(deck, actor: owner)
 
     conn = log_in_user(conn, user_fixture())
 
     assert {:error, {:live_redirect, %{to: to}}} = live(conn, ~p"/decks/#{deck.id}/build")
     assert to == "/decks/#{deck.id}"
+  end
+
+  test "a private deck's builder is not found for non-owners", %{conn: conn} do
+    %{hero: hero} = make_hero("new_deck_hero_e", "Grid Hero E")
+    owner = user_fixture()
+    deck = Sanctum.Decks.build_deck!(%{hero_id: hero.id}, actor: owner)
+
+    conn = log_in_user(conn, user_fixture())
+
+    # The visibility policy filters the deck out entirely — a private deck
+    # reads as nonexistent, not merely locked.
+    assert {:error, {:live_redirect, %{to: "/decks"}}} = live(conn, ~p"/decks/#{deck.id}/build")
   end
 end
