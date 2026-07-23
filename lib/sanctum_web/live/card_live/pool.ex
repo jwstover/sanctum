@@ -243,7 +243,7 @@ defmodule SanctumWeb.CardLive.Pool do
 
   @impl true
   def handle_async(:load_cards, {:ok, result}, socket) do
-    %{req: req, offset: offset, reset?: reset?, page: page, colors: colors} = result
+    %{req: req, offset: offset, reset?: reset?, page: page, total: total, colors: colors} = result
 
     # A newer filter/search/page request has since fired; drop these stale
     # results so out-of-order completions can't clobber the current view.
@@ -256,7 +256,8 @@ defmodule SanctumWeb.CardLive.Pool do
         |> assign(:offset, offset)
         |> assign(:end_of_timeline?, !page.more?)
         |> assign(:loading?, false)
-        |> maybe_assign_count(reset?, page.count)
+        |> InfiniteScroll.assign_total(total)
+        |> InfiniteScroll.assign_count(reset?, page.count)
         |> stream(
           :cards,
           Enum.map(page.results, &side_view(&1, hero_colors)),
@@ -299,6 +300,7 @@ defmodule SanctumWeb.CardLive.Pool do
     filters = filters(socket.assigns)
     actor = socket.assigns[:current_user]
     fetch_colors? = socket.assigns.hero_colors == %{}
+    fetch_total? = is_nil(socket.assigns.total)
 
     socket
     |> assign(:req_id, req)
@@ -309,9 +311,10 @@ defmodule SanctumWeb.CardLive.Pool do
         |> Ash.Query.for_read(:browse, filters, actor: actor)
         |> Ash.read!(page: [limit: limit, offset: query_offset, count: reset?])
 
+      total = if fetch_total?, do: Sanctum.Games.CardPoolCount.total(actor), else: nil
       colors = if fetch_colors?, do: Sanctum.Heroes.hero_color_map(), else: nil
 
-      %{req: req, offset: offset, reset?: reset?, page: page, colors: colors}
+      %{req: req, offset: offset, reset?: reset?, page: page, total: total, colors: colors}
     end)
   end
 
@@ -321,17 +324,6 @@ defmodule SanctumWeb.CardLive.Pool do
     params = if f.query == "", do: [], else: [query: f.query]
 
     ~p"/cards?#{params}"
-  end
-
-  # `page.count` is only queried on reset loads (count: reset?). `total` is the
-  # full unfiltered catalog size — set once from the first load (mount always
-  # runs unfiltered) and left untouched as filters narrow the visible count.
-  defp maybe_assign_count(socket, false, _count), do: socket
-
-  defp maybe_assign_count(socket, true, count) do
-    socket
-    |> assign(:count, count)
-    |> then(fn s -> if is_nil(s.assigns.total), do: assign(s, :total, count), else: s end)
   end
 
   defp filters(assigns) do

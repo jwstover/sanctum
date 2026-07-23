@@ -94,6 +94,31 @@ defmodule SanctumWeb.CardLive.PoolTest do
     refute html =~ "Spider-Man"
   end
 
+  test "mounting with a filter keeps the total denominator at the full catalog size",
+       %{conn: conn} do
+    # Regression: arriving at /cards from the global search seeds the first load
+    # with a query, so it's already filtered. The "/ N cards" denominator must
+    # still report the full catalog (2), not the filtered count (1) — otherwise
+    # clearing the filter showed the "2 / 1 cards" bug.
+    make_card(%{code: "01001a", name: "Spider-Man", type: :hero})
+    make_card(%{code: "01003a", name: "Web Kick", type: :event, ownership: :hero})
+
+    {:ok, lv, _html} = live(conn, ~p"/cards?query=web")
+    html = render_async(lv)
+
+    assert html =~ "Web Kick"
+    refute html =~ "Spider-Man"
+    assert html =~ "/ 2 cards"
+
+    # Clearing the filter must not leave a stale denominator behind.
+    lv |> form("#card-search", query: "") |> render_change()
+    html = render_async(lv)
+
+    assert html =~ "Spider-Man"
+    assert html =~ "Web Kick"
+    assert html =~ "/ 2 cards"
+  end
+
   test "unknown filter params fall back to defaults", %{conn: conn} do
     make_card(%{code: "01001a", name: "Spider-Man", type: :hero})
 

@@ -60,6 +60,24 @@ defmodule SanctumWeb.InfiniteScroll do
       else: socket
   end
 
+  @doc """
+  Assign the unfiltered catalog `:total` (the "/ N" denominator). `nil` means
+  this load didn't refetch it — only the first/reset load does — so the
+  existing total is left untouched. It must be computed independently of the
+  visible page: deriving it from a filtered load's count breaks whenever that
+  load already carries a query (e.g. arriving from global search).
+  """
+  def assign_total(socket, nil), do: socket
+  def assign_total(socket, total), do: assign(socket, :total, total)
+
+  @doc """
+  Assign the filtered visible `:count` on reset loads only — `page.count` is
+  queried just on resets (`count: reset?`), so non-reset (scroll) loads keep
+  the prior count.
+  """
+  def assign_count(socket, false, _count), do: socket
+  def assign_count(socket, true, count), do: assign(socket, :count, count)
+
   defp confirm_scroll_restore(socket) do
     socket
     |> assign(:scroll_restore_pending?, false)
