@@ -1,3 +1,12 @@
+## [1.67.4](https://github.com/jwstover/sanctum/compare/v1.67.3...v1.67.4) (2026-07-23)
+
+
+### Bug Fixes
+
+* **ui:** restore pointer cursor on all clickable elements ([3b7878f](https://github.com/jwstover/sanctum/commit/3b7878fc6921f5883487e17af1ead0adb1c7d190))
+
+
+
 ## [1.67.3](https://github.com/jwstover/sanctum/compare/v1.67.2...v1.67.3) (2026-07-23)
 
 
@@ -33,15 +42,6 @@
 
 * **events:** Loki Control Center redesign, card lifecycle, owner policies ([6f99eef](https://github.com/jwstover/sanctum/commit/6f99eef689179a8de41cf2f342dbb5a1d808a5cc))
 * **events:** Loki epic-multiplayer organizer dashboard ([7eed109](https://github.com/jwstover/sanctum/commit/7eed109da1ee907557a957c9a710f8c6710bf957))
-
-
-
-## [1.66.1](https://github.com/jwstover/sanctum/compare/v1.66.0...v1.66.1) (2026-07-22)
-
-
-### Bug Fixes
-
-* **icons:** keep text-res-* utilities in prod CSS by owning colors in the web layer ([2691463](https://github.com/jwstover/sanctum/commit/26914637652a4faf638e4292ebfa53dd3e10ff82))
 
 
 
