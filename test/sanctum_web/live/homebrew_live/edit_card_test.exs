@@ -188,6 +188,90 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
     end
   end
 
+  describe "fill from image" do
+    # The stub stands in for the Claude API; the rest of the flow is real —
+    # button click → start_async → CardVision → update_custom → rebuilt form.
+    defp stub_card_vision(fields) do
+      Req.Test.stub(Sanctum.CardVision, fn conn ->
+        Req.Test.json(conn, %{
+          "stop_reason" => "end_turn",
+          "content" => [%{"type" => "text", "text" => Jason.encode!(fields)}]
+        })
+      end)
+    end
+
+    test "reads fields off the art and fills the side", ctx do
+      card = card_fixture(ctx.project, ctx.creator)
+      [side] = card.card_sides
+
+      stub_card_vision(%{
+        "name" => "Extracted Ally",
+        "subname" => nil,
+        "type" => "ally",
+        "ownership" => "player",
+        "aspect" => "leadership",
+        "cost" => 3,
+        "attack" => %{"value" => 2, "star" => false, "scaling" => "flat", "consequential" => 1},
+        "thwart" => %{"value" => 1, "star" => false, "scaling" => "flat", "consequential" => 1},
+        "defense" => nil,
+        "health" => %{"value" => 3, "star" => false, "scaling" => "flat", "consequential" => nil},
+        "recover" => nil,
+        "scheme" => nil,
+        "scheme_star" => false,
+        "traits" => ["Avenger"],
+        "text" => "<b>Response</b>: After Extracted Ally enters play, draw 1 card.",
+        "flavor" => nil
+      })
+
+      {:ok, lv, _html} = live(ctx.conn, edit_path(ctx.project, card))
+
+      html =
+        lv
+        |> element("button[phx-click='extract_side'][phx-value-side-id='#{side.id}']")
+        |> render_click()
+
+      assert html =~ "Reading card…"
+
+      html = render_async(lv)
+      assert html =~ "Extracted Ally"
+      assert html =~ "review and fix any misreads"
+
+      updated = Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false)
+      assert updated.name == "Extracted Ally"
+      assert updated.type == :ally
+      assert updated.aspect == :leadership
+      assert updated.cost == 3
+      assert %Sanctum.Games.Stat{value: 2, consequential: 1} = updated.attack
+      assert %Sanctum.Games.Stat{value: 3} = updated.health
+      assert is_nil(updated.defense)
+      assert updated.traits == ["Avenger"]
+    end
+
+    # The failure is logged (asserted in CardVisionTest) — silence it here.
+    @tag :capture_log
+    test "an API failure surfaces a flash and leaves the side untouched", ctx do
+      card = card_fixture(ctx.project, ctx.creator)
+      [side] = card.card_sides
+
+      Req.Test.stub(Sanctum.CardVision, fn conn ->
+        conn
+        |> Plug.Conn.put_status(500)
+        |> Req.Test.json(%{"error" => %{"message" => "overloaded"}})
+      end)
+
+      {:ok, lv, _html} = live(ctx.conn, edit_path(ctx.project, card))
+
+      lv
+      |> element("button[phx-click='extract_side'][phx-value-side-id='#{side.id}']")
+      |> render_click()
+
+      html = render_async(lv)
+      assert html =~ "Reading the card image failed"
+
+      assert Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false).name == "Test Card"
+    end
+  end
+
   describe "alt art declaration" do
     defp official_fixture do
       card = create(Sanctum.Games.Card, attrs: %{code: "91001", base_code: "91001"})

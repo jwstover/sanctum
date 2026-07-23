@@ -26,6 +26,13 @@ config :sanctum,
   discord_client_id: System.get_env("DISCORD_CLIENT_ID"),
   discord_client_secret: System.get_env("DISCORD_CLIENT_SECRET")
 
+# Card-image field extraction (homebrew "Fill from image"). Skipped in test —
+# the suite stubs the HTTP layer via :req_options and must not pick up a real
+# key from the shell.
+if config_env() != :test do
+  config :sanctum, Sanctum.CardVision, api_key: System.get_env("ANTHROPIC_API_KEY")
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
