@@ -71,7 +71,7 @@ defmodule SanctumWeb.DevLive.StatBadges do
           <input type="range" name="consequential" min="0" max="4" value={@consequential} />
           <span class="font-mono w-6 text-right">{@consequential}</span>
         </label>
-        <label class="flex items-center gap-2 text-sm">
+        <label class="flex cursor-pointer items-center gap-2 text-sm">
           <input type="hidden" name="star" value="false" />
           <input type="checkbox" name="star" value="true" checked={@star} />
           <span class="uppercase tracking-widest text-xs font-bold text-base-content/70">Star</span>

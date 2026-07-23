@@ -461,7 +461,7 @@ defmodule SanctumWeb.CoreComponents do
 
     ~H"""
     <div class="fieldset">
-      <label>
+      <label class="cursor-pointer">
         <input type="hidden" name={@name} value="false" disabled={@rest[:disabled]} />
         <span class="label">
           <input

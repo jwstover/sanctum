@@ -122,7 +122,7 @@ defmodule SanctumWeb.GameLive.GameComponents do
       <div
         id={@id <> "-drag"}
         class={[
-          "game-card max-w-fit peer relative p-1 bg-black border border-gray-700 shadow shadow-black hover:z-50 focus:z-50",
+          "game-card max-w-fit peer relative cursor-grab active:cursor-grabbing p-1 bg-black border border-gray-700 shadow shadow-black hover:z-50 focus:z-50",
           @zone == "hero_hand" &&
             "not-[.game-card-dragging]:transition-all hover:not-[.game-card-dragging]:scale-115 hover:not-[.game-card-dragging]:-translate-y-6",
           @class

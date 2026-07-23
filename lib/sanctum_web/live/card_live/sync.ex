@@ -66,11 +66,11 @@ defmodule SanctumWeb.CardLive.Sync do
         </div>
 
         <form phx-submit="start" class="rounded-lg border border-base-300 bg-base-200 p-4 space-y-3">
-          <label class="flex items-center gap-2 text-sm">
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
             <input type="checkbox" name="skip_images" value="true" class="checkbox checkbox-sm" />
             Skip images (card data only)
           </label>
-          <label class="flex items-center gap-2 text-sm">
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
             <input type="checkbox" name="force" value="true" class="checkbox checkbox-sm" />
             Force re-upload of images already in the bucket
           </label>
