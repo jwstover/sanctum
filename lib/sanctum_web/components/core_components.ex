@@ -133,6 +133,124 @@ defmodule SanctumWeb.CoreComponents do
   end
 
   @doc """
+  A destructive-action button that confirms via a native `<dialog>` instead of
+  the browser's `window.confirm`.
+
+  `window.confirm` (what `data-confirm` uses) is suppressed by WebKit when a
+  site runs in iOS standalone / "Add to Home Screen" PWA mode — the dialog
+  never shows and the action is silently cancelled. A `<dialog>` element works
+  in that mode, so this is the PWA-safe replacement.
+
+  The real action goes on this component as `phx-click` / `phx-value-*`
+  (forwarded to the confirm button through the global attrs); it only fires
+  after the user confirms.
+
+  ## Examples
+
+      <.confirm_button id="reset" message="Reset to full HP?" phx-click="reset">
+        Reset
+      </.confirm_button>
+  """
+  attr :id, :string, required: true, doc: "unique id for the dialog"
+  attr :message, :string, required: true, doc: "confirmation prompt shown in the dialog"
+  attr :confirm_label, :string, default: "Confirm"
+  attr :cancel_label, :string, default: "Cancel"
+  attr :class, :string, default: "", doc: "classes for the trigger button"
+  attr :aria_label, :string, default: nil, doc: "aria-label for the trigger button"
+  attr :disabled, :boolean, default: false
+
+  attr :rest, :global,
+    doc: "phx-click / phx-value-* for the confirmed action (fires only after confirming)"
+
+  slot :inner_block, required: true, doc: "the trigger button's content"
+
+  def confirm_button(assigns) do
+    ~H"""
+    <button
+      type="button"
+      class={@class}
+      disabled={@disabled}
+      aria-label={@aria_label}
+      phx-click={open_confirm(@id)}
+    >
+      {render_slot(@inner_block)}
+    </button>
+    <.confirm_dialog
+      id={@id}
+      message={@message}
+      confirm_label={@confirm_label}
+      cancel_label={@cancel_label}
+      {@rest}
+    />
+    """
+  end
+
+  @doc """
+  The `<dialog>` half of `confirm_button`, usable on its own when the trigger is
+  a differently-styled button (e.g. `<.button variant="icon">`). Open it from
+  any trigger with `phx-click={open_confirm("the-id")}`. The confirmed action
+  (`phx-click` / `phx-value-*`) is placed on this component and fires only after
+  the user confirms.
+  """
+  attr :id, :string, required: true
+  attr :message, :string, required: true
+  attr :confirm_label, :string, default: "Confirm"
+  attr :cancel_label, :string, default: "Cancel"
+  attr :rest, :global, doc: "phx-click / phx-value-* for the confirmed action"
+
+  def confirm_dialog(assigns) do
+    ~H"""
+    <dialog
+      id={@id}
+      phx-hook=".ConfirmDialog"
+      class="m-auto w-[min(22rem,90vw)] border-2 border-neutral bg-base-200 p-0 text-base-content shadow-comic backdrop:bg-black/70"
+    >
+      <div class="flex flex-col gap-4 bg-halftone p-5">
+        <p class="font-barlow-condensed text-base font-bold uppercase tracking-[0.04em]">
+          {@message}
+        </p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            data-confirm-cancel
+            class="cursor-pointer border-2 border-neutral bg-base-300 px-3 py-2 font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] hover:text-white"
+          >
+            {@cancel_label}
+          </button>
+          <button
+            type="button"
+            data-confirm-ok
+            {@rest}
+            class="cursor-pointer border-2 border-transparent bg-error px-3 py-2 font-barlow-condensed text-sm font-extrabold uppercase tracking-[0.08em] text-white shadow-comic-sm hover:shadow-comic"
+          >
+            {@confirm_label}
+          </button>
+        </div>
+      </div>
+      <script :type={Phoenix.LiveView.ColocatedHook} name=".ConfirmDialog">
+        export default {
+          mounted() {
+            this.open = () => { if (typeof this.el.showModal === "function") this.el.showModal() }
+            this.el.addEventListener("sanctum:confirm-open", this.open)
+            // Cancel and confirm both close the dialog; the confirm button also
+            // carries the real phx-click, which fires on the same click.
+            this.el.querySelectorAll("[data-confirm-cancel],[data-confirm-ok]").forEach((b) =>
+              b.addEventListener("click", () => this.el.close())
+            )
+            // Click on the backdrop (outside the inner box) dismisses.
+            this.el.addEventListener("click", (e) => { if (e.target === this.el) this.el.close() })
+          },
+          destroyed() { this.el.removeEventListener("sanctum:confirm-open", this.open) },
+        }
+      </script>
+    </dialog>
+    """
+  end
+
+  @doc "JS command that opens a `confirm_dialog` / `confirm_button` by id."
+  def open_confirm(id), do: JS.dispatch("sanctum:confirm-open", to: "##{id}")
+
+  @doc """
   Renders a "← Back" button that returns the user to wherever they came from
   (`history.back()`), so list pages restore their query/scroll state via the
   ScrollRestore hook instead of landing at the top. When there's nothing

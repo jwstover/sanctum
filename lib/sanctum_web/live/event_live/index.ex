@@ -96,13 +96,18 @@ defmodule SanctumWeb.EventLive.Index do
             </.button>
             <.button
               variant="icon"
-              phx-click="delete"
-              phx-value-id={event.id}
-              data-confirm={"Delete #{event.name}? This cannot be undone."}
+              phx-click={open_confirm("confirm-delete-event-#{event.id}")}
               aria-label="Delete event"
             >
               <.icon name="hero-trash" class="size-4" />
             </.button>
+            <.confirm_dialog
+              id={"confirm-delete-event-#{event.id}"}
+              message={"Delete #{event.name}? This cannot be undone."}
+              confirm_label="Delete event"
+              phx-click="delete"
+              phx-value-id={event.id}
+            />
           </div>
         </.panel>
       </div>

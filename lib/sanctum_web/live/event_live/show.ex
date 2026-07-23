@@ -98,14 +98,15 @@ defmodule SanctumWeb.EventLive.Show do
           <span class="mt-2 font-ibm-mono text-xs text-base-content/45">
             of {@event.time_limit_minutes} min
           </span>
-          <button
-            type="button"
+          <.confirm_button
+            id="confirm-reset-timer"
+            message="Restart the countdown from the full time limit?"
+            confirm_label="Reset clock"
             phx-click="reset_timer"
-            data-confirm="Restart the countdown from the full time limit?"
-            class="mt-4 border-2 border-neutral bg-base-300 py-2 font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] hover:text-white"
+            class="mt-4 w-full cursor-pointer border-2 border-neutral bg-base-300 py-2 font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] hover:text-white"
           >
             Reset clock
-          </button>
+          </.confirm_button>
           <div class="mt-auto pt-6">
             <div class="font-bangers text-3xl italic tracking-wide text-primary">SANCTUM</div>
             <span class="font-ibm-mono text-xs tracking-[0.14em] text-base-content/40">
@@ -157,14 +158,15 @@ defmodule SanctumWeb.EventLive.Show do
             </form>
             <.delta_button event="loki_delta" amount="-1" label="−1" />
             <.delta_button event="loki_delta" amount="1" label="+1" />
-            <button
-              type="button"
+            <.confirm_button
+              id="confirm-loki-reset"
+              message="Reset Loki, God of Lies to full hit points?"
+              confirm_label="Reset"
               phx-click="loki_reset"
-              data-confirm="Reset Loki, God of Lies to full hit points?"
-              class="border-2 border-neutral bg-base-300 px-3 py-2.5 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/70 hover:text-white"
+              class="cursor-pointer border-2 border-neutral bg-base-300 px-3 py-2.5 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/70 hover:text-white"
             >
               Reset
-            </button>
+            </.confirm_button>
           </div>
         </div>
 

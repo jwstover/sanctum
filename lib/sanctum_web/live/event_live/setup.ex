@@ -139,13 +139,15 @@ defmodule SanctumWeb.EventLive.Setup do
         {@event.name} <span class="text-base-content/40">— Roster</span>
         <:actions>
           <.button variant="ghost" navigate={~p"/events"}>Back</.button>
-          <.button
-            variant="primary"
-            phx-click="start"
-            data-confirm="Lock the roster and start the clocks?"
-          >
+          <.button variant="primary" phx-click={open_confirm("confirm-start")}>
             Start event
           </.button>
+          <.confirm_dialog
+            id="confirm-start"
+            message="Lock the roster and start the clocks?"
+            confirm_label="Start event"
+            phx-click="start"
+          />
         </:actions>
       </.header>
 
@@ -173,13 +175,18 @@ defmodule SanctumWeb.EventLive.Setup do
               </.button>
               <.button
                 variant="icon"
-                phx-click="delete_pod"
-                phx-value-id={pod.id}
-                data-confirm={"Delete #{pod.name} and its groups?"}
+                phx-click={open_confirm("confirm-delete-pod-#{pod.id}")}
                 aria-label="Delete pod"
               >
                 <.icon name="hero-trash" class="size-4" />
               </.button>
+              <.confirm_dialog
+                id={"confirm-delete-pod-#{pod.id}"}
+                message={"Delete #{pod.name} and its groups?"}
+                confirm_label="Delete pod"
+                phx-click="delete_pod"
+                phx-value-id={pod.id}
+              />
             </div>
           </div>
 
