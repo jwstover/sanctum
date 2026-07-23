@@ -1,3 +1,13 @@
+## [1.67.2](https://github.com/jwstover/sanctum/compare/v1.67.1...v1.67.2) (2026-07-23)
+
+
+### Bug Fixes
+
+* **events:** wrap the resolve button below the stepper on narrow cards ([990b6e7](https://github.com/jwstover/sanctum/commit/990b6e77718c751562ee8fcccd68d8288f70de67))
+* PWA-safe confirmations app-wide + document the convention ([f1f91e3](https://github.com/jwstover/sanctum/commit/f1f91e36782d67d2548aae30e90ebe09e1c631d7))
+
+
+
 ## [1.67.1](https://github.com/jwstover/sanctum/compare/v1.67.0...v1.67.1) (2026-07-23)
 
 
@@ -35,26 +45,6 @@
 * **homebrew:** alt-art declare sheet, alt grid, and fan-art strip ([463b074](https://github.com/jwstover/sanctum/commit/463b07490ce213cebc8f03d9480eb811c99a146e))
 * **homebrew:** declare custom cards as alt art for official cards ([aebeeb5](https://github.com/jwstover/sanctum/commit/aebeeb5450ed09816a1267d90925bf8abb6b805f))
 * **homebrew:** gate homebrew behind admin access for now ([b9b3a78](https://github.com/jwstover/sanctum/commit/b9b3a788d226a09271dea214992de5fbcca9dc96))
-
-
-
-# [1.65.0](https://github.com/jwstover/sanctum/compare/v1.64.0...v1.65.0) (2026-07-22)
-
-
-### Bug Fixes
-
-* **guess:** pool hint names the encounter set role, never repeats rung 3 ([4211fb7](https://github.com/jwstover/sanctum/commit/4211fb776092fd80e8e5cd86e102aeac8aa9c079))
-
-
-### Features
-
-* **guess:** clean flavor prompt and simpler hero type hint ([5ddd2f2](https://github.com/jwstover/sanctum/commit/5ddd2f26a0dfbccfe865f9fdc90c8ab97d813263))
-* **guess:** direct eight-rung hint ladder for Flavor Town ([df08aab](https://github.com/jwstover/sanctum/commit/df08aabd0ba8eaef567b67a1efc07f00237ccabf))
-* **guess:** scenario set-name hint, pool exclusions, reveal polish ([e131df2](https://github.com/jwstover/sanctum/commit/e131df25eb091dd50d3abebf432cd015cb595c23))
-* **home:** dossier card of the day + Flavor Town teaser ([418dff1](https://github.com/jwstover/sanctum/commit/418dff11dc97cfd8554f53d4ddf68ca76dd9b729))
-* **home:** embed a playable Flavor Town round on the homepage ([c09d454](https://github.com/jwstover/sanctum/commit/c09d4543f0dfa043eb02d34f6f2463eface86668))
-* **home:** full-width About Sanctum band ([b8fa67e](https://github.com/jwstover/sanctum/commit/b8fa67e06888a9c5b7e28de69779495c3e5cb214))
-* **home:** landing page with card of the day and newest decks ([ca5bdd5](https://github.com/jwstover/sanctum/commit/ca5bdd5fc8a9c9ad98a25aeb0a8a1e5c32146306))
 
 
 
