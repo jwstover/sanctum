@@ -266,14 +266,25 @@ defmodule SanctumWeb.DeckLive.BuildTest do
   end
 
   describe "deck panel" do
-    test "renames the deck on blur/submit", %{conn: conn} do
+    test "details tab renames the deck as you type (autosave)", %{conn: conn} do
       %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_h")
       render_async(lv)
 
-      lv |> form("#rename-desktop", %{title: "Panel Renamed"}) |> render_submit()
+      lv |> element("#builder-tab-details") |> render_click()
+      lv |> form("#rename-form", %{title: "Panel Renamed"}) |> render_change()
 
       assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).title == "Panel Renamed"
       assert render(lv) =~ "Panel Renamed"
+    end
+
+    test "blank or unchanged titles are not persisted", %{conn: conn} do
+      %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_h2")
+      render_async(lv)
+
+      lv |> element("#builder-tab-details") |> render_click()
+      lv |> form("#rename-form", %{title: "   "}) |> render_change()
+
+      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).title == deck.title
     end
 
     test "hero signature rows are locked (no steppers)", %{conn: conn} do
@@ -294,6 +305,9 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_k")
       render_async(lv)
 
+      # Delete lives in the Details tab's danger zone now.
+      lv |> element("#builder-tab-details") |> render_click()
+
       # First tap only reveals the confirm row.
       lv |> element("button[phx-click='confirm_delete']") |> render_click()
       assert {:ok, _deck} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
@@ -306,15 +320,19 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       assert {:error, _not_found} = Sanctum.Decks.get_deck(deck.id, authorize?: false)
     end
 
-    test "description tab edits, previews, and saves the writeup", %{conn: conn} do
+    test "details tab autosaves the writeup and previews it", %{conn: conn} do
       %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_m")
       render_async(lv)
 
-      lv |> element("button[phx-click='set_tab'][phx-value-key='description']") |> render_click()
+      lv |> element("#builder-tab-details") |> render_click()
 
+      # Each (client-debounced) change event persists immediately.
       lv
       |> form("#description-form", %{description: "**Web-slinging** combos"})
       |> render_change()
+
+      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).description_md ==
+               "**Web-slinging** combos"
 
       # Preview renders the draft through Writeup (markdown → HTML).
       html =
@@ -323,14 +341,6 @@ defmodule SanctumWeb.DeckLive.BuildTest do
         |> render_click()
 
       assert html =~ "<strong>Web-slinging</strong>"
-
-      # Nothing persisted yet.
-      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).description_md == nil
-
-      lv |> element("button[phx-click='save_description']") |> render_click()
-
-      assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).description_md ==
-               "**Web-slinging** combos"
     end
 
     # `{:reply, ...}` payloads aren't inspectable through LiveViewTest, but
@@ -351,7 +361,7 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       %{lv: lv} = mount_builder(conn, "build_lv_pick_c")
       render_async(lv)
 
-      lv |> element("button[phx-click='set_tab'][phx-value-key='description']") |> render_click()
+      lv |> element("#builder-tab-details") |> render_click()
       assert has_element?(lv, "[data-md-cmd='bold']")
 
       render_click(lv, "open_picker", %{"kind" => "card"})
@@ -371,7 +381,7 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       %{lv: lv} = mount_builder(conn, "build_lv_pick_i")
       render_async(lv)
 
-      lv |> element("button[phx-click='set_tab'][phx-value-key='description']") |> render_click()
+      lv |> element("#builder-tab-details") |> render_click()
 
       # Opening lists every glyph; filtering narrows; submit picks the top.
       render_click(lv, "open_picker", %{"kind" => "icon"})
@@ -388,7 +398,7 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       %{lv: lv} = mount_builder(conn, "build_lv_pick_e")
       render_async(lv)
 
-      lv |> element("button[phx-click='set_tab'][phx-value-key='description']") |> render_click()
+      lv |> element("#builder-tab-details") |> render_click()
 
       render_click(lv, "open_picker", %{"kind" => "card"})
       render_click(lv, "pick", %{"index" => "5"})
@@ -402,6 +412,7 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_l")
       render_async(lv)
 
+      lv |> element("#builder-tab-details") |> render_click()
       lv |> element("button[phx-click='confirm_delete']") |> render_click()
       lv |> element("button[phx-click='cancel_delete']") |> render_click()
 
