@@ -1,3 +1,12 @@
+## [1.67.3](https://github.com/jwstover/sanctum/compare/v1.67.2...v1.67.3) (2026-07-23)
+
+
+### Bug Fixes
+
+* **events:** rename the doomsday panel label to "Worlds Collide" ([de6fc00](https://github.com/jwstover/sanctum/commit/de6fc003e47bdd4180b72fee6ef5c0666981044a))
+
+
+
 ## [1.67.2](https://github.com/jwstover/sanctum/compare/v1.67.1...v1.67.2) (2026-07-23)
 
 
@@ -33,18 +42,6 @@
 ### Bug Fixes
 
 * **icons:** keep text-res-* utilities in prod CSS by owning colors in the web layer ([2691463](https://github.com/jwstover/sanctum/commit/26914637652a4faf638e4292ebfa53dd3e10ff82))
-
-
-
-# [1.66.0](https://github.com/jwstover/sanctum/compare/v1.65.0...v1.66.0) (2026-07-22)
-
-
-### Features
-
-* **cards:** scheme star on card sides ([21462c1](https://github.com/jwstover/sanctum/commit/21462c1ee3368f73cac0c712a398c049cb8c8cd7))
-* **homebrew:** alt-art declare sheet, alt grid, and fan-art strip ([463b074](https://github.com/jwstover/sanctum/commit/463b07490ce213cebc8f03d9480eb811c99a146e))
-* **homebrew:** declare custom cards as alt art for official cards ([aebeeb5](https://github.com/jwstover/sanctum/commit/aebeeb5450ed09816a1267d90925bf8abb6b805f))
-* **homebrew:** gate homebrew behind admin access for now ([b9b3a78](https://github.com/jwstover/sanctum/commit/b9b3a788d226a09271dea214992de5fbcca9dc96))
 
 
 
