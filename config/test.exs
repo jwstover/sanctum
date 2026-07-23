@@ -6,6 +6,11 @@ import Config
 # cold CI runner, so give async loads generous headroom.
 config :ex_unit, assert_receive_timeout: 2000
 
+# The pool card-count cache is node-global `:persistent_term`; a 0 TTL forces
+# every fetch to recompute against the calling test's Ecto sandbox instead of
+# leaking a count between `async: true` tests.
+config :sanctum, Sanctum.Games.CardPoolCount, ttl: 0
+
 config :sanctum, Oban, testing: :manual
 config :sanctum, :marvel_cdb_req_options, plug: {Req.Test, Sanctum.MarvelCdb}
 config :sanctum, token_signing_secret: "/oZ9ck2w3h4oPYA4x7ZebHnqCh1MKXIp"

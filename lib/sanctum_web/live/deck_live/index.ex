@@ -347,8 +347,8 @@ defmodule SanctumWeb.DeckLive.Index do
         |> assign(:offset, offset)
         |> assign(:end_of_timeline?, !page.more?)
         |> assign(:loading?, false)
-        |> maybe_assign_total(total)
-        |> maybe_assign_count(reset?, page.count)
+        |> InfiniteScroll.assign_total(total)
+        |> InfiniteScroll.assign_count(reset?, page.count)
         |> stream(:decks, Enum.map(page.results, &deck_view(&1, socket.assigns.timezone)),
           reset: reset?
         )
@@ -431,16 +431,6 @@ defmodule SanctumWeb.DeckLive.Index do
 
     ~p"/decks?#{params}"
   end
-
-  # `total` (the unfiltered catalog size) is fetched once via `load_total/1` and
-  # then left untouched. nil means this load didn't refetch it.
-  defp maybe_assign_total(socket, nil), do: socket
-  defp maybe_assign_total(socket, total), do: assign(socket, :total, total)
-
-  # `page.count` is only queried on reset loads (count: reset?) — it's the
-  # filtered visible count, distinct from the unfiltered `total`.
-  defp maybe_assign_count(socket, false, _count), do: socket
-  defp maybe_assign_count(socket, true, count), do: assign(socket, :count, count)
 
   defp filters(a) do
     %{query: a.query, sort: a.sort}
