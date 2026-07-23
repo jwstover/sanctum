@@ -87,7 +87,7 @@ defmodule SanctumWeb.DeckLive.Build do
     |> assign(:description_draft, deck.description_md || "")
     |> assign(:description_mode, "write")
     |> assign(:description_preview, nil)
-    |> assign(:description_dirty?, false)
+    |> assign(:details_saved?, false)
     |> assign(:picker, nil)
     |> assign(:picker_query, "")
     |> assign(:picker_results, [])
@@ -257,8 +257,11 @@ defmodule SanctumWeb.DeckLive.Build do
      |> assign(:filters_open?, false)}
   end
 
-  def handle_event("set_tab", %{"key" => tab}, socket) when tab in ["cards", "description"] do
-    {:noreply, assign(socket, :tab, tab)}
+  def handle_event("set_tab", %{"key" => tab}, socket) when tab in ["cards", "details"] do
+    {:noreply,
+     socket
+     |> assign(:tab, tab)
+     |> assign(:panel_open?, false)}
   end
 
   # Shared with the deck page: same events, same localStorage key, so the
@@ -268,11 +271,25 @@ defmodule SanctumWeb.DeckLive.Build do
     {:noreply, DeckCards.handle_card_view_event(event, params, socket)}
   end
 
+  # Autosave: the textarea debounces client-side, so each event that reaches
+  # us is a settled pause in typing — persist it immediately. (The debounce
+  # also flushes on blur, so switching tabs doesn't drop a pending edit.)
   def handle_event("description_change", %{"description" => draft}, socket) do
-    {:noreply,
-     socket
-     |> assign(:description_draft, draft)
-     |> assign(:description_dirty?, draft != (socket.assigns.deck.description_md || ""))}
+    %{deck: deck, current_user: user} = socket.assigns
+
+    socket =
+      if draft == (deck.description_md || "") do
+        assign(socket, :description_draft, draft)
+      else
+        updated = Decks.set_deck_description!(deck, %{description_md: draft}, actor: user)
+
+        socket
+        |> assign(:deck, %{deck | description_md: updated.description_md})
+        |> assign(:description_draft, draft)
+        |> assign(:details_saved?, true)
+      end
+
+    {:noreply, socket}
   end
 
   # Preview renders on demand (not per keystroke) — Writeup.render resolves
@@ -289,18 +306,8 @@ defmodule SanctumWeb.DeckLive.Build do
     {:noreply, assign(socket, :description_mode, mode)}
   end
 
-  def handle_event("save_description", _params, socket) do
-    %{deck: deck, description_draft: draft, current_user: user} = socket.assigns
-
-    updated = Decks.set_deck_description!(deck, %{description_md: draft}, actor: user)
-
-    {:noreply,
-     socket
-     |> assign(:deck, %{deck | description_md: updated.description_md})
-     |> assign(:description_dirty?, false)}
-  end
-
-  # Fired on blur and on Enter (form submit); both carry the new title.
+  # Autosave like the writeup: the input debounces, and Enter (form submit)
+  # forces a flush. Blank or unchanged titles are no-ops.
   def handle_event("rename", params, socket) do
     title = params["title"] || params["value"] || ""
     deck = socket.assigns.deck
@@ -313,7 +320,8 @@ defmodule SanctumWeb.DeckLive.Build do
       {:noreply,
        socket
        |> assign(:deck, %{deck | title: updated.title})
-       |> assign(:page_title, "Build · #{updated.title}")}
+       |> assign(:page_title, "Build · #{updated.title}")
+       |> assign(:details_saved?, true)}
     end
   end
 
@@ -667,32 +675,16 @@ defmodule SanctumWeb.DeckLive.Build do
       <.header>
         {@deck.title}
         <:actions>
-          <div :if={!@confirm_delete?} class="flex items-center gap-2.5">
-            <.button phx-click="confirm_delete" class="!text-error">
-              <.icon name="hero-trash" /> Delete
-            </.button>
-            <.button navigate={~p"/decks/#{@deck.id}"} class="hidden sm:inline-flex">
-              View Deck
-            </.button>
-          </div>
-          <!-- two-step confirm, inline (no modal) -->
-          <div :if={@confirm_delete?} class="flex items-center gap-2.5">
-            <span class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-error">
-              Really delete?
-            </span>
-            <.button phx-click="delete_deck" class="!text-error">
-              Delete
-            </.button>
-            <.button phx-click="cancel_delete">Cancel</.button>
-          </div>
+          <.button navigate={~p"/decks/#{@deck.id}"}>View Deck</.button>
         </:actions>
       </.header>
 
-      <!-- build/description tabs -->
+      <!-- cards/details tabs -->
       <div class="mb-5 flex border-b-2 border-neutral">
         <button
-          :for={{key, label} <- [{"cards", "Cards"}, {"description", "Description"}]}
+          :for={{key, label} <- [{"cards", "Cards"}, {"details", "Details"}]}
           type="button"
+          id={"builder-tab-#{key}"}
           phx-click="set_tab"
           phx-value-key={key}
           class={[
@@ -702,7 +694,6 @@ defmodule SanctumWeb.DeckLive.Build do
           ]}
         >
           {label}
-          <span :if={key == "description" && @description_dirty?} class="text-warning">•</span>
         </button>
       </div>
 
@@ -838,8 +829,71 @@ defmodule SanctumWeb.DeckLive.Build do
         </div>
       </div>
 
-      <!-- description editor tab -->
-      <div :if={@tab == "description"} class="mx-auto max-w-3xl">
+      <!-- details tab: title, lifecycle, writeup, danger zone -->
+      <div :if={@tab == "details"} class="mx-auto max-w-3xl">
+        <!-- title (autosaves on pause; Enter forces a flush) -->
+        <form id="rename-form" phx-change="rename" phx-submit="rename" class="mb-5">
+          <label
+            for="deck-title"
+            class="mb-1.5 block font-anton text-xs uppercase tracking-[0.06em] text-base-content/45"
+          >
+            Title
+          </label>
+          <input
+            id="deck-title"
+            type="text"
+            name="title"
+            value={@deck.title}
+            phx-debounce="600"
+            autocomplete="off"
+            class="w-full border-[2.5px] border-line bg-black px-3.5 py-2.5 font-anton text-lg uppercase tracking-[0.04em] text-base-content outline-none focus:border-primary"
+          />
+        </form>
+
+        <!-- lifecycle: draft → finalize → publish -->
+        <div class="mb-6 border-2 border-neutral bg-black/30 px-3.5 py-3">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 font-anton text-xs uppercase tracking-[0.06em] text-base-content/45">
+              Status
+            </span>
+            <.status_chips deck={@deck} />
+          </div>
+
+          <div class="mt-2.5 flex flex-wrap items-center gap-2">
+            <.button
+              :if={@deck.state == :draft}
+              variant="primary"
+              phx-click="set_status"
+              phx-value-action="finalize"
+            >
+              <.icon name="hero-check" /> Finalize Deck
+            </.button>
+            <.button
+              :if={@deck.state == :final and @deck.visibility == :private}
+              variant="primary"
+              phx-click="set_status"
+              phx-value-action="publish"
+            >
+              <.icon name="hero-globe-alt" /> Publish
+            </.button>
+            <.button
+              :if={@deck.visibility == :published}
+              phx-click="set_status"
+              phx-value-action="unpublish"
+            >
+              Unpublish
+            </.button>
+            <.button :if={@deck.state == :final} phx-click="set_status" phx-value-action="reopen">
+              Back to Draft
+            </.button>
+          </div>
+
+          <p class="mt-2 font-barlow-condensed text-xs text-base-content/45">
+            {status_hint(@deck)}
+          </p>
+        </div>
+
+        <!-- writeup -->
         <div class="mb-3 flex items-center justify-between gap-3">
           <div class="flex gap-1.5">
             <.filter_pill
@@ -852,14 +906,12 @@ defmodule SanctumWeb.DeckLive.Build do
               {label}
             </.filter_pill>
           </div>
-          <.button
-            variant="primary"
-            phx-click="save_description"
-            disabled={!@description_dirty?}
-            class={!@description_dirty? && "opacity-40"}
-          >
-            {(@description_dirty? && "Save") || "Saved"}
-          </.button>
+          <span class="inline-flex items-center gap-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.07em] text-base-content/45">
+            <span :if={!@details_saved?}>Saves automatically</span>
+            <span :if={@details_saved?} class="inline-flex items-center gap-1 text-success">
+              <.icon name="hero-check" class="size-3.5" /> Saved
+            </span>
+          </span>
         </div>
 
         <form
@@ -894,7 +946,7 @@ defmodule SanctumWeb.DeckLive.Build do
             </div>
             <textarea
               name="description"
-              phx-debounce="300"
+              phx-debounce="600"
               placeholder="Write up your deck — how it plays, key combos, mulligan advice… Markdown supported; type #cardname to link a card, $icon for symbols."
               class="block min-h-[55vh] w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-sm leading-relaxed text-base-content outline-none focus:border-primary"
             >{@description_draft}</textarea>
@@ -928,6 +980,32 @@ defmodule SanctumWeb.DeckLive.Build do
             Nothing to preview yet.
           </div>
         </.panel>
+
+        <!-- danger zone -->
+        <div class="mt-8 border-2 border-error/50 bg-error/5 px-3.5 py-3">
+          <div class="font-anton text-xs uppercase tracking-[0.06em] text-error">
+            Danger Zone
+          </div>
+          <div class="mt-2.5 flex min-h-[44px] flex-wrap items-center gap-2.5">
+            <.button :if={!@confirm_delete?} phx-click="confirm_delete" class="!text-error">
+              <.icon name="hero-trash" /> Delete This Deck
+            </.button>
+            <!-- two-step confirm, inline (no modal) -->
+            <span
+              :if={@confirm_delete?}
+              class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-error"
+            >
+              Really delete?
+            </span>
+            <.button :if={@confirm_delete?} phx-click="delete_deck" class="!text-error">
+              Delete
+            </.button>
+            <.button :if={@confirm_delete?} phx-click="cancel_delete">Cancel</.button>
+          </div>
+          <p class="mt-2 font-barlow-condensed text-xs text-base-content/45">
+            Permanently deletes this deck and its list. This can’t be undone.
+          </p>
+        </div>
 
         <%!-- Card/icon picker: bottom sheet on mobile, centered dialog on
              sm+ (the global search overlay's presentation). Picking pushes
@@ -1178,16 +1256,9 @@ defmodule SanctumWeb.DeckLive.Build do
     <div id={"deck-panel-#{@id}-body"} phx-hook="CardLinkPreview" class="flex flex-col gap-4 p-4">
       <!-- title + count -->
       <div>
-        <form id={"rename-#{@id}"} phx-submit="rename" class="flex items-center gap-2">
-          <input
-            type="text"
-            name="title"
-            value={@deck.title}
-            phx-blur="rename"
-            autocomplete="off"
-            class="min-h-[44px] w-full border-[2.5px] border-transparent bg-transparent px-1 font-anton text-lg uppercase tracking-[0.04em] text-base-content outline-none focus:border-line focus:bg-black sm:min-h-0"
-          />
-        </form>
+        <div class="px-1 font-anton text-lg uppercase tracking-[0.04em] text-base-content">
+          {@deck.title}
+        </div>
         <div class="mt-1 flex items-center gap-2 px-1">
           <span class="font-anton text-sm uppercase tracking-[0.05em]">
             <span class={deck_size_class(@size)}>{@size}</span>
@@ -1214,62 +1285,19 @@ defmodule SanctumWeb.DeckLive.Build do
             />
           </div>
         </div>
-      </div>
-
-      <!-- lifecycle: draft → finalize → publish -->
-      <div class="border-2 border-neutral bg-black/30 px-3 py-2.5">
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span class="mr-1 font-anton text-xs uppercase tracking-[0.06em] text-base-content/45">
-            Status
+        <!-- read-only status; title, lifecycle, and writeup live on Details -->
+        <button
+          type="button"
+          phx-click="set_tab"
+          phx-value-key="details"
+          title="Manage on the Details tab"
+          class="mt-2 flex min-h-[44px] cursor-pointer flex-wrap items-center gap-1.5 px-1 sm:min-h-0"
+        >
+          <.status_chips deck={@deck} />
+          <span class="inline-flex items-center gap-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-base-content/45 transition-colors hover:text-base-content">
+            <.icon name="hero-pencil-square" class="size-3.5" /> Manage
           </span>
-          <span class={[
-            "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
-            (@deck.state == :draft && "border-warning/60 text-warning") ||
-              "border-success/60 text-success"
-          ]}>
-            {(@deck.state == :draft && "Draft") || "Final"}
-          </span>
-          <span class={[
-            "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
-            (@deck.visibility == :published && "border-primary/60 text-primary") ||
-              "border-neutral text-base-content/60"
-          ]}>
-            {(@deck.visibility == :published && "Published") || "Private"}
-          </span>
-        </div>
-
-        <div class="mt-2.5 flex flex-wrap items-center gap-2">
-          <.button
-            :if={@deck.state == :draft}
-            variant="primary"
-            phx-click="set_status"
-            phx-value-action="finalize"
-          >
-            <.icon name="hero-check" /> Finalize Deck
-          </.button>
-          <.button
-            :if={@deck.state == :final and @deck.visibility == :private}
-            variant="primary"
-            phx-click="set_status"
-            phx-value-action="publish"
-          >
-            <.icon name="hero-globe-alt" /> Publish
-          </.button>
-          <.button
-            :if={@deck.visibility == :published}
-            phx-click="set_status"
-            phx-value-action="unpublish"
-          >
-            Unpublish
-          </.button>
-          <.button :if={@deck.state == :final} phx-click="set_status" phx-value-action="reopen">
-            Back to Draft
-          </.button>
-        </div>
-
-        <p class="mt-2 font-barlow-condensed text-xs text-base-content/45">
-          {status_hint(@deck)}
-        </p>
+        </button>
       </div>
 
       <!-- advisory issues -->
@@ -1427,6 +1455,29 @@ defmodule SanctumWeb.DeckLive.Build do
     >
       {render_slot(@inner_block)}
     </button>
+    """
+  end
+
+  # Draft/Final + Private/Published chips, shared by the Details tab's
+  # lifecycle section and the deck panel's read-only status row.
+  attr :deck, :map, required: true
+
+  defp status_chips(assigns) do
+    ~H"""
+    <span class={[
+      "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
+      (@deck.state == :draft && "border-warning/60 text-warning") ||
+        "border-success/60 text-success"
+    ]}>
+      {(@deck.state == :draft && "Draft") || "Final"}
+    </span>
+    <span class={[
+      "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
+      (@deck.visibility == :published && "border-primary/60 text-primary") ||
+        "border-neutral text-base-content/60"
+    ]}>
+      {(@deck.visibility == :published && "Published") || "Private"}
+    </span>
     """
   end
 
