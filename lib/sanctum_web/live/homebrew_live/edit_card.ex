@@ -12,6 +12,8 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
 
   use SanctumWeb, :live_view
 
+  require Logger
+
   alias Sanctum.Games.Stat
   alias Sanctum.Homebrew
   alias SanctumWeb.Components.Card, as: CardComponents
@@ -30,6 +32,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
        |> assign(:alt_target, nil)
        |> assign(:alt_declare?, false)
        |> assign(:save_state, :pristine)
+       |> assign(:extracting_side_id, nil)
        |> assign_card(card)}
     else
       {:error, _not_found} ->
@@ -88,6 +91,28 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
          socket
          |> assign(:form, form)
          |> assign(:save_state, :error)}
+    end
+  end
+
+  # Vision extraction: read the side's printed fields off its art with
+  # Sanctum.CardVision and write them through update_custom (the same enrich
+  # path the form uses). One side at a time; the button disables while a read
+  # is in flight. The result fills fields for review — everything stays
+  # editable and autosaves as usual.
+  def handle_event("extract_side", %{"side-id" => side_id}, socket) do
+    side = Enum.find(socket.assigns.card.card_sides, &(&1.id == side_id))
+
+    if is_nil(socket.assigns.extracting_side_id) && side && side.image_url do
+      image_url = side.image_url
+
+      {:noreply,
+       socket
+       |> assign(:extracting_side_id, side_id)
+       |> start_async({:extract_side, side_id}, fn ->
+         Sanctum.CardVision.extract_side(image_url)
+       end)}
+    else
+      {:noreply, socket}
     end
   end
 
@@ -154,6 +179,75 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
         {:noreply, put_flash(socket, :error, "Could not declare the alt art.")}
     end
   end
+
+  # -- Vision extraction -------------------------------------------------------
+
+  @impl true
+  def handle_async({:extract_side, side_id}, {:ok, result}, socket) do
+    socket = assign(socket, :extracting_side_id, nil)
+
+    case result do
+      {:ok, fields} when map_size(fields) > 0 ->
+        apply_extracted(socket, side_id, fields)
+
+      {:ok, _empty} ->
+        {:noreply, put_flash(socket, :error, "Couldn't read any fields off that image.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, extract_error_message(reason))}
+    end
+  end
+
+  def handle_async({:extract_side, side_id}, {:exit, reason}, socket) do
+    Logger.error("Card vision extraction crashed for side #{side_id}: #{inspect(reason)}")
+
+    {:noreply,
+     socket
+     |> assign(:extracting_side_id, nil)
+     |> put_flash(:error, "Reading the card image failed — try again.")}
+  end
+
+  # Writes the extracted fields through update_custom — the same enrich path
+  # the form autosaves through — then rebuilds the form so the filled values
+  # render for review.
+  defp apply_extracted(socket, side_id, fields) do
+    %{card: card, current_user: user} = socket.assigns
+
+    card
+    |> Ash.Changeset.for_update(
+      :update_custom,
+      %{card_sides: [Map.put(fields, "id", side_id)]},
+      actor: user
+    )
+    |> Ash.update()
+    |> case do
+      {:ok, card} ->
+        card = Ash.load!(card, [:card_sides, :primary_side], actor: user)
+
+        {:noreply,
+         socket
+         |> assign_card(card)
+         |> assign(:save_state, :saved)
+         |> put_flash(:info, "Fields read from the card image — review and fix any misreads.")}
+
+      {:error, error} ->
+        Logger.error(
+          "Card vision fields failed to apply to side #{side_id}: " <>
+            Exception.message(error)
+        )
+
+        {:noreply, put_flash(socket, :error, "Couldn't apply the fields read from the image.")}
+    end
+  end
+
+  defp extract_error_message(:missing_api_key),
+    do: "Card reading isn't configured on this server (missing ANTHROPIC_API_KEY)."
+
+  defp extract_error_message(:refused),
+    do: "The card reader declined this image."
+
+  defp extract_error_message(_reason),
+    do: "Reading the card image failed — try again."
 
   # -- Helpers -----------------------------------------------------------------
 
@@ -299,16 +393,35 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
             <div class="flex flex-col gap-6 sm:flex-row sm:items-start">
               <div
                 :if={side_struct(@card, side) && side_struct(@card, side).image_url}
-                class={[
-                  "shrink-0 self-center overflow-hidden border-2 border-neutral shadow-comic-sm sm:self-start",
-                  side_frame_class(side_struct(@card, side))
-                ]}
+                class="flex shrink-0 flex-col items-center gap-2 self-center sm:self-start"
               >
-                <img
-                  src={side_struct(@card, side).image_url}
-                  alt={side[:name].value || "card art"}
-                  class="h-full w-full object-cover"
-                />
+                <div class={[
+                  "overflow-hidden border-2 border-neutral shadow-comic-sm",
+                  side_frame_class(side_struct(@card, side))
+                ]}>
+                  <img
+                    src={side_struct(@card, side).image_url}
+                    alt={side[:name].value || "card art"}
+                    class="h-full w-full object-cover"
+                  />
+                </div>
+                <%!-- Vision extraction: reads the printed fields off this
+                     side's art and fills the form (autosaved, still fully
+                     editable). One read at a time across the whole card. --%>
+                <button
+                  type="button"
+                  phx-click="extract_side"
+                  phx-value-side-id={side[:id].value}
+                  disabled={@extracting_side_id != nil}
+                  class={[
+                    "cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em]",
+                    "text-base-content/60 hover:text-primary disabled:cursor-wait disabled:text-base-content/35"
+                  ]}
+                >
+                  {if @extracting_side_id == side[:id].value,
+                    do: "Reading card…",
+                    else: "Fill from image"}
+                </button>
               </div>
 
               <div class="flex min-w-0 flex-1 flex-col gap-3">

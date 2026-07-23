@@ -41,6 +41,12 @@ config :sanctum, SanctumWeb.Endpoint,
 # In test we don't send emails
 config :sanctum, Sanctum.Mailer, adapter: Swoosh.Adapters.Test
 
+# Card-vision extraction never hits the network in test — requests route to a
+# Req.Test stub registered under the module name.
+config :sanctum, Sanctum.CardVision,
+  api_key: "test-api-key",
+  req_options: [plug: {Req.Test, Sanctum.CardVision}]
+
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
