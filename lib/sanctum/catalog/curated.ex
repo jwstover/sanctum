@@ -17,7 +17,7 @@ defmodule Sanctum.Catalog.Curated do
 
   alias Sanctum.Catalog
 
-  @waves for n <- 1..10, do: %{number: n, name: "Wave #{n}"}
+  @waves for n <- 1..11, do: %{number: n, name: "Wave #{n}"}
 
   # Pack code => {product_type, wave number (nil for no wave)}. Only packs
   # MarvelCDB actually returns are overlaid; unknown codes are ignored.
@@ -91,6 +91,8 @@ defmodule Sanctum.Catalog.Curated do
     "synthezoid" => {:scenario_pack, 10},
     "wonder_man" => {:hero_pack, 10},
     "hercules" => {:hero_pack, 10},
+    # Wave 11 — Fear No Evil
+    "fne" => {:campaign_expansion, 11},
     # No wave — standalone organized-play modular set
     "ron" => {:promo, nil}
   }
