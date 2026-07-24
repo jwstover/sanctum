@@ -1,3 +1,12 @@
+# [1.70.0](https://github.com/jwstover/sanctum/compare/v1.69.1...v1.70.0) (2026-07-24)
+
+
+### Features
+
+* **catalog:** add Fear No Evil (fne) to release taxonomy ([f14d757](https://github.com/jwstover/sanctum/commit/f14d757dbbf34e46ddf8868d0c7e1b76125a5164))
+
+
+
 ## [1.69.1](https://github.com/jwstover/sanctum/compare/v1.69.0...v1.69.1) (2026-07-23)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **ui:** restore pointer cursor on all clickable elements ([3b7878f](https://github.com/jwstover/sanctum/commit/3b7878fc6921f5883487e17af1ead0adb1c7d190))
-
-
-
-## [1.67.3](https://github.com/jwstover/sanctum/compare/v1.67.2...v1.67.3) (2026-07-23)
-
-
-### Bug Fixes
-
-* **events:** rename the doomsday panel label to "Worlds Collide" ([de6fc00](https://github.com/jwstover/sanctum/commit/de6fc003e47bdd4180b72fee6ef5c0666981044a))
 
 
 
