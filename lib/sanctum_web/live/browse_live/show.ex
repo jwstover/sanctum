@@ -13,14 +13,14 @@ defmodule SanctumWeb.BrowseLive.Show do
   alias SanctumWeb.Components.Card, as: CardComponent
 
   @aspect_order %{
-    hero: 0,
-    aggression: 1,
-    justice: 2,
-    leadership: 3,
-    protection: 4,
-    pool: 5,
-    basic: 6,
-    encounter: 7
+    "hero" => 0,
+    "aggression" => 1,
+    "justice" => 2,
+    "leadership" => 3,
+    "protection" => 4,
+    "pool" => 5,
+    "basic" => 6,
+    "encounter" => 7
   }
 
   @impl true
@@ -564,16 +564,16 @@ defmodule SanctumWeb.BrowseLive.Show do
 
   # Mirrors CardLive.Pool: aspect cards use their aspect; other pools use
   # ownership; encounter/campaign share the encounter accent.
-  defp display_aspect(nil), do: :basic
+  defp display_aspect(nil), do: "basic"
   defp display_aspect(%{ownership: :player, aspect: aspect}) when not is_nil(aspect), do: aspect
-  defp display_aspect(%{ownership: :hero}), do: :hero
-  defp display_aspect(%{ownership: :basic}), do: :basic
-  defp display_aspect(%{ownership: :encounter}), do: :encounter
-  defp display_aspect(%{ownership: :campaign}), do: :encounter
+  defp display_aspect(%{ownership: :hero}), do: "hero"
+  defp display_aspect(%{ownership: :basic}), do: "basic"
+  defp display_aspect(%{ownership: :encounter}), do: "encounter"
+  defp display_aspect(%{ownership: :campaign}), do: "encounter"
   defp display_aspect(%{aspect: aspect}) when not is_nil(aspect), do: aspect
-  defp display_aspect(_), do: :basic
+  defp display_aspect(_), do: "basic"
 
-  defp aspect_label(:hero), do: "Hero"
-  defp aspect_label(:encounter), do: "Encounter"
+  defp aspect_label("hero"), do: "Hero"
+  defp aspect_label("encounter"), do: "Encounter"
   defp aspect_label(aspect), do: aspect |> to_string() |> String.capitalize()
 end

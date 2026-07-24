@@ -147,13 +147,13 @@ defmodule Sanctum.Decks.LegalityTest do
 
   describe "aspects" do
     test "flags player cards outside the deck's aspects" do
-      justice = card(%{ownership: :player, aspect: :justice, name: "Justice Card"})
-      pool = card(%{ownership: :player, aspect: :pool, name: "Pool Card"})
+      justice = card(%{ownership: :player, aspect: "justice", name: "Justice Card"})
+      pool = card(%{ownership: :player, aspect: "pool", name: "Pool Card"})
 
       issues =
         Legality.issues(
           [entry(justice, 3), entry(pool, 3) | filler(34)],
-          [:justice],
+          ["justice"],
           []
         )
 
@@ -165,13 +165,13 @@ defmodule Sanctum.Decks.LegalityTest do
     end
 
     test "multi-aspect decks accept cards from every chosen aspect" do
-      justice = card(%{ownership: :player, aspect: :justice})
-      pool = card(%{ownership: :player, aspect: :pool})
+      justice = card(%{ownership: :player, aspect: "justice"})
+      pool = card(%{ownership: :player, aspect: "pool"})
 
       issues =
         Legality.issues(
           [entry(justice, 3), entry(pool, 3) | filler(34)],
-          [:justice, :pool],
+          ["justice", "pool"],
           []
         )
 
@@ -179,7 +179,7 @@ defmodule Sanctum.Decks.LegalityTest do
     end
 
     test "a basic deck (no aspects) flags every player aspect card" do
-      justice = card(%{ownership: :player, aspect: :justice})
+      justice = card(%{ownership: :player, aspect: "justice"})
 
       issues = Legality.issues([entry(justice, 3) | filler(37)], [], [])
 
@@ -198,11 +198,11 @@ defmodule Sanctum.Decks.LegalityTest do
 
   test "a legal-looking deck returns no issues" do
     sig = card(%{ownership: :hero, deck_limit: 2, name: "Signature"})
-    aspect_card = card(%{ownership: :player, aspect: :justice, name: "Aspect Card"})
+    aspect_card = card(%{ownership: :player, aspect: "justice", name: "Aspect Card"})
 
     entries = [entry(sig, 2), entry(aspect_card, 3) | filler(35)]
 
-    assert Legality.issues(entries, [:justice], [sig]) == []
+    assert Legality.issues(entries, ["justice"], [sig]) == []
   end
 
   test "issue codes are stable atoms (UI contract)" do

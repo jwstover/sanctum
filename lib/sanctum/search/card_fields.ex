@@ -12,7 +12,7 @@ defmodule Sanctum.Search.CardFields do
 
   import Ash.Expr
 
-  alias Sanctum.Games.{CardAspect, CardOwnership, CardType}
+  alias Sanctum.Games.{Aspect, CardOwnership, CardType}
   alias Sanctum.Search.{Builders, Field, FormSchema}
 
   # `aspect` accepts the ownership pools too ("hero"/"basic"/…), matching the
@@ -110,7 +110,7 @@ defmodule Sanctum.Search.CardFields do
         name: "aspect",
         aliases: ["a"],
         kind: :enum,
-        values: enum_strings(CardAspect) ++ @ownership_as_aspect,
+        values: Aspect.official_keys() ++ @ownership_as_aspect,
         example: "aspect:aggression",
         hint: "aspect, or a pool like hero/basic",
         form: %{group: "Aspect", order: 10},
@@ -317,14 +317,16 @@ defmodule Sanctum.Search.CardFields do
     end
   end
 
-  # "hero"/"basic"/… filter ownership; the five real aspects filter aspect.
+  # "hero"/"basic"/… filter the ownership enum; the real aspect keys filter the
+  # string `aspect` column. Coerced against string keys (prefix + did-you-mean
+  # preserved); the ownership branch converts back to its enum atom.
   defp aspect_build(op, value) do
-    case Builders.coerce_enum(value, CardOwnership.values() ++ CardAspect.values()) do
-      {:ok, atom} ->
-        if to_string(atom) in @ownership_as_aspect do
-          {:ok, Builders.cmp(expr(ownership), op, atom)}
+    case Builders.coerce_enum(value, @ownership_as_aspect ++ Aspect.official_keys()) do
+      {:ok, key} ->
+        if key in @ownership_as_aspect do
+          {:ok, Builders.cmp(expr(ownership), op, String.to_existing_atom(key))}
         else
-          {:ok, Builders.cmp(expr(aspect), op, atom)}
+          {:ok, Builders.cmp(expr(aspect), op, key)}
         end
 
       {:error, _} = error ->

@@ -112,11 +112,11 @@ defmodule Sanctum.Decks.DeckBuildTest do
       %{hero: hero, signature_double: dbl, signature_single: sgl} = make_hero("build_hero_a")
       user = user_fixture()
 
-      deck = Decks.build_deck!(%{hero_id: hero.id, aspects: [:justice]}, actor: user)
+      deck = Decks.build_deck!(%{hero_id: hero.id, aspects: ["justice"]}, actor: user)
 
       assert deck.owner_id == user.id
       assert deck.source == :native
-      assert deck.aspects == [:justice]
+      assert deck.aspects == ["justice"]
 
       assert deck.title == "Hero build_hero_a · Alter Ego build_hero_a Deck" or
                deck.title =~ "Deck"
@@ -230,8 +230,8 @@ defmodule Sanctum.Decks.DeckBuildTest do
     } do
       assert %{title: "Renamed"} = Decks.rename_deck!(deck, %{title: "Renamed"}, actor: owner)
 
-      assert %{aspects: [:pool]} =
-               Decks.set_deck_aspects!(deck, %{aspects: [:pool]}, actor: owner)
+      assert %{aspects: ["pool"]} =
+               Decks.set_deck_aspects!(deck, %{aspects: ["pool"]}, actor: owner)
 
       assert %{description_md: "**Bold** plan."} =
                Decks.set_deck_description!(deck, %{description_md: "**Bold** plan."},
