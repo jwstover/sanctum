@@ -84,12 +84,15 @@ defmodule SanctumWeb.DeckLive.IndexTest do
       # Tiles carry a star toggle for signed-in users.
       assert has_element?(view, "button[title='Add to favorites']")
 
-      # Favorite the first deck (the hook pushes id + click-time state).
-      render_hook(view, "toggle_favorite", %{"id" => liked.id, "favorited" => "false"})
+      # Favorite the first deck by clicking its star (a plain phx-click button).
+      html = view |> element("#fav-#{liked.id}") |> render_click()
 
       assert Sanctum.Decks.DeckFavorite
              |> Ash.Query.filter(deck_id == ^liked.id and user_id == ^user.id)
              |> Ash.count!(authorize?: false) == 1
+
+      # The tile's favorites count appears once the deck is re-streamed.
+      assert html =~ "1 favorite"
 
       # favorite:true narrows the feed to just that deck.
       {:ok, view, _html} = live(log_in_user(conn, user), ~p"/decks?query=favorite%3Atrue")
@@ -99,13 +102,24 @@ defmodule SanctumWeb.DeckLive.IndexTest do
       refute html =~ "Cosmic Blast"
     end
 
-    test "anonymous visitors see no star toggle on tiles", %{conn: conn} do
-      make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+    test "anonymous visitors see the star but get routed to sign-in", %{conn: conn} do
+      deck = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
 
       {:ok, view, _html} = live(conn, ~p"/decks")
       render_async(view)
 
-      refute has_element?(view, "button[title='Add to favorites']")
+      # The star renders for everyone, labelled for the signed-out case.
+      assert has_element?(view, "button[title='Sign in to favorite decks']")
+
+      # Clicking it redirects to sign-in rather than creating a favorite.
+      assert {:error, {redirect_kind, %{to: "/sign-in"}}} =
+               view |> element("#fav-#{deck.id}") |> render_click()
+
+      assert redirect_kind in [:live_redirect, :redirect]
+
+      assert Sanctum.Decks.DeckFavorite
+             |> Ash.Query.filter(deck_id == ^deck.id)
+             |> Ash.count!(authorize?: false) == 0
     end
   end
 

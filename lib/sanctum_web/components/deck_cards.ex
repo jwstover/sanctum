@@ -271,15 +271,18 @@ defmodule SanctumWeb.Components.DeckCards do
   end
 
   @doc """
-  A star toggle that favorites/unfavorites a deck for the signed-in user. The
-  host LiveView handles `toggle_favorite` (payload: `id`, `favorited`).
+  A star toggle that favorites/unfavorites a deck. A plain `phx-click` button:
+  the host LiveView handles `toggle_favorite` (values `id`, `favorited`) and, when
+  signed out, redirects to sign-in (the button still renders for everyone).
 
-  Safe to nest inside a `navigate` link (the deck-browser tiles): the colocated
-  hook stops the click from bubbling to the wrapping anchor, so tapping the star
-  never navigates.
+  On the deck-browser tiles it sits *above* the tile's stretched-link overlay
+  (higher z-index) rather than nested inside an anchor, so its click resolves to
+  this button — LiveView fires only the nearest `phx-click` — and never
+  navigates. No hook or stop-propagation needed.
   """
   attr :id, :string, required: true, doc: "the deck id"
   attr :favorited, :boolean, required: true
+  attr :signed_in?, :boolean, default: true
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -288,11 +291,17 @@ defmodule SanctumWeb.Components.DeckCards do
     <button
       type="button"
       id={"fav-#{@id}"}
-      phx-hook=".FavoriteToggle"
-      data-deck-id={@id}
-      data-favorited={to_string(@favorited)}
+      phx-click="toggle_favorite"
+      phx-value-id={@id}
+      phx-value-favorited={to_string(@favorited)}
       aria-pressed={to_string(@favorited)}
-      title={if @favorited, do: "Remove from favorites", else: "Add to favorites"}
+      title={
+        cond do
+          not @signed_in? -> "Sign in to favorite decks"
+          @favorited -> "Remove from favorites"
+          true -> "Add to favorites"
+        end
+      }
       class={[
         "flex items-center justify-center border-2 border-neutral transition-colors",
         if(@favorited,
@@ -305,21 +314,6 @@ defmodule SanctumWeb.Components.DeckCards do
     >
       <.icon name={if @favorited, do: "hero-star-solid", else: "hero-star"} class="size-5" />
     </button>
-    <script :type={Phoenix.LiveView.ColocatedHook} name=".FavoriteToggle">
-      export default {
-        mounted() {
-          this.el.addEventListener("click", (e) => {
-            // Keep the click off any wrapping navigate link (deck-browser tiles).
-            e.preventDefault()
-            e.stopPropagation()
-            this.pushEvent("toggle_favorite", {
-              id: this.el.dataset.deckId,
-              favorited: this.el.dataset.favorited,
-            })
-          })
-        }
-      }
-    </script>
     """
   end
 end

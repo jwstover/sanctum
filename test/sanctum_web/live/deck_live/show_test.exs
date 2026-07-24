@@ -195,16 +195,18 @@ defmodule SanctumWeb.DeckLive.ShowTest do
       # Star starts empty.
       assert has_element?(view, "button[title='Add to favorites']")
 
-      # The colocated hook pushes toggle_favorite with the state at click time.
-      html = render_hook(view, "toggle_favorite", %{"favorited" => "false"})
+      # Clicking the star (a plain phx-click button) favorites the deck.
+      html = view |> element("button[title='Add to favorites']") |> render_click()
       assert html =~ "Remove from favorites"
+      # The favorites count reflects the new favorite immediately.
+      assert html =~ "Favorite"
 
       assert Sanctum.Decks.DeckFavorite
              |> Ash.Query.filter(deck_id == ^deck.id and user_id == ^user.id)
              |> Ash.count!(authorize?: false) == 1
 
       # Toggling again removes it.
-      html = render_hook(view, "toggle_favorite", %{"favorited" => "true"})
+      html = view |> element("button[title='Remove from favorites']") |> render_click()
       assert html =~ "Add to favorites"
 
       assert Sanctum.Decks.DeckFavorite
@@ -212,13 +214,25 @@ defmodule SanctumWeb.DeckLive.ShowTest do
              |> Ash.count!(authorize?: false) == 0
     end
 
-    test "anonymous visitors see no favorite button", %{conn: conn} do
+    test "anonymous visitors see the button but get routed to sign-in", %{conn: conn} do
       deck = make_deck_with_card()
 
       {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
       render_async(view)
 
+      # The button renders for everyone, labelled for the signed-out case.
+      assert has_element?(view, "button[title='Sign in to favorite decks']")
       refute has_element?(view, "button[title='Add to favorites']")
+
+      # Clicking it redirects to sign-in rather than creating a favorite.
+      assert {:error, {redirect_kind, %{to: "/sign-in"}}} =
+               view |> element("button[title='Sign in to favorite decks']") |> render_click()
+
+      assert redirect_kind in [:live_redirect, :redirect]
+
+      assert Sanctum.Decks.DeckFavorite
+             |> Ash.Query.filter(deck_id == ^deck.id)
+             |> Ash.count!(authorize?: false) == 0
     end
   end
 

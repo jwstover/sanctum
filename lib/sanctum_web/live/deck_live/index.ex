@@ -26,6 +26,7 @@ defmodule SanctumWeb.DeckLive.Index do
     :mcdb_user,
     :owner,
     :favorited,
+    :favorite_count,
     hero: [:display_name, :hero_side, card: [:primary_side]]
   ]
 
@@ -118,16 +119,26 @@ defmodule SanctumWeb.DeckLive.Index do
           @loading? && @count != nil && "opacity-60 transition-opacity"
         ]}
       >
-        <.link
+        <div
           :for={{dom_id, deck} <- @streams.decks}
           id={dom_id}
-          navigate={~p"/decks/#{deck.id}"}
           class="mc-tile relative flex items-stretch gap-3 border-2 border-neutral bg-base-200 p-3 shadow-comic sm:gap-4 sm:p-3.5"
         >
+          <!-- Stretched-link pattern: the whole tile navigates via this
+               absolute overlay anchor (keeps real-link affordances — new tab,
+               cmd-click, keyboard), while the favorite button sits above it and
+               handles its own click. No nested-interactive-in-anchor, no hook. -->
+          <.link
+            navigate={~p"/decks/#{deck.id}"}
+            aria-label={deck.title}
+            class="absolute inset-0 z-[1]"
+          >
+            <span class="sr-only">{deck.title}</span>
+          </.link>
           <DeckCards.favorite_button
-            :if={@current_user}
             id={deck.id}
             favorited={deck.favorited}
+            signed_in?={!!@current_user}
             class="absolute right-2 top-2 z-[3] size-8 shadow-comic-sm"
           />
           <div class="h-[151px] w-[108px] flex-none border-2 border-neutral shadow-comic-sm">
@@ -182,18 +193,24 @@ defmodule SanctumWeb.DeckLive.Index do
 
             <div class="flex flex-none items-center gap-4 border-t-2 border-neutral pt-3 sm:w-[120px] sm:flex-col sm:items-start sm:justify-center sm:gap-2 sm:border-l-2 sm:border-t-0 sm:pl-4 sm:pt-0">
               <.uniqueness_meter percentile={deck.uniqueness} class="w-[110px] sm:w-full" />
-              <div>
-                <div class="font-anton text-2xl leading-none">{deck.total_card_count}</div>
-                <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
-                  Cards
-                </div>
+              <!-- primary stat: favorites (star icon carries the meaning) -->
+              <div
+                class="flex items-center gap-1.5 font-anton text-2xl leading-none"
+                title={"#{deck.favorite_count} #{(deck.favorite_count == 1 && "favorite") || "favorites"}"}
+              >
+                <.icon name="hero-star-solid" class="size-5 text-primary" />
+                {deck.favorite_count}
+              </div>
+              <!-- secondary stat: card count, de-emphasized -->
+              <div class="font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
+                <span class="text-sm text-base-content/80">{deck.total_card_count}</span> Cards
               </div>
               <div class="ml-auto font-ibm-mono text-xs leading-[1.5] text-base-content/40 sm:ml-0">
                 {deck.updated}
               </div>
             </div>
           </div>
-        </.link>
+        </div>
       </div>
 
       <!-- empty state -->
@@ -354,26 +371,26 @@ defmodule SanctumWeb.DeckLive.Index do
 
   # Star toggle on a tile. `favorited` is the state at click time; we flip it,
   # persist, then re-stream just that deck so its star reflects the new state.
-  # Ignored when signed out (the button isn't rendered).
+  # Signed-out visitors are sent to sign-in instead (the button still renders).
   def handle_event("toggle_favorite", %{"id" => id, "favorited" => favorited}, socket) do
-    actor = socket.assigns.current_user
+    case socket.assigns.current_user do
+      nil ->
+        {:noreply, push_navigate(socket, to: ~p"/sign-in")}
 
-    if actor do
-      now_favorited = favorited != "true"
+      actor ->
+        now_favorited = favorited != "true"
 
-      if now_favorited,
-        do: Sanctum.Decks.favorite_deck!(id, actor: actor),
-        else: Sanctum.Decks.unfavorite_deck(id, actor)
+        if now_favorited,
+          do: Sanctum.Decks.favorite_deck!(id, actor: actor),
+          else: Sanctum.Decks.unfavorite_deck(id, actor)
 
-      socket =
-        case Sanctum.Decks.get_deck(id, actor: actor, load: @deck_loads) do
-          {:ok, deck} -> stream_insert(socket, :decks, deck_view(deck, socket.assigns.timezone))
-          _ -> socket
-        end
+        socket =
+          case Sanctum.Decks.get_deck(id, actor: actor, load: @deck_loads) do
+            {:ok, deck} -> stream_insert(socket, :decks, deck_view(deck, socket.assigns.timezone))
+            _ -> socket
+          end
 
-      {:noreply, socket}
-    else
-      {:noreply, socket}
+        {:noreply, socket}
     end
   end
 
@@ -510,6 +527,7 @@ defmodule SanctumWeb.DeckLive.Index do
       card_row_count: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
       favorited: deck.favorited,
+      favorite_count: deck.favorite_count || 0,
       updated: format_date(deck.mcdb_date_update || deck.updated_at, timezone)
     }
   end

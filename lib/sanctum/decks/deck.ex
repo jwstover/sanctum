@@ -55,6 +55,7 @@ defmodule Sanctum.Decks.Deck do
             :mcdb_user,
             :owner,
             :favorited,
+            :favorite_count,
             hero: [:display_name, :hero_side, card: [:primary_side]]
           ])
 
@@ -389,6 +390,15 @@ defmodule Sanctum.Decks.Deck do
   aggregates do
     count :card_row_count, :deck_cards
     sum :total_card_count, :deck_cards, :quantity
+
+    # Public popularity signal: how many users have favorited this deck.
+    # `authorize? false` bypasses DeckFavorite's private (owner-only) read
+    # policy — otherwise the count would be scoped to the viewer's own
+    # favorites (0 for everyone but the one owner). It only ever exposes the
+    # total, never *who* favorited.
+    count :favorite_count, :favorites do
+      authorize? false
+    end
   end
 
   identities do

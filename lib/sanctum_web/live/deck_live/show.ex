@@ -27,9 +27,9 @@ defmodule SanctumWeb.DeckLive.Show do
           {@deck.title}
           <:actions>
             <.favorite_button
-              :if={@current_user}
               id={@deck.id}
               favorited={@favorited}
+              signed_in?={!!@current_user}
               class="min-h-[42px] px-3"
             />
             <.button
@@ -102,6 +102,15 @@ defmodule SanctumWeb.DeckLive.Show do
                   <div class="font-anton text-3xl leading-none">{@cover.unique_cards}</div>
                   <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
                     Unique
+                  </div>
+                </div>
+                <div :if={@cover.favorite_count > 0}>
+                  <div class="flex items-center gap-1 font-anton text-3xl leading-none">
+                    <.icon name="hero-star-solid" class="size-6 text-primary" />
+                    {@cover.favorite_count}
+                  </div>
+                  <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
+                    {(@cover.favorite_count == 1 && "Favorite") || "Favorites"}
                   </div>
                 </div>
                 <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
@@ -360,7 +369,11 @@ defmodule SanctumWeb.DeckLive.Show do
   end
 
   # Pushed by the favorite_button hook. `favorited` is the state at click time;
-  # we flip to the opposite. Ignored when signed out (the button isn't rendered).
+  # we flip to the opposite. Signed-out visitors are sent to sign-in instead.
+  def handle_event("toggle_favorite", _params, %{assigns: %{current_user: nil}} = socket) do
+    {:noreply, push_navigate(socket, to: ~p"/sign-in")}
+  end
+
   def handle_event("toggle_favorite", %{"favorited" => favorited}, socket) do
     actor = socket.assigns.current_user
     deck = socket.assigns.deck
@@ -372,7 +385,14 @@ defmodule SanctumWeb.DeckLive.Show do
         do: Sanctum.Decks.favorite_deck!(deck.id, actor: actor),
         else: Sanctum.Decks.unfavorite_deck(deck.id, actor)
 
-      {:noreply, assign(socket, :favorited, now_favorited)}
+      # Reflect the count locally too (the aggregate would otherwise only
+      # refresh on a full reload).
+      cover = %{
+        socket.assigns.cover
+        | favorite_count: socket.assigns.cover.favorite_count + ((now_favorited && 1) || -1)
+      }
+
+      {:noreply, socket |> assign(:favorited, now_favorited) |> assign(:cover, cover)}
     else
       {:noreply, socket}
     end
@@ -449,6 +469,7 @@ defmodule SanctumWeb.DeckLive.Show do
              :mcdb_user,
              :owner,
              :favorited,
+             :favorite_count,
              hero: [:display_name, :hero_side, card: [:primary_side]],
              deck_cards: [card: card_loads]
            ]
@@ -515,6 +536,7 @@ defmodule SanctumWeb.DeckLive.Show do
       total_cards: deck.total_card_count || 0,
       unique_cards: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
+      favorite_count: deck.favorite_count || 0,
       author: author && author.name,
       author_avatar: author && author.avatar
     }
