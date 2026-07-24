@@ -304,8 +304,9 @@ defmodule Sanctum.Decks.Deck do
     attribute :mcdb_id, :string, public?: true
     attribute :mcdb_type, Sanctum.Decks.McdbDeckType, public?: true
 
-    # Aspect cards the deck draws from. Empty list = a basic deck.
-    attribute :aspects, {:array, Sanctum.Decks.DeckAspect}, public?: true, default: []
+    # Aspect keys the deck draws from (see `Sanctum.Games.Aspect`). Empty list =
+    # a basic deck. Stored as plain strings so custom aspects need no enum edit.
+    attribute :aspects, {:array, :string}, public?: true, default: []
 
     # Deck lifecycle. Defaults are :published/:final so imported decks (public
     # decklists on MarvelCDB) and pre-existing rows keep their old always-public

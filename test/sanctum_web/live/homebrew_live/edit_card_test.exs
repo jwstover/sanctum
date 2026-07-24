@@ -239,7 +239,7 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
       updated = Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false)
       assert updated.name == "Extracted Ally"
       assert updated.type == :ally
-      assert updated.aspect == :leadership
+      assert updated.aspect == "leadership"
       assert updated.cost == 3
       assert %Sanctum.Games.Stat{value: 2, consequential: 1} = updated.attack
       assert %Sanctum.Games.Stat{value: 3} = updated.health

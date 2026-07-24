@@ -5,6 +5,9 @@ alias Sanctum.MarvelCdb
 # Syncs the product/pack catalog (+ curated wave/product-type overlay), then
 # seeds only the core set with marvelcdb-hosted image URLs; run
 # `mix sanctum.sync_cards` to load everything and point images at the bucket.
+# Official player-card aspects (data-driven lookup; idempotent).
+Sanctum.Release.seed_aspects()
+
 :ok = MarvelCdb.sync_packs()
 :ok = MarvelCdb.load_pack("core")
 

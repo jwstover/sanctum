@@ -8,7 +8,8 @@ defmodule Sanctum.Search.DeckFields do
 
   import Ash.Expr
 
-  alias Sanctum.Decks.{DeckAspect, DeckSource}
+  alias Sanctum.Decks.DeckSource
+  alias Sanctum.Games.Aspect
   alias Sanctum.Search.{Builders, Field}
 
   @all_ops [:eq, :neq, :lt, :gt, :lte, :gte]
@@ -48,7 +49,7 @@ defmodule Sanctum.Search.DeckFields do
         name: "aspect",
         aliases: ["a"],
         kind: :enum,
-        values: Enum.map(DeckAspect.values(), &to_string/1) ++ ["basic"],
+        values: Aspect.deck_selectable_keys() ++ ["basic"],
         example: "aspect:justice",
         hint: "aspect the deck plays (basic = none)",
         ops: [:eq, :neq],
@@ -121,14 +122,14 @@ defmodule Sanctum.Search.DeckFields do
     end
   end
 
-  # A deck's aspects are an array; an empty array is a basic deck.
+  # A deck's aspects are a string-key array; an empty array is a basic deck.
   defp aspect_build(op, value) do
-    case Builders.coerce_enum(value, DeckAspect.values() ++ ["basic"]) do
+    case Builders.coerce_enum(value, Aspect.deck_selectable_keys() ++ ["basic"]) do
       {:ok, "basic"} ->
         wrap_neq(op, expr(fragment("cardinality(?) = 0", aspects)))
 
-      {:ok, atom} ->
-        wrap_neq(op, expr(^atom in aspects))
+      {:ok, key} ->
+        wrap_neq(op, expr(^key in aspects))
 
       {:error, _} = error ->
         error

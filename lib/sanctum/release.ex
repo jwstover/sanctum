@@ -114,6 +114,26 @@ defmodule Sanctum.Release do
     |> then(&IO.puts("Backfilled pack_id on #{&1} card alts."))
   end
 
+  @doc """
+  Seeds the official player-card aspects (see `Sanctum.Games.Aspect`). Idempotent
+  — existing rows are left untouched — so it is safe to run on every deploy.
+
+      /app/bin/sanctum eval 'Sanctum.Release.seed_aspects()'
+  """
+  def seed_aspects do
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    Enum.each(Sanctum.Games.Aspect.official(), fn attrs ->
+      case Ash.get(Sanctum.Games.Aspect, attrs.key, authorize?: false) do
+        {:ok, _existing} ->
+          :ok
+
+        _not_found ->
+          Ash.create!(Sanctum.Games.Aspect, attrs, action: :create, authorize?: false)
+      end
+    end)
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end

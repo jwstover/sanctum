@@ -169,7 +169,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
                 id: side.id,
                 name: "Web Kick",
                 type: :event,
-                aspect: :justice,
+                aspect: "justice",
                 cost: 2,
                 attack: 3,
                 traits: ["Aerial", "Attack"],
@@ -186,7 +186,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       side = Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false)
       assert side.name == "Web Kick"
       assert side.type == :event
-      assert side.aspect == :justice
+      assert side.aspect == "justice"
       assert side.cost == 2
       assert %Sanctum.Games.Stat{value: 3} = side.attack
       assert side.traits == ["Aerial", "Attack"]

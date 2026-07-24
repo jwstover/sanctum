@@ -171,10 +171,12 @@ defmodule Sanctum.Games.CardSide do
     attribute :traits, {:array, :string}, public?: true, default: []
     attribute :type, Sanctum.Games.CardType, public?: true, allow_nil?: true
 
-    # `ownership` = which pool the card comes from; `aspect` (one of the player
-    # aspects, or nil) is only set for aspect cards.
+    # `ownership` = which pool the card comes from; `aspect` (an aspect key, or
+    # nil) is only set for aspect cards. The key references
+    # `Sanctum.Games.Aspect` (official keys "aggression"/… plus custom keys);
+    # stored as a plain string so unknown/custom aspects never need an enum edit.
     attribute :ownership, Sanctum.Games.CardOwnership, public?: true
-    attribute :aspect, Sanctum.Games.CardAspect, public?: true
+    attribute :aspect, :string, public?: true
 
     attribute :text, :string, public?: true
     attribute :flavor, :string, public?: true
