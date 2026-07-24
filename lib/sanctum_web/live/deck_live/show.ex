@@ -26,6 +26,12 @@ defmodule SanctumWeb.DeckLive.Show do
         <.header>
           {@deck.title}
           <:actions>
+            <.favorite_button
+              :if={@current_user}
+              id={@deck.id}
+              favorited={@favorited}
+              class="min-h-[42px] px-3"
+            />
             <.button
               :if={owner?(@deck, @current_user)}
               variant="primary"
@@ -332,6 +338,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:card_view, "images")
       |> assign(:scroll_restore_pending?, false)
       |> assign(:owned_summary, nil)
+      |> assign(:favorited, false)
       |> assign_card_preview()
 
     actor = socket.assigns[:current_user]
@@ -350,6 +357,25 @@ defmodule SanctumWeb.DeckLive.Show do
   def handle_event(event, params, socket)
       when event in ["set_card_view", "restore_card_view"] do
     {:noreply, DeckCards.handle_card_view_event(event, params, socket)}
+  end
+
+  # Pushed by the favorite_button hook. `favorited` is the state at click time;
+  # we flip to the opposite. Ignored when signed out (the button isn't rendered).
+  def handle_event("toggle_favorite", %{"favorited" => favorited}, socket) do
+    actor = socket.assigns.current_user
+    deck = socket.assigns.deck
+
+    if actor && deck do
+      now_favorited = favorited != "true"
+
+      if now_favorited,
+        do: Sanctum.Decks.favorite_deck!(deck.id, actor: actor),
+        else: Sanctum.Decks.unfavorite_deck(deck.id, actor)
+
+      {:noreply, assign(socket, :favorited, now_favorited)}
+    else
+      {:noreply, socket}
+    end
   end
 
   # Pushed by the CardLinkPreview hook when a /cards link (writeup mention or
@@ -380,6 +406,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:owned_summary, data.owned_summary)
       |> assign(:similar, data.similar)
       |> assign(:writeup, data.writeup)
+      |> assign(:favorited, data.favorited)
 
     socket =
       if socket.assigns.scroll_restore_pending? do
@@ -421,6 +448,7 @@ defmodule SanctumWeb.DeckLive.Show do
              :total_card_count,
              :mcdb_user,
              :owner,
+             :favorited,
              hero: [:display_name, :hero_side, card: [:primary_side]],
              deck_cards: [card: card_loads]
            ]
@@ -437,7 +465,8 @@ defmodule SanctumWeb.DeckLive.Show do
            groups: groups,
            owned_summary: owned_summary(card_views, actor),
            similar: similar_views(deck),
-           writeup: Sanctum.Decks.Writeup.render(deck.description_md)
+           writeup: Sanctum.Decks.Writeup.render(deck.description_md),
+           favorited: deck.favorited
          }}
 
       {:error, _} ->

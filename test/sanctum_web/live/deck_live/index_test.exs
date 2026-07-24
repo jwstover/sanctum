@@ -3,6 +3,8 @@ defmodule SanctumWeb.DeckLive.IndexTest do
 
   use SanctumWeb.ConnCase, async: true
 
+  require Ash.Query
+
   import Phoenix.LiveViewTest
   import Sanctum.Factory
 
@@ -68,6 +70,43 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     html = render_async(view)
     assert html =~ "Web Warrior"
     assert html =~ "Cosmic Blast"
+  end
+
+  describe "favoriting" do
+    test "a signed-in user can favorite a deck from a tile and filter to favorites", %{conn: conn} do
+      liked = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+      make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression])
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/decks")
+      render_async(view)
+
+      # Tiles carry a star toggle for signed-in users.
+      assert has_element?(view, "button[title='Add to favorites']")
+
+      # Favorite the first deck (the hook pushes id + click-time state).
+      render_hook(view, "toggle_favorite", %{"id" => liked.id, "favorited" => "false"})
+
+      assert Sanctum.Decks.DeckFavorite
+             |> Ash.Query.filter(deck_id == ^liked.id and user_id == ^user.id)
+             |> Ash.count!(authorize?: false) == 1
+
+      # favorite:true narrows the feed to just that deck.
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/decks?query=favorite%3Atrue")
+      html = render_async(view)
+
+      assert html =~ "Web Warrior"
+      refute html =~ "Cosmic Blast"
+    end
+
+    test "anonymous visitors see no star toggle on tiles", %{conn: conn} do
+      make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+
+      {:ok, view, _html} = live(conn, ~p"/decks")
+      render_async(view)
+
+      refute has_element?(view, "button[title='Add to favorites']")
+    end
   end
 
   test "deck dates render in the browser's timezone", %{conn: conn} do

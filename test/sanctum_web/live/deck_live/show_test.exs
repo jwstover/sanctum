@@ -3,6 +3,8 @@ defmodule SanctumWeb.DeckLive.ShowTest do
 
   use SanctumWeb.ConnCase, async: true
 
+  require Ash.Query
+
   import Phoenix.LiveViewTest
   import Sanctum.Factory
 
@@ -180,6 +182,44 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     render_async(view)
 
     assert_push_event(view, "sanctum:scroll-restore", %{})
+  end
+
+  describe "favoriting" do
+    test "a signed-in user can favorite and unfavorite the deck", %{conn: conn} do
+      deck = make_deck_with_card()
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/decks/#{deck.id}")
+      render_async(view)
+
+      # Star starts empty.
+      assert has_element?(view, "button[title='Add to favorites']")
+
+      # The colocated hook pushes toggle_favorite with the state at click time.
+      html = render_hook(view, "toggle_favorite", %{"favorited" => "false"})
+      assert html =~ "Remove from favorites"
+
+      assert Sanctum.Decks.DeckFavorite
+             |> Ash.Query.filter(deck_id == ^deck.id and user_id == ^user.id)
+             |> Ash.count!(authorize?: false) == 1
+
+      # Toggling again removes it.
+      html = render_hook(view, "toggle_favorite", %{"favorited" => "true"})
+      assert html =~ "Add to favorites"
+
+      assert Sanctum.Decks.DeckFavorite
+             |> Ash.Query.filter(deck_id == ^deck.id and user_id == ^user.id)
+             |> Ash.count!(authorize?: false) == 0
+    end
+
+    test "anonymous visitors see no favorite button", %{conn: conn} do
+      deck = make_deck_with_card()
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      render_async(view)
+
+      refute has_element?(view, "button[title='Add to favorites']")
+    end
   end
 
   test "a scored deck shows its uniqueness meter", %{conn: conn} do

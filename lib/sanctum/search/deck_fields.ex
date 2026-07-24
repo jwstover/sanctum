@@ -99,6 +99,20 @@ defmodule Sanctum.Search.DeckFields do
         end
       },
       %Field{
+        name: "favorite",
+        aliases: ["fav"],
+        kind: :boolean,
+        values: ["true", "false"],
+        example: "favorite:true",
+        hint: "decks you've favorited (empty when signed out)",
+        form: %{group: "Ownership", order: 36, control: :toggle, label: "Favorites"},
+        build: fn op, value ->
+          with {:ok, bool} <- Builders.parse_bool(value) do
+            {:ok, Builders.cmp(expr(favorited), op, bool)}
+          end
+        end
+      },
+      %Field{
         name: "source",
         aliases: [],
         kind: :enum,

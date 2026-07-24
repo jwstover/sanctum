@@ -31,6 +31,10 @@ defmodule Sanctum.Decks do
       define :set_deck_card_quantity, action: :set_quantity
     end
 
+    resource Sanctum.Decks.DeckFavorite do
+      define :favorite_deck, action: :favorite, args: [:deck_id]
+    end
+
     resource Sanctum.Decks.McdbUser do
       define :find_or_create_mcdb_user, action: :find_or_create
     end
@@ -83,5 +87,17 @@ defmodule Sanctum.Decks do
       %{deck_id: deck_id, card_id: card_id, quantity: quantity},
       actor: actor
     )
+  end
+
+  @doc """
+  Removes the current user's favorite of a deck. A no-op if it wasn't
+  favorited. Ownership is enforced by DeckFavorite's destroy policy.
+  """
+  def unfavorite_deck(deck_id, %{id: user_id} = actor) do
+    Sanctum.Decks.DeckFavorite
+    |> Ash.Query.filter(deck_id == ^deck_id and user_id == ^user_id)
+    |> Ash.bulk_destroy!(:destroy, %{}, actor: actor, strategy: [:atomic, :stream])
+
+    :ok
   end
 end

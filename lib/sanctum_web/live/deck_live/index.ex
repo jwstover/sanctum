@@ -18,6 +18,17 @@ defmodule SanctumWeb.DeckLive.Index do
 
   @page_size 24
 
+  # Loads for re-fetching a single deck after a favorite toggle — mirrors the
+  # :browse action's load list so deck_view/2 gets the same shape.
+  @deck_loads [
+    :card_row_count,
+    :total_card_count,
+    :mcdb_user,
+    :owner,
+    :favorited,
+    hero: [:display_name, :hero_side, card: [:primary_side]]
+  ]
+
   @sorts [{"new", "Newest"}, {"unique", "Unique"}, {"title", "A–Z"}]
   @sort_keys Enum.map(@sorts, &elem(&1, 0))
 
@@ -74,7 +85,7 @@ defmodule SanctumWeb.DeckLive.Index do
         query={@query}
         registry={Sanctum.Search.DeckFields}
         count={@count}
-        hide={(@current_user && []) || ["mine"]}
+        hide={(@current_user && []) || ["mine", "favorite"]}
       >
         <:body_extra>
           <h3 class="mb-2.5 font-anton text-sm uppercase tracking-[0.08em] text-base-content/45">
@@ -111,8 +122,14 @@ defmodule SanctumWeb.DeckLive.Index do
           :for={{dom_id, deck} <- @streams.decks}
           id={dom_id}
           navigate={~p"/decks/#{deck.id}"}
-          class="mc-tile flex items-stretch gap-3 border-2 border-neutral bg-base-200 p-3 shadow-comic sm:gap-4 sm:p-3.5"
+          class="mc-tile relative flex items-stretch gap-3 border-2 border-neutral bg-base-200 p-3 shadow-comic sm:gap-4 sm:p-3.5"
         >
+          <DeckCards.favorite_button
+            :if={@current_user}
+            id={deck.id}
+            favorited={deck.favorited}
+            class="absolute right-2 top-2 z-[3] size-8 shadow-comic-sm"
+          />
           <div class="h-[151px] w-[108px] flex-none border-2 border-neutral shadow-comic-sm">
             <.mc_card
               name={deck.hero_name}
@@ -335,6 +352,31 @@ defmodule SanctumWeb.DeckLive.Index do
     {:noreply, InfiniteScroll.next_page(socket, @page_size, &start_load/3)}
   end
 
+  # Star toggle on a tile. `favorited` is the state at click time; we flip it,
+  # persist, then re-stream just that deck so its star reflects the new state.
+  # Ignored when signed out (the button isn't rendered).
+  def handle_event("toggle_favorite", %{"id" => id, "favorited" => favorited}, socket) do
+    actor = socket.assigns.current_user
+
+    if actor do
+      now_favorited = favorited != "true"
+
+      if now_favorited,
+        do: Sanctum.Decks.favorite_deck!(id, actor: actor),
+        else: Sanctum.Decks.unfavorite_deck(id, actor)
+
+      socket =
+        case Sanctum.Decks.get_deck(id, actor: actor, load: @deck_loads) do
+          {:ok, deck} -> stream_insert(socket, :decks, deck_view(deck, socket.assigns.timezone))
+          _ -> socket
+        end
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
   @impl true
   def handle_async(:load_decks, {:ok, result}, socket) do
     %{req: req, offset: offset, reset?: reset?, page: page, total: total} = result
@@ -467,6 +509,7 @@ defmodule SanctumWeb.DeckLive.Index do
       total_card_count: deck.total_card_count || 0,
       card_row_count: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
+      favorited: deck.favorited,
       updated: format_date(deck.mcdb_date_update || deck.updated_at, timezone)
     }
   end
