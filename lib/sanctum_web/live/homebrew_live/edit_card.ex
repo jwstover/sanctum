@@ -345,6 +345,12 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
     Enum.map(enum_module.values(), &{Phoenix.Naming.humanize(&1), to_string(&1)})
   end
 
+  # Aspect is a data-driven lookup (Sanctum.Games.Aspect), not an enum. Phase 1
+  # offers the official aspects; project-scoped custom aspects come later.
+  defp aspect_options do
+    Enum.map(Sanctum.Games.Aspect.official(), &{&1.label, &1.key})
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -449,7 +455,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
                     type="select"
                     label="Aspect"
                     prompt="—"
-                    options={enum_options(Sanctum.Games.CardAspect)}
+                    options={aspect_options()}
                   />
                 </div>
                 <p class="-mt-1 font-barlow-condensed text-xs text-base-content/45">

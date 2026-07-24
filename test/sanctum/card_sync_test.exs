@@ -254,10 +254,10 @@ defmodule Sanctum.CardSyncTest do
 
     {:ok, card} = Games.get_card_by_code("01001")
 
-    # Corrupt an existing side the way legacy prod data is corrupt: an
-    # ownership-only faction value ("encounter") left in the aspect column,
-    # which the current CardAspect enum can no longer load.
-    Sanctum.Repo.query!("UPDATE card_sides SET aspect = 'encounter' WHERE code = '01001a'")
+    # Corrupt an existing side with a value its stored enum can no longer load
+    # (the way legacy prod data goes stale after an enum change). `ownership`
+    # is still an enum — `aspect` is now a free string, so any value loads.
+    Sanctum.Repo.query!("UPDATE card_sides SET ownership = 'bogus' WHERE code = '01001a'")
 
     count_sql = "SELECT count(*) FROM card_sides WHERE card_id::text = $1"
     before = Sanctum.Repo.query!(count_sql, [card.id]).rows

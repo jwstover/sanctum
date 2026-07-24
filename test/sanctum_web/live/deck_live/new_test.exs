@@ -127,7 +127,7 @@ defmodule SanctumWeb.DeckLive.NewTest do
 
     assert deck.title == "Test Build"
     assert deck.owner_id == user.id
-    assert deck.aspects == [:justice]
+    assert deck.aspects == ["justice"]
     assert Enum.map(deck.deck_cards, & &1.card_id) == [signature.id]
     assert hd(deck.deck_cards).quantity == 2
   end
