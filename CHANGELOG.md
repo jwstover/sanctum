@@ -1,3 +1,13 @@
+# [1.71.0](https://github.com/jwstover/sanctum/compare/v1.70.0...v1.71.0) (2026-07-25)
+
+
+### Features
+
+* **decks:** let users favorite decks and filter to favorites ([64c4f5c](https://github.com/jwstover/sanctum/commit/64c4f5c6671b190ab4f8b81afd71bc888e7f6d77))
+* **decks:** show favorite count and route signed-out favoriting to sign-in ([060a5e6](https://github.com/jwstover/sanctum/commit/060a5e6924c7a20b95c858693b2723de424cb4a9))
+
+
+
 # [1.70.0](https://github.com/jwstover/sanctum/compare/v1.69.1...v1.70.0) (2026-07-24)
 
 
@@ -31,15 +41,6 @@
 ### Features
 
 * **decks:** phased deck lifecycle with private drafts ([48b97f0](https://github.com/jwstover/sanctum/commit/48b97f0ea480e34b93eff822655ad2fef4b93ce8))
-
-
-
-## [1.67.4](https://github.com/jwstover/sanctum/compare/v1.67.3...v1.67.4) (2026-07-23)
-
-
-### Bug Fixes
-
-* **ui:** restore pointer cursor on all clickable elements ([3b7878f](https://github.com/jwstover/sanctum/commit/3b7878fc6921f5883487e17af1ead0adb1c7d190))
 
 
 
