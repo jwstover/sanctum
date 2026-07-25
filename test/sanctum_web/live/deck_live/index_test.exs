@@ -105,17 +105,23 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     test "anonymous visitors see the star but get routed to sign-in", %{conn: conn} do
       deck = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
 
-      {:ok, view, _html} = live(conn, ~p"/decks")
+      # Mount with a filter in the URL so we can assert it's preserved in the
+      # return path.
+      {:ok, view, _html} = live(conn, ~p"/decks?sort=title")
       render_async(view)
 
       # The star renders for everyone, labelled for the signed-out case.
       assert has_element?(view, "button[title='Sign in to favorite decks']")
 
-      # Clicking it redirects to sign-in rather than creating a favorite.
-      assert {:error, {redirect_kind, %{to: "/sign-in"}}} =
+      # Clicking it redirects to sign-in, carrying the current path (query and
+      # all, so the user returns to the same filtered view + scroll afterwards)
+      # rather than creating a favorite.
+      assert {:error, {redirect_kind, %{to: to}}} =
                view |> element("#fav-#{deck.id}") |> render_click()
 
       assert redirect_kind in [:live_redirect, :redirect]
+      assert %URI{path: "/sign-in", query: query} = URI.parse(to)
+      assert URI.decode_query(query) == %{"return_to" => "/decks?sort=title"}
 
       assert Sanctum.Decks.DeckFavorite
              |> Ash.Query.filter(deck_id == ^deck.id)

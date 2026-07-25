@@ -43,6 +43,13 @@ defmodule SanctumWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Persists a validated `?return_to` path into the session so
+  # AuthController.success/4 can send the user back after they sign in
+  # (e.g. after favoriting a deck while signed out). Scoped to the auth routes.
+  pipeline :capture_return_to do
+    plug SanctumWeb.ReturnTo
+  end
+
   scope "/", SanctumWeb do
     pipe_through :browser
 
@@ -150,7 +157,7 @@ defmodule SanctumWeb.Router do
   end
 
   scope "/", SanctumWeb do
-    pipe_through :browser
+    pipe_through [:browser, :capture_return_to]
 
     auth_routes AuthController, Sanctum.Accounts.User, path: "/auth"
 
