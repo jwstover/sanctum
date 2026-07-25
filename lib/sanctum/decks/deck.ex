@@ -54,6 +54,8 @@ defmodule Sanctum.Decks.Deck do
             :total_card_count,
             :mcdb_user,
             :owner,
+            :favorited,
+            :favorite_count,
             hero: [:display_name, :hero_side, card: [:primary_side]]
           ])
 
@@ -350,6 +352,10 @@ defmodule Sanctum.Decks.Deck do
   relationships do
     has_many :deck_cards, Sanctum.Decks.DeckCard
 
+    # A user's personal favorites of this deck (at most one per user, enforced
+    # by DeckFavorite's unique identity). Backs the `favorited` calculation.
+    has_many :favorites, Sanctum.Decks.DeckFavorite
+
     many_to_many :cards, Sanctum.Games.Card, through: Sanctum.Decks.DeckCard
 
     belongs_to :hero, Sanctum.Heroes.Hero do
@@ -373,11 +379,26 @@ defmodule Sanctum.Decks.Deck do
     # field (^actor resolves from the query's actor; a nil actor compares
     # owner_id to NULL, which matches nothing rather than everyone's decks).
     calculate :mine, :boolean, expr(owner_id == ^actor(:id))
+
+    # Whether the requesting user has favorited this deck — backs the
+    # `favorite:` search field and the star toggle's state. A nil actor
+    # compares user_id to NULL, which the exists matches nothing against, so
+    # signed-out visitors always see `false`.
+    calculate :favorited, :boolean, expr(exists(favorites, user_id == ^actor(:id)))
   end
 
   aggregates do
     count :card_row_count, :deck_cards
     sum :total_card_count, :deck_cards, :quantity
+
+    # Public popularity signal: how many users have favorited this deck.
+    # `authorize? false` bypasses DeckFavorite's private (owner-only) read
+    # policy — otherwise the count would be scoped to the viewer's own
+    # favorites (0 for everyone but the one owner). It only ever exposes the
+    # total, never *who* favorited.
+    count :favorite_count, :favorites do
+      authorize? false
+    end
   end
 
   identities do

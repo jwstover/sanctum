@@ -3,6 +3,8 @@ defmodule SanctumWeb.DeckLive.ShowTest do
 
   use SanctumWeb.ConnCase, async: true
 
+  require Ash.Query
+
   import Phoenix.LiveViewTest
   import Sanctum.Factory
 
@@ -180,6 +182,58 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     render_async(view)
 
     assert_push_event(view, "sanctum:scroll-restore", %{})
+  end
+
+  describe "favoriting" do
+    test "a signed-in user can favorite and unfavorite the deck", %{conn: conn} do
+      deck = make_deck_with_card()
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/decks/#{deck.id}")
+      render_async(view)
+
+      # Star starts empty.
+      assert has_element?(view, "button[title='Add to favorites']")
+
+      # Clicking the star (a plain phx-click button) favorites the deck.
+      html = view |> element("button[title='Add to favorites']") |> render_click()
+      assert html =~ "Remove from favorites"
+      # The favorites count reflects the new favorite immediately.
+      assert html =~ "Favorite"
+
+      assert Sanctum.Decks.DeckFavorite
+             |> Ash.Query.filter(deck_id == ^deck.id and user_id == ^user.id)
+             |> Ash.count!(authorize?: false) == 1
+
+      # Toggling again removes it.
+      html = view |> element("button[title='Remove from favorites']") |> render_click()
+      assert html =~ "Add to favorites"
+
+      assert Sanctum.Decks.DeckFavorite
+             |> Ash.Query.filter(deck_id == ^deck.id and user_id == ^user.id)
+             |> Ash.count!(authorize?: false) == 0
+    end
+
+    test "anonymous visitors see the button but get routed to sign-in", %{conn: conn} do
+      deck = make_deck_with_card()
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      render_async(view)
+
+      # The button renders for everyone, labelled for the signed-out case.
+      assert has_element?(view, "button[title='Sign in to favorite decks']")
+      refute has_element?(view, "button[title='Add to favorites']")
+
+      # Clicking it redirects to sign-in rather than creating a favorite.
+      assert {:error, {redirect_kind, %{to: "/sign-in"}}} =
+               view |> element("button[title='Sign in to favorite decks']") |> render_click()
+
+      assert redirect_kind in [:live_redirect, :redirect]
+
+      assert Sanctum.Decks.DeckFavorite
+             |> Ash.Query.filter(deck_id == ^deck.id)
+             |> Ash.count!(authorize?: false) == 0
+    end
   end
 
   test "a scored deck shows its uniqueness meter", %{conn: conn} do

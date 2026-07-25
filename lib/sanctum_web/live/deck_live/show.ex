@@ -26,6 +26,12 @@ defmodule SanctumWeb.DeckLive.Show do
         <.header>
           {@deck.title}
           <:actions>
+            <.favorite_button
+              id={@deck.id}
+              favorited={@favorited}
+              signed_in?={!!@current_user}
+              class="min-h-[42px] px-3"
+            />
             <.button
               :if={owner?(@deck, @current_user)}
               variant="primary"
@@ -96,6 +102,15 @@ defmodule SanctumWeb.DeckLive.Show do
                   <div class="font-anton text-3xl leading-none">{@cover.unique_cards}</div>
                   <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
                     Unique
+                  </div>
+                </div>
+                <div :if={@cover.favorite_count > 0}>
+                  <div class="flex items-center gap-1 font-anton text-3xl leading-none">
+                    <.icon name="hero-star-solid" class="size-6 text-primary" />
+                    {@cover.favorite_count}
+                  </div>
+                  <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
+                    {(@cover.favorite_count == 1 && "Favorite") || "Favorites"}
                   </div>
                 </div>
                 <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
@@ -332,6 +347,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:card_view, "images")
       |> assign(:scroll_restore_pending?, false)
       |> assign(:owned_summary, nil)
+      |> assign(:favorited, false)
       |> assign_card_preview()
 
     actor = socket.assigns[:current_user]
@@ -350,6 +366,36 @@ defmodule SanctumWeb.DeckLive.Show do
   def handle_event(event, params, socket)
       when event in ["set_card_view", "restore_card_view"] do
     {:noreply, DeckCards.handle_card_view_event(event, params, socket)}
+  end
+
+  # Pushed by the favorite_button hook. `favorited` is the state at click time;
+  # we flip to the opposite. Signed-out visitors are sent to sign-in instead.
+  def handle_event("toggle_favorite", _params, %{assigns: %{current_user: nil}} = socket) do
+    {:noreply, push_navigate(socket, to: ~p"/sign-in")}
+  end
+
+  def handle_event("toggle_favorite", %{"favorited" => favorited}, socket) do
+    actor = socket.assigns.current_user
+    deck = socket.assigns.deck
+
+    if actor && deck do
+      now_favorited = favorited != "true"
+
+      if now_favorited,
+        do: Sanctum.Decks.favorite_deck!(deck.id, actor: actor),
+        else: Sanctum.Decks.unfavorite_deck(deck.id, actor)
+
+      # Reflect the count locally too (the aggregate would otherwise only
+      # refresh on a full reload).
+      cover = %{
+        socket.assigns.cover
+        | favorite_count: socket.assigns.cover.favorite_count + ((now_favorited && 1) || -1)
+      }
+
+      {:noreply, socket |> assign(:favorited, now_favorited) |> assign(:cover, cover)}
+    else
+      {:noreply, socket}
+    end
   end
 
   # Pushed by the CardLinkPreview hook when a /cards link (writeup mention or
@@ -380,6 +426,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:owned_summary, data.owned_summary)
       |> assign(:similar, data.similar)
       |> assign(:writeup, data.writeup)
+      |> assign(:favorited, data.favorited)
 
     socket =
       if socket.assigns.scroll_restore_pending? do
@@ -421,6 +468,8 @@ defmodule SanctumWeb.DeckLive.Show do
              :total_card_count,
              :mcdb_user,
              :owner,
+             :favorited,
+             :favorite_count,
              hero: [:display_name, :hero_side, card: [:primary_side]],
              deck_cards: [card: card_loads]
            ]
@@ -437,7 +486,8 @@ defmodule SanctumWeb.DeckLive.Show do
            groups: groups,
            owned_summary: owned_summary(card_views, actor),
            similar: similar_views(deck),
-           writeup: Sanctum.Decks.Writeup.render(deck.description_md)
+           writeup: Sanctum.Decks.Writeup.render(deck.description_md),
+           favorited: deck.favorited
          }}
 
       {:error, _} ->
@@ -486,6 +536,7 @@ defmodule SanctumWeb.DeckLive.Show do
       total_cards: deck.total_card_count || 0,
       unique_cards: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
+      favorite_count: deck.favorite_count || 0,
       author: author && author.name,
       author_avatar: author && author.avatar
     }

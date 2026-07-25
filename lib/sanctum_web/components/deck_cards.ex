@@ -269,4 +269,51 @@ defmodule SanctumWeb.Components.DeckCards do
     </script>
     """
   end
+
+  @doc """
+  A star toggle that favorites/unfavorites a deck. A plain `phx-click` button:
+  the host LiveView handles `toggle_favorite` (values `id`, `favorited`) and, when
+  signed out, redirects to sign-in (the button still renders for everyone).
+
+  On the deck-browser tiles it sits *above* the tile's stretched-link overlay
+  (higher z-index) rather than nested inside an anchor, so its click resolves to
+  this button — LiveView fires only the nearest `phx-click` — and never
+  navigates. No hook or stop-propagation needed.
+  """
+  attr :id, :string, required: true, doc: "the deck id"
+  attr :favorited, :boolean, required: true
+  attr :signed_in?, :boolean, default: true
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  def favorite_button(assigns) do
+    ~H"""
+    <button
+      type="button"
+      id={"fav-#{@id}"}
+      phx-click="toggle_favorite"
+      phx-value-id={@id}
+      phx-value-favorited={to_string(@favorited)}
+      aria-pressed={to_string(@favorited)}
+      title={
+        cond do
+          not @signed_in? -> "Sign in to favorite decks"
+          @favorited -> "Remove from favorites"
+          true -> "Add to favorites"
+        end
+      }
+      class={[
+        "flex items-center justify-center border-2 border-neutral transition-colors",
+        if(@favorited,
+          do: "bg-primary text-primary-content",
+          else: "bg-base-200 text-base-content/55 hover:text-primary"
+        ),
+        @class
+      ]}
+      {@rest}
+    >
+      <.icon name={if @favorited, do: "hero-star-solid", else: "hero-star"} class="size-5" />
+    </button>
+    """
+  end
 end
