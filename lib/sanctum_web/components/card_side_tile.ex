@@ -194,7 +194,7 @@ defmodule SanctumWeb.Components.CardSideTile do
         </div>
 
         <div
-          :if={@side.pips != [] or (@side.is_hero and @side.hand_size)}
+          :if={@side.pips != [] or @side.show_boost or (@side.is_hero and @side.hand_size)}
           class={["flex items-center gap-1", (@lg? && "mt-4") || "mt-2.5"]}
         >
           <.champions_icon :for={token <- @side.pips} token={token} class="text-2xl" />
@@ -203,6 +203,13 @@ defmodule SanctumWeb.Components.CardSideTile do
             value={@side.hand_size}
             class="ml-auto text-base-content/75"
           />
+          <div :if={@side.show_boost} class="ml-auto flex items-center gap-0.5">
+            <.star_icon :if={@side.boost_star} class="text-xl text-aspect-hero text-stroke-white" />
+            <.boost_icon
+              :for={_ <- 1..@side.boost//1}
+              class="text-xl text-aspect-hero text-stroke-white"
+            />
+          </div>
         </div>
 
         <div
@@ -328,6 +335,9 @@ defmodule SanctumWeb.Components.CardSideTile do
       escalation_threat: stat_value(side.escalation_threat),
       escalation_threat_pp: stat_per_player(side.escalation_threat),
       stage_label: stage_label(side),
+      boost: side.boost || 0,
+      boost_star: side.boost_star == true,
+      show_boost: (side.boost || 0) > 0 or side.boost_star == true,
       image_url: side.image_url,
       owned: owned_flag(side)
     }
