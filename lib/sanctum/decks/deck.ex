@@ -27,6 +27,11 @@ defmodule Sanctum.Decks.Deck do
       # pagination can walk the index directly.
       index ["uniqueness_percentile DESC NULLS LAST"],
         name: "decks_uniqueness_percentile_index"
+
+      # Matches the `newest_at` calculation backing the default "Newest"
+      # sort, so top-N pagination can walk the index directly.
+      index ["(COALESCE(mcdb_date_update, updated_at)) DESC"],
+        name: "decks_newest_at_index"
     end
   end
 
@@ -81,7 +86,7 @@ defmodule Sanctum.Decks.Deck do
             Ash.Query.sort(query, uniqueness_percentile: :desc_nils_last)
 
           _ ->
-            Ash.Query.sort(query, updated_at: :desc)
+            Ash.Query.sort(query, newest_at: :desc)
         end
       end
     end
@@ -386,6 +391,14 @@ defmodule Sanctum.Decks.Deck do
     # compares user_id to NULL, which the exists matches nothing against, so
     # signed-out visitors always see `false`.
     calculate :favorited, :boolean, expr(exists(favorites, user_id == ^actor(:id)))
+
+    # Author-facing recency: the MarvelCDB update date, falling back to our
+    # local timestamp for native decks. Backs the browser's "Newest" sort —
+    # sorting on updated_at alone would let local re-syncs (which bump it)
+    # reshuffle the list away from the date the tiles display.
+    calculate :newest_at,
+              :utc_datetime,
+              expr(fragment("COALESCE(?, ?)", mcdb_date_update, updated_at))
   end
 
   aggregates do
