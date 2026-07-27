@@ -371,7 +371,8 @@ defmodule SanctumWeb.DeckLive.Show do
   # Pushed by the favorite_button hook. `favorited` is the state at click time;
   # we flip to the opposite. Signed-out visitors are sent to sign-in instead.
   def handle_event("toggle_favorite", _params, %{assigns: %{current_user: nil}} = socket) do
-    {:noreply, push_navigate(socket, to: ~p"/sign-in")}
+    to = SanctumWeb.ReturnTo.sign_in_path(~p"/decks/#{socket.assigns.deck.id}")
+    {:noreply, push_navigate(socket, to: to)}
   end
 
   def handle_event("toggle_favorite", %{"favorited" => favorited}, socket) do

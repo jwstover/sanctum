@@ -247,6 +247,7 @@ defmodule SanctumWeb.DeckLive.Index do
       |> assign(:req_id, 0)
       |> assign(:loading?, true)
       |> assign(:scroll_restore_pending?, false)
+      |> assign(:return_path, ~p"/decks")
       |> stream(:decks, [])
 
     {:ok, socket}
@@ -258,7 +259,7 @@ defmodule SanctumWeb.DeckLive.Index do
   # data load also starts here — only on the connected mount (req_id == 0
   # guards the first pass); the static render just paints the shell.
   @impl true
-  def handle_params(params, _uri, socket) do
+  def handle_params(params, uri, socket) do
     query = params["query"] || ""
     sort = if params["sort"] in @sort_keys, do: params["sort"], else: "new"
 
@@ -270,6 +271,9 @@ defmodule SanctumWeb.DeckLive.Index do
           assign(socket,
             query: query,
             sort: sort,
+            # Full path+query of the current view — where a signed-out favorite
+            # click returns to after sign-in (and the scroll-restore key).
+            return_path: request_path(uri),
             search_diagnostics: search_diagnostics(query),
             filter_count: FormSync.active_count(query, Sanctum.Search.DeckFields)
           )
@@ -375,7 +379,8 @@ defmodule SanctumWeb.DeckLive.Index do
   def handle_event("toggle_favorite", %{"id" => id, "favorited" => favorited}, socket) do
     case socket.assigns.current_user do
       nil ->
-        {:noreply, push_navigate(socket, to: ~p"/sign-in")}
+        to = SanctumWeb.ReturnTo.sign_in_path(socket.assigns.return_path)
+        {:noreply, push_navigate(socket, to: to)}
 
       actor ->
         now_favorited = favorited != "true"
@@ -493,6 +498,15 @@ defmodule SanctumWeb.DeckLive.Index do
 
   defp filters(a) do
     %{query: a.query, sort: a.sort}
+  end
+
+  # Path + query of the current view, from handle_params' uri — the local path
+  # ReturnTo sends a signed-out favoriter back to (and the scroll-restore key).
+  defp request_path(uri) do
+    case URI.parse(uri) do
+      %URI{path: path, query: nil} -> path
+      %URI{path: path, query: query} -> path <> "?" <> query
+    end
   end
 
   # Advisory parse/compile problems shown under the query input ("unknown
