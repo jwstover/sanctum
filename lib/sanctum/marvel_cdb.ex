@@ -211,8 +211,8 @@ defmodule Sanctum.MarvelCdb do
   defp parse_meta(_meta), do: %{}
 
   # Aspects live in meta as flat `aspect`, `aspect2`, ... keys; collect them in
-  # order and map to atoms. Unknown values (or a basic deck with none) drop out,
-  # leaving an empty list.
+  # order as aspect-key strings. Unknown values (or a basic deck with none) drop
+  # out, leaving an empty list.
   defp parse_aspects(meta) do
     meta
     |> Enum.filter(fn {k, _v} -> String.starts_with?(k, "aspect") end)
@@ -223,11 +223,11 @@ defmodule Sanctum.MarvelCdb do
 
   defp map_deck_aspect(value) do
     case value do
-      "aggression" -> :aggression
-      "justice" -> :justice
-      "leadership" -> :leadership
-      "protection" -> :protection
-      "pool" -> :pool
+      "aggression" -> "aggression"
+      "justice" -> "justice"
+      "leadership" -> "leadership"
+      "protection" -> "protection"
+      "pool" -> "pool"
       _ -> nil
     end
   end
@@ -1171,11 +1171,11 @@ defmodule Sanctum.MarvelCdb do
 
   defp map_aspect(faction_code) do
     case faction_code do
-      "aggression" -> :aggression
-      "justice" -> :justice
-      "leadership" -> :leadership
-      "protection" -> :protection
-      "pool" -> :pool
+      "aggression" -> "aggression"
+      "justice" -> "justice"
+      "leadership" -> "leadership"
+      "protection" -> "protection"
+      "pool" -> "pool"
       _ -> nil
     end
   end

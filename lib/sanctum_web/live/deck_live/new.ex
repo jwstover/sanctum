@@ -13,11 +13,11 @@ defmodule SanctumWeb.DeckLive.New do
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
   @aspects [
-    {:aggression, "Aggression", "bg-aspect-aggression"},
-    {:justice, "Justice", "bg-aspect-justice"},
-    {:leadership, "Leadership", "bg-aspect-leadership"},
-    {:protection, "Protection", "bg-aspect-protection"},
-    {:pool, "'Pool", "bg-aspect-pool"}
+    {"aggression", "Aggression", "bg-aspect-aggression"},
+    {"justice", "Justice", "bg-aspect-justice"},
+    {"leadership", "Leadership", "bg-aspect-leadership"},
+    {"protection", "Protection", "bg-aspect-protection"},
+    {"pool", "'Pool", "bg-aspect-pool"}
   ]
 
   @impl true
@@ -48,7 +48,6 @@ defmodule SanctumWeb.DeckLive.New do
   end
 
   def handle_event("toggle_aspect", %{"key" => aspect}, socket) do
-    aspect = String.to_existing_atom(aspect)
     chosen = socket.assigns.chosen_aspects
 
     chosen =

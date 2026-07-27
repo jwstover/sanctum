@@ -34,6 +34,12 @@ defmodule Sanctum.Games do
       define :list_card_alts_by_codes, args: [:codes], action: :by_codes
     end
 
+    resource Sanctum.Games.Aspect do
+      define :list_aspects, action: :read
+      define :get_aspect, get_by: :key, action: :read
+      define :create_aspect, action: :create
+    end
+
     resource Sanctum.Games.Game do
       define :create_game, action: :create
       define :get_game, get_by: :id, action: :read

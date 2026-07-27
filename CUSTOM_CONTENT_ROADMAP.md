@@ -46,12 +46,19 @@ plus optional data, never code.
   must approve a frozen state, so the blog-post edit model ends there.
 - **Advisory-only legality applies** (existing deckbuilder philosophy) —
   perfect fit for homebrew heroes with unusual deckbuilding rules.
-- **New-aspect support is deferred.** MVP custom player cards use the four
-  official aspects (or basic/pool). Whole new aspects (e.g. the community's
-  "Determination") require `CardAspect` to become data-driven — an `Aspect`
-  lookup resource replacing the enum, touching `DeckAspect`, the builder's
-  aspect chooser, search registry, and aspect theming. Deliberate later
-  refactor; nothing in the MVP schema makes it harder.
+- **New-aspect support pulled forward (2026-07-23).** Was deferred; now planned,
+  because the custom-content metadata work kept hitting the one place
+  non-conformance actually loses data (the vision extractor forcing `aspect`
+  into the five-value enum). Convert `CardAspect`/`DeckAspect` into a data-driven
+  `Aspect` lookup resource keyed on a **stable string `key`** (official keys =
+  today's atom names, so the only pervasive change is atom→string).
+  `CardSide.aspect` stays a string column + a `belongs_to :aspect_def`;
+  `deck.aspects` becomes `{:array, :string}`; custom-aspect colors render via
+  inline style (official keep compile-time `bg-aspect-*` utilities); custom
+  aspects are project-scoped and inherit project visibility. Phased: Phase 1 is a
+  zero-behavior-change refactor (official aspects only), Phase 2 is additive
+  custom-aspect support. Full plan + touchpoint inventory in the Obsidian vault:
+  `01 - Projects/Personal/Sanctum/plans/2026-07-23-aspect-as-resource.md`.
 - **Alt art reuses `CardAlt`.** Custom alternate art for official cards is
   stored as `CardAlt` rows with an `origin` (`:official | :custom`)
   discriminator plus creator/project FKs — the uploader picks the target
@@ -163,6 +170,59 @@ plus optional data, never code.
 - [x] Upload attestation checkbox ("my work or shared with creator's
       permission") required at project creation.
 
+### Google Drive import (ingestion source) — NOT STARTED
+
+Creators ship homebrew as Drive folders (see the gap statement above), so
+"import from a Drive link/folder" is a natural ingestion source feeding the
+*existing* upload pipeline — the Processor, content-addressed
+`homebrew/<sha256>` keys, and enrichment UX are all already built. The new
+work is only *acquisition*: get the bytes from Drive into that pipeline. The
+entire cost is dominated by **Google OAuth scope + app verification**, not
+code — our current Google sign-in requests identity-only scopes
+(`openid email profile`) and doesn't persist the access token, so any Drive
+access is net-new consent + token plumbing.
+
+Three approaches, cheapest → most powerful:
+
+- [ ] **A. Public-share-link fetch (no OAuth scope) — recommended first.**
+      Most homebrew Drives are "anyone with the link". Server enumerates +
+      downloads with an API key (or unauthenticated for direct file links):
+      `files.list` on the folder ID + `files.get?alt=media`, streamed into
+      the existing homebrew Processor. New code: a `Sanctum.GoogleDrive`
+      module (list + download), a URL/folder-ID parser, one LiveView "import
+      from Drive link" field. **No verification, no CSP change, no token
+      storage** — pure server-side `Req` calls; needs only a
+      `GOOGLE_API_KEY` env var (or nothing for public direct links). Watch
+      out for Drive's virus-scan interstitial on large files (needs the
+      `confirm=` token dance). Limitation: public folders only, never a
+      user's private Drive. ~1–2 days.
+- [ ] **B. `drive.file` scope + Google Picker — private-Drive integration.**
+      User connects Drive, the Picker UI lets them select specific
+      files/folders, app gets access only to what was picked (the scope
+      Google intends for this). New work beyond A: persist OAuth tokens with
+      `offline` access + refresh-token storage (stock `UserIdentity` doesn't
+      keep them), an incremental-authorization consent flow *separate from
+      sign-in*, and the Picker JS — which loads `apis.google.com`, a **CSP
+      change** we've deliberately avoided (single dark theme / self-hosted
+      everything). Verification: `drive.file` is a *sensitive* scope →
+      consent-screen verification (homepage, privacy policy, domain
+      ownership, brand review), weeks of back-and-forth, **but no
+      third-party audit.**
+- [ ] **C. `drive.readonly` (full-Drive read) — avoid.** *Restricted*
+      scope → triggers Google's annual CASA third-party security assessment
+      (recurring money + overhead). Not justifiable for this app.
+
+Notes:
+- **Testing-mode escape hatch:** Google allows sensitive/restricted scopes
+  for up to 100 allowlisted test users with *no* verification. While the
+  homebrew feature is still admin-gated, approach B could ship without
+  verification by adding creators as test users; verification only becomes
+  mandatory when the feature opens broadly.
+- **Recommendation:** ship A first — it matches how content is actually
+  shared, reuses the whole pipeline, and sidesteps consent/tokens/CSP/
+  verification entirely. Reach for B (with testing-mode allowlisting, not
+  full verification) only if importing from *private* Drives is required.
+
 ## 3. Play integration (private-first MVP exit criteria) — NEXT
 
 Recommended split: **3a (player cards)** then **3b (scenarios)**.
@@ -233,10 +293,54 @@ Recommended split: **3a (player cards)** then **3b (scenarios)**.
       infrastructure" play; consider publishing the format (marvelsdb
       schema + project envelope).
 - [ ] Print-sheet / MPC-ready export from a project.
+- [ ] **Tabletop Simulator deck export from a project.** Generate an
+      importable TTS Saved Object (`.json`) from a project's own cards so
+      users can play homebrew on TTS — including dropping it onto community
+      tables like Hitch's Table (Workshop `2514286571`). Shares the
+      sprite-sheet packing engine with the print-sheet export; only the
+      output wrapper differs (TTS JSON vs. PDF/MPC layout).
+      - **Approach: standalone deck object, not a mod.** Emit a `DeckCustom`
+        object the user spawns via TTS's local Saved Objects folder. TTS lets
+        any object be dropped onto any table, so custom cards ride on top of
+        Hitch's generic scripted infrastructure (villain mat + built-in HP
+        counter, threat/HP on seat count) — the player parks a custom villain
+        on the mat and uses its tools. **Not** a Workshop mod (can't automate
+        per-user Steam publishing; a full self-contained table is also the
+        DMCA-risk shape — full-game reproductions are what got MC TTS mods
+        taken down) and **not** integration with Hitch's importer (his Lua
+        importer is hardcoded to MarvelCDB's API + `^[0-9]{5}` code schema and
+        rejects unknown decks; making it load Sanctum would require his
+        cooperation or a fragile MarvelCDB-API impersonation, and custom
+        `custom-<uuid>` codes collide with his expectations).
+      - **Format** (TTS save spec): a deck is JSON with `DeckIDs` +
+        `CustomDeck`, a dict of sprite **sheets** (`FaceURL`, `BackURL`,
+        `NumWidth`, `NumHeight`, `UniqueBack`, `BackIsHidden`). Cards pack
+        into grids, **max 10×7 = 70 per sheet**. Card ID =
+        `sheet_number * 100 + grid_index` (index 0-based, left→right,
+        top→bottom); hundreds place selects the sheet, remainder the cell.
+        Prior art proving the format is routine: MCdeck and the community
+        Card Maker both already export TTS saves from custom cards.
+      - **Work item: the sprite-sheet packer** — pack `CardSide.image_url`
+        images into grid sheets, upload the sheets to the `sanctum-cards`
+        Tigris bucket (reuse the homebrew upload Processor), emit the JSON
+        with correct IDs. Double-sided cards (`is_multi_sided` /
+        `primary_side`) map to the `UniqueBack` / back-sheet fields — the
+        model already has the data to drive front/back.
+      - **Scope + IP:** export a project's *own* cards only — never mix
+        official scans into the generated object (keeps it out of
+        full-scan/bulk-pack territory; a custom-content-only deck is exactly
+        what Asmodee's community-use policy blesses). Free, unofficial,
+        attributed — same posture as the rest of the feature.
+      - Research + feasibility writeup:
+        [[2026-07-22-tts-mod-export-feasibility]].
 - [ ] Native card editor (only if demand; arkham.build never built one).
-- [ ] New-aspect support: `CardAspect` enum → `Aspect` lookup resource
-      (official four seeded; homebrew aspects project-owned, with display
-      color). Unlocks fifth-aspect projects like Determination.
+- [~] New-aspect support: `CardAspect`/`DeckAspect` enums → `Aspect` lookup
+      resource (official five seeded; homebrew aspects project-owned, with
+      display color). Unlocks fifth-aspect projects like Determination. **Pulled
+      forward from "later"** — see the decision in §"Decisions made" and the
+      vault plan `plans/2026-07-23-aspect-as-resource.md`. Phase 1 (refactor,
+      official-only) is a self-contained no-UX-change PR; Phase 2 adds custom
+      aspects + the vision `custom_aspect` reconciliation.
 - [ ] Community enrichment (non-creators proposing metadata fixes).
 
 ## Open questions
