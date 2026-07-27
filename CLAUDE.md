@@ -131,6 +131,8 @@ mix ecto.reset               # drop + recreate database
 
 mix sanctum.sync_cards       # sync card catalog from MarvelCDB (dev)
 mix sanctum.sync_decks       # sync decks from MarvelCDB (dev)
+mix sanctum.vision_eval      # benchmark vision models on card-field extraction
+                             #   (--models anthropic,ollama:qwen3-vl:8b,openrouter:… ; --card <code|url> for one card)
 
 scripts/prod_local           # run locally AGAINST THE PROD DB (MIX_ENV=prod_local, port 4151)
 scripts/pull_prod_db         # dump prod (Neon) → restore into local sanctum_dev
