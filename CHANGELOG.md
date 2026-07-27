@@ -1,3 +1,12 @@
+# [1.75.0](https://github.com/jwstover/sanctum/compare/v1.74.0...v1.75.0) (2026-07-27)
+
+
+### Features
+
+* **cards:** show boost icons and boost star on the card tile ([1369de0](https://github.com/jwstover/sanctum/commit/1369de0ebf947435d76e004c26c1ad5a731e5a6c))
+
+
+
 # [1.74.0](https://github.com/jwstover/sanctum/compare/v1.73.0...v1.74.0) (2026-07-27)
 
 
@@ -33,15 +42,6 @@
 
 * **decks:** let users favorite decks and filter to favorites ([64c4f5c](https://github.com/jwstover/sanctum/commit/64c4f5c6671b190ab4f8b81afd71bc888e7f6d77))
 * **decks:** show favorite count and route signed-out favoriting to sign-in ([060a5e6](https://github.com/jwstover/sanctum/commit/060a5e6924c7a20b95c858693b2723de424cb4a9))
-
-
-
-# [1.70.0](https://github.com/jwstover/sanctum/compare/v1.69.1...v1.70.0) (2026-07-24)
-
-
-### Features
-
-* **catalog:** add Fear No Evil (fne) to release taxonomy ([f14d757](https://github.com/jwstover/sanctum/commit/f14d757dbbf34e46ddf8868d0c7e1b76125a5164))
 
 
 
