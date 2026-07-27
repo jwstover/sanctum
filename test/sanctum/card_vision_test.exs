@@ -130,6 +130,80 @@ defmodule Sanctum.CardVisionTest do
              Sanctum.Games.Stat.cast_input(fields["attack"], [])
   end
 
+  describe "openai provider" do
+    @openai_opts [provider: :openai, base_url: "http://localhost:11434/v1", model: "test-vl"]
+
+    defp stub_openai(content_fun) do
+      Req.Test.stub(CardVision, fn conn ->
+        case conn.request_path do
+          # The image fetch — any binary body will do.
+          "/cards/custom-ally.png" ->
+            conn
+            |> Plug.Conn.put_resp_content_type("image/png")
+            |> Plug.Conn.resp(200, <<137, "PNG">>)
+
+          "/v1/chat/completions" ->
+            Req.Test.json(conn, content_fun.(conn))
+        end
+      end)
+    end
+
+    test "extracts fields via a chat-completions endpoint with an inlined image" do
+      parent = self()
+
+      stub_openai(fn conn ->
+        {:ok, body, _conn} = Plug.Conn.read_body(conn)
+        send(parent, {:request_body, Jason.decode!(body)})
+
+        %{
+          "model" => "test-vl",
+          "choices" => [
+            %{
+              "finish_reason" => "stop",
+              "message" => %{"content" => Jason.encode!(%{"name" => "Test Ally", "cost" => nil})}
+            }
+          ],
+          "usage" => %{"prompt_tokens" => 1200, "completion_tokens" => 80}
+        }
+      end)
+
+      assert {:ok, fields, meta} = CardVision.extract_side_meta(@image_url, @openai_opts)
+      assert fields == %{"name" => "Test Ally"}
+      assert meta.usage == %{input: 1200, output: 80}
+
+      assert_received {:request_body, body}
+      assert body["response_format"]["json_schema"]["strict"] == true
+      [%{"content" => [%{"image_url" => %{"url" => data_url}} | _]} | _] = tl(body["messages"])
+      assert String.starts_with?(data_url, "data:image/png;base64,")
+    end
+
+    test "recovers JSON wrapped in markdown fences" do
+      stub_openai(fn _conn ->
+        %{
+          "choices" => [
+            %{
+              "finish_reason" => "stop",
+              "message" => %{"content" => "```json\n{\"name\": \"Fenced\"}\n```"}
+            }
+          ]
+        }
+      end)
+
+      assert {:ok, fields} = CardVision.extract_side(@image_url, @openai_opts)
+      assert fields == %{"name" => "Fenced"}
+    end
+
+    test "surfaces a truncated completion" do
+      stub_openai(fn _conn ->
+        %{"choices" => [%{"finish_reason" => "length", "message" => %{"content" => "{"}}]}
+      end)
+
+      capture_log(fn ->
+        assert {:error, :truncated} = CardVision.extract_side(@image_url, @openai_opts)
+      end)
+    end
+  end
+
   test "surfaces a refusal as an error" do
     Req.Test.stub(CardVision, fn conn ->
       Req.Test.json(conn, %{"stop_reason" => "refusal", "content" => []})
