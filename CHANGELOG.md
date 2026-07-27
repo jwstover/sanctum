@@ -1,3 +1,12 @@
+## [1.75.1](https://github.com/jwstover/sanctum/compare/v1.75.0...v1.75.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* **decks:** sort "Newest" by MarvelCDB date, not local updated_at ([52f530c](https://github.com/jwstover/sanctum/commit/52f530ca005b661d1ae4e3b9275dba8287cc2a67))
+
+
+
 # [1.75.0](https://github.com/jwstover/sanctum/compare/v1.74.0...v1.75.0) (2026-07-27)
 
 
@@ -32,16 +41,6 @@
 ### Features
 
 * **admin:** trigger deck sync from a chosen start date ([771ee04](https://github.com/jwstover/sanctum/commit/771ee042d1a9a1e2cffe2322840254538e8aa37c))
-
-
-
-# [1.71.0](https://github.com/jwstover/sanctum/compare/v1.70.0...v1.71.0) (2026-07-25)
-
-
-### Features
-
-* **decks:** let users favorite decks and filter to favorites ([64c4f5c](https://github.com/jwstover/sanctum/commit/64c4f5c6671b190ab4f8b81afd71bc888e7f6d77))
-* **decks:** show favorite count and route signed-out favoriting to sign-in ([060a5e6](https://github.com/jwstover/sanctum/commit/060a5e6924c7a20b95c858693b2723de424cb4a9))
 
 
 
