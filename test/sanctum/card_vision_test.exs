@@ -177,6 +177,36 @@ defmodule Sanctum.CardVisionTest do
       assert String.starts_with?(data_url, "data:image/png;base64,")
     end
 
+    test "sniffs the real image type when the served content-type lies" do
+      parent = self()
+
+      Req.Test.stub(CardVision, fn conn ->
+        case conn.request_path do
+          # JPEG magic bytes served as image/png — like the Tigris scans.
+          "/cards/custom-ally.png" ->
+            conn
+            |> Plug.Conn.put_resp_content_type("image/png")
+            |> Plug.Conn.resp(200, <<0xFF, 0xD8, 0xFF, 0xE0>>)
+
+          "/v1/chat/completions" ->
+            {:ok, body, _conn} = Plug.Conn.read_body(conn)
+            send(parent, {:request_body, Jason.decode!(body)})
+
+            Req.Test.json(conn, %{
+              "choices" => [
+                %{"finish_reason" => "stop", "message" => %{"content" => "{}"}}
+              ]
+            })
+        end
+      end)
+
+      assert {:ok, _fields} = CardVision.extract_side(@image_url, @openai_opts)
+
+      assert_received {:request_body, body}
+      [%{"content" => [%{"image_url" => %{"url" => data_url}} | _]} | _] = tl(body["messages"])
+      assert String.starts_with?(data_url, "data:image/jpeg;base64,")
+    end
+
     test "recovers JSON wrapped in markdown fences" do
       stub_openai(fn _conn ->
         %{
