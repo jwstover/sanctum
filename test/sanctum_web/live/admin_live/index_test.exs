@@ -4,6 +4,7 @@ defmodule SanctumWeb.AdminLive.IndexTest do
   # async: false — the import test toggles the global `:marvel_cdb_req_options`
   # env to route MarvelCDB requests to a Req.Test stub.
   use SanctumWeb.ConnCase, async: false
+  use Oban.Testing, repo: Sanctum.Repo
 
   import Phoenix.LiveViewTest
   import Sanctum.Factory
@@ -61,6 +62,35 @@ defmodule SanctumWeb.AdminLive.IndexTest do
     {:ok, deck} = Sanctum.Decks.get_deck_by_mcdb_id("55555")
     assert deck
     assert html =~ ~p"/decks/#{deck.id}"
+  end
+
+  test "renders the deck-sync backfill form", %{conn: conn} do
+    {:ok, _view, html} = live(conn, ~p"/admin")
+
+    assert html =~ "Backfill from"
+    assert html =~ "sync_decks_from"
+  end
+
+  test "rejects an invalid backfill start date without enqueuing a sync", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    html =
+      view
+      |> form("form[phx-submit=sync_decks_from]", %{"since" => ""})
+      |> render_submit()
+
+    assert html =~ "Enter a valid start date"
+    refute_enqueued(worker: Sanctum.Decks.DecklistSyncWorker)
+  end
+
+  test "enqueues a backfill sync from the chosen start date", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    view
+    |> form("form[phx-submit=sync_decks_from]", %{"since" => "2024-01-01"})
+    |> render_submit()
+
+    assert_enqueued(worker: Sanctum.Decks.DecklistSyncWorker, args: %{since: "2024-01-01"})
   end
 
   # The hero (both sides) and one player card, so the decklist import resolves

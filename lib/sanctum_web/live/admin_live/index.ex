@@ -85,6 +85,28 @@ defmodule SanctumWeb.AdminLive.Index do
             </button>
           </div>
 
+          <form
+            phx-submit="sync_decks_from"
+            class="flex flex-col gap-3 border-t-2 border-neutral/50 pt-4 sm:flex-row sm:items-end"
+          >
+            <div class="w-full sm:w-auto">
+              <.input type="date" name="since" value={@deck_sync_since} label="Backfill from" />
+            </div>
+            <.button
+              variant="ghost"
+              type="submit"
+              disabled={@deck_sync.status == :running}
+              class="whitespace-nowrap"
+            >
+              <.icon name="hero-calendar-days" class="size-4" /> Sync from date
+            </.button>
+          </form>
+          <p class="font-ibm-mono text-xs text-base-content/40">
+            Re-walks MarvelCDB day by day from the chosen date to today, importing any
+            decks a past run missed. Imports upsert, so re-running is safe, and a
+            historical date never rewinds the live cursor.
+          </p>
+
           <div :if={@deck_sync.status == :running} class="space-y-2">
             <div class="flex items-baseline justify-between font-ibm-mono text-xs text-base-content/70">
               <span>
@@ -299,6 +321,7 @@ defmodule SanctumWeb.AdminLive.Index do
       |> assign(:deck_sync, Sanctum.DeckSync.Monitor.status())
       |> assign(:deck_health, %{cursor: nil, last_run: nil})
       |> assign(:deck_import, %{status: :idle, deck: nil, error: nil, url: ""})
+      |> assign(:deck_sync_since, "")
 
     # Skip the ~10 count/aggregate queries on the static render; load them
     # asynchronously once the socket connects so the shell paints immediately.
@@ -333,6 +356,33 @@ defmodule SanctumWeb.AdminLive.Index do
         else: "Deck sync enqueued."
 
     {:noreply, put_flash(socket, :info, message)}
+  end
+
+  # Enqueue a historical backfill from a chosen start date. Same worker and
+  # `unique` debounce as "Sync now", but with a `since` arg — `DeckSync` walks
+  # from that day to today, re-importing (idempotently) any decks a prior run
+  # missed. A historical date never rewinds the live cursor.
+  @impl true
+  def handle_event("sync_decks_from", %{"since" => since}, socket) do
+    socket = assign(socket, :deck_sync_since, since)
+
+    case Date.from_iso8601(since) do
+      {:ok, date} ->
+        {:ok, job} =
+          %{since: Date.to_iso8601(date)}
+          |> Sanctum.Decks.DecklistSyncWorker.new()
+          |> Oban.insert()
+
+        message =
+          if job.conflict?,
+            do: "A deck sync is already queued or running.",
+            else: "Deck sync enqueued from #{Date.to_iso8601(date)}."
+
+        {:noreply, put_flash(socket, :info, message)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Enter a valid start date.")}
+    end
   end
 
   @impl true
