@@ -252,14 +252,7 @@ defmodule Sanctum.CardVision do
     |> Req.get()
     |> case do
       {:ok, %Req.Response{status: 200, body: binary} = resp} ->
-        content_type =
-          resp
-          |> Req.Response.get_header("content-type")
-          |> List.first("image/jpeg")
-          |> String.split(";")
-          |> hd()
-
-        {:ok, "data:#{content_type};base64," <> Base.encode64(binary)}
+        {:ok, "data:#{image_mime(binary, resp)};base64," <> Base.encode64(binary)}
 
       {:ok, %Req.Response{status: status}} ->
         {:error, {:image_fetch_failed, status}}
@@ -267,6 +260,23 @@ defmodule Sanctum.CardVision do
       {:error, exception} ->
         {:error, {:image_fetch_failed, exception}}
     end
+  end
+
+  # The bucket serves MarvelCDB scans with extension-derived content types
+  # that often disagree with the actual bytes (JPEG data in .png objects).
+  # Strict providers (Anthropic) reject data URLs whose media type mismatches
+  # the payload, so sniff the magic bytes; the header is only a fallback.
+  defp image_mime(<<0xFF, 0xD8, 0xFF, _::binary>>, _resp), do: "image/jpeg"
+  defp image_mime(<<0x89, "PNG", _::binary>>, _resp), do: "image/png"
+  defp image_mime(<<"GIF8", _::binary>>, _resp), do: "image/gif"
+  defp image_mime(<<"RIFF", _::binary-size(4), "WEBP", _::binary>>, _resp), do: "image/webp"
+
+  defp image_mime(_binary, resp) do
+    resp
+    |> Req.Response.get_header("content-type")
+    |> List.first("image/jpeg")
+    |> String.split(";")
+    |> hd()
   end
 
   # -- Shared response handling ---------------------------------------------------
