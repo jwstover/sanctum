@@ -103,7 +103,8 @@ defmodule Mix.Tasks.Sanctum.VisionEval do
       ],
       ["errors" | Enum.map(results, &to_string(&1.score.errors))],
       ["avg latency" | Enum.map(results, &avg_latency(&1.runs))],
-      ["avg out tokens" | Enum.map(results, &avg_out_tokens(&1.runs))]
+      ["avg in tokens" | Enum.map(results, &avg_tokens(&1.runs, :input))],
+      ["avg out tokens" | Enum.map(results, &avg_tokens(&1.runs, :output))]
     ]
 
     Mix.shell().info("")
@@ -122,8 +123,8 @@ defmodule Mix.Tasks.Sanctum.VisionEval do
     end
   end
 
-  defp avg_out_tokens(runs) do
-    tokens = for %{meta: %{usage: %{output: out}}} when is_integer(out) <- runs, do: out
+  defp avg_tokens(runs, side) do
+    tokens = for %{meta: %{usage: usage}} <- runs, is_integer(usage[side]), do: usage[side]
 
     case tokens do
       [] -> "—"
@@ -151,6 +152,7 @@ defmodule Mix.Tasks.Sanctum.VisionEval do
                 name: run.item.side.name,
                 image_url: run.item.image_url,
                 ms: run.ms,
+                usage: run.meta && run.meta.usage,
                 error: run.error && inspect(run.error),
                 mismatches:
                   for {field, %{status: :mismatch} = result} <- run.comparison || %{},
