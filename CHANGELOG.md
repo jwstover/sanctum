@@ -1,3 +1,12 @@
+# [1.72.0](https://github.com/jwstover/sanctum/compare/v1.71.0...v1.72.0) (2026-07-27)
+
+
+### Features
+
+* **admin:** trigger deck sync from a chosen start date ([771ee04](https://github.com/jwstover/sanctum/commit/771ee042d1a9a1e2cffe2322840254538e8aa37c))
+
+
+
 # [1.71.0](https://github.com/jwstover/sanctum/compare/v1.70.0...v1.71.0) (2026-07-25)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * **deckbuilder:** consolidate deck management into a Details tab ([9c87bd2](https://github.com/jwstover/sanctum/commit/9c87bd2834cf6c2563d2944af076c2cc890c910b))
-
-
-
-# [1.68.0](https://github.com/jwstover/sanctum/compare/v1.67.4...v1.68.0) (2026-07-23)
-
-
-### Features
-
-* **decks:** phased deck lifecycle with private drafts ([48b97f0](https://github.com/jwstover/sanctum/commit/48b97f0ea480e34b93eff822655ad2fef4b93ce8))
 
 
 
