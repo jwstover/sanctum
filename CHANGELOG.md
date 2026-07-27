@@ -1,3 +1,12 @@
+# [1.73.0](https://github.com/jwstover/sanctum/compare/v1.72.0...v1.73.0) (2026-07-27)
+
+
+### Features
+
+* **auth:** return to originating page (and scroll) after signing in to favorite ([6d5f843](https://github.com/jwstover/sanctum/commit/6d5f8432ed402e287477655daa149200e938a648))
+
+
+
 # [1.72.0](https://github.com/jwstover/sanctum/compare/v1.71.0...v1.72.0) (2026-07-27)
 
 
@@ -32,15 +41,6 @@
 ### Bug Fixes
 
 * **cards:** keep pool total denominator at full catalog size ([e52dc21](https://github.com/jwstover/sanctum/commit/e52dc213708bc1b7ba14b30791d20a722f37730b))
-
-
-
-# [1.69.0](https://github.com/jwstover/sanctum/compare/v1.68.0...v1.69.0) (2026-07-23)
-
-
-### Features
-
-* **deckbuilder:** consolidate deck management into a Details tab ([9c87bd2](https://github.com/jwstover/sanctum/commit/9c87bd2834cf6c2563d2944af076c2cc890c910b))
 
 
 
