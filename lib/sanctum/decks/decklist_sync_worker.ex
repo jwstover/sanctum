@@ -8,18 +8,29 @@ defmodule Sanctum.Decks.DecklistSyncWorker do
   executing, but a fresh run proceeds once the prior one reaches a terminal
   state. This matters because a single run mutates the shared sync cursor and
   makes a burst of MarvelCDB calls — two at once would race and double the load.
+  Uniqueness is keyed on `[:worker, :queue]` (not `:args`) so an ad-hoc
+  `since` backfill still debounces against the plain hourly run rather than
+  racing it.
+
+  Optional job args:
+
+    * `"since"` — an ISO-8601 date string (`"2024-01-01"`). Runs a historical
+      backfill from that day to today instead of resuming from the stored
+      cursor. A historical `since` never rewinds the cursor (see `DeckSync`),
+      so it's a safe way to re-walk and pick up decks a past run missed.
   """
 
   use Oban.Worker,
     queue: :default,
     max_attempts: 5,
-    unique: [period: :infinity, states: :incomplete]
+    unique: [fields: [:worker, :queue], period: :infinity, states: :incomplete]
 
   @impl Oban.Worker
-  def perform(_job) do
+  def perform(%Oban.Job{args: args}) do
     # Route progress into the Monitor so the admin dashboard can watch the run
     # live (and see its outcome afterward); the Monitor also handles logging.
-    result = Sanctum.DeckSync.run(progress_fun: &Sanctum.DeckSync.Monitor.report/1)
+    opts = maybe_put_since([progress_fun: &Sanctum.DeckSync.Monitor.report/1], args)
+    result = Sanctum.DeckSync.run(opts)
 
     # Uniqueness recompute is left to the nightly ComputeUniquenessWorker cron:
     # enqueueing it after every sync run meant the full-library sweep (a
@@ -39,4 +50,16 @@ defmodule Sanctum.Decks.DecklistSyncWorker do
         {:error, "deck sync halted at #{summary.halted.date}: #{inspect(summary.halted.reason)}"}
     end
   end
+
+  # Oban serializes args to JSON, so `since` arrives as a string. A malformed
+  # value is ignored (falls back to a normal cursor-resuming run) rather than
+  # failing the job.
+  defp maybe_put_since(opts, %{"since" => since}) when is_binary(since) do
+    case Date.from_iso8601(since) do
+      {:ok, date} -> Keyword.put(opts, :since, date)
+      {:error, _} -> opts
+    end
+  end
+
+  defp maybe_put_since(opts, _args), do: opts
 end
