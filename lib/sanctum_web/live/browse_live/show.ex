@@ -35,6 +35,7 @@ defmodule SanctumWeb.BrowseLive.Show do
       |> assign(:sections, [])
       |> assign(:modular_groups, [])
       |> assign(:player_groups, [])
+      |> assign(:reprint_groups, [])
       |> assign(:scroll_restore_pending?, false)
       # nil owned_ids = anonymous; no collection UI renders at all.
       |> assign(:owned_ids, nil)
@@ -110,6 +111,7 @@ defmodule SanctumWeb.BrowseLive.Show do
       |> assign(:sections, data.sections)
       |> assign(:modular_groups, data.modular_groups)
       |> assign(:player_groups, data.player_groups)
+      |> assign(:reprint_groups, data.reprint_groups)
       |> assign(:owned_ids, data.owned_ids)
       |> assign(:total_cards, data.total_cards)
       |> assign(:pack_owned, data.pack_owned)
@@ -165,6 +167,7 @@ defmodule SanctumWeb.BrowseLive.Show do
            sections: build_sections(pack, hero_colors),
            modular_groups: modular_groups(pack, hero_colors),
            player_groups: player_card_groups(pack, hero_colors),
+           reprint_groups: reprint_groups(pack, hero_colors),
            owned_ids: owned_ids,
            total_cards: total_cards,
            pack_owned: pack_owned
@@ -260,12 +263,19 @@ defmodule SanctumWeb.BrowseLive.Show do
             groups={@modular_groups}
             owned_ids={@owned_ids}
           />
+
+          <.grouped_section
+            title="Reprints"
+            description="Cards reprinted in this product that first appeared in an earlier release."
+            groups={@reprint_groups}
+            owned_ids={@owned_ids}
+          />
         </div>
 
         <.panel
           :if={
             @sections == [] and @villain_groups == [] and @encounter_groups == [] and
-              @player_groups == [] and @modular_groups == []
+              @player_groups == [] and @modular_groups == [] and @reprint_groups == []
           }
           class="mt-2 p-6 text-center"
         >
@@ -506,6 +516,46 @@ defmodule SanctumWeb.BrowseLive.Show do
     end)
   end
 
+  # Reprints: cards that ship in this product but first appeared in an earlier
+  # release. A reprint is a thin `CardAlt` (no `CardSide` of its own), so render
+  # the canonical card's matching side with the reprint's own art. Bucketed by
+  # aspect, mirroring the Player Cards layout.
+  defp reprint_groups(pack, hero_colors) do
+    Sanctum.Games.CardAlt
+    |> Ash.Query.filter(pack_id == ^pack.id and origin == :official)
+    |> Ash.Query.load(card: [:primary_side, :card_sides])
+    |> Ash.read!()
+    # When the original printing also belongs to this product it's already shown
+    # as its own Card elsewhere on the page — don't render it twice.
+    |> Enum.reject(&(&1.card.pack_id == pack.id))
+    |> Enum.flat_map(&alt_view(&1, hero_colors))
+    |> Enum.group_by(& &1.aspect_key)
+    |> Enum.sort_by(fn {aspect, _} -> Map.get(@aspect_order, aspect, 99) end)
+    |> Enum.map(fn {aspect, cards} ->
+      %{title: aspect_label(aspect), cards: Enum.sort_by(cards, & &1.sort_key)}
+    end)
+  end
+
+  # One reprint tile: the canonical side named by the alt's `side_identifier`
+  # (falling back to the primary side), wearing the reprint's own image where it
+  # has one. Yields `[]` for the rare canonical card with no renderable side.
+  defp alt_view(alt, hero_colors) do
+    card = alt.card
+
+    side =
+      Enum.find(card.card_sides, &(&1.side_identifier == alt.side_identifier)) ||
+        card.primary_side
+
+    case side do
+      nil ->
+        []
+
+      side ->
+        gradient = hero_gradient(card.set, hero_colors)
+        [side_tile(card, side, card.deck_limit || 1, alt.image_url || side.image_url, gradient)]
+    end
+  end
+
   defp view_cards(cards, hero_colors) do
     cards
     |> Enum.flat_map(&card_views(&1, hero_colors))
@@ -517,43 +567,51 @@ defmodule SanctumWeb.BrowseLive.Show do
   # side first, so the pack page shows front and back.
   defp card_views(%{card_sides: sides} = card, hero_colors)
        when is_list(sides) and sides != [] do
-    {gradient_from, gradient_to} = hero_gradient(card.set, hero_colors)
+    gradient = hero_gradient(card.set, hero_colors)
 
     sides
     |> Enum.sort_by(&{!&1.is_primary_side, &1.side_identifier || ""})
     |> Enum.map(fn side ->
-      resources =
-        [
-          energy: side.resource_energy_count,
-          mental: side.resource_mental_count,
-          physical: side.resource_physical_count,
-          wild: side.resource_wild_count
-        ]
-        |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
-
-      %{
-        card_id: card.id,
-        code: side.code,
-        # Keep a card's faces adjacent and primary-first, then order cards among
-        # themselves by the canonical code.
-        sort_key: {card.code, (side.is_primary_side && 0) || 1, side.side_identifier || ""},
-        name: side.name,
-        type: side.type,
-        aspect_key: display_aspect(side),
-        is_landscape: CardComponent.landscape_type?(side.type),
-        resources: resources,
-        # MarvelCDB's per-card `quantity` (copies in the product) is stored on
-        # Card.deck_limit; show the ×N badge only on the primary face so a
-        # double-sided card isn't counted twice in the section total.
-        quantity: (side.is_primary_side && (card.deck_limit || 1)) || 0,
-        gradient_from: gradient_from,
-        gradient_to: gradient_to,
-        image_url: side.image_url
-      }
+      # MarvelCDB's per-card `quantity` (copies in the product) is stored on
+      # Card.deck_limit; show the ×N badge only on the primary face so a
+      # double-sided card isn't counted twice in the section total.
+      quantity = (side.is_primary_side && (card.deck_limit || 1)) || 0
+      side_tile(card, side, quantity, side.image_url, gradient)
     end)
   end
 
   defp card_views(_card, _hero_colors), do: []
+
+  # A single card-side display map for the pack grid. Shared by canonical card
+  # faces (`card_views/2`) and reprint tiles (`alt_view/2`), which differ only in
+  # which image and copy-count they carry.
+  defp side_tile(card, side, quantity, image_url, {gradient_from, gradient_to}) do
+    resources =
+      [
+        energy: side.resource_energy_count,
+        mental: side.resource_mental_count,
+        physical: side.resource_physical_count,
+        wild: side.resource_wild_count
+      ]
+      |> Enum.flat_map(fn {res, n} -> List.duplicate(res, n || 0) end)
+
+    %{
+      card_id: card.id,
+      code: side.code,
+      # Keep a card's faces adjacent and primary-first, then order cards among
+      # themselves by the canonical code.
+      sort_key: {card.code, (side.is_primary_side && 0) || 1, side.side_identifier || ""},
+      name: side.name,
+      type: side.type,
+      aspect_key: display_aspect(side),
+      is_landscape: CardComponent.landscape_type?(side.type),
+      resources: resources,
+      quantity: quantity,
+      gradient_from: gradient_from,
+      gradient_to: gradient_to,
+      image_url: image_url
+    }
+  end
 
   defp hero_gradient(set, hero_colors) do
     case Map.get(hero_colors, set) do
