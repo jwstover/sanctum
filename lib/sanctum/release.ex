@@ -67,6 +67,22 @@ defmodule Sanctum.Release do
   end
 
   @doc """
+  One-time (idempotent) cleanup of stale duplicate canonical cards — reprints
+  minted as full `Card`s with empty `CardSide`s before MarvelCDB duplicate
+  handling collapsed them into `CardAlt`s (see
+  `Sanctum.Games.DuplicateCardCleanup`). Defaults to a dry run that only reports;
+  pass `dry_run: false` to commit.
+
+      /app/bin/sanctum eval 'Sanctum.Release.cleanup_duplicate_cards()'
+      /app/bin/sanctum eval 'Sanctum.Release.cleanup_duplicate_cards(dry_run: false)'
+  """
+  def cleanup_duplicate_cards(opts \\ []) do
+    {:ok, _} = Application.ensure_all_started(@app)
+    {:ok, report} = Sanctum.Games.DuplicateCardCleanup.run(opts)
+    report
+  end
+
+  @doc """
   One-time backfill of MarvelCDB deck dates for decks imported before the
   fields were captured (see `Sanctum.Decks.McdbDateBackfill`). If it halts on
   a transient MarvelCDB failure, re-run with `since:` set to the reported day.
