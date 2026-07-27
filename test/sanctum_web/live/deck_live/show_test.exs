@@ -224,11 +224,14 @@ defmodule SanctumWeb.DeckLive.ShowTest do
       assert has_element?(view, "button[title='Sign in to favorite decks']")
       refute has_element?(view, "button[title='Add to favorites']")
 
-      # Clicking it redirects to sign-in rather than creating a favorite.
-      assert {:error, {redirect_kind, %{to: "/sign-in"}}} =
+      # Clicking it redirects to sign-in (carrying the deck's path so the user
+      # returns here afterwards) rather than creating a favorite.
+      assert {:error, {redirect_kind, %{to: to}}} =
                view |> element("button[title='Sign in to favorite decks']") |> render_click()
 
       assert redirect_kind in [:live_redirect, :redirect]
+      assert %URI{path: "/sign-in", query: query} = URI.parse(to)
+      assert URI.decode_query(query) == %{"return_to" => "/decks/#{deck.id}"}
 
       assert Sanctum.Decks.DeckFavorite
              |> Ash.Query.filter(deck_id == ^deck.id)
