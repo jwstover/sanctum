@@ -6,7 +6,7 @@ defmodule Sanctum.Games.CardOwnership do
   (`hero`, `encounter`, ...) with the player aspects. Ownership answers
   "where does this card come from"; the separate `aspect` answers "which aspect"
   and is only set for aspect player cards. `pool` is an aspect, not an ownership,
-  so it lives on `Sanctum.Games.CardAspect`.
+  so it lives as an `aspect` key (see `Sanctum.Games.Aspect`).
   """
 
   use Ash.Type.Enum,

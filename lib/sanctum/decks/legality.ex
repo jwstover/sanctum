@@ -187,6 +187,6 @@ defmodule Sanctum.Decks.Legality do
   defp copies(1), do: "copy"
   defp copies(_n), do: "copies"
 
-  defp aspect_label(:pool), do: "'Pool"
+  defp aspect_label("pool"), do: "'Pool"
   defp aspect_label(aspect), do: aspect |> to_string() |> String.capitalize()
 end

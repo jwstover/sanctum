@@ -188,11 +188,12 @@ defmodule Sanctum.CardVision do
           Sanctum.Games.CardOwnership,
           "Which pool the card belongs to (see instructions)."
         ),
-      aspect:
-        enum_schema(
-          Sanctum.Games.CardAspect,
-          "Only for aspect player cards; \"none\" otherwise."
-        ),
+      aspect: %{
+        type: "string",
+        enum: Sanctum.Games.Aspect.official_keys() ++ ["none"],
+        description:
+          "Only for aspect player cards; \"none\" otherwise. \"none\" when not printed."
+      },
       cost:
         nullable(
           %{type: "integer"},
