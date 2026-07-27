@@ -591,6 +591,13 @@ textarea::placeholder {
     box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.85);
   }
 
+  /* White keyline drawn behind a glyph's fill — the HTML-text analogue of
+     the SVG paint-order:stroke the stat badges use. Boost-bar icons. */
+  .text-stroke-white {
+    -webkit-text-stroke: 2px #fbfbfb;
+    paint-order: stroke fill;
+  }
+
   /* Halftone dot texture overlay for page canvases */
   .bg-halftone {
     background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1.1px, transparent 1.5px);
