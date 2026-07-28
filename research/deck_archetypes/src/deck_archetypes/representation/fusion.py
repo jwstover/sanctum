@@ -55,12 +55,11 @@ def pool_one(card_matrix, card_weights):
 
 
 def pool_weight_vector(corpus, cfg):
-    """Per-card pooling weight (rarity component only) as a dense vector — lets
-    held-out eval reconstruct per-deck weights consistently with `pool`."""
+    """Per-card pooling weight (rarity × aspect_downweight) as a dense vector —
+    lets held-out eval reconstruct per-deck weights consistently with `pool`."""
     rarity_weight = get(cfg, "deck_vector.pooling.rarity_weight", "tfidf")
-    if rarity_weight == "tfidf":
-        return corpus.idf
-    return np.ones(corpus.n_cards)
+    base = corpus.idf if rarity_weight == "tfidf" else np.ones(corpus.n_cards)
+    return base * corpus.card_weight
 
 
 def quantity_transform(values, mode):
@@ -93,8 +92,8 @@ def combine_deck_channels(named_channels: dict, cfg):
 def _pool_weights(corpus, quantity_weight, rarity_weight):
     X = corpus.X.tocoo()
     q = quantity_transform(X.data, quantity_weight)
-    if rarity_weight == "tfidf":
-        q = q * corpus.idf[X.col]
+    base = corpus.idf if rarity_weight == "tfidf" else np.ones(corpus.n_cards)
+    q = q * (base * corpus.card_weight)[X.col]  # rarity × aspect_downweight
     return sparse.csr_matrix((q, (X.row, X.col)), shape=X.shape)
 
 
