@@ -3,7 +3,8 @@ defmodule SanctumWeb.Components.DeckBuilder do
   Deckbuilder UI pieces: the per-card quantity stepper overlaid on grid
   tiles and (via `SanctumWeb.DeckLive.Build`) the persistent deck bar.
   All controls emit `inc`/`dec` with `phx-value-card-id`; the LiveView owns
-  persistence and clamping — the stepper's max only gates the button UI.
+  persistence. The builder imposes no deckbuilding restrictions — the stepper
+  never caps quantity; over-limit picks surface as advisory issues instead.
   """
 
   use Phoenix.Component
@@ -12,14 +13,16 @@ defmodule SanctumWeb.Components.DeckBuilder do
 
   @doc """
   Quantity controls for one card. Renders a lone "+" chip at zero and a
-  `− n +` cluster above it otherwise. `max` disables (visually) the "+" at
-  the card's deck limit; it never blocks the event handler's own clamp.
+  `− n +` cluster above it otherwise. The "+" is never capped — Sanctum
+  imposes no deckbuilding limits; over-limit copies are surfaced as advisory
+  issues in the deck panel rather than blocked here.
 
   `size` fits the control to its tile: `"md"` for the browse grid, `"sm"`
   for the compact tiles in the deck panel.
   """
   attr :card_id, :string, required: true
   attr :qty, :integer, default: 0
+  # Retained for callers; no longer gates the control (see moduledoc).
   attr :max, :integer, default: 3
   attr :size, :string, default: "md", values: ~w(md sm)
   attr :class, :any, default: nil
@@ -64,13 +67,10 @@ defmodule SanctumWeb.Components.DeckBuilder do
           data-haptic
           phx-click="inc"
           phx-value-card-id={@card_id}
-          disabled={@qty >= @max}
-          title={(@qty >= @max && "At this card's limit") || "Add a copy"}
+          title="Add a copy"
           class={[
-            "flex cursor-pointer items-center justify-center transition-colors",
-            @button_class,
-            (@qty >= @max && "cursor-default text-white/25") ||
-              "text-white/80 hover:bg-success hover:text-success-content"
+            "flex cursor-pointer items-center justify-center text-white/80 transition-colors hover:bg-success hover:text-success-content",
+            @button_class
           ]}
         >
           <.icon name="hero-plus" class={@icon_class} />

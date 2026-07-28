@@ -50,7 +50,7 @@ defmodule Sanctum.Decks.LegalityTest do
 
   describe "deck size" do
     test "flags too few cards" do
-      issues = Legality.issues(filler(39), [], [])
+      issues = Legality.issues(filler(39), [])
 
       assert [%Legality.Issue{code: :too_few, severity: :warning, message: message}] = issues
       assert message =~ "39"
@@ -58,18 +58,18 @@ defmodule Sanctum.Decks.LegalityTest do
 
     test "flags too many cards" do
       assert [%Legality.Issue{code: :too_many, severity: :warning}] =
-               Legality.issues(filler(51), [], [])
+               Legality.issues(filler(51), [])
     end
 
     test "accepts 40-50 cards" do
-      assert Legality.issues(filler(40), [], []) == []
-      assert Legality.issues(filler(50), [], []) == []
+      assert Legality.issues(filler(40), []) == []
+      assert Legality.issues(filler(50), []) == []
     end
 
     test "permanent cards do not count toward deck size" do
       permanent = entry(card(%{permanent: true, name: "Permanent"}), 1)
 
-      assert Legality.issues([permanent | filler(40)], [], []) == []
+      assert Legality.issues([permanent | filler(40)], []) == []
     end
   end
 
@@ -78,7 +78,7 @@ defmodule Sanctum.Decks.LegalityTest do
       sig_a = card(%{ownership: :hero, deck_limit: 2, name: "Backflip"})
       sig_b = card(%{ownership: :hero, deck_limit: 1, name: "Black Cat"})
 
-      issues = Legality.issues([entry(sig_a, 1) | filler(39)], [], [sig_a, sig_b])
+      issues = Legality.issues([entry(sig_a, 1) | filler(39)], [sig_a, sig_b])
 
       assert [
                %{code: :hero_set_incomplete, card_id: a_id},
@@ -96,7 +96,6 @@ defmodule Sanctum.Decks.LegalityTest do
       issues =
         Legality.issues(
           [entry(sig, 3), entry(stray, 1) | filler(36)],
-          [],
           [sig]
         )
 
@@ -109,7 +108,7 @@ defmodule Sanctum.Decks.LegalityTest do
     test "exact signature set raises no hero issues" do
       sig = card(%{ownership: :hero, deck_limit: 2, name: "Backflip"})
 
-      issues = Legality.issues([entry(sig, 2) | filler(38)], [], [sig])
+      issues = Legality.issues([entry(sig, 2) | filler(38)], [sig])
 
       refute Enum.any?(issues, &(&1.code in [:hero_set_incomplete, :hero_set_extra]))
     end
@@ -119,7 +118,7 @@ defmodule Sanctum.Decks.LegalityTest do
     test "flags quantities over deck_limit" do
       over = card(%{deck_limit: 3, name: "Over Limit"})
 
-      issues = Legality.issues([entry(over, 4) | filler(36)], [], [])
+      issues = Legality.issues([entry(over, 4) | filler(36)], [])
 
       assert [%{code: :deck_limit_exceeded, severity: :error, card_id: card_id}] =
                Enum.filter(issues, &(&1.code == :deck_limit_exceeded))
@@ -130,7 +129,7 @@ defmodule Sanctum.Decks.LegalityTest do
     test "ignore_deck_limit suppresses the deck_limit finding" do
       over = card(%{deck_limit: 3, name: "Boosted"})
 
-      issues = Legality.issues([entry(over, 4, ignore_deck_limit: true) | filler(36)], [], [])
+      issues = Legality.issues([entry(over, 4, ignore_deck_limit: true) | filler(36)], [])
 
       refute Enum.any?(issues, &(&1.code == :deck_limit_exceeded))
     end
@@ -138,75 +137,86 @@ defmodule Sanctum.Decks.LegalityTest do
     test "flags duplicate uniques (without doubling up a deck_limit finding)" do
       uniq = card(%{unique: true, deck_limit: 1, name: "Unique Ally"})
 
-      issues = Legality.issues([entry(uniq, 2) | filler(38)], [], [])
+      issues = Legality.issues([entry(uniq, 2) | filler(38)], [])
 
       assert [%{code: :unique_dup, severity: :error}] =
                Enum.filter(issues, &(&1.code in [:unique_dup, :deck_limit_exceeded]))
     end
   end
 
-  describe "aspects" do
-    test "flags player cards outside the deck's aspects" do
-      justice = card(%{ownership: :player, aspect: "justice", name: "Justice Card"})
-      pool = card(%{ownership: :player, aspect: "pool", name: "Pool Card"})
-
-      issues =
-        Legality.issues(
-          [entry(justice, 3), entry(pool, 3) | filler(34)],
-          ["justice"],
-          []
-        )
-
-      assert [%{code: :off_aspect, severity: :warning, card_id: card_id, message: message}] =
-               Enum.filter(issues, &(&1.code == :off_aspect))
-
-      assert card_id == pool.id
-      assert message =~ "'Pool"
-    end
-
-    test "multi-aspect decks accept cards from every chosen aspect" do
+  describe "aspect inference" do
+    test "aspects_from_entries returns the sorted distinct player aspects" do
       justice = card(%{ownership: :player, aspect: "justice"})
-      pool = card(%{ownership: :player, aspect: "pool"})
+      aggression = card(%{ownership: :player, aspect: "aggression"})
 
-      issues =
-        Legality.issues(
-          [entry(justice, 3), entry(pool, 3) | filler(34)],
-          ["justice", "pool"],
-          []
-        )
+      entries = [entry(aggression, 2), entry(justice, 3)]
 
-      refute Enum.any?(issues, &(&1.code == :off_aspect))
+      assert Legality.aspects_from_entries(entries) == ["aggression", "justice"]
     end
 
-    test "a basic deck (no aspects) flags every player aspect card" do
+    test "a single represented aspect infers just that aspect" do
       justice = card(%{ownership: :player, aspect: "justice"})
 
-      issues = Legality.issues([entry(justice, 3) | filler(37)], [], [])
-
-      assert Enum.any?(issues, &(&1.code == :off_aspect))
+      assert Legality.aspects_from_entries([entry(justice, 3)]) == ["justice"]
     end
 
-    test "basic and hero cards never raise aspect issues" do
+    test "removing every copy drops the aspect (quantity 0 doesn't count)" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+
+      assert Legality.aspects_from_entries([entry(justice, 0)]) == []
+    end
+
+    test "hero and basic cards never contribute an aspect" do
       basic = card(%{ownership: :basic, aspect: nil})
       hero = card(%{ownership: :hero, aspect: nil, deck_limit: 2})
 
-      issues = Legality.issues([entry(basic, 3), entry(hero, 2) | filler(35)], [], [hero])
-
-      refute Enum.any?(issues, &(&1.code == :off_aspect))
+      assert Legality.aspects_from_entries([entry(basic, 3), entry(hero, 2)]) == []
     end
   end
 
-  test "a legal-looking deck returns no issues" do
+  describe "multi-aspect advisory" do
+    test "flags a deck that combines more than one aspect" do
+      justice = card(%{ownership: :player, aspect: "justice", name: "Justice Card"})
+      pool = card(%{ownership: :player, aspect: "pool", name: "Pool Card"})
+
+      issues = Legality.issues([entry(justice, 3), entry(pool, 3) | filler(34)], [])
+
+      assert [%{code: :multi_aspect, severity: :warning, message: message}] =
+               Enum.filter(issues, &(&1.code == :multi_aspect))
+
+      assert message =~ "2 aspects"
+      assert message =~ "'Pool"
+    end
+
+    test "a single-aspect deck raises no multi-aspect issue" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+
+      issues = Legality.issues([entry(justice, 3) | filler(37)], [])
+
+      refute Enum.any?(issues, &(&1.code == :multi_aspect))
+    end
+
+    test "basic and hero cards never raise a multi-aspect issue" do
+      basic = card(%{ownership: :basic, aspect: nil})
+      hero = card(%{ownership: :hero, aspect: nil, deck_limit: 2})
+
+      issues = Legality.issues([entry(basic, 3), entry(hero, 2) | filler(35)], [hero])
+
+      refute Enum.any?(issues, &(&1.code == :multi_aspect))
+    end
+  end
+
+  test "a legal-looking single-aspect deck returns no issues" do
     sig = card(%{ownership: :hero, deck_limit: 2, name: "Signature"})
     aspect_card = card(%{ownership: :player, aspect: "justice", name: "Aspect Card"})
 
     entries = [entry(sig, 2), entry(aspect_card, 3) | filler(35)]
 
-    assert Legality.issues(entries, ["justice"], [sig]) == []
+    assert Legality.issues(entries, [sig]) == []
   end
 
   test "issue codes are stable atoms (UI contract)" do
-    issues = Legality.issues(filler(10), [], [])
+    issues = Legality.issues(filler(10), [])
     assert Enum.all?(issues, &match?(%Legality.Issue{}, &1))
     assert codes(issues) == [:too_few]
   end

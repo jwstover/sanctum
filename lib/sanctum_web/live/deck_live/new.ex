@@ -1,8 +1,9 @@
 defmodule SanctumWeb.DeckLive.New do
   @moduledoc """
   Hero picker for building a native deck: a card-art grid of every buildable
-  hero, a name filter, and a sticky (never modal) confirm strip with title +
-  aspect choices. Creating navigates straight into the builder.
+  hero, a name filter, and a sticky (never modal) confirm strip with a title.
+  Creating navigates straight into the builder. Aspect isn't chosen here — the
+  builder infers it from the cards as they're added (see `Sanctum.Decks.Legality`).
   """
 
   use SanctumWeb, :live_view
@@ -12,14 +13,6 @@ defmodule SanctumWeb.DeckLive.New do
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
-  @aspects [
-    {"aggression", "Aggression", "bg-aspect-aggression"},
-    {"justice", "Justice", "bg-aspect-justice"},
-    {"leadership", "Leadership", "bg-aspect-leadership"},
-    {"protection", "Protection", "bg-aspect-protection"},
-    {"pool", "'Pool", "bg-aspect-pool"}
-  ]
-
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
@@ -28,8 +21,6 @@ defmodule SanctumWeb.DeckLive.New do
      |> assign(:heroes, load_heroes())
      |> assign(:filter, "")
      |> assign(:selected, nil)
-     |> assign(:chosen_aspects, [])
-     |> assign(:aspect_options, @aspects)
      |> assign(:creating?, false)}
   end
 
@@ -47,29 +38,16 @@ defmodule SanctumWeb.DeckLive.New do
     {:noreply, assign(socket, :selected, nil)}
   end
 
-  def handle_event("toggle_aspect", %{"key" => aspect}, socket) do
-    chosen = socket.assigns.chosen_aspects
-
-    chosen =
-      if aspect in chosen do
-        List.delete(chosen, aspect)
-      else
-        chosen ++ [aspect]
-      end
-
-    {:noreply, assign(socket, :chosen_aspects, chosen)}
-  end
-
   def handle_event("create", params, socket) do
-    %{selected: selected, chosen_aspects: aspects, current_user: user} = socket.assigns
+    %{selected: selected, current_user: user} = socket.assigns
 
     if is_nil(selected) do
       {:noreply, put_flash(socket, :error, "Pick a hero first")}
     else
+      # Aspects start empty and are inferred in the builder from the cards.
       attrs = %{
         hero_id: selected.id,
-        title: Map.get(params, "title", ""),
-        aspects: aspects
+        title: Map.get(params, "title", "")
       }
 
       case Decks.build_deck(attrs, actor: user) do
@@ -188,21 +166,9 @@ defmodule SanctumWeb.DeckLive.New do
             class="min-h-[44px] w-full border-[2.5px] border-line bg-black px-3 py-2 font-barlow-condensed text-base font-bold text-base-content outline-none focus:border-primary sm:min-h-0"
           />
 
-          <div class="flex flex-wrap items-center gap-1.5">
-            <.filter_pill
-              :for={{key, label, dot_class} <- @aspect_options}
-              active={key in @chosen_aspects}
-              dot_class={dot_class}
-              type="button"
-              phx-click="toggle_aspect"
-              phx-value-key={key}
-            >
-              {label}
-            </.filter_pill>
-            <span class="ml-1 font-barlow-condensed text-xs uppercase tracking-[0.06em] text-base-content/45">
-              none = basic deck
-            </span>
-          </div>
+          <p class="font-barlow-condensed text-xs uppercase tracking-[0.06em] text-base-content/45">
+            Aspect is set automatically from the cards you add.
+          </p>
 
           <.button variant="primary" type="submit" class="w-full sm:w-auto sm:self-end">
             Start Deck

@@ -33,17 +33,43 @@ defmodule Sanctum.Decks.Legality do
 
   `entries` accepts loaded `DeckCard` structs or plain maps shaped like
   `%{card: card, quantity: n, ignore_deck_limit: bool}` where `card` has its
-  `:primary_side` loaded. `aspects` is the deck's chosen aspect list (empty =
-  basic deck). `signature_cards` are the hero's signature-set cards (ownership
-  `:hero`), each expected at exactly `deck_limit` copies.
+  `:primary_side` loaded. `signature_cards` are the hero's signature-set cards
+  (ownership `:hero`), each expected at exactly `deck_limit` copies.
+
+  Each rule is a self-contained `*_issues/1|2` function returning a list of
+  `Issue`s; this is the single entrypoint that composes them. To add a rule,
+  write one function and append it here. Nothing here ever blocks a save.
+
+  The deck's aspects are not passed in — they're inferred from the cards
+  themselves (see `aspects_from_entries/1`), so there is no separate "chosen
+  aspect" to validate against.
   """
-  @spec issues([map()], [atom()], [map()]) :: [Issue.t()]
-  def issues(entries, aspects, signature_cards)
-      when is_list(entries) and is_list(aspects) and is_list(signature_cards) do
+  @spec issues([map()], [map()]) :: [Issue.t()]
+  def issues(entries, signature_cards)
+      when is_list(entries) and is_list(signature_cards) do
     size_issues(entries) ++
       hero_set_issues(entries, signature_cards) ++
       copy_limit_issues(entries) ++
-      aspect_issues(entries, aspects)
+      multi_aspect_issues(entries)
+  end
+
+  @doc """
+  The distinct aspects a deck draws from, inferred from its player cards.
+
+  Sanctum has no up-front aspect choice: a deck's aspect(s) are simply the
+  aspects of the player-owned aspect cards in it. Adding the first aspect card
+  gives the deck its aspect; removing every card of that aspect and adding a
+  different one flips it. Returned sorted so callers can compare/persist a
+  canonical value. Hero and basic cards (no aspect) never contribute.
+  """
+  @spec aspects_from_entries([map()]) :: [String.t()]
+  def aspects_from_entries(entries) when is_list(entries) do
+    entries
+    |> Enum.filter(&(ownership(&1) == :player and quantity(&1) > 0))
+    |> Enum.map(&primary_side(&1).aspect)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+    |> Enum.sort()
   end
 
   defp size_issues(entries) do
@@ -146,18 +172,24 @@ defmodule Sanctum.Decks.Legality do
     end)
   end
 
-  defp aspect_issues(entries, aspects) do
-    for entry <- entries,
-        ownership(entry) == :player,
-        aspect = primary_side(entry).aspect,
-        not is_nil(aspect),
-        aspect not in aspects do
-      %Issue{
-        code: :off_aspect,
-        severity: :warning,
-        message: "#{entry_name(entry)} is #{aspect_label(aspect)}, outside this deck's aspects",
-        card_id: card(entry).id
-      }
+  # Standard decks draw from a single aspect. We don't forbid mixing — a custom
+  # or experimental deck may want to — but surface it as advisory when more than
+  # one aspect is represented.
+  defp multi_aspect_issues(entries) do
+    case aspects_from_entries(entries) do
+      aspects when length(aspects) > 1 ->
+        labels = Enum.map_join(aspects, ", ", &aspect_label/1)
+
+        [
+          %Issue{
+            code: :multi_aspect,
+            severity: :warning,
+            message: "Deck combines #{length(aspects)} aspects (#{labels})"
+          }
+        ]
+
+      _one_or_none ->
+        []
     end
   end
 

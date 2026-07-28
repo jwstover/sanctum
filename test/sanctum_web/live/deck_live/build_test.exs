@@ -144,7 +144,7 @@ defmodule SanctumWeb.DeckLive.BuildTest do
     refute Map.has_key?(deck_quantities(deck.id), card.id)
   end
 
-  test "inc clamps at the card's deck limit", %{conn: conn} do
+  test "inc is not capped at the deck limit; the excess is advisory only", %{conn: conn} do
     card = player_card("Limited Ally", deck_limit: 1)
     %{lv: lv, deck: deck} = mount_builder(conn, "build_lv_c")
 
@@ -152,10 +152,12 @@ defmodule SanctumWeb.DeckLive.BuildTest do
 
     inc = "#builder-grid button[phx-click='inc'][phx-value-card-id='#{card.id}']"
     lv |> element(inc) |> render_click()
-    # The + is disabled at max; a forced event must still not exceed it.
+    # No hard cap: a second copy persists past the deck limit...
     render_click(lv, "inc", %{"card-id" => card.id})
 
-    assert deck_quantities(deck.id)[card.id] == 1
+    assert deck_quantities(deck.id)[card.id] == 2
+    # ...and surfaces as an advisory issue instead of being blocked.
+    assert render(lv) =~ "exceeds its deck limit"
   end
 
   test "filter sheet changes rewrite the query and narrow the grid", %{conn: conn} do
@@ -206,13 +208,16 @@ defmodule SanctumWeb.DeckLive.BuildTest do
            )
   end
 
-  test "signature quantities cannot be changed through events", %{conn: conn} do
+  test "signature quantities can be changed through events (no lock)", %{conn: conn} do
     %{lv: lv, deck: deck, signature: signature} = mount_builder(conn, "build_lv_e")
 
     render_async(lv)
+    # Hero cards are no longer locked — editing them persists...
     render_click(lv, "inc", %{"card-id" => signature.id})
 
-    assert deck_quantities(deck.id)[signature.id] == 2
+    assert deck_quantities(deck.id)[signature.id] == 3
+    # ...and over-running the signature set surfaces as an advisory issue.
+    assert render(lv) =~ "exceeds the hero set"
   end
 
   test "staples quick-add is idempotent and hardcodes 1x", %{conn: conn} do
@@ -287,15 +292,14 @@ defmodule SanctumWeb.DeckLive.BuildTest do
       assert Sanctum.Decks.get_deck!(deck.id, authorize?: false).title == deck.title
     end
 
-    test "hero signature rows are locked (no steppers)", %{conn: conn} do
+    test "hero signature rows are editable in the panel (no lock)", %{conn: conn} do
       %{lv: lv, signature: signature} = mount_builder(conn, "build_lv_j")
       render_async(lv)
 
       html = render(lv)
       assert html =~ "#{signature.code}" or html =~ "Signature"
-      assert html =~ "hero-lock-closed"
-      # No panel stepper targets the signature card.
-      refute has_element?(
+      # The signature card now carries a panel stepper like any other card.
+      assert has_element?(
                lv,
                "[phx-click='dec'][phx-value-card-id='#{signature.id}']"
              )
