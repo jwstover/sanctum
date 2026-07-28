@@ -1,3 +1,12 @@
+## [1.78.1](https://github.com/jwstover/sanctum/compare/v1.78.0...v1.78.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **mobile:** prevent double-tap-to-zoom via touch-action ([#338](https://github.com/jwstover/sanctum/issues/338)) ([4294b38](https://github.com/jwstover/sanctum/commit/4294b3840e8cafcbdfbac866299ab2f762cc3b4a))
+
+
+
 # [1.78.0](https://github.com/jwstover/sanctum/compare/v1.77.0...v1.78.0) (2026-07-28)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * **browse:** show reprints on the product details page ([5add9a9](https://github.com/jwstover/sanctum/commit/5add9a9521ea5aaebea7b8ce9398b35b236f8f98))
-
-
-
-## [1.75.2](https://github.com/jwstover/sanctum/compare/v1.75.1...v1.75.2) (2026-07-28)
-
-
-### Bug Fixes
-
-* **cards:** collapse stale duplicate reprint cards polluting the pool ([d7a8301](https://github.com/jwstover/sanctum/commit/d7a8301b28f373a097013a9dd41008c0702ce8b9))
 
 
 
