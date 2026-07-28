@@ -11,7 +11,10 @@ card editor). The whole feature is **temporarily admin-gated** — the routes
 live in the `:admin_routes` live session and the sidebar link hides from
 non-admins; reopening is just moving the routes back to
 `:authenticated_routes` (resource policies are creator-scoped and unchanged).
-Next up: section 3, split into a player-card slice and a scenario slice.
+**Reframed 2026-07-28** around a typed-intent creation wizard (see §0) — the
+front door that specializes the workspace per content kind. Next up: the
+alt-art slice (§0), which rides shipped backend, then section 3 (player-card
+then scenario slices).
 
 The gap: there is no MarvelCDB-equivalent for homebrew. Content lives in
 per-creator Google Drives, Discord CDN links, BGG threads, and TTS mods —
@@ -23,6 +26,27 @@ plus optional data, never code.
 
 ## Decisions made
 
+- **Type is chosen per-upload on one surface (revised twice, 2026-07-28).**
+  *First cut put a content-type picker on the create form; second split each
+  type onto its own focused page. Both were superseded:* the create-form picker
+  was confusing once a project held mixed content, and separate pages meant the
+  file picker couldn't open on type-choice (a browser file dialog can't survive
+  a page navigation — it must fire inside the same click). Final: project
+  creation is just name + attestation, and the project page is the **single**
+  content-and-upload surface. One **Upload** button opens a chooser whose
+  options *are* the file pickers — each is a `<label>` wrapping a hidden
+  `auto_upload` `live_file_input`, so choosing a type opens the OS picker in the
+  same click (no separate "click the input" step). Cards upload inline and
+  appear in the grid; alt-art images land in a "to assign" strip and are
+  assigned to official cards via an inline sheet (keyboard-navigable). `content_
+  types` stays the **array** it already is and becomes a *derived* summary of
+  what a project holds, rather than an up-front declaration. The upload flows
+  are presentation + orchestration over the existing `create_custom` /
+  `:enrich` / `pair_custom` / alt-art actions — **not** new per-type resources
+  (holds the "same catalog tables, not a parallel system" line). Build order
+  still follows what backend each type needs: **alt art + cards first** (shipped
+  backend) → hero (needs grouping buckets) → scenario/modular (needs the §3b
+  encounter-`quantity` model) → campaign (unmodeled; research first). See §0.
 - **Image-first import.** A homebrew card is a PNG (the source of truth)
   plus optional, progressively-added metadata. Card Maker JSON import is
   deferred — the community's back catalog is images, not JSON.
@@ -68,12 +92,18 @@ plus optional data, never code.
   outside MarvelCDB's numeric space. Premise: full catalog wipes are
   retired as a maintenance technique. Custom card *backs* have no target
   card and are out of scope for CardAlt (defer).
-- **Alt art is a CONVERSION, not a copy** (shipped in #281). Declaring a
-  custom card as alt art destroys the Card/CardSide rows and mints the
-  CardAlt (the card's `custom-<uuid>` code and image carry over); reverting
-  mints a fresh image-only card named after the target. Enrichment metadata
-  and artist credit are lost on the round trip — accepted, documented in
-  the moduledocs and the declare sheet copy.
+- **Alt art has two entry paths (2026-07-28).** The **primary** path is now
+  *direct*: upload N images into an alt-art project and assign each to an
+  official card + side (+ artist) — a `CardAlt.create_custom` action that mints
+  the row straight from the image, no intermediate Card/CardSide. The
+  **secondary** path is the existing *conversion* (shipped in #281): declaring
+  an already-uploaded custom card as alt art destroys its Card/CardSide rows
+  and mints the CardAlt (code + image carry over), with `revert_custom` as the
+  inverse; enrichment metadata is lost on that round trip (accepted, documented
+  in the moduledocs and declare-sheet copy). Convert stays as the "oops, this
+  custom card is really alt art" repair; the wizard drives the direct path.
+  Both land in the same `card_alts` table (origin `:custom`) and share every
+  read/policy/rendering downstream.
 - **Privacy is filter read policies on Card/CardSide/CardAlt** (shipped in
   #266/#281), not per-surface filtering — card reads don't funnel through
   one path. Two hard-won Ash mechanics are load-bearing and documented at
@@ -97,6 +127,77 @@ plus optional data, never code.
   © FFG / © MARVEL notices, working report/takedown flow. Asmodee's
   community-use policy explicitly blesses free fan cards/scenarios; the
   real risk vectors are money and Marvel art.
+
+## 0. Typed uploads on one surface (2026-07-28)
+
+The generic "drop PNGs → enrich each card" flow was the right MVP but pushes
+all structure onto the user after upload. The content type is captured at
+**upload time** on a **single surface**: the project page has one **Upload**
+button whose chooser options *are* the file pickers (each a `<label>` wrapping
+a hidden `auto_upload` `live_file_input`), so choosing a type opens the OS
+picker in the same click.
+
+  * **Cards** → each image becomes a `Card`, appearing in the grid.
+  * **Alt art** → each image lands in a "to assign" strip; assigning it to an
+    official card + side (via an inline, keyboard-navigable sheet) mints a
+    `CardAlt`.
+
+Why one surface (not focused pages): a project routinely holds more than one
+kind, and separate upload pages both (a) reintroduced multiple "upload" entry
+points and (b) made opening the picker on type-choice impossible — a browser
+file dialog can't survive a navigation, so the picker has to fire from the same
+page as the click. Project creation is back to name + attestation;
+`content_types` becomes a *derived* summary of what the project holds (not yet
+wired — projects default to `[]`; deriving on create/delete is a small
+follow-up).
+
+### Flavor → primitive → build order
+
+| Intent | Maps to | Backend state | Wizard adds |
+|---|---|---|---|
+| **Alt art** | `CardAlt` (`origin: :custom`) | ✅ shipped (+ new direct create) | upload-many + assign-to-official grid — **first slice** |
+| **Player cards** | `Card`/`CardSide`, ownership `:player`/`:basic` + aspect | ✅ mostly (deckbuilder = §3a) | pre-set ownership, guide aspect |
+| **Hero** | identity card (double-sided, `:hero`) + signature (`:player`) + nemesis (encounter) | ⚠️ needs grouping buckets (§2) | orchestrates the three buckets |
+| **Scenario / villain** | villain stages + schemes + encounter deck w/ `quantity` | ❌ §3b unbuilt (encounter `quantity` has no model) | driver, blocked on backend |
+| **Modular set** | encounter cards grouped as `ModularSet` + `quantity` | ❌ same `quantity` gap | same as scenario |
+| **Campaign** | *unmodeled* — a sequence of scenarios + campaign cards | ❌ no resource | defer; composition/sequencing, not upload |
+
+Notice the intents self-sort into the roadmap's own ordering (§3a player → §3b
+scenario). Campaign is deliberately last and separate: it's not a card-upload
+problem but a container that *references* scenario projects, so it depends on
+the scenario slice existing first — surface it as "coming soon" in the picker.
+
+### Alt-art slice — SHIPPED
+
+- [x] `CardAlt.create_custom` — direct create from an uploaded image (accepts
+      `image_url`/`artist`/`homebrew_project_id`, args `target_card_id` +
+      `side_identifier`; mints a `custom-<uuid>` code, validates the target is
+      official via an actor-scoped read, `ActorOwnsProject` create-time policy).
+      `Sanctum.Homebrew.create_alt_art/2` domain wrapper.
+- [x] `HomebrewLive.AltArt` (`/homebrew/:id/alt-art`) — batch upload (reuses
+      the `HomebrewImages` content-addressed pipeline) → uploaded images sit as
+      *pending* tiles → assign each via the official-card picker sheet (the
+      `search_official_sides` recipe from the card editor) → persist as
+      `CardAlt`. Persist-on-assign; unassigned pending tiles are transient
+      (images are content-addressed in Tigris, so re-upload is free/deduped).
+- [x] Upload-time type selection on one surface: the project page
+      (`HomebrewLive.Show`) is the single content-and-upload surface. One
+      **Upload** button opens a chooser whose options are `<label>`-wrapped
+      hidden `auto_upload` file inputs, so choosing Cards / Alt art opens the OS
+      picker in the same click. Cards consume inline (`handle_progress` →
+      `create_custom_card` → grid); alt-art images become a "to assign" strip +
+      an inline assign sheet with a keyboard-nav hook (`AltSearchNav`: focus on
+      open, ArrowUp/Down + Enter over results). No separate upload pages
+      (`HomebrewLive.CardUpload`/`AltArt` retired). Create form is back to name
+      + attestation. `ContentType` keeps `alt_art` + `player_cards` for future
+      derived tagging. Still admin-gated.
+- [x] Shared extraction (duplication gate): `SanctumWeb.HomebrewLive.Support`
+      (alt list/tile, official-card search, delete) + `SanctumWeb.HomebrewComponents`
+      (upload dropzone, unconfigured notice, alt-art grid), reused by Show,
+      AltArt, and EditCard.
+- **Deferred within the slice:** pending tiles are transient across navigations
+      (no draft persistence); per-image artist is entered one-at-a-time in the
+      sheet (no bulk artist-for-all); no "assign all to the same card" shortcut.
 
 ## 1. Data model & domain (`Sanctum.Homebrew`) — SHIPPED (#266, #281)
 

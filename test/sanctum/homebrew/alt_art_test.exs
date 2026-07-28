@@ -126,6 +126,105 @@ defmodule Sanctum.Homebrew.AltArtTest do
     end
   end
 
+  describe "create_alt_art (direct, from an uploaded image)" do
+    test "mints a CardAlt on the official card straight from the image", ctx do
+      {:ok, alt} =
+        Homebrew.create_alt_art(
+          %{
+            homebrew_project_id: ctx.project.id,
+            image_url: "https://img.test/fan-spidey.png",
+            target_card_id: ctx.official.id,
+            side_identifier: "a",
+            artist: "Jane Doe"
+          },
+          ctx.creator
+        )
+
+      assert alt.origin == :custom
+      assert String.starts_with?(alt.code, "custom-")
+      assert alt.base_code == alt.code
+      assert alt.side_identifier == "a"
+      assert alt.image_url == "https://img.test/fan-spidey.png"
+      assert alt.artist == "Jane Doe"
+      assert alt.card_id == ctx.official.id
+      assert alt.creator_id == ctx.creator.id
+      assert alt.homebrew_project_id == ctx.project.id
+    end
+
+    test "side_identifier defaults to \"a\"", ctx do
+      {:ok, alt} =
+        Homebrew.create_alt_art(
+          %{
+            homebrew_project_id: ctx.project.id,
+            image_url: "https://img.test/fan.png",
+            target_card_id: ctx.official.id
+          },
+          ctx.creator
+        )
+
+      assert alt.side_identifier == "a"
+    end
+
+    test "a custom target card is rejected", ctx do
+      custom = custom_card!(ctx.project, ctx.creator)
+
+      assert {:error, error} =
+               Homebrew.create_alt_art(
+                 %{
+                   homebrew_project_id: ctx.project.id,
+                   image_url: "https://img.test/fan.png",
+                   target_card_id: custom.id
+                 },
+                 ctx.creator
+               )
+
+      assert Exception.message(error) =~ "official card"
+    end
+
+    test "another user cannot create alt art in the project", ctx do
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Homebrew.create_alt_art(
+                 %{
+                   homebrew_project_id: ctx.project.id,
+                   image_url: "https://img.test/fan.png",
+                   target_card_id: ctx.official.id
+                 },
+                 ctx.other
+               )
+    end
+
+    test "a nil actor is forbidden", ctx do
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Homebrew.create_alt_art(
+                 %{
+                   homebrew_project_id: ctx.project.id,
+                   image_url: "https://img.test/fan.png",
+                   target_card_id: ctx.official.id
+                 },
+                 nil
+               )
+    end
+
+    test "the alt shows up in list_project_alts and alt_count", ctx do
+      {:ok, alt} =
+        Homebrew.create_alt_art(
+          %{
+            homebrew_project_id: ctx.project.id,
+            image_url: "https://img.test/fan.png",
+            target_card_id: ctx.official.id
+          },
+          ctx.creator
+        )
+
+      assert [listed] = Homebrew.list_project_alts(ctx.project.id, ctx.creator)
+      assert listed.id == alt.id
+      assert listed.card.primary_side.name == "Official Hero"
+
+      assert %{alt_count: 1} =
+               Homebrew.get_project!(ctx.project.id, actor: ctx.creator, load: [:alt_count])
+    end
+  end
+
   describe "revert_alt_art" do
     test "mints a fresh custom card named after the target", ctx do
       {source, alt} = declare!(ctx, artist: "Jane Doe")
