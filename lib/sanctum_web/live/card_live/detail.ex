@@ -128,11 +128,24 @@ defmodule SanctumWeb.CardLive.Detail do
                 />
                 <.meta :if={@pack} label="Released" value={format_date(@pack.released_on)} />
                 <.meta :if={@pack && @pack.wave} label="Wave" value={@pack.wave.name} />
-                <.meta
-                  :if={@card.card_set}
-                  label="Card Set"
-                  value={card_set_label(@card.card_set)}
-                />
+                <div :if={@card.card_set}>
+                  <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
+                    Card Set
+                  </div>
+                  <.link
+                    :if={@pack}
+                    navigate={"#{~p"/browse/#{@pack.code}"}##{@card.card_set.code}"}
+                    class="mt-0.5 block font-barlow-condensed text-base font-semibold hover:text-primary"
+                  >
+                    {card_set_label(@card.card_set)}
+                  </.link>
+                  <div
+                    :if={!@pack}
+                    class="mt-0.5 font-barlow-condensed text-base font-semibold"
+                  >
+                    {card_set_label(@card.card_set)}
+                  </div>
+                </div>
 
                 <div class="my-1 h-px bg-neutral"></div>
 
