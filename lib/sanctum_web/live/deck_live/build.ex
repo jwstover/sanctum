@@ -68,7 +68,6 @@ defmodule SanctumWeb.DeckLive.Build do
       end)
 
     signature_cards = Decks.signature_cards(deck.hero_id)
-    signature_ids = MapSet.new(signature_cards, & &1.id)
 
     socket
     |> assign(:page_title, "Build · #{deck.title}")
@@ -77,7 +76,6 @@ defmodule SanctumWeb.DeckLive.Build do
     |> assign(:card_view, "images")
     |> assign(:entries, entries)
     |> assign(:signature_cards, signature_cards)
-    |> assign(:signature_ids, signature_ids)
     |> assign(:staples, load_staples())
     |> recompute_issues()
     |> assign_card_preview()
@@ -408,27 +406,20 @@ defmodule SanctumWeb.DeckLive.Build do
 
   # -- quantity plumbing ------------------------------------------------------
 
+  # No hard caps: the builder imposes no deckbuilding restrictions. Going over a
+  # card's deck limit, exceeding the hero set, or mixing aspects all persist and
+  # surface as advisory issues instead (see Sanctum.Decks.Legality).
   defp change_quantity(socket, card_id, delta) do
     qty = current_qty(socket, card_id)
     new_qty = max(qty + delta, 0)
 
-    cond do
-      new_qty == qty ->
-        socket
-
-      # Signature cards are locked to the hero set — the grid never offers
-      # them (scope excludes :hero ownership), but guard the event anyway.
-      MapSet.member?(socket.assigns.signature_ids, card_id) ->
-        put_flash(socket, :error, "Hero cards are locked to the signature set.")
-
-      delta > 0 and new_qty > max_qty(socket, card_id) ->
-        socket
-
-      true ->
-        case find_card(socket, card_id) do
-          nil -> socket
-          card -> put_quantity(socket, card, new_qty)
-        end
+    if new_qty == qty do
+      socket
+    else
+      case find_card(socket, card_id) do
+        nil -> socket
+        card -> put_quantity(socket, card, new_qty)
+      end
     end
   end
 
@@ -481,36 +472,48 @@ defmodule SanctumWeb.DeckLive.Build do
     end
   end
 
-  defp max_qty(socket, card_id) do
-    card = find_card(socket, card_id)
-
-    cond do
-      is_nil(card) -> 0
-      card.unique -> 1
-      true -> card.deck_limit || 1
-    end
-  end
-
   # A card either came in from the grid (tile_cache keeps the Card struct with
-  # its primary side attached), the current entries, or the staples row.
+  # its primary side attached), the current entries, the hero's signature set,
+  # or the staples row.
   defp find_card(socket, card_id) do
     cond do
       tile = socket.assigns.tile_cache[card_id] -> tile.card
       entry = socket.assigns.entries[card_id] -> entry.card
+      card = Enum.find(socket.assigns.signature_cards, &(&1.id == card_id)) -> card
       card = Enum.find(socket.assigns.staples, &(&1.id == card_id)) -> card
       true -> nil
     end
   end
 
+  # Aspects are inferred from the deck's cards (no up-front choice), so every
+  # card change re-derives them and issues in one pass.
   defp recompute_issues(socket) do
+    socket = sync_aspects(socket)
+
     issues =
       Legality.issues(
         Map.values(socket.assigns.entries),
-        socket.assigns.deck.aspects,
         socket.assigns.signature_cards
       )
 
     assign(socket, :issues, issues)
+  end
+
+  # Persist the inferred aspect set whenever it drifts from what's stored, so
+  # the deck browser / show page (which read the `aspects` column) stay in sync.
+  # Compared as sets to ignore ordering and avoid write churn.
+  defp sync_aspects(socket) do
+    deck = socket.assigns.deck
+    inferred = Legality.aspects_from_entries(Map.values(socket.assigns.entries))
+
+    if MapSet.new(inferred) == MapSet.new(deck.aspects) do
+      socket
+    else
+      updated =
+        Decks.set_deck_aspects!(deck, %{aspects: inferred}, actor: socket.assigns.current_user)
+
+      assign(socket, :deck, %{deck | aspects: updated.aspects})
+    end
   end
 
   defp deck_size(entries) do
@@ -1259,6 +1262,19 @@ defmodule SanctumWeb.DeckLive.Build do
         <div class="px-1 font-anton text-lg uppercase tracking-[0.04em] text-base-content">
           {@deck.title}
         </div>
+        <!-- inferred aspect(s): derived from the cards, not chosen up front -->
+        <div :if={@deck.aspects != []} class="mt-1.5 flex flex-wrap items-center gap-1.5 px-1">
+          <span
+            :for={a <- DeckCards.aspect_badges(@deck.aspects)}
+            class={[
+              "border-2 bg-black px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em]",
+              a.text,
+              a.border
+            ]}
+          >
+            {a.label}
+          </span>
+        </div>
         <div class="mt-1 flex items-center gap-2 px-1">
           <span class="font-anton text-sm uppercase tracking-[0.05em]">
             <span class={deck_size_class(@size)}>{@size}</span>
@@ -1348,20 +1364,12 @@ defmodule SanctumWeb.DeckLive.Build do
               />
             </.link>
             <.qty_stepper
-              :if={!row.hero?}
               card_id={row.card_id}
               qty={row.qty}
               max={row.max}
               size="sm"
               class="absolute bottom-1 right-1 z-10"
             />
-            <span
-              :if={row.hero?}
-              class="absolute bottom-1 right-1 z-10 flex size-6 items-center justify-center rounded-[4px] bg-base-100/75"
-              title="Locked to the hero set"
-            >
-              <.icon name="hero-lock-closed" class="size-3 text-white/60" />
-            </span>
           </div>
         </div>
 
@@ -1389,13 +1397,9 @@ defmodule SanctumWeb.DeckLive.Build do
             <span class="flex w-8 flex-none items-center justify-end gap-1">
               <.champions_icon :for={token <- row.pips} token={token} class="text-sm" />
             </span>
-            <!-- controls column: fixed width whether it holds a lock or steppers -->
+            <!-- controls column: every card is editable (no hard caps) -->
             <span class="flex w-[84px] flex-none items-center justify-end gap-0.5 sm:w-[52px]">
-              <span :if={row.hero?} title="Locked to the hero set" class="flex justify-end">
-                <.icon name="hero-lock-closed" class="size-3 text-base-content/35" />
-              </span>
               <button
-                :if={!row.hero?}
                 type="button"
                 data-haptic
                 phx-click="dec"
@@ -1406,18 +1410,12 @@ defmodule SanctumWeb.DeckLive.Build do
                 <.icon name="hero-minus" class="size-4 sm:size-3.5" />
               </button>
               <button
-                :if={!row.hero?}
                 type="button"
                 data-haptic
                 phx-click="inc"
                 phx-value-card-id={row.card_id}
-                disabled={row.qty >= row.max}
-                title={(row.qty >= row.max && "At this card's limit") || "Add a copy"}
-                class={[
-                  "flex size-10 cursor-pointer items-center justify-center transition-colors sm:size-6",
-                  (row.qty >= row.max && "cursor-default text-base-content/20") ||
-                    "text-base-content/50 hover:text-success"
-                ]}
+                title="Add a copy"
+                class="flex size-10 cursor-pointer items-center justify-center text-base-content/50 transition-colors hover:text-success sm:size-6"
               >
                 <.icon name="hero-plus" class="size-4 sm:size-3.5" />
               </button>
