@@ -28,7 +28,9 @@ defmodule Sanctum.CardVision do
   require Logger
 
   @anthropic_url "https://api.anthropic.com/v1/messages"
-  @anthropic_model "claude-opus-4-8"
+  # Sonnet 5: benchmarked at 90% field accuracy vs Opus 4.8's 88% on the
+  # official-catalog eval (mix sanctum.vision_eval), at ~40% of the cost.
+  @anthropic_model "claude-sonnet-5"
   @anthropic_version "2023-06-01"
   @max_tokens 4096
 

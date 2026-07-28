@@ -31,7 +31,7 @@ defmodule Sanctum.CardVision.Eval do
   # -- Model specs ----------------------------------------------------------------
 
   @doc "Parses a `provider[:model]` spec into `%{label, opts}` for extract_side_meta."
-  def parse_model_spec("anthropic"), do: parse_model_spec("anthropic:claude-opus-4-8")
+  def parse_model_spec("anthropic"), do: parse_model_spec("anthropic:claude-sonnet-5")
 
   def parse_model_spec("anthropic:" <> model),
     do:
