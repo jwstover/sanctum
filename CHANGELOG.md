@@ -1,3 +1,12 @@
+## [1.75.2](https://github.com/jwstover/sanctum/compare/v1.75.1...v1.75.2) (2026-07-28)
+
+
+### Bug Fixes
+
+* **cards:** collapse stale duplicate reprint cards polluting the pool ([d7a8301](https://github.com/jwstover/sanctum/commit/d7a8301b28f373a097013a9dd41008c0702ce8b9))
+
+
+
 ## [1.75.1](https://github.com/jwstover/sanctum/compare/v1.75.0...v1.75.1) (2026-07-27)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * **auth:** return to originating page (and scroll) after signing in to favorite ([6d5f843](https://github.com/jwstover/sanctum/commit/6d5f8432ed402e287477655daa149200e938a648))
-
-
-
-# [1.72.0](https://github.com/jwstover/sanctum/compare/v1.71.0...v1.72.0) (2026-07-27)
-
-
-### Features
-
-* **admin:** trigger deck sync from a chosen start date ([771ee04](https://github.com/jwstover/sanctum/commit/771ee042d1a9a1e2cffe2322840254538e8aa37c))
 
 
 
