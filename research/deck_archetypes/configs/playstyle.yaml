@@ -1,0 +1,6 @@
+# Corpus config for the playstyle scorer / calibration. Keeps hero cards
+# (signature cards shape a deck's playstyle) and clusters nothing — playstyle is
+# a per-deck derived profile, not a clustering run.
+corpus: {state: [final], visibility: [published], min_deck_size: 40, strip_hero_cards: false, partition_by: null}
+card_filter: {min_deck_count: 1}
+representation: {card_features: {cost_bucket_edges: [0, 1, 2, 3, 4, 6]}}

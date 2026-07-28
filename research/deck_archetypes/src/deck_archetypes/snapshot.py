@@ -22,6 +22,7 @@ class Snapshot:
     decks: pl.DataFrame
     deck_cards: pl.DataFrame
     manifest: dict
+    heroes: pl.DataFrame | None = None
 
     @property
     def hash(self) -> str:
@@ -39,8 +40,15 @@ def load_snapshot(dirpath: str | Path) -> Snapshot:
         [pl.col(c).cast(pl.Int64, strict=False).alias(c) for c in _STAT_COLS]
     )
 
+    heroes = None
+    hero_path = d / "heroes.jsonl"
+    if hero_path.exists():
+        heroes = pl.read_ndjson(hero_path).with_columns(
+            [pl.col(c).cast(pl.Int64, strict=False).alias(c) for c in ("atk", "thw", "def", "recover")]
+        )
+
     _assert_canonicalized(cards, deck_cards)
-    return Snapshot(cards=cards, decks=decks, deck_cards=deck_cards, manifest=manifest)
+    return Snapshot(cards=cards, decks=decks, deck_cards=deck_cards, manifest=manifest, heroes=heroes)
 
 
 def _assert_canonicalized(cards: pl.DataFrame, deck_cards: pl.DataFrame) -> None:
