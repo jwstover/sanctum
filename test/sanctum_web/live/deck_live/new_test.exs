@@ -107,24 +107,27 @@ defmodule SanctumWeb.DeckLive.NewTest do
     refute html =~ "Loner Hero"
   end
 
-  test "selecting a hero and creating lands in the builder with signature cards", %{conn: conn} do
+  test "selecting a hero lands in the builder with a default title and signature cards", %{
+    conn: conn
+  } do
     %{hero: hero, signature: signature} = make_hero("new_deck_hero_b", "Grid Hero B")
     user = user_fixture()
     conn = log_in_user(conn, user)
 
     {:ok, lv, _html} = live(conn, ~p"/decks/new")
 
-    lv |> element("button[phx-value-id='#{hero.id}']") |> render_click()
-
+    # Selecting a hero creates the deck and navigates straight into the builder
+    # — no name or aspect is chosen up front.
     assert {:error, {:live_redirect, %{to: to}}} =
-             lv |> form("#deck-confirm", %{title: "Test Build"}) |> render_submit()
+             lv |> element("button[phx-value-id='#{hero.id}']") |> render_click()
 
     assert to =~ ~r{^/decks/.+/build$}
 
     deck_id = to |> String.split("/") |> Enum.at(2)
     deck = Sanctum.Decks.get_deck!(deck_id, load: [:deck_cards], authorize?: false)
 
-    assert deck.title == "Test Build"
+    # Blank title defaults to "<Hero> Deck"; renamed later on the builder.
+    assert deck.title == "Grid Hero B Deck"
     assert deck.owner_id == user.id
     # No up-front aspect choice — a fresh deck has no aspect until cards are added.
     assert deck.aspects == []
