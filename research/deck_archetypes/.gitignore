@@ -1,0 +1,12 @@
+# Data + experiment outputs are large / reproducible — don't commit them.
+snapshots/
+runs/
+
+# Your real (filled-in) anchor set; keep the .example committed.
+anchors/archetypes.yaml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

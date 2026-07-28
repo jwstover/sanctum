@@ -1,0 +1,16 @@
+# Deck archetype experimentation harness — Python deps.
+# Tiny corpus, CPU-only; no GPU/torch build needed for the baselines.
+
+polars>=1.0            # snapshot loading / fast group-bys
+numpy>=1.26
+scipy>=1.11            # sparse matrices, SVD
+scikit-learn>=1.4      # NMF, TF-IDF, kmeans, silhouette/DB, PCA
+gensim>=4.3            # word2vec backbone
+hdbscan>=0.8.33        # density clustering (primary)
+umap-learn>=0.5        # projection + optional pre-cluster reduction
+python-louvain>=0.16   # graph community detection backbone
+networkx>=3.0          # knn graph for louvain
+sentence-transformers>=2.2   # rules-text embeddings (Channel B)
+pyyaml>=6.0
+pyarrow>=15.0          # parquet
+# mlflow>=2.10         # optional: leaderboard UI instead of a parquet table
