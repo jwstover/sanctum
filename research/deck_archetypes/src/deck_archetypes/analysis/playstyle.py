@@ -10,11 +10,28 @@ so ratings are relative to the real meta.
 Heuristic and tunable — meant to reproduce the *shape* of a human writeup's
 breakdown, not to be exact. Runs on a corpus built WITHOUT stripping hero cards
 (a deck's signature cards shape its playstyle too).
+
+Calibrated against 96 MarvelCDB decks whose descriptions carry explicit star
+ratings (see analysis/calibrate_playstyle.py). Findings baked in here:
+  * scores are DENSITY (per-card averages), not raw sums — human ratings reflect
+    a deck's focus, and raw totals saturate on big decks;
+  * the Damage rule avoids the ubiquitous "damage" keyword (on nearly every
+    card) in favor of explicit "deal N damage", ATK-boosts, and weapons;
+  * a hero-identity term (base stats + hero/alter-ego ability) is added — the
+    identity card isn't a deck slot, so it's otherwise invisible, yet it shapes
+    playstyle a lot (it lifted Damage 0.21→0.33, Survivability 0.26→0.41).
+Mean per-dimension Spearman vs the human ratings: 0.37 (Threat Control 0.57,
+Survivability 0.41, Economy 0.34, Damage 0.33, Card Drawing 0.29, Complexity 0.27).
 """
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
+
+# Damage scores best as per-card density; Complexity best as an absolute count.
+_DENSITY_DIMS = {0, 1, 2, 3, 4}
 
 DIMENSIONS = ["Damage", "Threat Control", "Survivability", "Economy", "Card Drawing", "Complexity"]
 
@@ -42,8 +59,11 @@ def card_contributions(corpus):
     for i in range(n):
         txt = texts[i]
         weapon = 1.0 if "Weapon" in (traits[i] or []) else 0.0
-        # Damage: ally ATK, "deal damage", ATK-boost upgrades ("[attack]"), weapons.
-        M[i, 0] = atk[i] + 1.5 * _has(txt, "damage") + 1.2 * _has(txt, "[attack]", "attack (atk)") + weapon
+        # Damage: ally ATK, explicit "deal N damage", ATK-boost upgrades, weapons.
+        # The bare word "damage" is on nearly every card, so it's excluded — it
+        # saturated the score (Spearman ~0 vs human ratings) until removed.
+        deal_n = 1.0 if re.search(r"deal \d+ damage", (txt or "").lower()) else 0.0
+        M[i, 0] = atk[i] + 2.0 * deal_n + 1.5 * _has(txt, "[attack]") + weapon
         # Threat Control: ally THW, thwart/threat-removal, THW-boost upgrades.
         M[i, 1] = thw[i] + 1.5 * _has(txt, "thwart", "remove", "threat") + 1.0 * _has(txt, "[thwart]")
         # Survivability: DEF stat, ally soak, defense-boost + damage-prevention.
@@ -68,6 +88,45 @@ def deck_raw_scores(corpus):
     return np.asarray(corpus.X @ card_contributions(corpus))
 
 
+def hero_contributions(heroes):
+    """{hero_id: [n_dims]} from the hero's base stats + hero/alter-ego ability
+    text. These never appear in deck_cards (the identity card isn't a deck slot),
+    so they'd otherwise be invisible to the scorer."""
+    out = {}
+    for row in heroes.iter_rows(named=True):
+        n = lambda k: float(row.get(k) or 0)
+        t = ((row.get("hero_text") or "") + " " + (row.get("ae_text") or "")).lower()
+        hand = n("hero_hand_size")
+        out[row["hero_id"]] = np.array([
+            n("atk") + _has(t, "deal", "[attack]"),                                # Damage
+            n("thw") + _has(t, "thwart", "[thwart]", "threat"),                    # Threat Control
+            n("def") + 0.5 * n("recover") + _has(t, "prevent", "heal", "recover", "defense"),  # Survivability
+            _has(t, "resource", "reduce the cost", "generate"),                    # Economy
+            max(hand - 4, 0) * 0.5 + _has(t, "draw"),                              # Card Drawing
+            _has(t, "response", "interrupt", "forced", "choose", "search"),        # Complexity
+        ])
+    return out
+
+
+def deck_scores(corpus, heroes=None, hero_weight=0.1):
+    """Calibrated per-deck scores: density (per-card) for most dimensions,
+    absolute for Complexity, plus a hero-identity term (base stats + ability)
+    when hero data is available. This is what stars are computed from."""
+    raw = deck_raw_scores(corpus)
+    size = np.asarray(corpus.X.sum(axis=1)).reshape(-1, 1)
+    scores = raw.copy()
+    dens_cols = sorted(_DENSITY_DIMS)
+    scores[:, dens_cols] = raw[:, dens_cols] / np.maximum(size, 1e-9)
+
+    if heroes is not None and hero_weight:
+        contrib = hero_contributions(heroes)
+        blank = np.zeros(len(DIMENSIONS))
+        hero_ids = corpus.decks["hero_id"].to_list()
+        H = np.vstack([contrib.get(h, blank) for h in hero_ids])
+        scores = scores + hero_weight * H
+    return scores
+
+
 def to_stars(raw):
     """Column-wise quintile → 1..5 stars, using percentile rank across decks."""
     n = raw.shape[0]
@@ -82,7 +141,7 @@ def to_stars(raw):
 def breakdown(corpus, deck_id, stars=None):
     """{dimension: n_stars} for one deck."""
     if stars is None:
-        stars = to_stars(deck_raw_scores(corpus))
+        stars = to_stars(deck_scores(corpus))
     row = corpus.deck_index.get(deck_id)
     if row is None:
         return None
