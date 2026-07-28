@@ -531,6 +531,10 @@ main, #game-board {
     background: var(--sanctum-canvas);
     color: var(--sanctum-ink);
     font-family: 'Barlow Condensed', system-ui, sans-serif;
+    /* Disable double-tap-to-zoom (and its ~300ms tap delay) on mobile while
+       preserving pinch-to-zoom for accessibility. user-scalable=no is worse:
+       it kills pinch zoom and modern iOS Safari ignores it anyway. */
+    touch-action: manipulation;
   }
 
   /* Tailwind v4 preflight dropped the default pointer cursor on buttons.
