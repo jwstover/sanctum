@@ -78,6 +78,13 @@ defmodule Mix.Tasks.Sanctum.ExportDeckCorpus do
   # harness derives per-card content features (Channel C) and rules-text
   # embeddings (Channel B) from these. Stats are emitted as their bare `value`
   # (star/scaling dropped); Python coerces the text to numbers.
+  #
+  # `hero_locked` = the card belongs to a hero's signature set (`cards.set`
+  # matches a hero's `set`). This catches signature cards that are NOT
+  # ownership==:hero — the aspect-flavored ones (e.g. Spider-Woman's Pheromones,
+  # ownership player + aspect leadership). They appear in ~100% of that hero's
+  # decks, so like hero cards they carry no archetype signal and must be excluded
+  # by the harness alongside ownership==:hero.
   # sobelow_skip ["SQL.Query"] — static query, no interpolation.
   defp export_cards(path) do
     sql = """
@@ -96,7 +103,9 @@ defmodule Mix.Tasks.Sanctum.ExportDeckCorpus do
            cs.thwart ->> 'value',
            cs.defense ->> 'value',
            cs.health ->> 'value',
-           cs.text
+           cs.text,
+           c.set,
+           (c.set IN (SELECT set FROM heroes WHERE set IS NOT NULL)) AS hero_locked
     FROM cards c
     JOIN card_sides cs ON cs.card_id = c.id AND cs.is_primary_side = true
     """
@@ -120,7 +129,9 @@ defmodule Mix.Tasks.Sanctum.ExportDeckCorpus do
                                      thw,
                                      def,
                                      hp,
-                                     text
+                                     text,
+                                     set,
+                                     hero_locked
                                    ] ->
         %{
           card_id: id,
@@ -130,6 +141,8 @@ defmodule Mix.Tasks.Sanctum.ExportDeckCorpus do
           aspect: aspect,
           traits: traits || [],
           cost: cost,
+          set: set,
+          hero_locked: hero_locked,
           resource_physical: phys,
           resource_mental: mental,
           resource_energy: energy,
