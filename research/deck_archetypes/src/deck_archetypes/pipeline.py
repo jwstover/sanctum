@@ -80,7 +80,7 @@ def _run_single(cfg, snap, corpus, base, tag):
     deck_vectors = fusion.combine_deck_channels(deck_channels, cfg)
 
     # --- clustering
-    result = clustering.cluster(deck_vectors, cfg)
+    result = clustering.cluster(deck_vectors, cfg, corpus=corpus)
     _log(f"clustering [{result.method}]: {_n_clusters(result.labels)} clusters, "
          f"{int(np.sum(result.labels == -1))} noise")
 
@@ -97,6 +97,10 @@ def _run_single(cfg, snap, corpus, base, tag):
     metrics["interpret"] = interpret.report(
         corpus, result.labels, cfg, out_dir, deck_space=result.reduced
     )
+    if result.components is not None:
+        from .evaluation import topics_report
+
+        metrics["topics"] = topics_report.report(corpus, result, cfg, out_dir, base_dir=base)
     metrics["projection"] = projection.render(deck_vectors, result.labels, cfg, out_dir)
 
     _save_outputs(out_dir, cfg, corpus, card_matrix, deck_vectors, result, metrics)

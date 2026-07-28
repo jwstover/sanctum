@@ -21,12 +21,18 @@ class ClusterResult:
     memberships: np.ndarray | None
     reduced: np.ndarray
     method: str
+    components: np.ndarray | None = None  # topic×card (H) for nmf_topics
 
 
-def cluster(deck_vectors: np.ndarray, cfg) -> ClusterResult:
+def cluster(deck_vectors: np.ndarray, cfg, corpus=None) -> ClusterResult:
     method = get(cfg, "clustering.method", "hdbscan")
-    reduced = _reduce(deck_vectors, cfg)
 
+    # NMF topics factorize the deck×card matrix directly (card-based, soft
+    # membership) — not the pooled deck_vectors the other methods cluster.
+    if method == "nmf_topics":
+        return _nmf_topics(deck_vectors, cfg, corpus)
+
+    reduced = _reduce(deck_vectors, cfg)
     if method == "hdbscan":
         labels, memberships = _hdbscan(reduced, cfg)
     elif method == "kmeans":
@@ -34,9 +40,23 @@ def cluster(deck_vectors: np.ndarray, cfg) -> ClusterResult:
     elif method == "agglomerative":
         labels, memberships = _agglomerative(reduced, cfg)
     else:
-        raise ValueError(f"unsupported clustering.method {method!r} (spine: hdbscan|kmeans|agglomerative)")
+        raise ValueError(f"unsupported clustering.method {method!r} (spine: hdbscan|kmeans|agglomerative|nmf_topics)")
 
     return ClusterResult(labels=labels, memberships=memberships, reduced=reduced, method=method)
+
+
+def _nmf_topics(deck_vectors, cfg, corpus):
+    from ..representation import nmf_topics
+
+    if corpus is None:
+        raise ValueError("nmf_topics needs the corpus (deck×card matrix)")
+    w, h = nmf_topics.fit(corpus, cfg)
+    labels = w.argmax(axis=1)
+    row = w.sum(axis=1, keepdims=True)
+    memberships = w / np.maximum(row, 1e-12)  # per-deck mixture over topics
+    return ClusterResult(
+        labels=labels, memberships=memberships, reduced=deck_vectors, method="nmf_topics", components=h
+    )
 
 
 def _reduce(deck_vectors, cfg):
