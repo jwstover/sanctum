@@ -1,0 +1,43 @@
+# Hand-seeded GOLD archetypes for anchor-retrieval evaluation.
+#
+# You do NOT need to label many decks. Two kinds of anchors, either or both per
+# archetype:
+#   - core_cards: card NAMES that (near-)define the archetype. Cheapest signal.
+#       Must match `name` in cards.jsonl exactly (the harness resolves name ->
+#       card_id). Names are used, not codes/uuids, because they're human-typable
+#       and survive a DB rebuild. Eval asks: are a core card's nearest cards the
+#       OTHER core cards?
+#   - decks:      a few deck ids you're confident belong to the archetype. Grab
+#       these straight from the app: the uuid in a /decks/:id URL. Eval asks: are
+#       an anchor deck's k-NN mostly the same archetype label?
+#
+# 5-10 archetypes x a handful each is plenty. Copy to anchors/archetypes.yaml
+# (that filename is gitignored / yours to edit) and fill in real values.
+
+archetypes:
+  - label: firepower
+    notes: >
+      Weapon/tech upgrades centered on Firepower; upgrades that ready or don't
+      need to exhaust. Cross-hero (War Machine, Iron Man, Spider-Man, ...).
+    core_cards: ["Firepower"]              # TODO add the other defining cards
+    decks: []                              # TODO a few deck uuids from /decks/:id
+
+  - label: cheap_ally_swarm
+    notes: Many low-cost allies; tempo/board presence over big events.
+    core_cards: []
+    decks: []
+
+  - label: splashy_finisher_control
+    notes: Few high-cost events/allies as finishers; economy + card draw shell.
+    core_cards: []
+    decks: []
+
+  - label: thwart_control
+    notes: Preemption / removal, thwart-heavy allies and events.
+    core_cards: []
+    decks: []
+
+  - label: stun_confuse_lock
+    notes: Status-heavy control (stun/confuse) to neutralize the villain.
+    core_cards: []
+    decks: []
