@@ -200,6 +200,39 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
       end)
     end
 
+    test "sends the user's own key (BYOK), not the server key", ctx do
+      # Give the creator a personal key; the request must carry it, not the
+      # server's config key.
+      Sanctum.Accounts.upsert_api_key!(
+        %{provider: :anthropic, key: "sk-ant-USER-OWN-KEY", key_hint: "-KEY"},
+        actor: ctx.creator
+      )
+
+      test_pid = self()
+
+      Req.Test.stub(Sanctum.CardVision, fn conn ->
+        send(test_pid, {:x_api_key, Plug.Conn.get_req_header(conn, "x-api-key")})
+
+        Req.Test.json(conn, %{
+          "stop_reason" => "end_turn",
+          "content" => [%{"type" => "text", "text" => Jason.encode!(%{"name" => "By Key"})}]
+        })
+      end)
+
+      card = card_fixture(ctx.project, ctx.creator)
+      [side] = card.card_sides
+
+      {:ok, lv, _html} = live(ctx.conn, edit_path(ctx.project, card))
+
+      lv
+      |> element("button[phx-click='extract_side'][phx-value-side-id='#{side.id}']")
+      |> render_click()
+
+      render_async(lv)
+
+      assert_receive {:x_api_key, ["sk-ant-USER-OWN-KEY"]}
+    end
+
     test "reads fields off the art and fills the side", ctx do
       card = card_fixture(ctx.project, ctx.creator)
       [side] = card.card_sides
