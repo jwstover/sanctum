@@ -10,6 +10,8 @@ defmodule SanctumWeb.DeckLive.New do
 
   use SanctumWeb, :live_view
 
+  require Ash.Query
+
   alias Sanctum.Decks
   alias SanctumWeb.Components.DeckCards
 
@@ -49,22 +51,37 @@ defmodule SanctumWeb.DeckLive.New do
     end
   end
 
-  # Heroes whose identity card has no alter-ego side (e.g. SP//dr) fail
-  # ValidateHero on :build, so they aren't offered.
+  # A hero is buildable when its identity card has a hero side and its set has
+  # an alter-ego side somewhere. We don't require the alter-ego on the same card
+  # — split-identity heroes (SP//dr: SP//dr Suit + Peni Parker) spread the two
+  # forms across two cards in one set. Matches ValidateHero.
   defp load_heroes do
+    sets_with_alter_ego = sets_with_alter_ego()
+
     Sanctum.Heroes.Hero
     |> Ash.Query.load([:display_name, :hero_side, card: [:card_sides]])
     |> Ash.read!(authorize?: false)
-    |> Enum.filter(&buildable?/1)
+    |> Enum.filter(&buildable?(&1, sets_with_alter_ego))
     |> Enum.map(&hero_view/1)
     |> Enum.sort_by(&String.downcase(&1.name))
   end
 
-  defp buildable?(%{card: %{card_sides: sides}}) when is_list(sides) do
-    Enum.any?(sides, &(&1.type == :hero)) and Enum.any?(sides, &(&1.type == :alter_ego))
+  defp buildable?(%{card: %{card_sides: sides, set: set}}, sets_with_alter_ego)
+       when is_list(sides) do
+    Enum.any?(sides, &(&1.type == :hero)) and MapSet.member?(sets_with_alter_ego, set)
   end
 
-  defp buildable?(_hero), do: false
+  defp buildable?(_hero, _sets), do: false
+
+  # One query for every set that contains an alter-ego side, so `buildable?/2`
+  # stays a membership check instead of an N+1 lookup per hero.
+  defp sets_with_alter_ego do
+    Sanctum.Games.Card
+    |> Ash.Query.filter(exists(card_sides, type == :alter_ego))
+    |> Ash.read!(authorize?: false)
+    |> Enum.map(& &1.set)
+    |> MapSet.new()
+  end
 
   defp hero_view(hero) do
     {gradient_from, gradient_to} = DeckCards.hero_gradient(hero)
