@@ -70,23 +70,47 @@ The two channels are z-scored independently, then weighted by `β_embedding` /
 `β_structural` (swept), then L2-normed. `β_structural` is expected to be one of
 the highest-leverage knobs.
 
-## Export contract (Elixir → parquet)
+## Export contract (Elixir → NDJSON)
 
-The `mix sanctum.export_deck_corpus` task (to be written in the main repo,
-`lib/mix/tasks/`) writes three parquet files into a dated snapshot dir. Alt
-reprints are resolved to the **canonical** card id *in the export query* so
-Python never sees a reprint code.
+The `mix sanctum.export_deck_corpus` task (in the main repo, `lib/mix/tasks/`)
+writes three newline-delimited JSON files into a dated snapshot dir. Alt reprints
+are resolved to the **canonical** card id *in the export query* so Python never
+sees a reprint code.
 
-- `decks.parquet` — `deck_id, hero_id, aspects[], state, visibility, source, size`
-- `deck_cards.parquet` — `deck_id, card_id (canonical), quantity`
-- `cards.parquet` — `card_id (canonical), name, type, ownership, aspect,
-  traits[], cost, resource_physical/mental/energy/wild, atk, thw, def, hp, text`
+- `decks.jsonl` — `deck_id, hero_id, aspects[], state, visibility, source, size`
+- `deck_cards.jsonl` — `deck_id, card_id (canonical), quantity`
+- `cards.jsonl` — `card_id (canonical), name, type, ownership, aspect, traits[],
+  cost, set, hero_locked, resource_physical/mental/energy/wild, atk, thw, def,
+  hp, text`
+
+`hero_locked` marks cards whose `set` is a hero's signature set. It catches
+signature cards that are **not** `ownership==hero` — the aspect-flavored ones
+(e.g. Spider-Woman's Pheromones, `ownership=player`, `aspect=leadership`) that
+sit in ~100% of that hero's decks and would otherwise pollute clusters.
+`strip_hero_cards` drops both `ownership==hero` and `hero_locked`.
 
 A `SNAPSHOT.json` alongside them stamps row counts + `max(updated_at)` as the
 `snapshot_hash` so runs against different corpora never get compared.
 
 Run it against `prod_local` or a `pull_prod_db` dump so you iterate on the real
 deck distribution.
+
+## Aspect scoping (within-aspect is the default)
+
+Most heroes build a single aspect, so archetypes live inside one — a global run
+mostly rediscovers the aspect partition (measured: 18/20 global clusters were
+≥94% one aspect). So `corpus.partition_by: aspect` is the default: one
+independent clustering run per aspect (still cross-*hero*), written to
+`runs/<name>/<aspect>/` with a leaderboard row per aspect.
+
+Knobs:
+- `corpus.partition_by: aspect | null` — per-aspect vs one global run.
+- `corpus.partition_min_decks` — skip thin aspects.
+- `corpus.aspects: [justice]` — pin a single aspect for a one-off.
+- `representation.aspect_downweight` (< 1) — for a deliberate cross-aspect run
+  (`partition_by: null`), shrinks aspect-specific cards' pull so aspect-crossing
+  basic-card / structural archetypes surface instead of the aspects themselves.
+  See `configs/cross_aspect.yaml` (drops mean aspect-purity ~97% → ~78%).
 
 ## Directory layout
 

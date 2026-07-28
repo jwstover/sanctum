@@ -16,7 +16,7 @@ from .clustering import base as clustering
 from .config import get, load_config
 from .evaluation import anchors, held_out, intrinsic, interpret, projection
 from .features import card_features, structural, text_embed
-from .preprocess import build_corpus
+from .preprocess import aspect_counts, build_corpus
 from .representation import base as representation
 from .representation import fusion
 from .snapshot import load_snapshot
@@ -28,9 +28,34 @@ def run(config_path, *, snapshot_dir=None, base_dir="."):
 
     snapshot_dir = snapshot_dir or (base / "snapshots" / get(cfg, "experiment.snapshot"))
     snap = load_snapshot(snapshot_dir)
+
+    if get(cfg, "corpus.partition_by") == "aspect":
+        return _run_partitioned(cfg, snap, base)
     corpus = build_corpus(snap, cfg)
+    return _run_single(cfg, snap, corpus, base, tag=None)
+
+
+def _run_partitioned(cfg, snap, base):
+    """Within-aspect clustering: one independent run per aspect. This is the
+    default archetype finder — most heroes build a single aspect, so archetypes
+    live inside one, and a global run mostly rediscovers the aspect partition."""
+    min_decks = int(get(cfg, "corpus.partition_min_decks", 200))
+    counts = aspect_counts(snap, cfg)
+    aspects = sorted(a for a, n in counts.items() if n >= min_decks)
+    _log(f"partition_by aspect: {aspects} "
+         f"(skipped {sorted(a for a, n in counts.items() if n < min_decks)})")
+
+    results = {}
+    for asp in aspects:
+        corpus = build_corpus(snap, cfg, restrict_aspects=[asp])
+        _log(f"[{asp}] corpus: {corpus.n_decks} decks × {corpus.n_cards} cards")
+        results[asp] = _run_single(cfg, snap, corpus, base, tag=asp)
+    return results
+
+
+def _run_single(cfg, snap, corpus, base, tag):
     _log(f"corpus: {corpus.n_decks} decks × {corpus.n_cards} cards "
-         f"(snapshot {snap.hash})")
+         f"(snapshot {snap.hash}{'' if tag is None else f', aspect={tag}'})")
 
     # --- representation: fuse card channels -> pool -> combine with structural
     channels = {}
@@ -61,6 +86,8 @@ def run(config_path, *, snapshot_dir=None, base_dir="."):
 
     # --- evaluation
     out_dir = base / _resolve(get(cfg, "output.dir", "runs/default"), cfg)
+    if tag is not None:
+        out_dir = out_dir / tag
     metrics = {}
     if get(cfg, "evaluation.held_out_prediction.enabled", False):
         metrics["held_out"] = held_out.evaluate(card_matrix, corpus, cfg)
@@ -72,7 +99,7 @@ def run(config_path, *, snapshot_dir=None, base_dir="."):
 
     _save_outputs(out_dir, cfg, corpus, card_matrix, deck_vectors, result, metrics)
     leaderboard.append(base / get(cfg, "output.leaderboard", "runs/leaderboard.parquet"),
-                       snap.hash, cfg, metrics)
+                       snap.hash, cfg, metrics, partition=tag)
     _log(f"wrote {out_dir}")
     return metrics
 

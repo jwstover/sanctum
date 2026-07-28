@@ -18,6 +18,15 @@ corpus:
   strip_hero_cards: true          # drop ownership==:hero (zero archetype signal)
   assert_canonicalized: true      # fail loudly if export left any alt/reprint code
 
+  # Aspect scoping. Most heroes build a single aspect, so archetypes live inside
+  # one — a global run mostly rediscovers the aspect partition. Default to
+  # clustering WITHIN each aspect (cross-hero, aspect-fixed).
+  partition_by: aspect            # aspect | null (null = one global cross-aspect run)
+  partition_min_decks: 200        # skip aspects with fewer decks than this
+  # aspects: [justice]            # or pin a single aspect for a one-off run
+  # For a deliberate cross-aspect run (basic-card / structural archetypes), set
+  # partition_by: null and representation.aspect_downweight below.
+
 # --- Card vocabulary: staple ("stopword") handling ----------------------------
 card_filter:
   min_deck_count: 3               # [sweep] rarity floor; drop ultra-rare cards
@@ -37,6 +46,12 @@ representation:
     pmi_shift_k: 1                # shifted-PPMI negative-sample analogue
     word2vec: { window: 999, epochs: 50 }   # window 999 == whole deck is context
     nmf: { components: 20 }
+
+  # Shrinks the pull of aspect-specific cards (co-occurrence + pooling) so a
+  # cross-aspect run (partition_by: null) surfaces aspect-crossing basic-card /
+  # structural archetypes instead of rediscovering the aspects. 1.0 = off.
+  # Ignored/irrelevant under partition_by: aspect.
+  aspect_downweight: 1.0
 
   # Channel B — rules-text meaning (enabled from the start, per decision)
   text:
