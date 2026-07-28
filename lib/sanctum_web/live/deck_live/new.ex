@@ -1,9 +1,11 @@
 defmodule SanctumWeb.DeckLive.New do
   @moduledoc """
   Hero picker for building a native deck: a card-art grid of every buildable
-  hero, a name filter, and a sticky (never modal) confirm strip with a title.
-  Creating navigates straight into the builder. Aspect isn't chosen here — the
-  builder infers it from the cards as they're added (see `Sanctum.Decks.Legality`).
+  hero and a name filter. Selecting a hero creates the deck immediately with a
+  default title and navigates straight into the builder — no name or aspect is
+  chosen here. The title defaults to "<Hero> Deck" (renamed later on the
+  builder's Details tab) and the aspect is inferred from the cards as they're
+  added (see `Sanctum.Decks.Legality`).
   """
 
   use SanctumWeb, :live_view
@@ -19,9 +21,7 @@ defmodule SanctumWeb.DeckLive.New do
      socket
      |> assign(:page_title, "New Deck")
      |> assign(:heroes, load_heroes())
-     |> assign(:filter, "")
-     |> assign(:selected, nil)
-     |> assign(:creating?, false)}
+     |> assign(:filter, "")}
   end
 
   @impl true
@@ -30,33 +30,22 @@ defmodule SanctumWeb.DeckLive.New do
   end
 
   def handle_event("select_hero", %{"id" => id}, socket) do
-    selected = Enum.find(socket.assigns.heroes, &(&1.id == id))
-    {:noreply, assign(socket, :selected, selected)}
-  end
+    %{heroes: heroes, current_user: user} = socket.assigns
 
-  def handle_event("clear_hero", _params, socket) do
-    {:noreply, assign(socket, :selected, nil)}
-  end
+    case Enum.find(heroes, &(&1.id == id)) do
+      nil ->
+        {:noreply, socket}
 
-  def handle_event("create", params, socket) do
-    %{selected: selected, current_user: user} = socket.assigns
+      hero ->
+        # Blank title defaults to "<Hero> Deck"; aspects are inferred in the
+        # builder from the cards.
+        case Decks.build_deck(%{hero_id: hero.id}, actor: user) do
+          {:ok, deck} ->
+            {:noreply, push_navigate(socket, to: ~p"/decks/#{deck.id}/build")}
 
-    if is_nil(selected) do
-      {:noreply, put_flash(socket, :error, "Pick a hero first")}
-    else
-      # Aspects start empty and are inferred in the builder from the cards.
-      attrs = %{
-        hero_id: selected.id,
-        title: Map.get(params, "title", "")
-      }
-
-      case Decks.build_deck(attrs, actor: user) do
-        {:ok, deck} ->
-          {:noreply, push_navigate(socket, to: ~p"/decks/#{deck.id}/build")}
-
-        {:error, _error} ->
-          {:noreply, put_flash(socket, :error, "Could not create the deck")}
-      end
+          {:error, _error} ->
+            {:noreply, put_flash(socket, :error, "Could not create the deck")}
+        end
     end
   end
 
@@ -113,18 +102,14 @@ defmodule SanctumWeb.DeckLive.New do
         />
       </form>
 
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2.5 pb-36 sm:pb-6">
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2.5 pb-6">
         <button
           :for={hero <- @heroes}
           :if={visible?(hero, @filter)}
           type="button"
           phx-click="select_hero"
           phx-value-id={hero.id}
-          class={[
-            "aspect-[63/88] border-2 border-neutral text-left shadow-comic-sm transition-transform",
-            @selected && @selected.id == hero.id &&
-              "outline outline-[3px] outline-primary -translate-y-0.5"
-          ]}
+          class="aspect-[63/88] border-2 border-neutral text-left shadow-comic-sm transition-transform hover:-translate-y-0.5 hover:outline hover:outline-[3px] hover:outline-primary"
         >
           <.mc_card
             name={hero.name}
@@ -137,44 +122,6 @@ defmodule SanctumWeb.DeckLive.New do
           />
         </button>
       </div>
-
-      <form
-        :if={@selected}
-        id="deck-confirm"
-        phx-submit="create"
-        class="fixed inset-x-0 bottom-0 z-20 border-t-2 border-neutral bg-base-100/95 px-4 py-3 backdrop-blur sm:sticky sm:bottom-4 sm:mx-0 sm:border-2 sm:bg-base-200 sm:px-5 sm:py-4 sm:shadow-comic"
-      >
-        <div class="mx-auto flex max-w-3xl flex-col gap-3">
-          <div class="flex items-center justify-between gap-3">
-            <span class="font-anton text-base uppercase tracking-[0.05em]">
-              {@selected.name}
-            </span>
-            <button
-              type="button"
-              phx-click="clear_hero"
-              class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
-            >
-              Change hero
-            </button>
-          </div>
-
-          <input
-            type="text"
-            name="title"
-            placeholder={"#{@selected.name} Deck"}
-            autocomplete="off"
-            class="min-h-[44px] w-full border-[2.5px] border-line bg-black px-3 py-2 font-barlow-condensed text-base font-bold text-base-content outline-none focus:border-primary sm:min-h-0"
-          />
-
-          <p class="font-barlow-condensed text-xs uppercase tracking-[0.06em] text-base-content/45">
-            Aspect is set automatically from the cards you add.
-          </p>
-
-          <.button variant="primary" type="submit" class="w-full sm:w-auto sm:self-end">
-            Start Deck
-          </.button>
-        </div>
-      </form>
     </Layouts.app>
     """
   end
