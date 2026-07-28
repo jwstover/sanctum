@@ -1,16 +1,22 @@
 # Deck archetype experimentation harness — Python deps.
-# Tiny corpus, CPU-only; no GPU/torch build needed for the baselines.
+# Tiny corpus, CPU-only. The spine runs on just the CORE stack below; the
+# OPTIONAL deps unlock extra channels/backbones and degrade gracefully if absent
+# (clustering falls back to scikit-learn HDBSCAN, reduction to PCA).
 
+# --- core (required; the smoke config runs on these alone) ---
 polars>=1.0            # snapshot loading / fast group-bys
 numpy>=1.26
 scipy>=1.11            # sparse matrices, SVD
-scikit-learn>=1.4      # NMF, TF-IDF, kmeans, silhouette/DB, PCA
-gensim>=4.3            # word2vec backbone
-hdbscan>=0.8.33        # density clustering (primary)
-umap-learn>=0.5        # projection + optional pre-cluster reduction
-python-louvain>=0.16   # graph community detection backbone
-networkx>=3.0          # knn graph for louvain
-sentence-transformers>=2.2   # rules-text embeddings (Channel B)
+scikit-learn>=1.4      # PPMI-SVD, HDBSCAN (built-in since 1.3), kmeans, metrics
 pyyaml>=6.0
-pyarrow>=15.0          # parquet
-# mlflow>=2.10         # optional: leaderboard UI instead of a parquet table
+pyarrow>=15.0          # parquet leaderboard
+
+# --- optional ---
+sentence-transformers>=2.2   # Channel B: rules-text embeddings (needs torch)
+matplotlib>=3.7              # evaluation.projection PNGs
+umap-learn>=0.5              # nicer 2D/pre-cluster reduction than PCA (needs numba)
+gensim>=4.3                  # future word2vec distributional backbone
+
+# NOTE (Python 3.14): torch / numba wheels may lag the interpreter. If
+# sentence-transformers or umap won't install, run with representation.text
+# disabled and clustering.reduce.method=pca — the spine is unaffected.
