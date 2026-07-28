@@ -33,6 +33,31 @@ if config_env() != :test do
   config :sanctum, Sanctum.CardVision, api_key: System.get_env("ANTHROPIC_API_KEY")
 end
 
+# Cloak vault key for encrypting sensitive attributes at rest (Sanctum.Vault,
+# backing UserApiKey.key). Held separately from the DB — a dump alone can't
+# decrypt. Prod requires CLOAK_KEY (32 raw bytes, base64); dev/test use a fixed
+# non-secret key so encrypted fixtures round-trip locally.
+cloak_key =
+  cond do
+    (env_key = System.get_env("CLOAK_KEY")) not in [nil, ""] ->
+      env_key
+
+    config_env() in [:dev, :test, :prod_local] ->
+      "Zcn9X12iE5C9rPs5yRrg0jHD7TSDZlUqSfmIsRfJRmI="
+
+    true ->
+      raise """
+      environment variable CLOAK_KEY is missing.
+      Generate one with: elixir -e 'IO.puts(Base.encode64(:crypto.strong_rand_bytes(32)))'
+      """
+  end
+
+config :sanctum, Sanctum.Vault,
+  ciphers: [
+    default:
+      {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(cloak_key), iv_length: 12}
+  ]
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
