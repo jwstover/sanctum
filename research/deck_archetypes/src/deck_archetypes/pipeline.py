@@ -94,7 +94,9 @@ def _run_single(cfg, snap, corpus, base, tag):
     if get(cfg, "evaluation.anchor_retrieval.enabled", False):
         metrics["anchors"] = anchors.evaluate(card_matrix, deck_vectors, corpus, cfg, base_dir=base)
     metrics["intrinsic"] = intrinsic.evaluate(result.reduced, result.labels, cfg)
-    metrics["interpret"] = interpret.report(corpus, result.labels, cfg, out_dir)
+    metrics["interpret"] = interpret.report(
+        corpus, result.labels, cfg, out_dir, deck_space=result.reduced
+    )
     metrics["projection"] = projection.render(deck_vectors, result.labels, cfg, out_dir)
 
     _save_outputs(out_dir, cfg, corpus, card_matrix, deck_vectors, result, metrics)
