@@ -58,6 +58,64 @@ defmodule SanctumWeb.ProfileLive.Index do
           </.form>
         </.panel>
 
+        <!-- BYOK: the user's own Anthropic key powers "Fill from image" on custom
+             cards. Stored encrypted; Sanctum never charges for extraction. The
+             plaintext key is never read back here — only the masked hint. -->
+        <.panel class="mt-6 p-5">
+          <div class="flex items-baseline justify-between border-b-2 border-neutral pb-3">
+            <h2 class="font-anton text-xl uppercase tracking-[0.03em]">AI Card Extraction</h2>
+            <span :if={@anthropic_key} class="font-ibm-mono text-xs text-success">Connected</span>
+          </div>
+
+          <p class="mt-3 font-barlow-condensed text-sm text-base-content/60">
+            Bring your own Anthropic API key to auto-fill custom card fields from their
+            art. You're billed by Anthropic directly — Sanctum stores your key encrypted
+            and never charges for extraction.
+          </p>
+
+          <div
+            :if={@anthropic_key}
+            class="mt-4 flex items-center justify-between gap-3 border-2 border-neutral bg-base-300 px-3 py-2.5"
+          >
+            <div class="min-w-0">
+              <div class="font-ibm-mono text-sm">sk-…{@anthropic_key.key_hint}</div>
+              <div
+                :if={@anthropic_key.last_validated_at}
+                class="mt-0.5 font-ibm-mono text-xs text-base-content/45"
+              >
+                Validated {Calendar.strftime(@anthropic_key.last_validated_at, "%Y-%m-%d")}
+              </div>
+            </div>
+            <button
+              type="button"
+              phx-click={open_confirm("confirm-remove-api-key")}
+              class="cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-error"
+            >
+              Remove
+            </button>
+          </div>
+
+          <.confirm_dialog
+            id="confirm-remove-api-key"
+            message="Remove your Anthropic API key?"
+            confirm_label="Remove"
+            phx-click="remove_api_key"
+          />
+
+          <.form for={@api_key_form} id="api-key-form" phx-submit="save_api_key" class="mt-4">
+            <.input
+              field={@api_key_form[:key]}
+              type="password"
+              label={(@anthropic_key && "Replace key") || "Anthropic API key"}
+              placeholder="sk-ant-…"
+              autocomplete="off"
+            />
+            <.button variant="primary" type="submit" class="mt-4" disabled={@validating_key}>
+              {if @validating_key, do: "Validating…", else: "Validate & save"}
+            </.button>
+          </.form>
+        </.panel>
+
         <!-- collection: private to this user (policy-scoped reads). Every
              product in the catalog with a checkbox — the one-place manager. -->
         <.panel class="mt-6 p-5">
@@ -137,8 +195,14 @@ defmodule SanctumWeb.ProfileLive.Index do
       |> assign(:owned_pack_ids, MapSet.new())
       |> assign(:override_counts, %{})
       |> assign(:owned_card_count, 0)
+      |> assign(:anthropic_key, nil)
+      |> assign(:validating_key, false)
+      |> reset_api_key_form()
 
-    socket = if connected?(socket), do: assign_collection(socket), else: socket
+    socket =
+      if connected?(socket),
+        do: socket |> assign_collection() |> assign_api_key(),
+        else: socket
 
     {:ok, assign_form(socket)}
   end
@@ -159,6 +223,38 @@ defmodule SanctumWeb.ProfileLive.Index do
     {:noreply, assign_collection(socket)}
   end
 
+  # BYOK: validate the pasted key against Anthropic (token-free) before storing
+  # it encrypted. Runs async so the network round-trip doesn't block the LV.
+  def handle_event("save_api_key", %{"api_key" => %{"key" => key}}, socket) do
+    key = String.trim(key)
+    user = socket.assigns.current_user
+
+    cond do
+      socket.assigns.validating_key ->
+        {:noreply, socket}
+
+      key == "" ->
+        {:noreply, put_flash(socket, :error, "Enter your Anthropic API key.")}
+
+      true ->
+        {:noreply,
+         socket
+         |> assign(:validating_key, true)
+         |> start_async(:save_api_key, fn -> validate_and_store(user, key) end)}
+    end
+  end
+
+  def handle_event("remove_api_key", _params, socket) do
+    case socket.assigns.anthropic_key do
+      nil ->
+        {:noreply, socket}
+
+      row ->
+        Sanctum.Accounts.destroy_api_key(row, actor: socket.assigns.current_user)
+        {:noreply, socket |> assign_api_key() |> put_flash(:info, "Anthropic key removed.")}
+    end
+  end
+
   def handle_event("save", %{"profile" => params}, socket) do
     case AshPhoenix.Form.submit(socket.assigns.form.source, params: params) do
       {:ok, user} ->
@@ -171,6 +267,78 @@ defmodule SanctumWeb.ProfileLive.Index do
       {:error, form} ->
         {:noreply, assign(socket, :form, to_form(form))}
     end
+  end
+
+  @impl true
+  def handle_async(:save_api_key, {:ok, result}, socket) do
+    socket = assign(socket, :validating_key, false)
+
+    case result do
+      :ok ->
+        {:noreply,
+         socket
+         |> assign_api_key()
+         |> reset_api_key_form()
+         |> put_flash(:info, "Anthropic key validated and saved.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, key_error_message(reason))}
+    end
+  end
+
+  def handle_async(:save_api_key, {:exit, _reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:validating_key, false)
+     |> put_flash(:error, "Couldn't reach Anthropic — try again.")}
+  end
+
+  # Validate then store: only a live key is ever persisted. The plaintext is
+  # dropped as soon as the encrypted row is written.
+  defp validate_and_store(user, key) do
+    case Sanctum.CardVision.validate_key(key) do
+      :ok ->
+        hint = String.slice(key, -4, 4)
+
+        case Sanctum.Accounts.upsert_api_key(
+               %{provider: :anthropic, key: key, key_hint: hint},
+               actor: user
+             ) do
+          {:ok, _row} -> :ok
+          {:error, _} -> {:error, :store_failed}
+        end
+
+      {:error, _reason} = error ->
+        error
+    end
+  end
+
+  defp key_error_message(:invalid),
+    do: "Anthropic rejected that key. Check it and try again."
+
+  defp key_error_message(:rate_limited),
+    do: "Anthropic rate-limited the check. Try again shortly."
+
+  defp key_error_message(:store_failed),
+    do: "The key checked out but couldn't be saved. Try again."
+
+  defp key_error_message({:api_error, status}),
+    do: "Anthropic returned an error (#{status}). Try again."
+
+  defp key_error_message(_other), do: "Couldn't reach Anthropic — try again."
+
+  defp assign_api_key(socket) do
+    key =
+      case Sanctum.Accounts.api_key_for_provider(:anthropic, actor: socket.assigns.current_user) do
+        {:ok, row} -> row
+        _ -> nil
+      end
+
+    assign(socket, :anthropic_key, key)
+  end
+
+  defp reset_api_key_form(socket) do
+    assign(socket, :api_key_form, to_form(%{"key" => ""}, as: "api_key"))
   end
 
   defp assign_form(socket) do
