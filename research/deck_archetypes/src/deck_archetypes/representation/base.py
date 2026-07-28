@@ -1,38 +1,34 @@
-"""Swappable representation backbones.
+"""Distributional backbone dispatch (Channel A: co-occurrence).
 
-A Representation turns the corpus into card vectors (Channel A: distributional).
-Channels B (text) and C (card_features) are built separately in features/ and
-then merged with A by fusion.py — so a backbone here only owns co-occurrence.
-
-Register concrete backbones (ppmi_svd, word2vec, nmf) under BACKBONES so the
-pipeline can select one by `representation.distributional.method`.
+Channels B (text) and C (card_features) are built in features/ and merged with A
+by fusion.fuse_card_channels — a backbone here only owns co-occurrence.
 """
 
 from __future__ import annotations
 
-from typing import Protocol
+import numpy as np
+
+from ..config import get
 
 
-class Representation(Protocol):
-    """Co-occurrence backbone. `fit` sees the deck→cards corpus; `card_vectors`
-    returns a dict {card_id: vector} for the filtered vocabulary."""
+def card_vectors(corpus, cfg):
+    """Return (matrix [n_cards, dim], names) or (None, []) when disabled."""
+    dist = get(cfg, "representation.distributional")
+    if dist is None or not getattr(dist, "enabled", False):
+        return None, []
 
-    def fit(self, deck_card_rows, cfg) -> "Representation": ...
+    method = getattr(dist, "method", "ppmi_svd")
+    if method == "ppmi_svd":
+        from . import ppmi_svd
 
-    def card_vectors(self) -> dict: ...
-
-
-# name -> factory(cfg) -> Representation
-BACKBONES: dict[str, object] = {
-    # "ppmi_svd": PpmiSvd,
-    # "word2vec": Word2Vec,
-    # "nmf": Nmf,
-}
-
-
-def build(method: str, cfg):
+        return ppmi_svd.card_vectors(corpus, cfg)
     if method == "none":
-        return None
-    if method not in BACKBONES:
-        raise KeyError(f"unknown distributional method {method!r}; have {list(BACKBONES)}")
-    return BACKBONES[method](cfg)
+        return None, []
+    raise ValueError(
+        f"distributional method {method!r} not in the spine (have: ppmi_svd; "
+        "word2vec/nmf are future backbones)"
+    )
+
+
+def zeros(corpus, dim=1):
+    return np.zeros((corpus.n_cards, dim))
