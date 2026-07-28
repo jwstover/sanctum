@@ -36,6 +36,36 @@ defmodule SanctumWeb.BrowseLiveTest do
     assert html =~ "No cards have been synced"
   end
 
+  test "a reprint of a card from an earlier product appears in the Reprints section", %{
+    conn: conn
+  } do
+    import Sanctum.Factory
+
+    origin_pack = make_pack("core", "Core Set")
+    reprint_pack = make_pack("ant", "Ant-Man")
+
+    # The original printing lives in an earlier product...
+    canonical =
+      create(Sanctum.Games.Card, attrs: %{pack_id: origin_pack.id, pack: "core", set: "core"})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{card_id: canonical.id, name: "Energy", ownership: :basic, type: :resource}
+    )
+
+    # ...and is reprinted (as a thin alt) in this product.
+    create(Sanctum.Games.CardAlt,
+      attrs: %{card_id: canonical.id, pack_id: reprint_pack.id, pack: "ant", side_identifier: "A"}
+    )
+
+    {:ok, view, _html} = live(conn, ~p"/browse/ant")
+    html = render_async(view)
+
+    assert html =~ "Reprints"
+    assert html =~ "Energy"
+    # The reprint tile links to the canonical card's detail page.
+    assert html =~ "/cards/#{canonical.id}"
+  end
+
   test "an unknown product code redirects back to the browser", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/browse/nope")
 
