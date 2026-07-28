@@ -1,3 +1,12 @@
+# [1.78.0](https://github.com/jwstover/sanctum/compare/v1.77.0...v1.78.0) (2026-07-28)
+
+
+### Features
+
+* **decks:** skip the name prompt when starting a deck ([e5de800](https://github.com/jwstover/sanctum/commit/e5de8004572c0783190704be530a64db614ce87f))
+
+
+
 # [1.77.0](https://github.com/jwstover/sanctum/compare/v1.76.1...v1.77.0) (2026-07-28)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **cards:** collapse stale duplicate reprint cards polluting the pool ([d7a8301](https://github.com/jwstover/sanctum/commit/d7a8301b28f373a097013a9dd41008c0702ce8b9))
-
-
-
-## [1.75.1](https://github.com/jwstover/sanctum/compare/v1.75.0...v1.75.1) (2026-07-27)
-
-
-### Bug Fixes
-
-* **decks:** sort "Newest" by MarvelCDB date, not local updated_at ([52f530c](https://github.com/jwstover/sanctum/commit/52f530ca005b661d1ae4e3b9275dba8287cc2a67))
 
 
 
