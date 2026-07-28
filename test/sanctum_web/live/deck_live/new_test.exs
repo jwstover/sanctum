@@ -76,8 +76,10 @@ defmodule SanctumWeb.DeckLive.NewTest do
     assert html =~ "Grid Hero A"
   end
 
-  test "heroes without an alter-ego side are not offered", %{conn: conn} do
-    # Hero-side-only identity (SP//dr style) fails ValidateHero on :build.
+  test "heroes without an alter-ego side anywhere in the set are not offered", %{conn: conn} do
+    # A set with a hero side but no alter-ego side at all is an incomplete
+    # identity and stays out of the builder. (Contrast the split-identity test
+    # below, where the alter-ego lives on a sibling card in the same set.)
     lone_card = create(Sanctum.Games.Card, attrs: %{base_code: "new_lonex", set: "new_lone"})
 
     create(Sanctum.Games.CardSide,
@@ -105,6 +107,52 @@ defmodule SanctumWeb.DeckLive.NewTest do
     {:ok, _lv, html} = live(conn, ~p"/decks/new")
 
     refute html =~ "Loner Hero"
+  end
+
+  test "split-identity heroes (alter-ego on a sibling card) are offered", %{conn: conn} do
+    # SP//dr-style: the hero side and alter-ego side live on two different cards
+    # in the same set, so neither card carries both — but the identity is whole.
+    suit = create(Sanctum.Games.Card, attrs: %{base_code: "new_splitx", set: "new_split"})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: suit.id,
+        name: "Split Suit",
+        type: :hero,
+        ownership: :hero,
+        code: "#{suit.code}a",
+        side_identifier: "A",
+        is_primary_side: true
+      }
+    )
+
+    pilot = create(Sanctum.Games.Card, attrs: %{base_code: "new_pilotx", set: "new_split"})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: pilot.id,
+        name: "Split Pilot",
+        type: :alter_ego,
+        ownership: :hero,
+        code: "#{pilot.code}a",
+        side_identifier: "A",
+        is_primary_side: true
+      }
+    )
+
+    {:ok, _hero} =
+      Sanctum.Heroes.find_or_create_hero(%{
+        hero_name: "Split Suit",
+        alter_ego_name: "Split Pilot",
+        set: "new_split",
+        base_code: suit.base_code,
+        card_id: suit.id
+      })
+
+    conn = log_in_user(conn, user_fixture())
+    {:ok, _lv, html} = live(conn, ~p"/decks/new")
+
+    assert html =~ "Split Suit"
   end
 
   test "selecting a hero lands in the builder with a default title and signature cards", %{
