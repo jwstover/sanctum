@@ -1,3 +1,12 @@
+# [1.77.0](https://github.com/jwstover/sanctum/compare/v1.76.1...v1.77.0) (2026-07-28)
+
+
+### Features
+
+* **decks:** infer aspect from cards; remove hard deckbuilding restrictions ([3e284a0](https://github.com/jwstover/sanctum/commit/3e284a0b6a8b7e858006f89bc59f73f9a09a607c))
+
+
+
 ## [1.76.1](https://github.com/jwstover/sanctum/compare/v1.76.0...v1.76.1) (2026-07-28)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **decks:** sort "Newest" by MarvelCDB date, not local updated_at ([52f530c](https://github.com/jwstover/sanctum/commit/52f530ca005b661d1ae4e3b9275dba8287cc2a67))
-
-
-
-# [1.75.0](https://github.com/jwstover/sanctum/compare/v1.74.0...v1.75.0) (2026-07-27)
-
-
-### Features
-
-* **cards:** show boost icons and boost star on the card tile ([1369de0](https://github.com/jwstover/sanctum/commit/1369de0ebf947435d76e004c26c1ad5a731e5a6c))
 
 
 
