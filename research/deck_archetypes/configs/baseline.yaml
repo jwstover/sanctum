@@ -157,6 +157,8 @@ evaluation:
     top_cards_per_cluster: 25
     top_card_metric: lift         # lift | tfidf
     cluster_structural_profile: true   # mean cost curve / type mix per cluster
+    sample_decks: 5               # representative deck links per cluster (0 = off)
+    deck_url_base: "http://localhost:4150/decks/"
 
 # --- Output -------------------------------------------------------------------
 output:
