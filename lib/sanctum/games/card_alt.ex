@@ -89,6 +89,22 @@ defmodule Sanctum.Games.CardAlt do
     # User-scoped through policies — never the authorize?: false system-write
     # paths used by catalog sync.
 
+    create :create_custom do
+      description "Creates custom alt art for an official card directly from an " <>
+                    "uploaded image (no source card to convert)."
+
+      # homebrew_project_id + artist are accepted attributes so the
+      # ActorOwnsProject policy can resolve the project on create; everything
+      # else is set by the change.
+      accept [:homebrew_project_id, :artist]
+
+      argument :image_url, :string, allow_nil?: false
+      argument :target_card_id, :uuid, allow_nil?: false
+      argument :side_identifier, :string, default: "a"
+
+      change Sanctum.Games.Changes.CreateCustomAltArt
+    end
+
     create :declare_custom do
       description "Converts one of the actor's single-sided custom cards into " <>
                     "alternate art for an official card; the card row is destroyed."
@@ -131,6 +147,13 @@ defmodule Sanctum.Games.CardAlt do
       authorize_if expr(origin == :official)
       authorize_if expr(homebrew_project.visibility == :published)
       authorize_if expr(creator_id == ^actor(:id))
+    end
+
+    # Direct create: the actor must own the target homebrew project. The
+    # project id is an accepted attribute (visible to the policy); the change
+    # separately proves the target card is official via an actor-scoped read.
+    policy action(:create_custom) do
+      authorize_if Sanctum.Homebrew.Checks.ActorOwnsProject
     end
 
     # Create-time check resolving the :source_card_id ARGUMENT by hand —

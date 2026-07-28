@@ -25,6 +25,8 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/sanctum"
 import topbar from "../vendor/topbar"
+import AltSearchNav from "./hooks/alt-search-nav";
+import AutoFocus from "./hooks/auto-focus";
 import CardDrag from "./hooks/card-drag";
 import CardLinkPreview from "./hooks/card-link-preview";
 import Chart from "./hooks/chart";
@@ -56,7 +58,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone},
-  hooks: {...colocatedHooks, CardDrag, CardLinkPreview, Chart, DescriptionEditor, DragDrop, GlobalSearch, LayoutHand, PaneDrag, QueryInput, ResponsivePlaceholder, ScrollRestore},
+  hooks: {...colocatedHooks, AltSearchNav, AutoFocus, CardDrag, CardLinkPreview, Chart, DescriptionEditor, DragDrop, GlobalSearch, LayoutHand, PaneDrag, QueryInput, ResponsivePlaceholder, ScrollRestore},
 })
 
 // Uncheck the daisyUI drawer toggle when a sidebar link is clicked, so the
