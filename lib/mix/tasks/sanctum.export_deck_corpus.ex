@@ -61,10 +61,14 @@ defmodule Mix.Tasks.Sanctum.ExportDeckCorpus do
     slot_count = export_deck_cards(Path.join(out, "deck_cards.jsonl"))
     Mix.shell().info("  deck_cards.jsonl   #{slot_count} rows")
 
+    hero_count = export_heroes(Path.join(out, "heroes.jsonl"))
+    Mix.shell().info("  heroes.jsonl       #{hero_count} rows")
+
     write_manifest(Path.join(out, "SNAPSHOT.json"), %{
       cards: card_count,
       decks: deck_count,
       deck_cards: slot_count,
+      heroes: hero_count,
       max_updated_at: max_updated_at
     })
 
@@ -190,6 +194,60 @@ defmodule Mix.Tasks.Sanctum.ExportDeckCorpus do
         visibility: visibility,
         source: source,
         size: size
+      }
+    end)
+  end
+
+  # --- heroes ----------------------------------------------------------------
+  # One row per hero, carrying the hero-side base stats + ability text and the
+  # alter-ego recover + ability text. These never appear in deck_cards (the
+  # identity card isn't a deck slot), so a deck's playstyle scorer needs them
+  # separately to credit base ATK/THW/DEF, hand size, and the hero/AE ability.
+  # sobelow_skip ["SQL.Query"] — static query, no interpolation.
+  defp export_heroes(path) do
+    sql = """
+    SELECT DISTINCT ON (h.id)
+           h.id::text,
+           h.hero_name,
+           hs.attack ->> 'value',
+           hs.thwart ->> 'value',
+           hs.defense ->> 'value',
+           hs.hand_size,
+           hs.text,
+           aes.recover ->> 'value',
+           aes.hand_size,
+           aes.text
+    FROM heroes h
+    LEFT JOIN card_sides hs ON hs.card_id = h.card_id AND hs.type = 'hero'
+    LEFT JOIN card_sides aes ON aes.card_id = h.card_id AND aes.type = 'alter_ego'
+    ORDER BY h.id
+    """
+
+    %{rows: rows} = Repo.query!(sql)
+
+    write_ndjson!(path, rows, fn [
+                                   id,
+                                   name,
+                                   atk,
+                                   thw,
+                                   def,
+                                   hero_hand,
+                                   hero_text,
+                                   recover,
+                                   ae_hand,
+                                   ae_text
+                                 ] ->
+      %{
+        hero_id: id,
+        name: name,
+        atk: atk,
+        thw: thw,
+        def: def,
+        hero_hand_size: hero_hand,
+        hero_text: hero_text,
+        recover: recover,
+        ae_hand_size: ae_hand,
+        ae_text: ae_text
       }
     end)
   end
