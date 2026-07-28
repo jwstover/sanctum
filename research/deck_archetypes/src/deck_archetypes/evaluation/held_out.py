@@ -1,32 +1,70 @@
 """Held-out card prediction — the PRIMARY, label-free fitness metric.
 
-The "language-model perplexity" of this problem. Hold one card out of each of a
-sample of decks; ask the representation to rank the missing card among all
-candidates. A representation that captured real deckbuilding structure ranks it
-high. Needs ZERO human labels, so it's what you tune weights/channels against.
-
-This is deliberately representation-level (not clustering-level): it scores the
-deck/card vector space itself, before any clustering choice muddies things. If
-fancy embeddings can't beat bag-of-cards + TF-IDF cosine here, that's the
-answer — which is why the dumb baselines stay on the leaderboard.
+Hold one card out of each of a sample of decks; rank it among all candidate
+cards by cosine to the query deck vector pooled from the *remaining* cards. A
+representation that captured real deckbuilding structure ranks it high. Operates
+on the fused card space (Channel 1 only) — the structural channel is card-blind
+by construction, so it doesn't participate here.
 """
 
 from __future__ import annotations
 
+import numpy as np
 
-def evaluate(card_vectors, deck_card_rows, pooling_cfg, *, n_decks: int, ks, seed: int):
-    """Return {"mrr": float, "hit@1": ..., "hit@5": ..., ...}.
+from ..config import get
+from ..representation import fusion
 
-    Procedure per sampled deck:
-      1. Remove one held-out card (weight the sampling toward non-staples so the
-         metric rewards capturing real structure, not re-predicting resources).
-      2. Pool the REMAINING cards into a query deck vector (same pooling the
-         pipeline uses).
-      3. Score every candidate card (nearest-neighbor / dot-product in card
-         space, or the backbone's own scorer) and find the held-out card's rank.
-      4. Accumulate reciprocal rank and hit@k over the sample.
 
-    Keep the sample + held-out choices seeded so runs are comparable on the
-    leaderboard. Report per-k hit rates and MRR.
-    """
-    raise NotImplementedError
+def evaluate(card_matrix, corpus, cfg, *, seed=42):
+    n_decks = int(get(cfg, "evaluation.held_out_prediction.n_decks", 2000))
+    ks = list(get(cfg, "evaluation.held_out_prediction.k", [1, 5, 10, 25]))
+
+    rng = np.random.default_rng(seed)
+    norm = _l2(card_matrix)
+    rarity = fusion.pool_weight_vector(corpus, cfg)
+    qmode = get(cfg, "deck_vector.pooling.quantity_weight", "sqrt")
+
+    X = corpus.X.tocsr()
+    candidates = min(n_decks, X.shape[0])
+    deck_ids = rng.choice(X.shape[0], size=candidates, replace=False)
+
+    ranks = []
+    for j in deck_ids:
+        cols = X.indices[X.indptr[j] : X.indptr[j + 1]]
+        qty = X.data[X.indptr[j] : X.indptr[j + 1]]
+        if len(cols) < 2:
+            continue
+
+        # Hold out a card, biased toward rarer (non-staple) cards.
+        p = rarity[cols]
+        p = p / p.sum() if p.sum() > 0 else None
+        held = rng.choice(len(cols), p=p)
+        target = cols[held]
+
+        keep = np.delete(np.arange(len(cols)), held)
+        weights = {
+            int(c): float(fusion.quantity_transform([q], qmode)[0] * rarity[c])
+            for c, q in zip(cols[keep], qty[keep])
+        }
+        query = fusion.pool_one(card_matrix, weights)
+        if query is None:
+            continue
+        query = query / max(np.linalg.norm(query), 1e-12)
+
+        scores = norm @ query
+        scores[cols[keep]] = -np.inf  # already-present cards aren't candidates
+        rank = 1 + int(np.sum(scores > scores[target]))
+        ranks.append(rank)
+
+    if not ranks:
+        return {"mrr": 0.0, "n": 0}
+    ranks = np.asarray(ranks)
+    out = {"mrr": float(np.mean(1.0 / ranks)), "n": int(len(ranks))}
+    for k in ks:
+        out[f"hit@{k}"] = float(np.mean(ranks <= k))
+    return out
+
+
+def _l2(mat):
+    mat = np.asarray(mat, dtype=np.float64)
+    return mat / np.maximum(np.linalg.norm(mat, axis=1, keepdims=True), 1e-12)
