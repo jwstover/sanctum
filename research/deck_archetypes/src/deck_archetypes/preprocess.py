@@ -27,6 +27,7 @@ class Corpus:
     card_index: dict  # card_id -> col
     deck_index: dict  # deck_id -> row
     idf: np.ndarray  # [n_cards] log(N / df)
+    card_weight: np.ndarray  # [n_cards] per-card multiplier (aspect_downweight)
     cost_bucket_edges: list[int]
 
     @property
@@ -43,10 +44,10 @@ class Corpus:
         return b
 
 
-def build_corpus(snapshot, cfg) -> Corpus:
+def build_corpus(snapshot, cfg, restrict_aspects=None) -> Corpus:
     edges = list(get(cfg, "representation.card_features.cost_bucket_edges", [0, 1, 2, 3, 4, 6]))
 
-    decks = _filter_decks(snapshot.decks, cfg)
+    decks = filter_decks(snapshot.decks, cfg, restrict_aspects=restrict_aspects)
     cards = _filter_cards(snapshot.cards, cfg)
     cards = _attach_cost_bucket(cards, edges)
 
@@ -82,6 +83,7 @@ def build_corpus(snapshot, cfg) -> Corpus:
     n = X.shape[0]
     doc_freq = np.asarray((X > 0).sum(axis=0)).ravel()
     idf = np.log(n / np.maximum(doc_freq, 1))
+    card_weight = _card_weight(cards, cfg)
 
     return Corpus(
         cards=cards,
@@ -92,11 +94,23 @@ def build_corpus(snapshot, cfg) -> Corpus:
         card_index=card_index,
         deck_index=deck_index,
         idf=idf,
+        card_weight=card_weight,
         cost_bucket_edges=edges,
     )
 
 
-def _filter_decks(decks: pl.DataFrame, cfg) -> pl.DataFrame:
+def aspect_counts(snapshot, cfg) -> dict:
+    """Aspect -> deck count over the (non-aspect) corpus filters. Used to decide
+    which aspects to partition on. A deck contributes to each aspect it lists."""
+    decks = filter_decks(snapshot.decks, cfg)  # no aspect restriction
+    exploded = decks.select(pl.col("aspects").explode()).drop_nulls()
+    if exploded.height == 0:
+        return {}
+    vc = exploded["aspects"].value_counts()
+    return dict(zip(vc["aspects"].to_list(), vc["count"].to_list()))
+
+
+def filter_decks(decks: pl.DataFrame, cfg, restrict_aspects=None) -> pl.DataFrame:
     out = decks
     for field in ("state", "visibility", "source"):
         allowed = get(cfg, f"corpus.{field}")
@@ -105,13 +119,39 @@ def _filter_decks(decks: pl.DataFrame, cfg) -> pl.DataFrame:
     min_size = get(cfg, "corpus.min_deck_size")
     if min_size:
         out = out.filter(pl.col("size") >= int(min_size))
+
+    # Aspect scoping: explicit partition (restrict_aspects) wins over a config
+    # corpus.aspects filter. A deck matches if any of its aspects is allowed.
+    allowed = restrict_aspects or get(cfg, "corpus.aspects")
+    if allowed:
+        allowed = list(allowed)
+        out = out.filter(
+            pl.col("aspects").list.eval(pl.element().is_in(allowed)).list.sum() > 0
+        )
     return out
+
+
+def _card_weight(cards: pl.DataFrame, cfg) -> np.ndarray:
+    """Per-card multiplier. `representation.aspect_downweight` (< 1) shrinks the
+    pull of aspect-specific cards so a cross-aspect run surfaces aspect-crossing
+    (basic-card / structural) archetypes instead of rediscovering the aspects."""
+    w = np.ones(cards.height)
+    downweight = get(cfg, "representation.aspect_downweight")
+    if downweight is not None and float(downweight) < 1.0:
+        has_aspect = np.array([a is not None for a in cards["aspect"].to_list()])
+        w[has_aspect] = float(downweight)
+    return w
 
 
 def _filter_cards(cards: pl.DataFrame, cfg) -> pl.DataFrame:
     out = cards
     if get(cfg, "corpus.strip_hero_cards", True):
+        # ownership==hero catches most; hero_locked (card.set == a hero's set)
+        # also catches aspect-flavored signature cards (e.g. Spider-Woman's
+        # Pheromones, ownership=player) that appear in ~100% of that hero's decks.
         out = out.filter(pl.col("ownership") != "hero")
+        if "hero_locked" in out.columns:
+            out = out.filter(~pl.col("hero_locked").fill_null(False))
     return out
 
 

@@ -11,12 +11,13 @@ from pathlib import Path
 import polars as pl
 
 
-def append(path, snapshot_hash, cfg, metrics):
+def append(path, snapshot_hash, cfg, metrics, partition=None):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     row = {
         "name": _g(cfg, "experiment.name"),
+        "partition": partition or "",
         "config_hash": cfg._hash,
         "snapshot_hash": snapshot_hash,
         "clustering": _g(cfg, "clustering.method"),
@@ -32,10 +33,12 @@ def append(path, snapshot_hash, cfg, metrics):
 
     if path.exists():
         old = pl.read_parquet(path)
+        part_col = pl.col("partition") if "partition" in old.columns else pl.lit("")
         old = old.filter(
             ~(
                 (pl.col("config_hash") == row["config_hash"])
                 & (pl.col("snapshot_hash") == row["snapshot_hash"])
+                & (part_col == row["partition"])
             )
         )
         new = pl.concat([old, new], how="diagonal_relaxed")

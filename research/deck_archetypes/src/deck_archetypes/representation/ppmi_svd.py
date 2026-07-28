@@ -19,7 +19,10 @@ def card_vectors(corpus, cfg):
     shift_k = float(get(cfg, "representation.distributional.pmi_shift_k", 1))
 
     B = corpus.binary()
-    cooc = np.asarray((B.T @ B).todense()).astype(np.float64)  # [n_cards, n_cards]
+    # Column-scale by the per-card weight (aspect_downweight) so downweighted
+    # cards contribute less co-occurrence mass.
+    Bw = B.multiply(corpus.card_weight.reshape(1, -1)).tocsr()
+    cooc = np.asarray((Bw.T @ Bw).todense()).astype(np.float64)  # [n_cards, n_cards]
     np.fill_diagonal(cooc, 0.0)
 
     total = cooc.sum()

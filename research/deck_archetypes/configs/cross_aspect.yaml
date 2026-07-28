@@ -1,18 +1,27 @@
-# Fast smoke config: full pipeline minus the heavy text channel, for verifying
-# the harness runs end-to-end on the core scientific stack. Relies on get()
-# defaults for anything omitted.
-experiment: {name: smoke, seed: 42, snapshot: "snap_test"}
+# Deliberate CROSS-aspect run: one global clustering with aspect identity
+# suppressed, to surface aspect-crossing archetypes — basic-card shells
+# (S.H.I.E.L.D. allies, big basic ally packages) and recurring structural shells
+# — that a within-aspect run can't see. Without the downweight + aspect drop
+# this just rediscovers the aspects (18/20 clusters were ~single-aspect).
+experiment: {name: cross_aspect, seed: 42, snapshot: "snap_test"}
 
-corpus: {state: [final], visibility: [published], min_deck_size: 40, strip_hero_cards: true, partition_by: aspect, partition_min_decks: 200}
+corpus:
+  state: [final]
+  visibility: [published]
+  min_deck_size: 40
+  strip_hero_cards: true
+  partition_by: null              # one global run, not per-aspect
+
 card_filter: {min_deck_count: 3}
 
 representation:
   distributional: {enabled: true, method: ppmi_svd, dim: 64, pmi_shift_k: 1}
+  aspect_downweight: 0.15         # shrink aspect-card pull toward basic-card structure
   text: {enabled: false}
   card_features:
     enabled: true
     cost_bucket_edges: [0, 1, 2, 3, 4, 6]
-    include: {cost: true, type: true, traits: true, ownership: true, aspect: true, resource_icons: true, stats: true}
+    include: {cost: true, type: true, traits: true, ownership: true, aspect: false, resource_icons: true, stats: true}
   card_fusion: {normalize_per_channel: l2, weights: {distributional: 1.0, text: 0.5, card_features: 0.5}}
 
 deck_vector:
@@ -43,4 +52,4 @@ evaluation:
   projection: {umap_2d: false}
   interpret: {top_cards_per_cluster: 20, top_card_metric: lift}
 
-output: {dir: runs/smoke, save: [assignments], leaderboard: runs/leaderboard.parquet}
+output: {dir: runs/cross_aspect, save: [assignments], leaderboard: runs/leaderboard.parquet}
