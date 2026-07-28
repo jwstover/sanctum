@@ -1,3 +1,12 @@
+# [1.76.0](https://github.com/jwstover/sanctum/compare/v1.75.2...v1.76.0) (2026-07-28)
+
+
+### Features
+
+* **browse:** show reprints on the product details page ([5add9a9](https://github.com/jwstover/sanctum/commit/5add9a9521ea5aaebea7b8ce9398b35b236f8f98))
+
+
+
 ## [1.75.2](https://github.com/jwstover/sanctum/compare/v1.75.1...v1.75.2) (2026-07-28)
 
 
@@ -32,15 +41,6 @@
 
 * **cards:** add Aspect lookup resource (aspect-as-data phase 1) ([217bcd2](https://github.com/jwstover/sanctum/commit/217bcd2167f730c7403ba94971e399b29f02cca6))
 * fill homebrew card fields from art via Claude vision ([98069f1](https://github.com/jwstover/sanctum/commit/98069f104805017f4af33e8f6f939d6e99f925ef))
-
-
-
-# [1.73.0](https://github.com/jwstover/sanctum/compare/v1.72.0...v1.73.0) (2026-07-27)
-
-
-### Features
-
-* **auth:** return to originating page (and scroll) after signing in to favorite ([6d5f843](https://github.com/jwstover/sanctum/commit/6d5f8432ed402e287477655daa149200e938a648))
 
 
 
