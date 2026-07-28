@@ -223,6 +223,54 @@ Notes:
   verification entirely. Reach for B (with testing-mode allowlisting, not
   full verification) only if importing from *private* Drives is required.
 
+### Vision extraction: model benchmark & economics (2026-07-28)
+
+The "fill from art" extractor (`Sanctum.CardVision`) was benchmarked against
+the official catalog as ground truth via `mix sanctum.vision_eval` (PR #322:
+pluggable providers — Anthropic native, plus any OpenAI-compatible endpoint
+(Ollama local / OpenRouter hosted); batch mode scores per-field accuracy on a
+seeded card sample, `--card` mode diffs several models on one card for manual
+review). Numbers below are a 12-card seeded sample, identical inputs, strict
+scoring (text = Jaro ≥0.95 after normalization).
+
+| Model | Accuracy | ¢/card | Notes |
+|---|---|---|---|
+| Claude Opus 5 | 93% | 3.3¢ | best; not worth 2.5× Sonnet for human-reviewed fills |
+| Kimi K3 (open) | 91% | 2.0¢ | reasoning tokens price it above Sonnet 5 — no niche |
+| **Claude Sonnet 5** | **90%** | **1.2¢**\* | **new default** (was Opus 4.8); \*intro pricing, 1.8¢ after Aug 2026 |
+| Claude Opus 4.8 | 88% | 3.0¢ | old default — beaten on accuracy AND cost |
+| Gemma 4 31B (local) | 78% | ~0 | free on an M-series Mac, ~29s/card |
+| Claude Haiku 4.5 | 76% | 0.5¢ | fails stat blocks |
+| Qwen3.5-122B (open) | 75% | 0.26¢ | best hosted-cheap tier |
+| Qwen3-VL-235B (open) | 57% | 0.05¢ | hallucinates zero-value stats; reputation didn't transfer |
+
+Findings that shape the roadmap:
+
+- **Cost is a non-issue at homebrew scale.** A 300-card project costs
+  ~$4–5 to fully auto-enrich on Sonnet 5 — cheap enough to offer "extract
+  all" per project rather than per-card button presses. Bulk/batch tiers
+  only matter if we ever enrich thousands of cards at once (e.g. Drive
+  imports of whole back catalogs); for that, a two-tier flow (Qwen3.5-122B
+  or local Gemma first, Sonnet 5 escalation on validation failures) cuts
+  cost ~5–10× at similar quality. Not built; revisit with Drive import.
+- **The stat block (ATK/HP/SCH on allies/minions/villains) is the
+  discriminator field** — everything ≥ Sonnet-class reads it perfectly,
+  everything below misreads or hallucinates it. Name/type/ownership/cost
+  are easy everywhere; don't pay frontier prices for text-only card types.
+- **Anthropic tokenizes card scans at ~4.8k input tokens** (~2–3× other
+  providers' image tokenizers) — real Claude vision cost is roughly double
+  naive estimates; measured, not estimated, in the eval's token columns.
+- **Text transcription scores low everywhere (≤36%)** but it's threshold
+  artifact, not misreads — models lose points on `<b>`/icon-token
+  formatting conventions. Fine for human-reviewed fills; a prompt-tuning
+  problem if it ever matters.
+- Gotchas fixed en route (in PR #322): Tigris serves JPEG bytes under
+  `.png` names → data-URL media type is now sniffed from magic bytes
+  (Anthropic 400s on mismatch); hybrid-thinking open models (qwen3-vl) burn
+  the whole token budget reasoning unless `reasoning_effort` is set.
+- Full per-card mismatch reports in `tmp/vision_eval/`; decision + model
+  comparison recorded in the vault (Decisions, 2026-07-27).
+
 ## 3. Play integration (private-first MVP exit criteria) — NEXT
 
 Recommended split: **3a (player cards)** then **3b (scenarios)**.
