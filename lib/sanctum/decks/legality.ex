@@ -218,28 +218,41 @@ defmodule Sanctum.Decks.Legality do
     }
   end
 
-  # Spider-Woman / Adam Warlock must contribute equal card counts per aspect.
-  # Advisory only — flag when the chosen aspects are lopsided.
+  # Heroes that build across a fixed number of aspects with equal card counts:
+  # Spider-Woman (two), Adam Warlock and Gambit (all four). Advisory only — flag
+  # when the deck doesn't span the required number of aspects, or when the
+  # aspects it does span are lopsided.
   defp equal_aspect_issues(_entries, aspects, %{equal_aspects: false}) when is_list(aspects),
     do: []
 
-  defp equal_aspect_issues(_entries, aspects, _rules) when length(aspects) <= 1, do: []
-
-  defp equal_aspect_issues(entries, aspects, _rules) do
+  defp equal_aspect_issues(entries, aspects, %{max_aspects: required}) do
     counts = aspect_counts(entries, aspects)
 
-    if counts |> Map.values() |> Enum.uniq() |> length() > 1 do
-      detail = Enum.map_join(aspects, ", ", &"#{aspect_label(&1)} #{Map.get(counts, &1, 0)}")
+    cond do
+      length(aspects) != required ->
+        [
+          %Issue{
+            code: :unequal_aspects,
+            severity: :warning,
+            message:
+              "Deck should draw equally from #{required} aspects " <>
+                "(has #{length(aspects)})"
+          }
+        ]
 
-      [
-        %Issue{
-          code: :unequal_aspects,
-          severity: :warning,
-          message: "Aspects should have equal card counts (#{detail})"
-        }
-      ]
-    else
-      []
+      counts |> Map.values() |> Enum.uniq() |> length() > 1 ->
+        detail = Enum.map_join(aspects, ", ", &"#{aspect_label(&1)} #{Map.get(counts, &1, 0)}")
+
+        [
+          %Issue{
+            code: :unequal_aspects,
+            severity: :warning,
+            message: "Aspects should have equal card counts (#{detail})"
+          }
+        ]
+
+      true ->
+        []
     end
   end
 

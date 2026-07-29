@@ -268,6 +268,61 @@ defmodule Sanctum.Decks.LegalityTest do
       assert id == protection.id
     end
 
+    test "Adam Warlock with an equal split across all four aspects raises no aspect issue" do
+      # Single copies (Warlock's rule) of one card per aspect, equal counts.
+      aspects =
+        for a <- ~w(aggression justice leadership protection) do
+          entry(card(%{ownership: :player, aspect: a}), 1)
+        end
+
+      singles = for i <- 1..36//1, do: entry(card(%{name: "Single #{i}"}), 1)
+
+      issues = Legality.issues(aspects ++ singles, [], "warlock")
+
+      refute Enum.any?(issues, &(&1.code in [:multi_aspect, :unequal_aspects]))
+    end
+
+    test "Adam Warlock warns when the four aspects are lopsided" do
+      # Two aggression cards vs one of each other aspect — unequal counts, but
+      # every card is still a single copy (no deck-limit noise).
+      agg1 = card(%{ownership: :player, aspect: "aggression", name: "Agg 1"})
+      agg2 = card(%{ownership: :player, aspect: "aggression", name: "Agg 2"})
+      justice = card(%{ownership: :player, aspect: "justice"})
+      leadership = card(%{ownership: :player, aspect: "leadership"})
+      protection = card(%{ownership: :player, aspect: "protection", name: "Warded"})
+
+      singles = for i <- 1..35//1, do: entry(card(%{name: "Single #{i}"}), 1)
+
+      entries =
+        [
+          entry(agg1, 1),
+          entry(agg2, 1),
+          entry(justice, 1),
+          entry(leadership, 1),
+          entry(protection, 1)
+          | singles
+        ]
+
+      issues = Legality.issues(entries, [], "warlock")
+
+      assert Enum.any?(issues, &(&1.code == :unequal_aspects))
+    end
+
+    test "Adam Warlock warns when fewer than four aspects are present" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      leadership = card(%{ownership: :player, aspect: "leadership"})
+
+      singles = for i <- 1..38//1, do: entry(card(%{name: "Single #{i}"}), 1)
+
+      issues = Legality.issues([entry(justice, 1), entry(leadership, 1) | singles], [], "warlock")
+
+      assert [%{code: :unequal_aspects, message: message}] =
+               Enum.filter(issues, &(&1.code == :unequal_aspects))
+
+      assert message =~ "4 aspects"
+      assert message =~ "has 2"
+    end
+
     test "Gamora allows up to 6 off-aspect attack/thwart events" do
       # Chosen aspect dominates; a few off-aspect attack events ride along.
       justice = card(%{ownership: :player, aspect: "justice"})
