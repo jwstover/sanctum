@@ -166,4 +166,82 @@ defmodule SanctumWeb.ProfileLive.IndexTest do
       refute has_element?(view, "#update-profile-banner")
     end
   end
+
+  describe "AI card extraction (BYOK)" do
+    import Sanctum.AccountsFixtures
+
+    alias Sanctum.Accounts
+
+    defp stub_key_check(status, body) do
+      Req.Test.stub(Sanctum.CardVision, fn conn ->
+        conn
+        |> Plug.Conn.put_status(status)
+        |> Req.Test.json(body)
+      end)
+    end
+
+    test "shows the add-key form and no connected state for a fresh user", %{conn: conn} do
+      {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
+
+      assert has_element?(view, "#api-key-form input[name='api_key[key]']")
+      refute render(view) =~ "Connected"
+    end
+
+    test "a valid key validates, stores encrypted, and shows the masked hint", %{conn: conn} do
+      user = user_fixture()
+      stub_key_check(200, %{"data" => []})
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/profile")
+
+      view
+      |> form("#api-key-form", %{"api_key" => %{"key" => "sk-ant-secret-VALUE9zX"}})
+      |> render_submit()
+
+      html = render_async(view)
+      assert html =~ "validated and saved"
+      assert html =~ "Connected"
+      assert html =~ "sk-…E9zX"
+
+      # Stored, encrypted, decryptable only with the actor.
+      assert {:ok, row} = Accounts.api_key_for_provider(:anthropic, actor: user)
+      assert row.key_hint == "E9zX"
+      assert Ash.load!(row, [:key], actor: user).key == "sk-ant-secret-VALUE9zX"
+    end
+
+    test "a rejected key surfaces an error and stores nothing", %{conn: conn} do
+      user = user_fixture()
+      stub_key_check(401, %{"error" => %{"message" => "invalid x-api-key"}})
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/profile")
+
+      view
+      |> form("#api-key-form", %{"api_key" => %{"key" => "sk-ant-bogus"}})
+      |> render_submit()
+
+      html = render_async(view)
+      assert html =~ "Anthropic rejected that key"
+      assert {:ok, nil} = Accounts.api_key_for_provider(:anthropic, actor: user)
+    end
+
+    test "removing a stored key clears it", %{conn: conn} do
+      user = user_fixture()
+
+      Accounts.upsert_api_key!(
+        %{provider: :anthropic, key: "sk-ant-secret-VALUE9zX", key_hint: "E9zX"},
+        actor: user
+      )
+
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/profile")
+      assert render(view) =~ "Connected"
+
+      view
+      |> element("#confirm-remove-api-key button[phx-click='remove_api_key']")
+      |> render_click()
+
+      html = render(view)
+      assert html =~ "Anthropic key removed"
+      refute html =~ "Connected"
+      assert {:ok, nil} = Accounts.api_key_for_provider(:anthropic, actor: user)
+    end
+  end
 end

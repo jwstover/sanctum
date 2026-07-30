@@ -13,6 +13,9 @@ defmodule Sanctum.Application do
     children = [
       SanctumWeb.Telemetry,
       Sanctum.Repo,
+      # Encryption vault for cloaked attributes (UserApiKey.key); must be up
+      # before any resource action that encrypts/decrypts runs.
+      Sanctum.Vault,
       {DNSCluster, query: Application.get_env(:sanctum, :dns_cluster_query) || :ignore},
       # Must precede Oban: resets jobs orphaned `executing` by the prior boot
       # before any queue starts producing (see Sanctum.Oban.BootRescue).
