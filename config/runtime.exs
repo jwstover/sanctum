@@ -36,13 +36,15 @@ end
 # Cloak vault key for encrypting sensitive attributes at rest (Sanctum.Vault,
 # backing UserApiKey.key). Held separately from the DB — a dump alone can't
 # decrypt. Prod requires CLOAK_KEY (32 raw bytes, base64); dev/test use a fixed
-# non-secret key so encrypted fixtures round-trip locally.
+# non-secret key so encrypted fixtures round-trip locally. prod_local talks to
+# the real prod DB, so it needs the real CLOAK_KEY (via .env.prod_local) to
+# decrypt production rows — it must not fall back to the fixed dev key.
 cloak_key =
   cond do
     (env_key = System.get_env("CLOAK_KEY")) not in [nil, ""] ->
       env_key
 
-    config_env() in [:dev, :test, :prod_local] ->
+    config_env() in [:dev, :test] ->
       "Zcn9X12iE5C9rPs5yRrg0jHD7TSDZlUqSfmIsRfJRmI="
 
     true ->
