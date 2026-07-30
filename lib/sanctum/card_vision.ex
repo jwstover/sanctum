@@ -1,7 +1,7 @@
 defmodule Sanctum.CardVision do
   @moduledoc """
-  Reads a card side's printed fields off its image using the Claude API
-  (vision + structured outputs).
+  Reads a card side's printed fields off its image using a vision model
+  with structured outputs.
 
   `extract_side/1` takes the side's public image URL and returns the
   creator-editable fields that `CardSide.enrich` accepts, as a string-keyed
@@ -10,45 +10,69 @@ defmodule Sanctum.CardVision do
   omitted rather than nil, so extraction only ever fills — it never blanks
   a value the creator already entered.
 
+  Two providers are supported:
+
+    * `:anthropic` (default) — the Claude Messages API. Production path.
+    * `:openai` — any OpenAI-compatible chat-completions endpoint (Ollama,
+      OpenRouter, vLLM, …). The card image is fetched and inlined as a
+      base64 data URL because local runtimes can't fetch remote URLs.
+      Requires `:base_url`; `:api_key` as the endpoint demands.
+
   Configuration (`config :sanctum, Sanctum.CardVision`):
 
     * `:api_key` — Anthropic API key (`ANTHROPIC_API_KEY`, set in runtime.exs)
-    * `:req_options` — extra Req options merged into the request (tests
+    * `:req_options` — extra Req options merged into every request (tests
       inject a `Req.Test` plug here)
   """
 
   require Logger
 
-  @api_url "https://api.anthropic.com/v1/messages"
-  @model "claude-opus-4-8"
+  @anthropic_url "https://api.anthropic.com/v1/messages"
+  # Sonnet 5: benchmarked at 90% field accuracy vs Opus 4.8's 88% on the
+  # official-catalog eval (mix sanctum.vision_eval), at ~40% of the cost.
+  @anthropic_model "claude-sonnet-5"
   @anthropic_version "2023-06-01"
+  @max_tokens 4096
 
   @type result :: {:ok, %{String.t() => term()}} | {:error, term()}
+  @type meta :: %{model: String.t() | nil, usage: %{input: term(), output: term()}}
 
   @doc """
   Extracts the printed fields from one card face image.
 
+  Options:
+
+    * `:provider` — `:anthropic` (default) or `:openai`
+    * `:model` — model name (defaults to `#{@anthropic_model}` for Anthropic;
+      required for `:openai`)
+    * `:base_url` — OpenAI-compatible API root, e.g. `http://localhost:11434/v1`
+      (Ollama) or `https://openrouter.ai/api/v1` (required for `:openai`)
+    * `:api_key` — bearer token for `:openai` endpoints that need one
+
   Returns `{:ok, fields}` with only the fields legible on the card, or
   `{:error, reason}` — `:missing_api_key`, `:refused`, `:truncated`,
-  `{:api_error, status, message}`, `{:request_failed, exception}`, or
-  `{:unexpected_response, body}`.
+  `{:api_error, status, message}`, `{:request_failed, exception}`,
+  `{:image_fetch_failed, reason}`, or `{:unexpected_response, body}`.
   """
-  @spec extract_side(String.t()) :: result()
-  def extract_side(image_url) when is_binary(image_url) do
+  @spec extract_side(String.t(), keyword()) :: result()
+  def extract_side(image_url, opts \\ []) when is_binary(image_url) do
+    case extract_side_meta(image_url, opts) do
+      {:ok, fields, _meta} -> {:ok, fields}
+      {:error, _reason} = error -> error
+    end
+  end
+
+  @doc """
+  Like `extract_side/2` but also returns response metadata (model, token
+  usage) for benchmarking. See `mix sanctum.vision_eval`.
+  """
+  @spec extract_side_meta(String.t(), keyword()) ::
+          {:ok, %{String.t() => term()}, meta()} | {:error, term()}
+  def extract_side_meta(image_url, opts \\ []) when is_binary(image_url) do
     result =
-      with {:ok, api_key} <- fetch_api_key() do
-        [
-          url: @api_url,
-          headers: [
-            {"x-api-key", api_key},
-            {"anthropic-version", @anthropic_version}
-          ],
-          json: request_body(image_url),
-          receive_timeout: 120_000
-        ]
-        |> Keyword.merge(config(:req_options, []))
-        |> Req.post()
-        |> handle_response()
+      case Keyword.get(opts, :provider, :anthropic) do
+        :anthropic -> anthropic_extract(image_url, opts)
+        :openai -> openai_extract(image_url, opts)
       end
 
     case result do
@@ -65,10 +89,29 @@ defmodule Sanctum.CardVision do
     result
   end
 
-  defp request_body(image_url) do
+  # -- Anthropic provider --------------------------------------------------------
+
+  defp anthropic_extract(image_url, opts) do
+    with {:ok, api_key} <- fetch_api_key(opts) do
+      [
+        url: @anthropic_url,
+        headers: [
+          {"x-api-key", api_key},
+          {"anthropic-version", @anthropic_version}
+        ],
+        json: anthropic_body(image_url, opts),
+        receive_timeout: 120_000
+      ]
+      |> Keyword.merge(config(:req_options, []))
+      |> Req.post()
+      |> handle_anthropic_response()
+    end
+  end
+
+  defp anthropic_body(image_url, opts) do
     %{
-      model: @model,
-      max_tokens: 4096,
+      model: Keyword.get(opts, :model, @anthropic_model),
+      max_tokens: @max_tokens,
       system: system_prompt(),
       output_config: %{format: %{type: "json_schema", schema: schema()}},
       messages: [
@@ -76,21 +119,14 @@ defmodule Sanctum.CardVision do
           role: "user",
           content: [
             %{type: "image", source: %{type: "url", url: image_url}},
-            %{
-              type: "text",
-              text:
-                "Read this Marvel Champions card face and extract its printed fields. " <>
-                  "Mark anything not printed on this face as absent per the field rules."
-            }
+            %{type: "text", text: user_prompt()}
           ]
         }
       ]
     }
   end
 
-  # -- Response handling -------------------------------------------------------
-
-  defp handle_response({:ok, %Req.Response{status: 200, body: body}}) do
+  defp handle_anthropic_response({:ok, %Req.Response{status: 200, body: body}}) do
     case body do
       %{"stop_reason" => "refusal"} ->
         {:error, :refused}
@@ -99,31 +135,201 @@ defmodule Sanctum.CardVision do
         {:error, :truncated}
 
       %{"content" => content} when is_list(content) ->
-        decode_content(content, body)
+        with %{"text" => text} <- Enum.find(content, &(&1["type"] == "text")),
+             {:ok, fields} <- decode_fields(text) do
+          usage = body["usage"] || %{}
+
+          {:ok, prune(fields),
+           %{
+             model: body["model"],
+             usage: %{input: usage["input_tokens"], output: usage["output_tokens"]}
+           }}
+        else
+          _ -> {:error, {:unexpected_response, body}}
+        end
 
       _ ->
         {:error, {:unexpected_response, body}}
     end
   end
 
-  defp handle_response({:ok, %Req.Response{status: status, body: body}}) do
+  defp handle_anthropic_response(other), do: handle_http_error(other)
+
+  # -- OpenAI-compatible provider (Ollama, OpenRouter, vLLM, …) -------------------
+
+  defp openai_extract(image_url, opts) do
+    base_url = Keyword.fetch!(opts, :base_url)
+    model = Keyword.fetch!(opts, :model)
+
+    with {:ok, data_url} <- fetch_image_data_url(image_url) do
+      auth_headers =
+        case Keyword.get(opts, :api_key) do
+          key when is_binary(key) and key != "" -> [{"authorization", "Bearer " <> key}]
+          _ -> []
+        end
+
+      [
+        url: String.trim_trailing(base_url, "/") <> "/chat/completions",
+        headers: auth_headers,
+        json: openai_body(model, data_url, opts),
+        receive_timeout: Keyword.get(opts, :receive_timeout, 300_000)
+      ]
+      |> Keyword.merge(config(:req_options, []))
+      |> Req.post()
+      |> handle_openai_response()
+    end
+  end
+
+  defp openai_body(model, data_url, opts) do
+    # Temperature 0: transcription should be deterministic; Ollama model
+    # defaults (qwen3: temperature 1) otherwise make runs non-reproducible.
+    body = %{
+      model: model,
+      max_tokens: @max_tokens,
+      temperature: 0,
+      messages: [
+        %{role: "system", content: system_prompt()},
+        %{
+          role: "user",
+          content: [
+            %{type: "image_url", image_url: %{url: data_url}},
+            %{type: "text", text: user_prompt()}
+          ]
+        }
+      ],
+      response_format: %{
+        type: "json_schema",
+        json_schema: %{name: "card_fields", strict: true, schema: schema()}
+      }
+    }
+
+    # Hybrid-thinking models (e.g. qwen3-vl) burn the whole token budget on
+    # reasoning unless it's turned off; Ollama ignores `think` on this endpoint
+    # but honors `reasoning_effort`.
+    case Keyword.get(opts, :reasoning_effort) do
+      nil -> body
+      effort -> Map.put(body, :reasoning_effort, effort)
+    end
+  end
+
+  defp handle_openai_response({:ok, %Req.Response{status: 200, body: body}}) do
+    case body do
+      %{"choices" => [%{"message" => %{"refusal" => refusal}} | _]}
+      when is_binary(refusal) and refusal != "" ->
+        {:error, :refused}
+
+      %{"choices" => [%{"finish_reason" => "length"} | _]} ->
+        {:error, :truncated}
+
+      %{"choices" => [%{"message" => %{"content" => text} = message} | _]} when is_binary(text) ->
+        # With reasoning disabled, Ollama's think-parser sometimes misroutes
+        # the constrained JSON into `reasoning` and leaves `content` empty.
+        case decode_fields(text, message["reasoning"]) do
+          {:ok, fields} ->
+            usage = body["usage"] || %{}
+
+            {:ok, prune(fields),
+             %{
+               model: body["model"],
+               usage: %{input: usage["prompt_tokens"], output: usage["completion_tokens"]}
+             }}
+
+          _ ->
+            {:error, {:unexpected_response, body}}
+        end
+
+      _ ->
+        {:error, {:unexpected_response, body}}
+    end
+  end
+
+  defp handle_openai_response(other), do: handle_http_error(other)
+
+  # Local runtimes can't fetch remote URLs, so the image is inlined as a
+  # base64 data URL — works uniformly across Ollama and hosted endpoints.
+  defp fetch_image_data_url(image_url) do
+    [url: image_url]
+    |> Keyword.merge(config(:req_options, []))
+    |> Keyword.put(:decode_body, false)
+    |> Req.get()
+    |> case do
+      {:ok, %Req.Response{status: 200, body: binary} = resp} ->
+        {:ok, "data:#{image_mime(binary, resp)};base64," <> Base.encode64(binary)}
+
+      {:ok, %Req.Response{status: status}} ->
+        {:error, {:image_fetch_failed, status}}
+
+      {:error, exception} ->
+        {:error, {:image_fetch_failed, exception}}
+    end
+  end
+
+  # The bucket serves MarvelCDB scans with extension-derived content types
+  # that often disagree with the actual bytes (JPEG data in .png objects).
+  # Strict providers (Anthropic) reject data URLs whose media type mismatches
+  # the payload, so sniff the magic bytes; the header is only a fallback.
+  defp image_mime(<<0xFF, 0xD8, 0xFF, _::binary>>, _resp), do: "image/jpeg"
+  defp image_mime(<<0x89, "PNG", _::binary>>, _resp), do: "image/png"
+  defp image_mime(<<"GIF8", _::binary>>, _resp), do: "image/gif"
+  defp image_mime(<<"RIFF", _::binary-size(4), "WEBP", _::binary>>, _resp), do: "image/webp"
+
+  defp image_mime(_binary, resp) do
+    resp
+    |> Req.Response.get_header("content-type")
+    |> List.first("image/jpeg")
+    |> String.split(";")
+    |> hd()
+  end
+
+  # -- Shared response handling ---------------------------------------------------
+
+  defp handle_http_error({:ok, %Req.Response{status: status, body: body}}) do
     message =
       case body do
         %{"error" => %{"message" => message}} -> message
+        %{"error" => message} when is_binary(message) -> message
         _ -> nil
       end
 
     {:error, {:api_error, status, message}}
   end
 
-  defp handle_response({:error, exception}), do: {:error, {:request_failed, exception}}
+  defp handle_http_error({:error, exception}), do: {:error, {:request_failed, exception}}
 
-  defp decode_content(content, body) do
-    with %{"text" => text} <- Enum.find(content, &(&1["type"] == "text")),
-         {:ok, fields} <- Jason.decode(text) do
-      {:ok, prune(fields)}
-    else
-      _ -> {:error, {:unexpected_response, body}}
+  defp decode_fields(text, fallback) do
+    case decode_fields(text) do
+      {:ok, fields} -> {:ok, fields}
+      :error when is_binary(fallback) and fallback != "" -> decode_fields(fallback)
+      :error -> :error
+    end
+  end
+
+  # Open models sometimes wrap JSON in markdown fences or preamble even when
+  # asked for structured output — fall back to the outermost {...} slice.
+  defp decode_fields(text) do
+    case Jason.decode(text) do
+      {:ok, fields} when is_map(fields) ->
+        {:ok, fields}
+
+      _ ->
+        with start when not is_nil(start) <- text |> :binary.match("{") |> brace_start(),
+             stop when stop > start <- last_brace(text),
+             {:ok, fields} when is_map(fields) <-
+               Jason.decode(binary_part(text, start, stop - start + 1)) do
+          {:ok, fields}
+        else
+          _ -> :error
+        end
+    end
+  end
+
+  defp brace_start({pos, _len}), do: pos
+  defp brace_start(:nomatch), do: nil
+
+  defp last_brace(text) do
+    case :binary.matches(text, "}") do
+      [] -> -1
+      matches -> matches |> List.last() |> elem(0)
     end
   end
 
@@ -273,6 +479,11 @@ defmodule Sanctum.CardVision do
 
   # -- Prompt -------------------------------------------------------------------
 
+  defp user_prompt do
+    "Read this Marvel Champions card face and extract its printed fields. " <>
+      "Mark anything not printed on this face as absent per the field rules."
+  end
+
   defp system_prompt do
     """
     You read card faces from Marvel Champions: The Card Game and transcribe their
@@ -326,8 +537,8 @@ defmodule Sanctum.CardVision do
 
   # -- Config -------------------------------------------------------------------
 
-  defp fetch_api_key do
-    case config(:api_key, nil) do
+  defp fetch_api_key(opts) do
+    case Keyword.get(opts, :api_key, config(:api_key, nil)) do
       key when is_binary(key) and key != "" -> {:ok, key}
       _ -> {:error, :missing_api_key}
     end
