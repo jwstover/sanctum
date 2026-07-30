@@ -1,3 +1,12 @@
+# [1.81.0](https://github.com/jwstover/sanctum/compare/v1.80.0...v1.81.0) (2026-07-30)
+
+
+### Features
+
+* **decks:** MarvelCDB-style deck charts on both deck surfaces ([2b4de77](https://github.com/jwstover/sanctum/commit/2b4de77c31814afe22b41803aa7e79058318ab75))
+
+
+
 # [1.80.0](https://github.com/jwstover/sanctum/compare/v1.79.0...v1.80.0) (2026-07-30)
 
 
@@ -39,15 +48,6 @@
 ### Features
 
 * **decks:** skip the name prompt when starting a deck ([e5de800](https://github.com/jwstover/sanctum/commit/e5de8004572c0783190704be530a64db614ce87f))
-
-
-
-# [1.77.0](https://github.com/jwstover/sanctum/compare/v1.76.1...v1.77.0) (2026-07-28)
-
-
-### Features
-
-* **decks:** infer aspect from cards; remove hard deckbuilding restrictions ([3e284a0](https://github.com/jwstover/sanctum/commit/3e284a0b6a8b7e858006f89bc59f73f9a09a607c))
 
 
 
