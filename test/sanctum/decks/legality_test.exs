@@ -9,7 +9,10 @@ defmodule Sanctum.Decks.LegalityTest do
     side = %{
       name: Map.get(overrides, :name, "Test Card"),
       ownership: Map.get(overrides, :ownership, :basic),
-      aspect: Map.get(overrides, :aspect)
+      aspect: Map.get(overrides, :aspect),
+      type: Map.get(overrides, :type),
+      traits: Map.get(overrides, :traits, []),
+      resource_energy_count: Map.get(overrides, :resource_energy_count, 0)
     }
 
     %{
@@ -203,6 +206,286 @@ defmodule Sanctum.Decks.LegalityTest do
       issues = Legality.issues([entry(basic, 3), entry(hero, 2) | filler(35)], [hero])
 
       refute Enum.any?(issues, &(&1.code == :multi_aspect))
+    end
+  end
+
+  describe "hero-specific exceptions (HeroRules)" do
+    test "Spider-Woman may run two aspects without a multi-aspect warning" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      leadership = card(%{ownership: :player, aspect: "leadership"})
+
+      issues =
+        Legality.issues(
+          [entry(justice, 3), entry(leadership, 3) | filler(34)],
+          [],
+          "spider_woman"
+        )
+
+      refute Enum.any?(issues, &(&1.code == :multi_aspect))
+    end
+
+    test "Spider-Woman with lopsided aspects gets an equal-count advisory" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      leadership = card(%{ownership: :player, aspect: "leadership"})
+
+      issues =
+        Legality.issues(
+          [entry(justice, 3), entry(leadership, 1) | filler(36)],
+          [],
+          "spider_woman"
+        )
+
+      assert [%{code: :unequal_aspects, severity: :warning}] =
+               Enum.filter(issues, &(&1.code == :unequal_aspects))
+    end
+
+    test "Adam Warlock may run four aspects and is capped at one copy per card" do
+      aggression = card(%{ownership: :player, aspect: "aggression"})
+      justice = card(%{ownership: :player, aspect: "justice"})
+      leadership = card(%{ownership: :player, aspect: "leadership"})
+      protection = card(%{ownership: :player, aspect: "protection", name: "Warded"})
+
+      # Single copies of 36 distinct basics — Warlock's rule applies to every
+      # card, so qty-3 fillers would (correctly) flag too.
+      singles = for i <- 1..36//1, do: entry(card(%{name: "Single #{i}"}), 1)
+
+      entries = [
+        entry(aggression, 1),
+        entry(justice, 1),
+        entry(leadership, 1),
+        # Only this card breaks the single-copy rule.
+        entry(protection, 2)
+        | singles
+      ]
+
+      issues = Legality.issues(entries, [], "warlock")
+
+      refute Enum.any?(issues, &(&1.code == :multi_aspect))
+
+      assert [%{code: :deck_limit_exceeded, card_id: id}] =
+               Enum.filter(issues, &(&1.code == :deck_limit_exceeded))
+
+      assert id == protection.id
+    end
+
+    test "Adam Warlock with an equal split across all four aspects raises no aspect issue" do
+      # Single copies (Warlock's rule) of one card per aspect, equal counts.
+      aspects =
+        for a <- ~w(aggression justice leadership protection) do
+          entry(card(%{ownership: :player, aspect: a}), 1)
+        end
+
+      singles = for i <- 1..36//1, do: entry(card(%{name: "Single #{i}"}), 1)
+
+      issues = Legality.issues(aspects ++ singles, [], "warlock")
+
+      refute Enum.any?(issues, &(&1.code in [:multi_aspect, :unequal_aspects]))
+    end
+
+    test "Adam Warlock warns when the four aspects are lopsided" do
+      # Two aggression cards vs one of each other aspect — unequal counts, but
+      # every card is still a single copy (no deck-limit noise).
+      agg1 = card(%{ownership: :player, aspect: "aggression", name: "Agg 1"})
+      agg2 = card(%{ownership: :player, aspect: "aggression", name: "Agg 2"})
+      justice = card(%{ownership: :player, aspect: "justice"})
+      leadership = card(%{ownership: :player, aspect: "leadership"})
+      protection = card(%{ownership: :player, aspect: "protection", name: "Warded"})
+
+      singles = for i <- 1..35//1, do: entry(card(%{name: "Single #{i}"}), 1)
+
+      entries =
+        [
+          entry(agg1, 1),
+          entry(agg2, 1),
+          entry(justice, 1),
+          entry(leadership, 1),
+          entry(protection, 1)
+          | singles
+        ]
+
+      issues = Legality.issues(entries, [], "warlock")
+
+      assert Enum.any?(issues, &(&1.code == :unequal_aspects))
+    end
+
+    test "Adam Warlock warns when fewer than four aspects are present" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      leadership = card(%{ownership: :player, aspect: "leadership"})
+
+      singles = for i <- 1..38//1, do: entry(card(%{name: "Single #{i}"}), 1)
+
+      issues = Legality.issues([entry(justice, 1), entry(leadership, 1) | singles], [], "warlock")
+
+      assert [%{code: :unequal_aspects, message: message}] =
+               Enum.filter(issues, &(&1.code == :unequal_aspects))
+
+      assert message =~ "4 aspects"
+      assert message =~ "has 2"
+    end
+
+    test "Gamora allows up to 6 off-aspect attack/thwart events" do
+      # Chosen aspect dominates; a few off-aspect attack events ride along.
+      justice = card(%{ownership: :player, aspect: "justice"})
+
+      off =
+        card(%{ownership: :player, aspect: "aggression", type: :event, traits: ["Attack"]})
+
+      issues = Legality.issues([entry(justice, 10), entry(off, 3) | filler(27)], [], "gam")
+
+      refute Enum.any?(
+               issues,
+               &(&1.code in [:multi_aspect, :off_aspect_over_limit, :off_aspect_not_events])
+             )
+    end
+
+    test "Gamora warns when off-aspect cards aren't attack/thwart events" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      off = card(%{ownership: :player, aspect: "aggression", type: :ally, traits: []})
+
+      issues = Legality.issues([entry(justice, 10), entry(off, 1) | filler(29)], [], "gam")
+
+      assert Enum.any?(issues, &(&1.code == :off_aspect_not_allowed))
+    end
+
+    test "Cyclops allows unlimited off-aspect X-Men allies" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      xmen = card(%{ownership: :player, aspect: "aggression", type: :ally, traits: ["X-Men"]})
+
+      issues = Legality.issues([entry(justice, 10), entry(xmen, 3) | filler(27)], [], "cyclops")
+
+      refute Enum.any?(
+               issues,
+               &(&1.code in [:multi_aspect, :off_aspect_not_allowed, :off_aspect_over_limit])
+             )
+    end
+
+    test "Cyclops warns on off-aspect cards that aren't X-Men allies" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      # An off-aspect upgrade (not an ally) doesn't qualify.
+      off = card(%{ownership: :player, aspect: "aggression", type: :upgrade, traits: ["X-Men"]})
+
+      issues = Legality.issues([entry(justice, 10), entry(off, 1) | filler(29)], [], "cyclops")
+
+      assert Enum.any?(issues, &(&1.code == :off_aspect_not_allowed))
+    end
+
+    test "Maria Hill allows up to 3 off-aspect S.H.I.E.L.D. supports (trait spelling tolerant)" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      # Note the period-less trait spelling — matching must tolerate it.
+      s1 =
+        card(%{ownership: :player, aspect: "leadership", type: :support, traits: ["S.H.I.E.L.D"]})
+
+      s2 =
+        card(%{
+          ownership: :player,
+          aspect: "leadership",
+          type: :support,
+          traits: ["S.H.I.E.L.D."]
+        })
+
+      s3 =
+        card(%{ownership: :player, aspect: "leadership", type: :support, traits: ["S.H.I.E.L.D"]})
+
+      entries = [entry(justice, 10), entry(s1, 2), entry(s2, 2), entry(s3, 2) | filler(24)]
+      issues = Legality.issues(entries, [], "maria_hill")
+
+      refute Enum.any?(
+               issues,
+               &(&1.code in [:multi_aspect, :off_aspect_not_allowed, :off_aspect_over_limit])
+             )
+    end
+
+    test "Cable allows off-aspect player side schemes (type-only allowance)" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+
+      scheme =
+        card(%{ownership: :player, aspect: "aggression", type: :player_side_scheme, traits: []})
+
+      issues = Legality.issues([entry(justice, 10), entry(scheme, 1) | filler(29)], [], "cable")
+
+      refute Enum.any?(
+               issues,
+               &(&1.code in [:multi_aspect, :off_aspect_not_allowed, :off_aspect_over_limit])
+             )
+    end
+
+    test "Cable warns on off-aspect cards that aren't player side schemes" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      off = card(%{ownership: :player, aspect: "aggression", type: :ally, traits: []})
+
+      issues = Legality.issues([entry(justice, 10), entry(off, 1) | filler(29)], [], "cable")
+
+      assert Enum.any?(issues, &(&1.code == :off_aspect_not_allowed))
+    end
+
+    test "Wonder Man allows off-aspect events with a printed energy resource" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+
+      ionic =
+        card(%{
+          ownership: :player,
+          aspect: "aggression",
+          type: :event,
+          resource_energy_count: 1
+        })
+
+      issues =
+        Legality.issues([entry(justice, 10), entry(ionic, 3) | filler(27)], [], "wonder_man")
+
+      refute Enum.any?(
+               issues,
+               &(&1.code in [:multi_aspect, :off_aspect_not_allowed, :off_aspect_over_limit])
+             )
+    end
+
+    test "Wonder Man warns on off-aspect events without an energy resource" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      # An off-aspect event with no printed energy pip doesn't qualify.
+      plain =
+        card(%{ownership: :player, aspect: "aggression", type: :event, resource_energy_count: 0})
+
+      issues =
+        Legality.issues([entry(justice, 10), entry(plain, 1) | filler(29)], [], "wonder_man")
+
+      assert Enum.any?(issues, &(&1.code == :off_aspect_not_allowed))
+    end
+
+    test "Maria Hill warns beyond 3 distinct off-aspect S.H.I.E.L.D. supports" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+
+      supports =
+        for i <- 1..4//1 do
+          entry(
+            card(%{
+              ownership: :player,
+              aspect: "leadership",
+              type: :support,
+              traits: ["S.H.I.E.L.D."],
+              name: "SHIELD #{i}"
+            }),
+            1
+          )
+        end
+
+      issues = Legality.issues([entry(justice, 10) | supports] ++ filler(26), [], "maria_hill")
+
+      assert Enum.any?(issues, &(&1.code == :off_aspect_over_limit))
+    end
+
+    test "Gamora warns when more than 6 off-aspect cards are included" do
+      justice = card(%{ownership: :player, aspect: "justice"})
+      # Chosen aspect dominates (as a real Gamora deck does); off-aspect attack
+      # events spread across cards total 7 > 6.
+      off_a = card(%{ownership: :player, aspect: "aggression", type: :event, traits: ["Attack"]})
+      off_b = card(%{ownership: :player, aspect: "aggression", type: :event, traits: ["Attack"]})
+      off_c = card(%{ownership: :player, aspect: "aggression", type: :event, traits: ["Thwart"]})
+
+      entries =
+        [entry(justice, 10), entry(off_a, 3), entry(off_b, 3), entry(off_c, 1) | filler(23)]
+
+      issues = Legality.issues(entries, [], "gam")
+
+      assert Enum.any?(issues, &(&1.code == :off_aspect_over_limit))
     end
   end
 

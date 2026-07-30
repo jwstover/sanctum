@@ -493,7 +493,8 @@ defmodule SanctumWeb.DeckLive.Build do
     issues =
       Legality.issues(
         Map.values(socket.assigns.entries),
-        socket.assigns.signature_cards
+        socket.assigns.signature_cards,
+        socket.assigns.deck.hero.set
       )
 
     assign(socket, :issues, issues)
