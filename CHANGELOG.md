@@ -1,3 +1,19 @@
+# [1.80.0](https://github.com/jwstover/sanctum/compare/v1.79.0...v1.80.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vision:** sniff image magic bytes for data-URL media type ([df37f0c](https://github.com/jwstover/sanctum/commit/df37f0cb5eab3dfa2fd93f61ce06e8c16f3f5ad4))
+
+
+### Features
+
+* **vision:** pluggable providers + model eval harness for card extraction ([dd142ab](https://github.com/jwstover/sanctum/commit/dd142ab9d97769fc4e1777a728c9e6039d8ee644))
+* **vision:** record token usage in eval reports ([1e2aac6](https://github.com/jwstover/sanctum/commit/1e2aac68cc3d806be879c555ca7f3a15f7dbdcaa))
+* **vision:** switch extraction default to claude-sonnet-5 ([604243d](https://github.com/jwstover/sanctum/commit/604243d44bbf12dfe570ddf9c614b78d4c9170cc))
+
+
+
 # [1.79.0](https://github.com/jwstover/sanctum/compare/v1.78.1...v1.79.0) (2026-07-30)
 
 
@@ -32,15 +48,6 @@
 ### Features
 
 * **decks:** infer aspect from cards; remove hard deckbuilding restrictions ([3e284a0](https://github.com/jwstover/sanctum/commit/3e284a0b6a8b7e858006f89bc59f73f9a09a607c))
-
-
-
-## [1.76.1](https://github.com/jwstover/sanctum/compare/v1.76.0...v1.76.1) (2026-07-28)
-
-
-### Bug Fixes
-
-* **cards:** browse reprints and clean up stale duplicate canonicals ([e786d39](https://github.com/jwstover/sanctum/commit/e786d39c6a24cb9f6e6b54e51038e22c34119a06))
 
 
 
