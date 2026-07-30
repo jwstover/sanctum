@@ -12,6 +12,12 @@ defmodule Sanctum.Games.CardSide do
     references do
       # Destroying a card (custom-card deletes especially) takes its sides.
       reference :card, on_delete: :delete
+
+      # A side's aspect key references Sanctum.Games.Aspect. Nilify (not
+      # cascade): deleting an aspect must never delete the cards that carry it,
+      # and it lets a project's custom-aspect rows drop without ordering against
+      # its (separately-cascaded) custom cards.
+      reference :aspect_def, on_delete: :nilify
     end
   end
 
@@ -231,6 +237,19 @@ defmodule Sanctum.Games.CardSide do
     belongs_to :card, Sanctum.Games.Card do
       public? true
       allow_nil? false
+    end
+
+    # The aspect definition (label/color/…) for the stored `aspect` key.
+    # `define_attribute? false` reuses the existing string `:aspect` column as
+    # the FK source instead of minting a new one, so `.aspect` stays the key
+    # and `.aspect_def` loads the row.
+    belongs_to :aspect_def, Sanctum.Games.Aspect do
+      source_attribute :aspect
+      destination_attribute :key
+      attribute_type :string
+      define_attribute? false
+      allow_nil? true
+      public? true
     end
   end
 
