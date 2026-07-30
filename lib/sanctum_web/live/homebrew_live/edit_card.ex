@@ -17,6 +17,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
   alias Sanctum.Games.Stat
   alias Sanctum.Homebrew
   alias SanctumWeb.Components.Card, as: CardComponents
+  alias SanctumWeb.HomebrewLive.Support
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
@@ -147,7 +148,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
     {:noreply,
      socket
      |> assign(:alt_search, q)
-     |> assign(:alt_results, search_official_sides(q, socket.assigns.current_user))}
+     |> assign(:alt_results, Support.search_official_sides(q, socket.assigns.current_user))}
   end
 
   def handle_event("pick_alt_target", %{"id" => id}, socket) do
@@ -257,23 +258,6 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
     |> assign(:alt_search, "")
     |> assign(:alt_results, [])
     |> assign(:alt_target, nil)
-  end
-
-  # Official-card picker for the declare sheet: the shared :browse search
-  # (name/subname + query syntax) pinned to the official catalog — the
-  # actor's own customs must not be targetable.
-  defp search_official_sides(q, actor) do
-    if is_binary(q) and String.trim(q) != "" do
-      require Ash.Query
-
-      Sanctum.Games.CardSide
-      |> Ash.Query.for_read(:browse, %{query: q}, actor: actor)
-      |> Ash.Query.filter(card.origin == :official)
-      |> Ash.read!(actor: actor, page: [limit: 10])
-      |> Map.get(:results)
-    else
-      []
-    end
   end
 
   defp presence(value) when is_binary(value) do
