@@ -265,6 +265,12 @@ defmodule SanctumWeb.DeckLive.Show do
                 </div>
               </.panel>
 
+              <.side_decks_section
+                side_decks={@side_decks}
+                card_view={@card_view}
+                class="order-2 min-w-0"
+              />
+
               <.deck_charts stats={@chart_stats} class="order-4 min-w-0" />
 
               <!-- similar decks -->
@@ -363,6 +369,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:deck, nil)
       |> assign(:cover, nil)
       |> assign(:groups, [])
+      |> assign(:side_decks, [])
       |> assign(:chart_stats, DeckCharts.stats([]))
       |> assign(:similar, [])
       |> assign(:writeup, nil)
@@ -448,6 +455,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:deck, data.deck)
       |> assign(:cover, data.cover)
       |> assign(:groups, data.groups)
+      |> assign(:side_decks, data.side_decks)
       |> assign(:chart_stats, data.chart_stats)
       |> assign(:owned_summary, data.owned_summary)
       |> assign(:similar, data.similar)
@@ -507,11 +515,17 @@ defmodule SanctumWeb.DeckLive.Show do
         card_views = Enum.map(deck.deck_cards, &DeckCards.card_view(&1, hero_gradient))
         groups = DeckCards.group_by_type(card_views)
 
+        side_decks =
+          deck
+          |> Sanctum.Decks.SideDecks.for_deck()
+          |> DeckCards.side_deck_views(hero_gradient)
+
         {:ok,
          %{
            deck: deck,
            cover: cover_view(deck, hero_gradient),
            groups: groups,
+           side_decks: side_decks,
            chart_stats: DeckCharts.stats(card_views),
            owned_summary: owned_summary(card_views, actor),
            similar: similar_views(deck),

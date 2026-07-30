@@ -1,0 +1,245 @@
+{
+  "held_out": {
+    "mrr": 0.12860753088137555,
+    "n": 1000,
+    "hit@1": 0.052,
+    "hit@5": 0.174,
+    "hit@10": 0.276,
+    "hit@25": 0.497
+  },
+  "anchors": {
+    "status": "ok",
+    "anchor_cards_resolved": 12,
+    "anchor_cards_unresolved": 0,
+    "anchor_decks_resolved": 2,
+    "card_precision@10": 0.16666666666666666,
+    "deck_precision@10": 1.0
+  },
+  "intrinsic": {
+    "n_clusters": 4,
+    "noise_fraction": 0.6754645617497123,
+    "clustered_fraction": 0.3245354382502878,
+    "silhouette": 0.22814855119169006,
+    "davies_bouldin": 1.3853275295605905
+  },
+  "interpret": {
+    "n_clusters": 4,
+    "clusters": [
+      {
+        "cluster": 0,
+        "size": 59,
+        "top_cards": [
+          [
+            "Protector",
+            61.1,
+            0.68
+          ],
+          [
+            "Reboot",
+            57.9,
+            0.88
+          ],
+          [
+            "Machine Man",
+            30.7,
+            0.76
+          ],
+          [
+            "Victor Mancha",
+            17.0,
+            0.83
+          ],
+          [
+            "Subdue",
+            9.6,
+            0.41
+          ],
+          [
+            "Jocasta",
+            8.2,
+            0.78
+          ],
+          [
+            "Perseverance",
+            7.9,
+            0.66
+          ],
+          [
+            "Meditation",
+            6.4,
+            0.08
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6c1a-1df6-7d18-a0d0-e2b276a2e83b",
+          "http://localhost:4150/decks/019f6be0-94c3-7266-bd40-480b771e2edc",
+          "http://localhost:4150/decks/019f6ba2-6cc0-7715-aca1-5bcab966d524",
+          "http://localhost:4150/decks/019f6bba-a3ed-73ae-bd5f-48695d0b838d",
+          "http://localhost:4150/decks/019f6b9b-2694-7ada-9d09-0981f608c688"
+        ]
+      },
+      {
+        "cluster": 1,
+        "size": 971,
+        "top_cards": [
+          [
+            "Haymaker",
+            7.3,
+            0.18
+          ],
+          [
+            "Emergency",
+            6.6,
+            0.14
+          ],
+          [
+            "Luke Cage",
+            5.1,
+            0.64
+          ],
+          [
+            "Enhanced Awareness",
+            4.0,
+            0.15
+          ],
+          [
+            "Mockingbird",
+            3.8,
+            0.61
+          ],
+          [
+            "Tenacity",
+            3.8,
+            0.09
+          ],
+          [
+            "Black Widow",
+            3.7,
+            0.64
+          ],
+          [
+            "First Aid",
+            3.7,
+            0.23
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f7051-d5c3-7af6-9be7-15951f3de72f",
+          "http://localhost:4150/decks/019f6652-aa9e-7e07-9d5b-620f60dc5940",
+          "http://localhost:4150/decks/019f6ad9-d02d-7f04-ace3-d777fa99e9da",
+          "http://localhost:4150/decks/019f5e29-c16c-7699-b44a-c8dc1a0bb1f8",
+          "http://localhost:4150/decks/019f5e4c-52bc-7b3a-ab0e-abd608293447"
+        ]
+      },
+      {
+        "cluster": 2,
+        "size": 2433,
+        "top_cards": [
+          [
+            "Excelsior",
+            3.9,
+            0.06
+          ],
+          [
+            "Cannonball",
+            3.7,
+            0.05
+          ],
+          [
+            "Zone of Silence",
+            3.6,
+            0.06
+          ],
+          [
+            "Magic Attack",
+            3.6,
+            0.06
+          ],
+          [
+            "Combat Training",
+            3.5,
+            0.08
+          ],
+          [
+            "The Power of Flight",
+            3.4,
+            0.06
+          ],
+          [
+            "Utopia",
+            3.1,
+            0.13
+          ],
+          [
+            "Inspired",
+            3.1,
+            0.06
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6e4b-8daf-7214-b8eb-d8f390ce31f0",
+          "http://localhost:4150/decks/019f6f0f-1e0e-7901-9291-f61490abbfde",
+          "http://localhost:4150/decks/019f6e77-110d-7cb7-ac15-46d7e2a69b4f",
+          "http://localhost:4150/decks/019f7060-febc-71a4-aa7a-1d8a2cbac660",
+          "http://localhost:4150/decks/019f7060-febb-7ef0-883f-10d7510e1e05"
+        ]
+      },
+      {
+        "cluster": 3,
+        "size": 484,
+        "top_cards": [
+          [
+            "Spider-Ham",
+            22.5,
+            0.18
+          ],
+          [
+            "Scarlet Spider",
+            16.4,
+            0.24
+          ],
+          [
+            "Spider-Man",
+            15.3,
+            0.57
+          ],
+          [
+            "Spider-Man",
+            14.8,
+            0.72
+          ],
+          [
+            "SP//dr",
+            14.6,
+            0.53
+          ],
+          [
+            "Across the Spider-Verse",
+            13.8,
+            0.78
+          ],
+          [
+            "Spider-UK",
+            13.8,
+            0.87
+          ],
+          [
+            "Ghost-Spider",
+            13.7,
+            0.49
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6c44-004e-7b3d-bdf4-d8fe9e98615d",
+          "http://localhost:4150/decks/019f6fc9-ea6a-752a-bf03-6a6bcaef9318",
+          "http://localhost:4150/decks/019f702e-3779-7361-86db-179f170e44f2",
+          "http://localhost:4150/decks/019f6c7c-d891-7597-ad00-c9a6cabab16d",
+          "http://localhost:4150/decks/019f7060-ffec-7950-866d-f433c42c7750"
+        ]
+      }
+    ]
+  },
+  "projection": {
+    "status": "disabled"
+  }
+}

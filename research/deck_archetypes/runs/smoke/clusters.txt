@@ -1,0 +1,442 @@
+# Cluster report — 20 clusters (42885 decks noise)
+
+
+## Cluster 0  (57 decks)
+   46.7×   89%  Homeland Intervention
+   40.3×    9%  Agents of S.H.I.E.L.D.
+   37.5×   54%  Global Logistics
+   34.9×   49%  Dum Dum Dugan
+   34.1×   86%  Government Liaison
+   33.7×   54%  Field Agent
+   33.6×   81%  Sky-Destroyer
+   29.6×   81%  Monica Chang
+   27.6×  100%  Pheromones
+   27.5×  100%  Venom Blast
+   27.5×  100%  Contaminant Immunity
+   27.5×  100%  Inconspicuous
+   25.7×   86%  Agent 13
+   16.4×   77%  Command Team
+   15.8×   77%  Surveillance Team
+   13.3×   12%  Sneak Attack
+   12.8×   14%  R&D Facility
+   12.1×   67%  Agent Coulson
+   10.3×   14%  Go All Out
+    9.1×   30%  Band Together
+
+## Cluster 1  (66 decks)
+  102.0×   92%  Scare Tactic
+   71.7×   45%  Swift Retribution
+   53.5×   59%  Jack Flag
+   43.7×   73%  "Think Fast!"
+   29.5×   89%  Side Holster
+   28.2×   23%  Spider-Woman
+   25.1×  100%  Sonic Rifle
+   21.0×   23%  Star-Lord
+   16.5×   18%  Resourceful
+   15.7×   65%  Concussive Blow
+   13.0×   38%  Making an Entrance
+   12.4×   12%  Cypher
+   12.4×   20%  Plasma Pistol
+   11.3×   14%  Float Like a Butterfly
+   10.3×    6%  Venom
+   10.0×   23%  Eros
+    8.5×   12%  Upside the Head
+    7.9×  100%  The Power of Justice
+    5.8×    8%  Wraith
+    5.1×   30%  Jessica Jones
+
+## Cluster 2  (100 decks)
+   27.5×   46%  Zone of Silence
+   24.4×   84%  Turn the Tide
+   22.5×  100%  Spiritual Meditation
+   19.4×   90%  Wiccan
+   19.2×   36%  Heimdall
+   17.3×   11%  Swift Retribution
+   16.6×   32%  Determination
+   16.1×   19%  Order and Chaos
+   14.1×   23%  Speed
+   11.8×   82%  The Sorcerer Supreme
+    9.4×   84%  Clear the Area
+    7.4×   40%  One Way or Another
+    6.9×   83%  Skilled Investigator
+    6.7×   83%  The Power in All of Us
+    6.6×   17%  Crisis Averted
+    6.1×   65%  Under Surveillance
+    6.0×   79%  Ironheart
+    3.3×   16%  Multitasking
+    3.1×   80%  Quincarrier
+    2.7×   84%  Nick Fury
+
+## Cluster 3  (177 decks)
+   27.6×  100%  Pheromones
+   27.5×  100%  Venom Blast
+   27.5×  100%  Inconspicuous
+   27.5×  100%  Contaminant Immunity
+   19.3×   56%  Press the Advantage
+   13.8×   28%  Piercing Strike
+   13.3×   31%  Spycraft
+    9.1×   81%  Clear the Area
+    9.0×   57%  Spider-Girl
+    8.1×   19%  Spider-Man
+    7.5×   41%  Agent Coulson
+    6.8×   38%  Skilled Strike
+    6.4×   26%  Interrogation Room
+    6.2×   75%  Skilled Investigator
+    6.1×   45%  Quake
+    5.2×   60%  Heroic Intuition
+    5.2×   55%  Under Surveillance
+    5.1×   31%  Jessica Jones
+    5.0×   28%  Counterintelligence
+    4.9×   27%  Beat Cop
+
+## Cluster 4  (77 decks)
+   27.6×  100%  Pheromones
+   27.5×  100%  Venom Blast
+   27.5×  100%  Contaminant Immunity
+   27.5×  100%  Inconspicuous
+   18.4×   49%  Inspiring Presence
+   17.4×   38%  Call for Aid
+   16.2×   51%  Sky Cycle
+   15.3×   38%  Power Gloves
+   12.4×   36%  Press the Advantage
+   10.0×   39%  Counter-Punch
+    9.7×    6%  Muster Courage
+    8.9×   48%  Reinforced Suit
+    8.8×   56%  Indomitable
+    8.2×   64%  Med Team
+    7.5×   12%  Get Over Here!
+    7.4×   30%  Clea
+    7.0×   56%  Inspired
+    6.5×   35%  Get Ready
+    6.3×   45%  Desperate Defense
+    6.3×   26%  Brother Voodoo
+
+## Cluster 5  (50 decks)
+   58.5×   98%  Zone of Silence
+   58.2×   96%  Magic Attack
+   54.8×   96%  Shield Spell
+   51.4×   78%  "Welcome Aboard"
+   47.1×   94%  Summoning Spell
+   43.3×   72%  "Think Fast!"
+   23.3×   74%  Gamora
+   22.2×   92%  Brother Voodoo
+   20.6×   72%  Tackle
+   19.8×   88%  Spiritual Meditation
+   18.0×   94%  Kaluu
+   17.7×   18%  Basic Spell
+   17.3×   72%  Concussive Blow
+   17.1×    8%  Deflection
+   13.9×   10%  Goldballs
+   13.9×   76%  Drop Kick
+   13.8×   96%  The Sorcerer Supreme
+    8.9×    8%  Bloodgem
+    8.7×   82%  Martial Prowess
+    8.6×   20%  White Fox
+
+## Cluster 6  (196 decks)
+   29.6×   89%  Luke Cage
+   27.7×   81%  Get Behind Me!
+   22.2×   93%  Black Widow
+   22.1×   86%  Counter-Punch
+   14.8×   94%  Indomitable
+   13.5×   37%  Emergency
+   12.8×   43%  Haymaker
+   11.7×   91%  Med Team
+    8.7×   95%  The Power of Protection
+    7.9×   21%  Expert Defense
+    7.5×   23%  Tenacity
+    7.3×   97%  Armored Vest
+    6.7×   23%  Tackle
+    6.0×   54%  First Aid
+    4.4×   88%  Mockingbird
+    2.7×   96%  Avengers Mansion
+    2.7×   82%  Nick Fury
+    2.1×   92%  Helicarrier
+    2.0×   15%  Energy Barrier
+    1.6×    7%  Iron Fist
+
+## Cluster 7  (329 decks)
+   20.7×   50%  Nova
+   20.5×   62%  Luke Cage
+   12.3×   92%  Energy Barrier
+   11.9×   50%  Black Widow
+   11.9×   50%  Preemptive Strike
+   11.6×   49%  Iron Fist
+   10.7×   37%  Tackle
+    9.8×   77%  Med Team
+    9.4×   18%  Defensive Stance
+    9.4×   38%  Clea
+    9.0×   98%  The Power of Protection
+    7.4×   23%  Enhanced Awareness
+    7.4×   26%  Enhanced Reflexes
+    7.4×   27%  Momentum Shift
+    7.0×   45%  Indomitable
+    6.2×   26%  Brother Voodoo
+    5.9×    9%  Second Wind
+    5.1×   41%  The Night Nurse
+    5.1×   15%  Get Behind Me!
+    4.1×   29%  Desperate Defense
+
+## Cluster 8  (1253 decks)
+   16.7×   81%  Daredevil
+   14.8×   60%  Interrogation Room
+   12.7×   21%  Great Responsibility
+   12.7×   76%  Jessica Jones
+   10.3×   24%  Spycraft
+   10.2×   30%  Stealth Strike
+    9.1×   75%  For Justice!
+    9.1×   33%  Followed
+    8.9×   30%  Haymaker
+    8.6×   47%  Counterintelligence
+    8.4×   22%  Espionage
+    8.1×   40%  Surveillance Team
+    8.1×   34%  Concussive Blow
+    7.9×   22%  Emergency
+    7.7×   98%  The Power of Justice
+    7.6×   42%  Agent Coulson
+    6.5×   47%  Quake
+    6.4×   15%  Foiled!
+    5.4×   29%  Beat Cop
+    5.2×   60%  Heroic Intuition
+
+## Cluster 9  (65 decks)
+  116.1×   60%  Wasp
+   60.9×   75%  "Go for Champions!"
+   44.8×   88%  Champions Mobile Bunker
+   40.4×   60%  Snowguard
+   29.6×   89%  Vivian
+   27.5×   97%  Moon Girl
+   16.6×   17%  Yaw and Roll
+   16.0×   86%  One Way or Another
+   15.8×   51%  Assess the Situation
+   14.4×   69%  Multitasking
+   13.3×   68%  Sense of Justice
+    9.8×   57%  Ingenuity
+    9.7×   86%  Clear the Area
+    8.6×   14%  Justice Served
+    8.5×    8%  Agile Flight
+    8.4×   40%  Spider-Man
+    7.5×   91%  Skilled Investigator
+    6.9×   85%  The Power in All of Us
+    4.9×   17%  Turn the Tide
+    4.2×   11%  Meditation
+
+## Cluster 10  (99 decks)
+   63.1×   36%  Martyr
+   55.4×   88%  Plasma Pistol
+   50.3×   93%  Repurpose
+   49.7×   99%  Forcefield Generator
+   45.1×   54%  Two Against the World
+   44.6×   16%  Stun Gun
+   43.4×   26%  Energy Shield
+   25.4×   62%  Nova
+   24.0×   13%  Spider-Byte
+   18.6×   61%  Dauntless
+   15.6×   91%  Ingenuity
+   14.1×   42%  Luke Cage
+   13.7×   16%  Victor Mancha
+   13.2×   99%  Energy Barrier
+    9.2×   80%  Electrostatic Armor
+    8.9×    7%  Daredevil
+    8.0×   88%  The Power of Protection
+    7.8×   18%  White Fox
+    5.2×   13%  Meditation
+    5.0×   11%  Ever Vigilant
+
+## Cluster 11  (225 decks)
+   38.6×   86%  Tac Team
+   33.9×   88%  Uppercut
+   20.2×   55%  Emergency
+   18.4×   62%  Haymaker
+   17.6×   90%  Tigra
+   17.4×   84%  Chase Them Down
+   15.8×   92%  Relentless Assault
+   14.6×   45%  Tenacity
+   12.6×   93%  Hulk
+    6.7×  100%  The Power of Aggression
+    6.2×   56%  First Aid
+    5.3×   83%  Combat Training
+    5.2×   16%  Melee
+    4.6×   91%  Mockingbird
+    3.0×   91%  Nick Fury
+    2.5×   87%  Avengers Mansion
+    2.1×   94%  Helicarrier
+    1.1×  100%  Energy
+    1.1×  100%  Strength
+    1.1×   96%  Genius
+
+## Cluster 12  (53 decks)
+  145.2×   79%  Save the Day
+  138.6×   94%  Go Down Swinging
+  106.0×   98%  Sneak Attack
+   68.2×   79%  Captain Marvel
+   39.1×   87%  Black Panther
+   38.8×   96%  Goliath
+   35.0×   64%  Giant-Man
+   28.8×   15%  Power Man
+   27.3×   19%  Beta Ray Bill
+   19.4×   32%  Captain America
+   18.7×   11%  Leadership Training
+   17.7×   79%  Falcon
+   16.8×   79%  Command Team
+   15.9×   19%  Two Against the World
+   15.1×   30%  Summoning Spell
+   11.6×   11%  Last Stand
+   11.1×   21%  Heimdall
+    8.8×   30%  Vision
+    7.0×   19%  Innovation
+    6.4×   28%  Spiritual Meditation
+
+## Cluster 13  (147 decks)
+   28.2×   97%  Vision
+   23.8×   95%  Lead from the Front
+   16.4×   88%  Get Ready
+   16.2×   44%  Emergency
+   15.9×   54%  Haymaker
+   12.1×   98%  Hawkeye
+   10.9×   87%  Inspired
+    8.5×   27%  Tenacity
+    8.5×   97%  Maria Hill
+    8.4×  100%  The Power of Leadership
+    8.0×   73%  First Aid
+    7.7×   96%  Make the Call
+    6.5×   66%  The Triskelion
+    5.0×  100%  Mockingbird
+    3.2×   99%  Nick Fury
+    2.5×   88%  Avengers Mansion
+    2.2×   95%  Helicarrier
+    1.7×    5%  Enhanced Awareness
+    1.1×   99%  Genius
+    1.1×   99%  Energy
+
+## Cluster 14  (856 decks)
+   17.5×   61%  Avengers Assemble!
+   14.2×   50%  Wonder Man
+   14.0×   23%  Captain America
+   13.9×   41%  Quinjet
+   13.0×   58%  Falcon
+   12.7×   44%  Vision
+   11.6×   80%  Avengers Tower
+   11.3×   26%  Black Knight
+   11.2×   34%  Mighty Avengers
+   11.1×   58%  Strength In Numbers
+   11.0×   30%  Hawkeye
+   10.6×   79%  Squirrel Girl
+    9.6×   24%  Goliath
+    9.5×   17%  Giant-Man
+    9.3×   75%  Hawkeye
+    9.3×   45%  Ant-Man
+    9.2×   53%  Stinger
+    8.7×   19%  U.S. Agent
+    7.6×   30%  Lead from the Front
+    7.3×   32%  White Tiger
+
+## Cluster 15  (71 decks)
+   45.3×   83%  Giant-Man
+   40.8×   79%  Ronin
+   33.7×   83%  Power Gloves
+   28.5×   70%  Iron Man
+   20.2×   44%  Call for Aid
+   20.2×   18%  United We Stand
+   18.6×  100%  Reinforced Suit
+   16.3×   44%  Inspiring Presence
+   16.2×   21%  Swarm Tactics
+   15.8×   49%  Sky Cycle
+   12.3×   17%  Moxie
+   10.8×   62%  Stinger
+   10.8×   52%  Ant-Man
+    9.5×   76%  Inspired
+    7.8×   75%  Team Training
+    5.9×   54%  First Aid
+    5.6×   23%  Honorary Avenger
+    5.5×   38%  Avengers Tower
+    4.6×   55%  The Power of Leadership
+    4.6×   10%  U.S. Agent
+
+## Cluster 16  (89 decks)
+  105.3×   87%  Guardians of the Galaxy
+   63.9×   88%  Comms Implant
+   57.2×   67%  Major Victory
+   50.8×   24%  Target Practice
+   49.8×  100%  Laser Blaster
+   43.8×   78%  Yondu
+   39.4×   69%  Martinex
+   39.4×   43%  Star-Lord
+   35.6×   27%  Honorary Guardian
+   32.8×   74%  Drax
+   28.1×   43%  "Welcome Aboard"
+   26.8×   30%  Blaze of Glory
+   21.9×   70%  Gamora
+   21.8×   82%  Knowhere
+   19.7×   54%  Cosmo
+   19.0×   67%  Rocket Raccoon
+   16.6×   75%  Groot
+   12.5×   67%  Reinforced Suit
+   12.4×    9%  Daughters of Thanos
+    9.0×   20%  C.I.T.T.
+
+## Cluster 17  (374 decks)
+   23.5×   53%  Flow Like Water
+   17.8×   28%  Not Today!
+   17.2×   75%  Nerves of Steel
+   16.8×   17%  Riposte
+   16.6×   29%  Powerful Punch
+   16.3×   25%  Defensive Energy
+   15.3×    6%  Containment Strategy
+   14.5×   36%  Side Step
+   14.5×   62%  Hard to Ignore
+   14.2×   32%  Defiance
+   13.4×   55%  Never Back Down
+   11.8×   22%  Jump Flip
+   11.6×   19%  Change of Fortune
+   11.1×    6%  "I Can Do This All Day"
+   10.7×   35%  Dauntless
+   10.2×    6%  Judoka Skill
+    9.9×   41%  Preemptive Strike
+    9.8×   86%  Electrostatic Armor
+    9.5×   68%  Desperate Defense
+    9.1×   25%  Expert Defense
+
+## Cluster 18  (4467 decks)
+   11.4×    6%  Bob, Agent of Hydra
+   10.7×    8%  Headpool
+   10.5×    5%  Kidpool
+   10.3×    5%  Aneka
+    9.3×    5%  Blackout
+    8.5×    6%  Get Rage-y
+    8.5×    5%  Live Dangerously
+    8.5×    6%  Laser Swords
+    8.5×    6%  Not my Responsibility
+    8.4×    6%  Get in Front of Me!
+    8.1×    7%  Tic-Tac-Toe
+    8.0×    5%  Plot Convenience
+    7.9×   12%  Healing Factor
+    7.7×   11%  Stick-To-Itiveness
+    7.7×    6%  Cutupper
+    7.6×   12%  Self Confidence
+    7.6×   12%  Self Control
+    7.6×   12%  Self Preservation
+    7.4×    5%  E.V.A.
+    7.4×    5%  Fantomex
+
+## Cluster 19  (228 decks)
+  101.1×   16%  Ancient Rivalry
+   53.5×   44%  The Bifrost
+   32.5×   32%  Godlike Stamina
+   30.6×   38%  Hercules
+   30.6×   14%  Avengers Compound
+   27.8×   45%  Thor
+   22.2×   35%  Get Over Here!
+   19.1×   81%  Valkyrie
+   18.0×   34%  Heimdall
+   16.5×   10%  Evaluate Threat
+   15.1×   37%  "Bring It!"
+   14.6×   46%  Throg
+   14.4×   14%  Blood Rage
+   14.1×    6%  The Direct Approach
+   13.1×   24%  Thor
+   12.5×   89%  Hall of Heroes
+   12.2×   54%  Angela
+   11.2×   37%  Battle Fury
+   10.5×   17%  Aggressive Conditioning
+   10.0×   46%  Mean Swing

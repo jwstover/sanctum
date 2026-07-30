@@ -1,0 +1,86 @@
+# Cluster report — 3 clusters (6362 decks noise)
+
+
+## Cluster 0  (23 decks)
+   15.2×   30%  Heimdall
+   13.6×   87%  Regroup
+    6.1×   22%  Crew Quarters
+    5.6×   30%  War Machine
+    5.4×   57%  Ironheart
+    4.4×   57%  The Power in All of Us
+    3.8×   30%  Black Panther
+    3.0×  100%  Rapid Response
+    2.9×   48%  Command Team
+    2.8×   87%  Nick Fury
+    2.7×    9%  Spider-Man
+    2.5×   39%  Beast
+    2.5×  100%  Maria Hill
+    2.2×   39%  Kaluu
+    2.2×   96%  Make the Call
+    2.1×   91%  The Power of Leadership
+    2.0×   70%  Avengers Mansion
+    1.9×   30%  Professor X
+    1.8×   48%  Quincarrier
+    1.6×   26%  Falcon
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6f4d-71ba-7ed6-81e4-c522168cc5bf
+    http://localhost:4150/decks/019f6fb5-7858-7c5f-85b6-f294311dffb5
+    http://localhost:4150/decks/019f6bf1-198f-70ae-86e0-52f4a05e180f
+    http://localhost:4150/decks/019f6c7a-795f-783f-b25d-6fd69fc2b53c
+    http://localhost:4150/decks/019f6c7a-88b7-7cbc-84bf-1dcec1e22ece
+
+## Cluster 1  (7751 decks)
+    1.6×    5%  Polaris
+    1.5×    6%  Wolverine
+    1.5×    8%  "To Me, My X-Men!"
+    1.5×    6%  Cerebro
+    1.5×    5%  Danger Room
+    1.5×   14%  Uncanny X-Men
+    1.5×   12%  Forge
+    1.5×    9%  Angel
+    1.4×    7%  Colossus
+    1.4×   15%  Utopia
+    1.4×    6%  Mirage
+    1.4×   14%  Pixie
+    1.3×    6%  Triage
+    1.3×   13%  The X-Jet
+    1.3×    8%  X-Mansion
+    1.3×   10%  Danger Room Training
+    1.2×    6%  X-Gene
+    1.2×    6%  Comms Implant
+    1.2×   18%  Professor X
+    1.1×   18%  Beast
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6e33-9f71-7d1d-ac66-ca309e5a7c56
+    http://localhost:4150/decks/019f7085-36ed-7557-859d-97be8d8a3cf4
+    http://localhost:4150/decks/019f6e2e-3f86-7869-b1f0-29a78bd08f0a
+    http://localhost:4150/decks/019f7077-dc23-7e85-a829-905e60e6707f
+    http://localhost:4150/decks/019f6dfb-7234-7017-af59-033ef58f1cdc
+
+## Cluster 2  (76 decks)
+   40.2×   79%  Save the Day
+   39.4×   95%  Go Down Swinging
+   29.7×   99%  Sneak Attack
+   19.1×   76%  Captain Marvel
+   13.9×   14%  Two Against the World
+   10.8×   96%  Goliath
+   10.5×   20%  Power Man
+   10.5×   21%  Heimdall
+   10.1×   80%  Black Panther
+    9.2×   61%  Giant-Man
+    8.3×   20%  Beta Ray Bill
+    7.3×   16%  Leadership Training
+    5.4×   26%  Summoning Spell
+    5.1×   30%  Captain America
+    4.4×   72%  Command Team
+    4.4×   71%  Falcon
+    4.2×   14%  Last Stand
+    4.2×   24%  Spiritual Meditation
+    2.6×   25%  The Sorcerer Supreme
+    2.2×    8%  Crew Quarters
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6e55-d815-7426-819e-8cd81c7bb6e0
+    http://localhost:4150/decks/019f6b9f-ca15-71d5-b170-1ae0095ce4e8
+    http://localhost:4150/decks/019f6fae-b743-727a-9c4d-93113499d829
+    http://localhost:4150/decks/019f6c18-54b1-7e2c-a955-1fa7acd961c1
+    http://localhost:4150/decks/019f6bba-7f97-7ec4-b50f-88b07036eed1

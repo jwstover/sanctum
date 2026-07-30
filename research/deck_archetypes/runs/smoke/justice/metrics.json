@@ -1,0 +1,350 @@
+{
+  "held_out": {
+    "mrr": 0.15108967339432677,
+    "n": 1000,
+    "hit@1": 0.074,
+    "hit@5": 0.201,
+    "hit@10": 0.308,
+    "hit@25": 0.518
+  },
+  "anchors": {
+    "status": "ok",
+    "anchor_cards_resolved": 10,
+    "anchor_cards_unresolved": 2,
+    "anchor_decks_resolved": 0,
+    "card_precision@10": 0.11000000000000001
+  },
+  "intrinsic": {
+    "n_clusters": 6,
+    "noise_fraction": 0.683695652173913,
+    "clustered_fraction": 0.31630434782608696,
+    "silhouette": 0.2601259799476404,
+    "davies_bouldin": 1.1101491489163084
+  },
+  "interpret": {
+    "n_clusters": 6,
+    "clusters": [
+      {
+        "cluster": 0,
+        "size": 102,
+        "top_cards": [
+          [
+            "Heimdall",
+            26.1,
+            0.4
+          ],
+          [
+            "Spiritual Meditation",
+            16.4,
+            1.0
+          ],
+          [
+            "The Sorcerer Supreme",
+            11.0,
+            0.93
+          ],
+          [
+            "Zone of Silence",
+            8.8,
+            0.42
+          ],
+          [
+            "Order and Chaos",
+            7.4,
+            0.1
+          ],
+          [
+            "The Power in All of Us",
+            7.0,
+            0.92
+          ],
+          [
+            "Turn the Tide",
+            5.8,
+            0.77
+          ],
+          [
+            "Ironheart",
+            5.5,
+            0.85
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6e3b-093f-77c1-b0bc-c8136f97e37a",
+          "http://localhost:4150/decks/019f7060-f16f-7875-acf8-a1731d0b38fb",
+          "http://localhost:4150/decks/019f6b77-9624-70f6-9b5d-3fd3fee34390",
+          "http://localhost:4150/decks/019f6df3-0d1d-7272-92c6-61d040da7b98",
+          "http://localhost:4150/decks/019f6ad2-60b7-70f2-a50d-d589c40cb3c3"
+        ]
+      },
+      {
+        "cluster": 1,
+        "size": 154,
+        "top_cards": [
+          [
+            "Star-Lord",
+            32.5,
+            0.27
+          ],
+          [
+            "Scare Tactic",
+            20.4,
+            0.73
+          ],
+          [
+            "Side Holster",
+            19.8,
+            0.69
+          ],
+          [
+            "Drax",
+            15.2,
+            0.25
+          ],
+          [
+            "\"Think Fast!\"",
+            12.6,
+            0.73
+          ],
+          [
+            "Rocket Raccoon",
+            11.8,
+            0.38
+          ],
+          [
+            "Daughters of Thanos",
+            11.8,
+            0.16
+          ],
+          [
+            "Knowhere",
+            11.8,
+            0.33
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6c2a-6115-7323-a38b-096804f224d9",
+          "http://localhost:4150/decks/019f6cfa-6cfd-7c24-abd8-a51560c1bfa2",
+          "http://localhost:4150/decks/019f6cfd-2681-71d0-b5e1-2fd64797a11c",
+          "http://localhost:4150/decks/019f6c79-e090-700e-9c4a-fdd6cd0a961a",
+          "http://localhost:4150/decks/019f702d-68ac-70b6-8475-4b543ad59420"
+        ]
+      },
+      {
+        "cluster": 2,
+        "size": 741,
+        "top_cards": [
+          [
+            "Haymaker",
+            9.9,
+            0.47
+          ],
+          [
+            "Emergency",
+            9.0,
+            0.34
+          ],
+          [
+            "Tenacity",
+            7.4,
+            0.2
+          ],
+          [
+            "First Aid",
+            5.5,
+            0.48
+          ],
+          [
+            "Great Responsibility",
+            5.0,
+            0.33
+          ],
+          [
+            "Daredevil",
+            4.8,
+            0.92
+          ],
+          [
+            "Interrogation Room",
+            4.6,
+            0.74
+          ],
+          [
+            "Jessica Jones",
+            3.9,
+            0.93
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f5e37-4e33-760e-846f-cd3abdd1c4ff",
+          "http://localhost:4150/decks/019f5e30-99b5-7e9d-ab4e-49fe9cef5f5e",
+          "http://localhost:4150/decks/019f5e35-c1b9-7842-be90-427c4c68cc50",
+          "http://localhost:4150/decks/019f5e26-b288-73cb-b1e2-70529bfb194c",
+          "http://localhost:4150/decks/019f6bbf-8928-70e8-8aff-db8f25ba0080"
+        ]
+      },
+      {
+        "cluster": 3,
+        "size": 209,
+        "top_cards": [
+          [
+            "Espionage",
+            14.5,
+            0.87
+          ],
+          [
+            "Target Acquired",
+            11.8,
+            0.71
+          ],
+          [
+            "Spycraft",
+            9.6,
+            0.89
+          ],
+          [
+            "Stealth Strike",
+            4.5,
+            0.53
+          ],
+          [
+            "Agent Coulson",
+            4.5,
+            0.99
+          ],
+          [
+            "Counterintelligence",
+            4.5,
+            0.98
+          ],
+          [
+            "Quake",
+            2.9,
+            0.84
+          ],
+          [
+            "Daredevil",
+            2.7,
+            0.52
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6de0-8151-7e44-95f4-166ba6815a28",
+          "http://localhost:4150/decks/019f5e2f-e8ea-72d7-a4e1-8112467f606c",
+          "http://localhost:4150/decks/019f5e49-f652-78a7-9c96-d8b24db78900",
+          "http://localhost:4150/decks/019f6c46-639d-749b-b2c7-51c96deb83c6",
+          "http://localhost:4150/decks/019f6dad-ad73-7e94-b1fd-a1c6dbc3aec2"
+        ]
+      },
+      {
+        "cluster": 4,
+        "size": 2690,
+        "top_cards": [
+          [
+            "Brother Voodoo",
+            4.0,
+            0.05
+          ],
+          [
+            "Magic Attack",
+            3.9,
+            0.13
+          ],
+          [
+            "Shield Spell",
+            3.8,
+            0.12
+          ],
+          [
+            "\"Welcome Aboard\"",
+            3.8,
+            0.05
+          ],
+          [
+            "Summoning Spell",
+            3.7,
+            0.11
+          ],
+          [
+            "Danger Room",
+            3.6,
+            0.09
+          ],
+          [
+            "Kaluu",
+            3.5,
+            0.07
+          ],
+          [
+            "Gunboat Diplomacy",
+            3.4,
+            0.07
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6fab-db82-7460-a631-6c14b12c2cac",
+          "http://localhost:4150/decks/019f7067-3cc5-7ea4-b8e7-bc2c02fc0e6b",
+          "http://localhost:4150/decks/019f7072-86d3-717f-9f98-30266ce30fd4",
+          "http://localhost:4150/decks/019f6fbc-bd4c-7a58-b719-104ff1942b66",
+          "http://localhost:4150/decks/019f7039-57b4-7a51-aefe-0b70aa5c5440"
+        ]
+      },
+      {
+        "cluster": 5,
+        "size": 178,
+        "top_cards": [
+          [
+            "\"Go for Champions!\"",
+            42.7,
+            0.62
+          ],
+          [
+            "Wasp",
+            30.6,
+            0.63
+          ],
+          [
+            "Snowguard",
+            28.6,
+            0.4
+          ],
+          [
+            "Champions Mobile Bunker",
+            27.8,
+            0.74
+          ],
+          [
+            "Vivian",
+            22.8,
+            0.73
+          ],
+          [
+            "Moon Girl",
+            19.4,
+            0.88
+          ],
+          [
+            "Assess the Situation",
+            12.3,
+            0.35
+          ],
+          [
+            "Ingenuity",
+            8.1,
+            0.46
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f707e-9b27-78fb-9aed-060239d5640a",
+          "http://localhost:4150/decks/019f6cd9-71dc-7599-a92b-4d2dcbe3b689",
+          "http://localhost:4150/decks/019f6ca2-8270-79d7-9809-d6e162af16a0",
+          "http://localhost:4150/decks/019f6be2-0222-73ac-9192-b4da4b829a1a",
+          "http://localhost:4150/decks/019f6d6e-d63d-706a-94fb-e6efea192a78"
+        ]
+      }
+    ]
+  },
+  "projection": {
+    "status": "disabled"
+  }
+}

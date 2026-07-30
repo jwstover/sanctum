@@ -1,0 +1,857 @@
+{
+  "held_out": {
+    "mrr": 0.1424302943740076,
+    "n": 1000,
+    "hit@1": 0.067,
+    "hit@5": 0.195,
+    "hit@10": 0.286,
+    "hit@25": 0.46
+  },
+  "anchors": {
+    "status": "no_anchors_file",
+    "path": "/Users/jacob.stover/code/personal/sanctum/research/deck_archetypes/anchors/archetypes.yaml"
+  },
+  "intrinsic": {
+    "n_clusters": 18,
+    "noise_fraction": 0.8939148542341508,
+    "clustered_fraction": 0.10608514576584914,
+    "silhouette": 0.4414825048959388,
+    "davies_bouldin": 0.8532846988259521
+  },
+  "interpret": {
+    "n_clusters": 18,
+    "clusters": [
+      {
+        "cluster": 0,
+        "size": 158,
+        "top_cards": [
+          [
+            "Plasma Pistol",
+            59.0,
+            0.94
+          ],
+          [
+            "Repurpose",
+            48.0,
+            0.89
+          ],
+          [
+            "Forcefield Generator",
+            47.1,
+            0.94
+          ],
+          [
+            "Martyr",
+            46.1,
+            0.27
+          ],
+          [
+            "Two Against the World",
+            40.5,
+            0.48
+          ],
+          [
+            "Stun Gun",
+            38.4,
+            0.14
+          ],
+          [
+            "Energy Shield",
+            37.6,
+            0.23
+          ],
+          [
+            "Spider-Byte",
+            24.3,
+            0.13
+          ]
+        ]
+      },
+      {
+        "cluster": 1,
+        "size": 124,
+        "top_cards": [
+          [
+            "Spiritual Meditation",
+            22.5,
+            1.0
+          ],
+          [
+            "Heimdall",
+            20.2,
+            0.38
+          ],
+          [
+            "Zone of Silence",
+            16.8,
+            0.28
+          ],
+          [
+            "Turn the Tide",
+            15.9,
+            0.55
+          ],
+          [
+            "The Sorcerer Supreme",
+            13.6,
+            0.95
+          ],
+          [
+            "Wiccan",
+            13.0,
+            0.6
+          ],
+          [
+            "Determination",
+            11.3,
+            0.22
+          ],
+          [
+            "Order and Chaos",
+            8.2,
+            0.1
+          ]
+        ]
+      },
+      {
+        "cluster": 2,
+        "size": 395,
+        "top_cards": [
+          [
+            "Patriot",
+            50.1,
+            0.18
+          ],
+          [
+            "Bombshell",
+            48.6,
+            0.07
+          ],
+          [
+            "\"Go for Champions!\"",
+            47.4,
+            0.59
+          ],
+          [
+            "Wasp",
+            43.1,
+            0.22
+          ],
+          [
+            "Champions Mobile Bunker",
+            37.1,
+            0.73
+          ],
+          [
+            "The Locust",
+            34.0,
+            0.23
+          ],
+          [
+            "Falcon",
+            29.9,
+            0.15
+          ],
+          [
+            "Snowguard",
+            26.8,
+            0.4
+          ]
+        ]
+      },
+      {
+        "cluster": 3,
+        "size": 65,
+        "top_cards": [
+          [
+            "Basic Spell",
+            77.2,
+            0.78
+          ],
+          [
+            "Bloodgem",
+            63.6,
+            0.57
+          ],
+          [
+            "Goldballs",
+            47.2,
+            0.34
+          ],
+          [
+            "Tempus",
+            38.9,
+            0.15
+          ],
+          [
+            "Test the Defense",
+            31.7,
+            0.15
+          ],
+          [
+            "Full-Body Charge",
+            30.0,
+            0.23
+          ],
+          [
+            "Spiritual Meditation",
+            22.5,
+            1.0
+          ],
+          [
+            "Swift Retribution",
+            21.8,
+            0.14
+          ]
+        ]
+      },
+      {
+        "cluster": 4,
+        "size": 326,
+        "top_cards": [
+          [
+            "Flow Like Water",
+            21.8,
+            0.5
+          ],
+          [
+            "Powerful Punch",
+            18.0,
+            0.31
+          ],
+          [
+            "Riposte",
+            17.8,
+            0.18
+          ],
+          [
+            "Not Today!",
+            16.9,
+            0.27
+          ],
+          [
+            "Defensive Energy",
+            16.7,
+            0.25
+          ],
+          [
+            "Nerves of Steel",
+            15.9,
+            0.7
+          ],
+          [
+            "\"I Can Do This All Day\"",
+            15.1,
+            0.08
+          ],
+          [
+            "Defiance",
+            14.7,
+            0.33
+          ]
+        ]
+      },
+      {
+        "cluster": 5,
+        "size": 158,
+        "top_cards": [
+          [
+            "Guardians of the Galaxy",
+            73.2,
+            0.6
+          ],
+          [
+            "Comms Implant",
+            46.6,
+            0.64
+          ],
+          [
+            "Major Victory",
+            44.1,
+            0.52
+          ],
+          [
+            "Star-Lord",
+            40.9,
+            0.44
+          ],
+          [
+            "Martinex",
+            39.3,
+            0.68
+          ],
+          [
+            "Drax",
+            36.7,
+            0.83
+          ],
+          [
+            "Yondu",
+            36.5,
+            0.65
+          ],
+          [
+            "Laser Blaster",
+            35.9,
+            0.72
+          ]
+        ]
+      },
+      {
+        "cluster": 6,
+        "size": 514,
+        "top_cards": [
+          [
+            "Spider-Ham",
+            80.3,
+            0.46
+          ],
+          [
+            "Spider-Man",
+            38.4,
+            0.34
+          ],
+          [
+            "Scarlet Spider",
+            37.1,
+            0.33
+          ],
+          [
+            "Madame Web",
+            32.8,
+            0.18
+          ],
+          [
+            "Spider-UK",
+            32.7,
+            0.49
+          ],
+          [
+            "Spider-Man Noir",
+            30.6,
+            0.19
+          ],
+          [
+            "Thwip Thwip!",
+            29.9,
+            0.22
+          ],
+          [
+            "Spider-Man 2099",
+            28.6,
+            0.1
+          ]
+        ]
+      },
+      {
+        "cluster": 7,
+        "size": 597,
+        "top_cards": [
+          [
+            "Avengers Assemble!",
+            18.7,
+            0.66
+          ],
+          [
+            "Captain America",
+            17.6,
+            0.29
+          ],
+          [
+            "Giant-Man",
+            15.4,
+            0.28
+          ],
+          [
+            "Mighty Avengers",
+            15.4,
+            0.46
+          ],
+          [
+            "Avengers Tower",
+            12.9,
+            0.89
+          ],
+          [
+            "Quinjet",
+            12.4,
+            0.37
+          ],
+          [
+            "Black Knight",
+            12.0,
+            0.28
+          ],
+          [
+            "Wonder Man",
+            11.6,
+            0.41
+          ]
+        ]
+      },
+      {
+        "cluster": 8,
+        "size": 161,
+        "top_cards": [
+          [
+            "Tac Team",
+            40.9,
+            0.91
+          ],
+          [
+            "Uppercut",
+            34.6,
+            0.89
+          ],
+          [
+            "Emergency",
+            24.8,
+            0.68
+          ],
+          [
+            "Haymaker",
+            22.3,
+            0.75
+          ],
+          [
+            "Tigra",
+            17.7,
+            0.91
+          ],
+          [
+            "Tenacity",
+            17.2,
+            0.53
+          ],
+          [
+            "Chase Them Down",
+            16.8,
+            0.81
+          ],
+          [
+            "Relentless Assault",
+            16.2,
+            0.94
+          ]
+        ]
+      },
+      {
+        "cluster": 9,
+        "size": 140,
+        "top_cards": [
+          [
+            "Vision",
+            28.0,
+            0.96
+          ],
+          [
+            "Lead from the Front",
+            22.8,
+            0.91
+          ],
+          [
+            "Emergency",
+            18.4,
+            0.5
+          ],
+          [
+            "Haymaker",
+            17.8,
+            0.6
+          ],
+          [
+            "Get Ready",
+            15.6,
+            0.84
+          ],
+          [
+            "Hawkeye",
+            12.3,
+            0.99
+          ],
+          [
+            "Inspired",
+            10.3,
+            0.83
+          ],
+          [
+            "Tenacity",
+            9.2,
+            0.29
+          ]
+        ]
+      },
+      {
+        "cluster": 10,
+        "size": 251,
+        "top_cards": [
+          [
+            "Great Responsibility",
+            33.0,
+            0.55
+          ],
+          [
+            "Haymaker",
+            22.1,
+            0.75
+          ],
+          [
+            "Interrogation Room",
+            21.8,
+            0.88
+          ],
+          [
+            "Emergency",
+            21.2,
+            0.58
+          ],
+          [
+            "Daredevil",
+            20.4,
+            0.99
+          ],
+          [
+            "Surveillance Team",
+            16.5,
+            0.8
+          ],
+          [
+            "Jessica Jones",
+            16.4,
+            0.98
+          ],
+          [
+            "For Justice!",
+            11.8,
+            0.98
+          ]
+        ]
+      },
+      {
+        "cluster": 11,
+        "size": 64,
+        "top_cards": [
+          [
+            "Luke Cage",
+            33.2,
+            1.0
+          ],
+          [
+            "Get Behind Me!",
+            28.3,
+            0.83
+          ],
+          [
+            "Haymaker",
+            25.0,
+            0.84
+          ],
+          [
+            "Emergency",
+            24.7,
+            0.67
+          ],
+          [
+            "Black Widow",
+            23.9,
+            1.0
+          ],
+          [
+            "Counter-Punch",
+            22.9,
+            0.89
+          ],
+          [
+            "Indomitable",
+            15.2,
+            0.97
+          ],
+          [
+            "Tenacity",
+            14.0,
+            0.44
+          ]
+        ]
+      },
+      {
+        "cluster": 12,
+        "size": 248,
+        "top_cards": [
+          [
+            "Spycraft",
+            34.9,
+            0.81
+          ],
+          [
+            "Espionage",
+            34.0,
+            0.9
+          ],
+          [
+            "Target Acquired",
+            19.7,
+            0.75
+          ],
+          [
+            "Counterintelligence",
+            16.5,
+            0.91
+          ],
+          [
+            "Agent Coulson",
+            16.5,
+            0.91
+          ],
+          [
+            "Stealth Strike",
+            16.4,
+            0.49
+          ],
+          [
+            "Breaking and Entering",
+            11.2,
+            0.05
+          ],
+          [
+            "Quake",
+            10.5,
+            0.77
+          ]
+        ]
+      },
+      {
+        "cluster": 13,
+        "size": 115,
+        "top_cards": [
+          [
+            "The Bifrost",
+            115.7,
+            0.95
+          ],
+          [
+            "Godlike Stamina",
+            79.6,
+            0.77
+          ],
+          [
+            "Thor",
+            34.0,
+            0.55
+          ],
+          [
+            "Throg",
+            29.7,
+            0.95
+          ],
+          [
+            "\"Bring It!\"",
+            24.2,
+            0.59
+          ],
+          [
+            "Heimdall",
+            23.2,
+            0.43
+          ],
+          [
+            "Angela",
+            21.6,
+            0.97
+          ],
+          [
+            "Thor",
+            17.0,
+            0.31
+          ]
+        ]
+      },
+      {
+        "cluster": 14,
+        "size": 426,
+        "top_cards": [
+          [
+            "\"To Me, My X-Men!\"",
+            40.5,
+            0.61
+          ],
+          [
+            "Gentle",
+            31.8,
+            0.3
+          ],
+          [
+            "Uncanny X-Men",
+            30.6,
+            0.81
+          ],
+          [
+            "Mirage",
+            29.5,
+            0.36
+          ],
+          [
+            "Havok",
+            27.3,
+            0.15
+          ],
+          [
+            "Pixie",
+            24.0,
+            0.74
+          ],
+          [
+            "Rockslide",
+            20.0,
+            0.19
+          ],
+          [
+            "Magik",
+            20.0,
+            0.24
+          ]
+        ]
+      },
+      {
+        "cluster": 15,
+        "size": 383,
+        "top_cards": [
+          [
+            "The Bellerophon",
+            66.7,
+            0.34
+          ],
+          [
+            "The Douglass",
+            64.6,
+            0.27
+          ],
+          [
+            "The Pericles",
+            62.3,
+            0.33
+          ],
+          [
+            "Super Spies",
+            50.3,
+            0.24
+          ],
+          [
+            "The Circe",
+            46.6,
+            0.25
+          ],
+          [
+            "Field Agent",
+            45.5,
+            0.73
+          ],
+          [
+            "Agents of S.H.I.E.L.D.",
+            43.1,
+            0.09
+          ],
+          [
+            "Dum Dum Dugan",
+            42.8,
+            0.6
+          ]
+        ]
+      },
+      {
+        "cluster": 16,
+        "size": 1304,
+        "top_cards": [
+          [
+            "Deadpool Corps Ship",
+            34.7,
+            0.09
+          ],
+          [
+            "Okoye",
+            32.1,
+            0.15
+          ],
+          [
+            "Ayo",
+            31.9,
+            0.15
+          ],
+          [
+            "Dogpool",
+            31.6,
+            0.1
+          ],
+          [
+            "Aneka",
+            30.9,
+            0.15
+          ],
+          [
+            "Dora Milaje",
+            30.3,
+            0.15
+          ],
+          [
+            "Pandapool",
+            30.1,
+            0.07
+          ],
+          [
+            "Bob, Agent of Hydra",
+            29.8,
+            0.15
+          ]
+        ]
+      },
+      {
+        "cluster": 17,
+        "size": 73,
+        "top_cards": [
+          [
+            "The Posse",
+            147.2,
+            0.88
+          ],
+          [
+            "Atlas Bear",
+            103.6,
+            0.88
+          ],
+          [
+            "Sharpshooter",
+            74.5,
+            0.89
+          ],
+          [
+            "Feral",
+            43.2,
+            0.1
+          ],
+          [
+            "White Fox",
+            41.8,
+            0.97
+          ],
+          [
+            "Digging Deep",
+            34.5,
+            1.0
+          ],
+          [
+            "Wolfsbane",
+            25.8,
+            0.14
+          ],
+          [
+            "Weapon X",
+            22.5,
+            0.45
+          ]
+        ]
+      }
+    ]
+  },
+  "projection": {
+    "status": "disabled"
+  }
+}

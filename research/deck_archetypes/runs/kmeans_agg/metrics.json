@@ -1,0 +1,1308 @@
+{
+  "held_out": {
+    "mrr": 0.14865837314176036,
+    "n": 1000,
+    "hit@1": 0.062,
+    "hit@5": 0.213,
+    "hit@10": 0.327,
+    "hit@25": 0.514
+  },
+  "anchors": {
+    "status": "ok",
+    "anchor_cards_resolved": 12,
+    "anchor_cards_unresolved": 0,
+    "anchor_decks_resolved": 20,
+    "card_precision@10": 0.10833333333333334,
+    "deck_precision@10": 0.5799999999999998
+  },
+  "intrinsic": {
+    "n_clusters": 25,
+    "noise_fraction": 0.0,
+    "clustered_fraction": 1.0,
+    "silhouette": 0.11620230190050183,
+    "davies_bouldin": 2.007193709672859
+  },
+  "interpret": {
+    "n_clusters": 25,
+    "clusters": [
+      {
+        "cluster": 0,
+        "size": 374,
+        "top_cards": [
+          [
+            "Hercules",
+            19.1,
+            0.89
+          ],
+          [
+            "Heimdall",
+            7.8,
+            0.17
+          ],
+          [
+            "Invulnerability",
+            6.3,
+            0.07
+          ],
+          [
+            "Get Over Here!",
+            3.9,
+            0.22
+          ],
+          [
+            "Valkyrie",
+            3.7,
+            0.59
+          ],
+          [
+            "Honorary Avenger",
+            3.6,
+            0.09
+          ],
+          [
+            "Enhanced Physique",
+            3.6,
+            0.29
+          ],
+          [
+            "Avengers Tower",
+            3.4,
+            0.13
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6cce-5bc3-7254-af61-3d96145f0234",
+          "http://localhost:4150/decks/019f6cd0-55dd-78f9-adeb-04b21930979b",
+          "http://localhost:4150/decks/019f6c44-c5f4-77c9-b48e-586337209e63"
+        ]
+      },
+      {
+        "cluster": 1,
+        "size": 585,
+        "top_cards": [
+          [
+            "Air Cover",
+            14.8,
+            0.15
+          ],
+          [
+            "Target Spotter",
+            9.8,
+            0.08
+          ],
+          [
+            "Aggressive Stance",
+            9.3,
+            0.16
+          ],
+          [
+            "Surprise Move",
+            9.0,
+            0.13
+          ],
+          [
+            "Suppressing Fire",
+            9.0,
+            0.23
+          ],
+          [
+            "Practiced Plan",
+            8.6,
+            0.05
+          ],
+          [
+            "Marked",
+            8.1,
+            0.28
+          ],
+          [
+            "Spoiling for a Fight",
+            7.9,
+            0.25
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6f06-87a3-7c38-a98c-d6df4dcd118e",
+          "http://localhost:4150/decks/019f6dca-311e-7a07-ab1a-f93b9e3b60a6",
+          "http://localhost:4150/decks/019f7079-8166-7c6a-bd33-0a6d9ae0ebe9"
+        ]
+      },
+      {
+        "cluster": 2,
+        "size": 496,
+        "top_cards": [
+          [
+            "Aggressive Energy",
+            6.7,
+            0.57
+          ],
+          [
+            "No Quarter",
+            5.8,
+            0.29
+          ],
+          [
+            "Precision Strike",
+            5.2,
+            0.3
+          ],
+          [
+            "Warrior Skill",
+            5.1,
+            0.19
+          ],
+          [
+            "One by One",
+            5.0,
+            0.29
+          ],
+          [
+            "Test the Defense",
+            5.0,
+            0.09
+          ],
+          [
+            "Honed Technique",
+            3.9,
+            0.45
+          ],
+          [
+            "Plan of Attack",
+            3.8,
+            0.22
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6c93-e0d4-7cb5-8cfa-b9a744c3e12d",
+          "http://localhost:4150/decks/019f6f66-0401-7e89-b80e-cefad9218030",
+          "http://localhost:4150/decks/019f6f7e-f13e-7579-bf22-d5b3ff9f965c"
+        ]
+      },
+      {
+        "cluster": 3,
+        "size": 401,
+        "top_cards": [
+          [
+            "Flora and Fauna",
+            10.2,
+            0.16
+          ],
+          [
+            "Follow Through",
+            6.3,
+            0.36
+          ],
+          [
+            "Groot",
+            4.4,
+            0.22
+          ],
+          [
+            "Into the Fray",
+            4.3,
+            0.68
+          ],
+          [
+            "Moment of Triumph",
+            3.8,
+            0.58
+          ],
+          [
+            "Bug",
+            3.7,
+            0.55
+          ],
+          [
+            "No Quarter",
+            3.3,
+            0.16
+          ],
+          [
+            "Throg",
+            3.2,
+            0.38
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6b08-1bc1-7d26-8477-5390f2507f2f",
+          "http://localhost:4150/decks/019f6e27-08a9-7e8a-b8d5-2898c5370db8",
+          "http://localhost:4150/decks/019f6b08-631a-7f76-9f71-e43897d7d531"
+        ]
+      },
+      {
+        "cluster": 4,
+        "size": 481,
+        "top_cards": [
+          [
+            "Blade",
+            15.0,
+            0.78
+          ],
+          [
+            "Machine Man",
+            10.3,
+            0.18
+          ],
+          [
+            "Marvel Boy",
+            5.9,
+            0.29
+          ],
+          [
+            "As One!",
+            5.4,
+            0.06
+          ],
+          [
+            "The Best Defense\u2026",
+            5.1,
+            0.08
+          ],
+          [
+            "Swarm Tactics",
+            4.9,
+            0.07
+          ],
+          [
+            "Earth's Mightiest Heroes",
+            4.4,
+            0.22
+          ],
+          [
+            "Limitless Stamina",
+            4.0,
+            0.23
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6bbe-b8ad-7906-bc26-5f7561ca4bf3",
+          "http://localhost:4150/decks/019f6c03-2400-7dea-86aa-fd3742105995",
+          "http://localhost:4150/decks/019f6bad-aae0-76dd-b85f-2378b0fffde5"
+        ]
+      },
+      {
+        "cluster": 5,
+        "size": 569,
+        "top_cards": [
+          [
+            "Espionage",
+            7.0,
+            0.1
+          ],
+          [
+            "Lockjaw",
+            6.3,
+            0.32
+          ],
+          [
+            "Target Acquired",
+            6.1,
+            0.17
+          ],
+          [
+            "Resourceful",
+            5.9,
+            0.09
+          ],
+          [
+            "To the Rescue!",
+            5.2,
+            0.09
+          ],
+          [
+            "Enhanced Physique",
+            4.9,
+            0.4
+          ],
+          [
+            "She-Hulk",
+            4.6,
+            0.34
+          ],
+          [
+            "Counterattack",
+            4.6,
+            0.47
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6645-d231-7bcc-af74-22b4c94ee4df",
+          "http://localhost:4150/decks/019f6ace-e62e-7155-aefa-c4a0c98ec6cd",
+          "http://localhost:4150/decks/019f5e53-ac72-740e-901d-cefc8fee573b"
+        ]
+      },
+      {
+        "cluster": 6,
+        "size": 547,
+        "top_cards": [
+          [
+            "Unshakable",
+            12.6,
+            0.42
+          ],
+          [
+            "Limitless Stamina",
+            10.9,
+            0.63
+          ],
+          [
+            "The Best Defense\u2026",
+            7.4,
+            0.12
+          ],
+          [
+            "\"Now I'm Mad\"",
+            7.1,
+            0.15
+          ],
+          [
+            "Symbiote Suit",
+            6.8,
+            0.32
+          ],
+          [
+            "Smash the Problem",
+            6.2,
+            0.27
+          ],
+          [
+            "Quick Strike",
+            5.9,
+            0.25
+          ],
+          [
+            "Savage Strike",
+            5.5,
+            0.06
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6bf3-0c5c-789e-aba1-e8ad3f8e7206",
+          "http://localhost:4150/decks/019f7035-47ca-7165-8193-cc9d356bdbe0",
+          "http://localhost:4150/decks/019f7072-0431-7b35-b7e4-8e924ee63882"
+        ]
+      },
+      {
+        "cluster": 7,
+        "size": 741,
+        "top_cards": [
+          [
+            "Telekinesis",
+            16.0,
+            0.08
+          ],
+          [
+            "Telepathy",
+            15.8,
+            0.07
+          ],
+          [
+            "Psi-Bow Attack",
+            15.2,
+            0.21
+          ],
+          [
+            "Psimitar",
+            13.8,
+            0.17
+          ],
+          [
+            "The Power of the Mind",
+            13.5,
+            0.19
+          ],
+          [
+            "Psychic Assault",
+            11.6,
+            0.25
+          ],
+          [
+            "Beauty and the Thief",
+            9.1,
+            0.07
+          ],
+          [
+            "Fastball Special",
+            8.5,
+            0.13
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f707b-f5d5-745e-8512-56658b16fc4c",
+          "http://localhost:4150/decks/019f706b-1035-74b6-a78f-934b8544c761",
+          "http://localhost:4150/decks/019f6ed5-4870-7f8e-a43a-001e12d3ace2"
+        ]
+      },
+      {
+        "cluster": 8,
+        "size": 573,
+        "top_cards": [
+          [
+            "Get Over Here!",
+            5.5,
+            0.32
+          ],
+          [
+            "To the Rescue!",
+            3.9,
+            0.07
+          ],
+          [
+            "Counterattack",
+            3.7,
+            0.37
+          ],
+          [
+            "\"You'll Pay for That!\"",
+            3.6,
+            0.37
+          ],
+          [
+            "Battle Fury",
+            3.4,
+            0.42
+          ],
+          [
+            "Assess the Situation",
+            2.9,
+            0.08
+          ],
+          [
+            "Chase Them Down",
+            2.8,
+            0.51
+          ],
+          [
+            "Emergency",
+            2.8,
+            0.08
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6b25-3ab8-751f-a67a-0bf8ff04095c",
+          "http://localhost:4150/decks/019f6d0a-c515-77f4-9e61-701222d5ba11",
+          "http://localhost:4150/decks/019f6d03-5370-7008-82f8-d0d29b7d275a"
+        ]
+      },
+      {
+        "cluster": 9,
+        "size": 597,
+        "top_cards": [
+          [
+            "Haymaker",
+            13.9,
+            0.47
+          ],
+          [
+            "Emergency",
+            13.5,
+            0.39
+          ],
+          [
+            "Tac Team",
+            9.8,
+            0.8
+          ],
+          [
+            "Tenacity",
+            7.3,
+            0.35
+          ],
+          [
+            "Uppercut",
+            6.9,
+            0.66
+          ],
+          [
+            "First Aid",
+            5.0,
+            0.4
+          ],
+          [
+            "Relentless Assault",
+            3.8,
+            0.82
+          ],
+          [
+            "Chase Them Down",
+            3.8,
+            0.68
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f5ded-d485-7d81-a953-388b21b0eee6",
+          "http://localhost:4150/decks/019f5dec-b321-7326-b8f2-59bab0c0778e",
+          "http://localhost:4150/decks/019f5e29-836f-7ef9-b8ad-c1441042defc"
+        ]
+      },
+      {
+        "cluster": 10,
+        "size": 495,
+        "top_cards": [
+          [
+            "Melinda May",
+            25.8,
+            0.05
+          ],
+          [
+            "Super Spies",
+            24.5,
+            0.06
+          ],
+          [
+            "Dum Dum Dugan",
+            24.2,
+            0.1
+          ],
+          [
+            "Nick Fury, Sr.",
+            24.0,
+            0.24
+          ],
+          [
+            "Sky-Destroyer",
+            24.0,
+            0.13
+          ],
+          [
+            "Deathlok",
+            23.2,
+            0.19
+          ],
+          [
+            "Government Liaison",
+            23.2,
+            0.15
+          ],
+          [
+            "Captain America",
+            22.0,
+            0.35
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f7078-e66a-7803-abbc-b38c29afce35",
+          "http://localhost:4150/decks/019f7078-ec00-7129-96dc-e9b6a77a5a75",
+          "http://localhost:4150/decks/019f7067-56c3-72a3-b274-227cb130f74b"
+        ]
+      },
+      {
+        "cluster": 11,
+        "size": 649,
+        "top_cards": [
+          [
+            "The Bifrost",
+            16.1,
+            0.43
+          ],
+          [
+            "Godlike Stamina",
+            14.4,
+            0.33
+          ],
+          [
+            "Heimdall",
+            8.4,
+            0.18
+          ],
+          [
+            "\"Bring It!\"",
+            6.2,
+            0.55
+          ],
+          [
+            "Thor",
+            5.4,
+            0.33
+          ],
+          [
+            "Get Over Here!",
+            5.4,
+            0.31
+          ],
+          [
+            "Throg",
+            5.2,
+            0.61
+          ],
+          [
+            "Angela",
+            5.1,
+            0.85
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6e6a-20e5-7945-ad3e-0d5e97ad8c62",
+          "http://localhost:4150/decks/019f6c03-4daa-75e5-a00d-77bcb00af8be",
+          "http://localhost:4150/decks/019f6ca4-78a3-76a0-8846-cfe28a37ff8a"
+        ]
+      },
+      {
+        "cluster": 12,
+        "size": 431,
+        "top_cards": [
+          [
+            "Star-Lord",
+            17.4,
+            0.19
+          ],
+          [
+            "Martinex",
+            16.8,
+            0.32
+          ],
+          [
+            "Drax",
+            16.1,
+            0.42
+          ],
+          [
+            "Knowhere",
+            15.4,
+            0.46
+          ],
+          [
+            "Rocket Raccoon",
+            15.1,
+            0.47
+          ],
+          [
+            "Gamora",
+            12.4,
+            0.35
+          ],
+          [
+            "Groot",
+            10.7,
+            0.53
+          ],
+          [
+            "Daughters of Thanos",
+            10.1,
+            0.08
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f7038-2660-7ee9-a406-1f1d003864f0",
+          "http://localhost:4150/decks/019f6be1-ef38-720f-bd89-10cb8a408e5b",
+          "http://localhost:4150/decks/019f6f89-c7a2-7d8b-8e48-77a264f75d1e"
+        ]
+      },
+      {
+        "cluster": 13,
+        "size": 721,
+        "top_cards": [
+          [
+            "Danger Room",
+            17.0,
+            0.28
+          ],
+          [
+            "Pixie",
+            16.9,
+            0.08
+          ],
+          [
+            "Polaris",
+            14.9,
+            0.08
+          ],
+          [
+            "Utopia",
+            14.0,
+            0.67
+          ],
+          [
+            "X-Men Instruction",
+            13.8,
+            0.12
+          ],
+          [
+            "Team Strike",
+            13.4,
+            0.27
+          ],
+          [
+            "Beak",
+            13.4,
+            0.17
+          ],
+          [
+            "Game Time",
+            13.3,
+            0.21
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f707a-8aac-71e7-9a2e-508a6f49f520",
+          "http://localhost:4150/decks/019f707a-b302-7fe8-b30b-dbddd4b31559",
+          "http://localhost:4150/decks/019f702e-ebe0-752f-8a0b-3816c570716e"
+        ]
+      },
+      {
+        "cluster": 14,
+        "size": 565,
+        "top_cards": [
+          [
+            "To the Rescue!",
+            7.6,
+            0.13
+          ],
+          [
+            "Melee",
+            4.3,
+            0.48
+          ],
+          [
+            "Brawn",
+            3.9,
+            0.57
+          ],
+          [
+            "Uppercut",
+            3.8,
+            0.36
+          ],
+          [
+            "\"You'll Pay for That!\"",
+            3.5,
+            0.37
+          ],
+          [
+            "Piercing Strike",
+            3.0,
+            0.23
+          ],
+          [
+            "Toe to Toe",
+            3.0,
+            0.29
+          ],
+          [
+            "Chase Them Down",
+            2.9,
+            0.52
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6b2b-cd20-7a49-a996-9e42730b6b28",
+          "http://localhost:4150/decks/019f5e40-e5c4-722e-b955-5ab866e2ac39",
+          "http://localhost:4150/decks/019f5e46-4692-7dda-afbd-a7649c20d3bd"
+        ]
+      },
+      {
+        "cluster": 15,
+        "size": 439,
+        "top_cards": [
+          [
+            "Cannonball",
+            26.9,
+            0.3
+          ],
+          [
+            "The Power of Flight",
+            25.8,
+            0.33
+          ],
+          [
+            "Bombs Away",
+            15.7,
+            0.39
+          ],
+          [
+            "Soaring Acrobatics",
+            14.6,
+            0.26
+          ],
+          [
+            "Soaring Hearts",
+            14.2,
+            0.08
+          ],
+          [
+            "Pitchback",
+            11.9,
+            0.58
+          ],
+          [
+            "Dive Bomb",
+            10.4,
+            0.88
+          ],
+          [
+            "Vivian",
+            9.0,
+            0.19
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f707f-e009-78c3-8d96-3d39eb1abc2c",
+          "http://localhost:4150/decks/019f7079-d342-7b91-b929-f95c873d8d49",
+          "http://localhost:4150/decks/019f7032-ba44-74ff-8d35-17c528ec5a06"
+        ]
+      },
+      {
+        "cluster": 16,
+        "size": 553,
+        "top_cards": [
+          [
+            "Sky Cycle",
+            16.5,
+            0.11
+          ],
+          [
+            "Power Gloves",
+            16.1,
+            0.07
+          ],
+          [
+            "Comms Implant",
+            15.8,
+            0.05
+          ],
+          [
+            "Laser Blaster",
+            14.7,
+            0.17
+          ],
+          [
+            "Reinforced Suit",
+            12.0,
+            0.12
+          ],
+          [
+            "Yondu",
+            11.5,
+            0.12
+          ],
+          [
+            "Inspired",
+            11.1,
+            0.24
+          ],
+          [
+            "Mighty Avengers",
+            9.4,
+            0.06
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6b62-a8e3-7bbd-abbb-5041f3fe888c",
+          "http://localhost:4150/decks/019f6e90-af5a-7488-bc54-4954ea521fca",
+          "http://localhost:4150/decks/019f6e26-6cb0-7150-99b5-3aa370b75e28"
+        ]
+      },
+      {
+        "cluster": 17,
+        "size": 470,
+        "top_cards": [
+          [
+            "Adrenaline Rush",
+            15.3,
+            0.44
+          ],
+          [
+            "Civic Duty",
+            14.7,
+            0.09
+          ],
+          [
+            "Order and Chaos",
+            9.7,
+            0.1
+          ],
+          [
+            "Tenacity",
+            7.6,
+            0.36
+          ],
+          [
+            "Earth's Mightiest Heroes",
+            6.0,
+            0.3
+          ],
+          [
+            "Enhanced Reflexes",
+            5.8,
+            0.19
+          ],
+          [
+            "Battle Fury",
+            4.1,
+            0.5
+          ],
+          [
+            "Enhanced Physique",
+            3.7,
+            0.31
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f69b2-789f-755a-a90d-4b914a564191",
+          "http://localhost:4150/decks/019f6ad7-3b8f-70fb-902b-212e31dfd220",
+          "http://localhost:4150/decks/019f6b4d-64ce-7bb2-a5f9-5d9585aa8521"
+        ]
+      },
+      {
+        "cluster": 18,
+        "size": 765,
+        "top_cards": [
+          [
+            "The Gardener",
+            17.0,
+            0.1
+          ],
+          [
+            "Eternity",
+            16.9,
+            0.09
+          ],
+          [
+            "Living Tribunal",
+            16.7,
+            0.09
+          ],
+          [
+            "Zone of Silence",
+            16.4,
+            0.46
+          ],
+          [
+            "\"Think Fast!\"",
+            16.0,
+            0.2
+          ],
+          [
+            "Summoning Spell",
+            15.7,
+            0.42
+          ],
+          [
+            "\"Welcome Aboard\"",
+            15.6,
+            0.18
+          ],
+          [
+            "Shield Spell",
+            15.4,
+            0.47
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6b4d-7a23-7d1a-8d4c-6353d7376c92",
+          "http://localhost:4150/decks/019f6d6d-d0ae-7f82-a70d-07d9c09367b5",
+          "http://localhost:4150/decks/019f6bc8-73b1-7ebe-a260-10f433ce35b8"
+        ]
+      },
+      {
+        "cluster": 19,
+        "size": 417,
+        "top_cards": [
+          [
+            "\"Go for Champions!\"",
+            29.7,
+            0.31
+          ],
+          [
+            "Moon Girl",
+            27.4,
+            0.72
+          ],
+          [
+            "Champions Mobile Bunker",
+            26.1,
+            0.45
+          ],
+          [
+            "Bombshell",
+            24.7,
+            0.13
+          ],
+          [
+            "The Locust",
+            23.3,
+            0.58
+          ],
+          [
+            "Everyday Hero",
+            17.1,
+            0.12
+          ],
+          [
+            "Vivian",
+            13.4,
+            0.29
+          ],
+          [
+            "Snowguard",
+            13.0,
+            0.14
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6e6c-3aaf-72dd-a4cb-97e8487bc066",
+          "http://localhost:4150/decks/019f6bf3-7416-7060-a359-0f8c266b2a2f",
+          "http://localhost:4150/decks/019f6da9-ed6c-7df3-9273-f054f77bbae2"
+        ]
+      },
+      {
+        "cluster": 20,
+        "size": 594,
+        "top_cards": [
+          [
+            "Concussive Blow",
+            13.3,
+            0.22
+          ],
+          [
+            "Hit and Run",
+            12.9,
+            0.2
+          ],
+          [
+            "Daughters of Thanos",
+            12.9,
+            0.1
+          ],
+          [
+            "Momentum Shift",
+            12.7,
+            0.19
+          ],
+          [
+            "Impede",
+            12.2,
+            0.14
+          ],
+          [
+            "Multitasking",
+            11.1,
+            0.13
+          ],
+          [
+            "Tackle",
+            10.2,
+            0.15
+          ],
+          [
+            "Clear the Area",
+            9.0,
+            0.28
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6e46-1bf1-741c-9ff9-f7cbb5916576",
+          "http://localhost:4150/decks/019f6e62-3d30-7874-b978-6c529a20babc",
+          "http://localhost:4150/decks/019f6b65-d64d-79f3-852c-ba905881d268"
+        ]
+      },
+      {
+        "cluster": 21,
+        "size": 642,
+        "top_cards": [
+          [
+            "The Posse",
+            19.1,
+            0.05
+          ],
+          [
+            "Across the Spider-Verse",
+            14.7,
+            0.16
+          ],
+          [
+            "Atlas Bear",
+            14.2,
+            0.07
+          ],
+          [
+            "Spider-Man",
+            13.8,
+            0.15
+          ],
+          [
+            "Web of Life and Destiny",
+            13.7,
+            0.22
+          ],
+          [
+            "Spider-Man",
+            13.6,
+            0.19
+          ],
+          [
+            "SP//dr",
+            13.6,
+            0.14
+          ],
+          [
+            "Ghost-Spider",
+            12.8,
+            0.17
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f707f-9b0e-7dff-8221-6052d0ad3762",
+          "http://localhost:4150/decks/019f707f-804a-74f2-aa8e-1fac0174a215",
+          "http://localhost:4150/decks/019f6ddc-d3c7-7eae-a126-b86def5e8e18"
+        ]
+      },
+      {
+        "cluster": 22,
+        "size": 512,
+        "top_cards": [
+          [
+            "Avengers Assemble!",
+            22.4,
+            0.08
+          ],
+          [
+            "Goliath",
+            19.9,
+            0.06
+          ],
+          [
+            "Stinger",
+            19.3,
+            0.14
+          ],
+          [
+            "Hawkeye",
+            15.7,
+            0.12
+          ],
+          [
+            "Hawkeye",
+            14.8,
+            0.08
+          ],
+          [
+            "Squirrel Girl",
+            14.7,
+            0.14
+          ],
+          [
+            "Ant-Man",
+            14.5,
+            0.1
+          ],
+          [
+            "Avengers Compound",
+            14.5,
+            0.06
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6c1b-1ec0-7161-bdba-03ab7c7ef5dd",
+          "http://localhost:4150/decks/019f6c33-dff0-7900-b4ed-033745b6ac61",
+          "http://localhost:4150/decks/019f6c79-f6bf-7811-acb1-2b84cbf00059"
+        ]
+      },
+      {
+        "cluster": 23,
+        "size": 526,
+        "top_cards": [
+          [
+            "War Machine",
+            6.3,
+            0.14
+          ],
+          [
+            "Spider-Man",
+            5.0,
+            0.27
+          ],
+          [
+            "Sentry",
+            3.7,
+            0.25
+          ],
+          [
+            "She-Hulk",
+            3.5,
+            0.25
+          ],
+          [
+            "Nick Fury",
+            3.4,
+            0.8
+          ],
+          [
+            "Ironheart",
+            3.4,
+            0.43
+          ],
+          [
+            "Thor",
+            3.2,
+            0.2
+          ],
+          [
+            "Brawn",
+            3.2,
+            0.47
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f707e-ef4e-79e7-bfbc-8dc10ea54e56",
+          "http://localhost:4150/decks/019f5e43-c8b9-708c-9f60-e26b9ce003e4",
+          "http://localhost:4150/decks/019f664e-2fcb-729a-9b2f-463d84528bb3"
+        ]
+      },
+      {
+        "cluster": 24,
+        "size": 549,
+        "top_cards": [
+          [
+            "Plasma Pistol",
+            8.7,
+            0.12
+          ],
+          [
+            "Side Holster",
+            8.5,
+            0.5
+          ],
+          [
+            "Pulse Grenade",
+            7.1,
+            0.13
+          ],
+          [
+            "Hand Cannon",
+            5.4,
+            0.8
+          ],
+          [
+            "Fusillade",
+            5.3,
+            0.43
+          ],
+          [
+            "Flora and Fauna",
+            5.2,
+            0.08
+          ],
+          [
+            "Directed Force",
+            4.9,
+            0.08
+          ],
+          [
+            "Booster Boots",
+            4.7,
+            0.09
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6b2d-b94f-751d-8762-d1563853505b",
+          "http://localhost:4150/decks/019f6b2b-7b3c-7b2c-83b3-51d301e4cb4b",
+          "http://localhost:4150/decks/019f6e50-1748-7dea-a529-dca8738476f2"
+        ]
+      }
+    ]
+  },
+  "projection": {
+    "status": "disabled"
+  }
+}

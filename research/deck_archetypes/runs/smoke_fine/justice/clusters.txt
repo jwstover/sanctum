@@ -1,0 +1,282 @@
+# Cluster report — 10 clusters (9340 decks noise)
+
+
+## Cluster 0  (20 decks)
+   24.1×   85%  Lockjaw
+   23.6×   75%  Rocket Raccoon
+   12.7×   15%  Flora and Fauna
+   11.9×   10%  Star-Lord
+    7.4×  100%  Deft Focus
+    7.2×   95%  The Power in All of Us
+    6.4×  100%  Ironheart
+    5.5×  100%  Wiccan
+    5.0×  100%  Sense of Justice
+    4.4×   95%  Agent Coulson
+    4.4×   95%  Counterintelligence
+    4.0×  100%  Mockingbird
+    3.5×    5%  Booster Boots
+    3.4×  100%  Quake
+    3.1×  100%  For Justice!
+    2.8×   95%  Clear the Area
+    2.3×    5%  Cosmo
+    2.1×   90%  Under Surveillance
+    2.0×  100%  The Power of Justice
+    2.0×  100%  Helicarrier
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6afe-6fc8-7f58-8eeb-1077c9dbf8f7
+    http://localhost:4150/decks/019f6ae0-4097-7f3d-9dcc-dab2151e8ff7
+    http://localhost:4150/decks/019f6bdf-6ad9-7102-86ce-12c9807724cb
+    http://localhost:4150/decks/019f6b25-625d-78da-9cb2-86c2292006c3
+    http://localhost:4150/decks/019f706a-c580-7458-a391-e9de63eaeba9
+
+## Cluster 1  (27 decks)
+   53.0×   81%  Heimdall
+   16.4×  100%  Spiritual Meditation
+   11.4×   96%  The Sorcerer Supreme
+    7.6×  100%  The Power in All of Us
+    7.2×   96%  Turn the Tide
+    5.7×   89%  Ironheart
+    5.1×   93%  Wiccan
+    3.9×   96%  Quincarrier
+    3.8×   96%  Mockingbird
+    2.9×   19%  Speed
+    2.9×   96%  Clear the Area
+    2.6×  100%  Avengers Mansion
+    2.4×   96%  Nick Fury
+    2.0×   96%  Skilled Investigator
+    1.8×   78%  Under Surveillance
+    1.8×   93%  Helicarrier
+    1.5×    7%  Zone of Silence
+    1.1×  100%  Strength
+    1.1×  100%  Energy
+    1.1×  100%  Genius
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6ad2-60b7-70f2-a50d-d589c40cb3c3
+    http://localhost:4150/decks/019f6c8b-dd91-733b-8219-013da61489cf
+    http://localhost:4150/decks/019f6c60-665e-70cd-95bb-b401afaaabbc
+    http://localhost:4150/decks/019f6bb9-2ac6-700e-ad66-f6ba19f05ce9
+    http://localhost:4150/decks/019f6b36-9751-7eb3-8e8a-f2248b53e846
+
+## Cluster 2  (30 decks)
+   18.1×   87%  Zone of Silence
+   16.4×  100%  Spiritual Meditation
+   11.9×  100%  The Sorcerer Supreme
+   11.6×   83%  Determination
+   10.0×   13%  Order and Chaos
+    7.6×  100%  The Power in All of Us
+    7.3×   97%  Turn the Tide
+    6.4×  100%  Ironheart
+    5.5×  100%  Wiccan
+    3.9×   97%  Quincarrier
+    3.8×   80%  One Way or Another
+    3.0×  100%  Clear the Area
+    2.6×  100%  Avengers Mansion
+    2.4×   97%  Nick Fury
+    2.2×   93%  Under Surveillance
+    2.1×  100%  Skilled Investigator
+    1.8×   93%  Helicarrier
+    1.1×  100%  Strength
+    1.1×  100%  Energy
+    1.1×  100%  Genius
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6da1-1c8e-77b0-adda-5106a2be335d
+    http://localhost:4150/decks/019f7034-c4b3-72fe-ad36-89a07dc6e5c7
+    http://localhost:4150/decks/019f6fe7-b7bd-787a-9d24-2b14613544f5
+    http://localhost:4150/decks/019f6f7f-0b16-7c85-8f1c-618974104f13
+    http://localhost:4150/decks/019f6f5c-a3b4-78d4-a14e-db73b8aa57d7
+
+## Cluster 3  (208 decks)
+   25.8×   22%  Star-Lord
+   19.7×   69%  Side Holster
+   18.7×   67%  Scare Tactic
+   16.1×   27%  Drax
+   11.9×   69%  "Think Fast!"
+   11.3×   36%  Rocket Raccoon
+   11.3×   15%  Daughters of Thanos
+   11.1×   44%  Groot
+   11.1×   31%  Knowhere
+   10.4×   15%  Martinex
+    9.9×   14%  C.I.T.T.
+    9.8×   40%  Jack Flag
+    9.6×   26%  Gamora
+    9.4×    9%  Resourceful
+    9.2×   12%  Plasma Pistol
+    8.3×   12%  Booster Boots
+    7.7×   16%  Venom
+    7.6×    6%  Pulse Grenade
+    7.6×   19%  Swift Retribution
+    6.5×   32%  Wraith
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6c79-e090-700e-9c4a-fdd6cd0a961a
+    http://localhost:4150/decks/019f702d-68ac-70b6-8475-4b543ad59420
+    http://localhost:4150/decks/019f6c2a-6115-7323-a38b-096804f224d9
+    http://localhost:4150/decks/019f6cfd-2681-71d0-b5e1-2fd64797a11c
+    http://localhost:4150/decks/019f6cfa-6cfd-7c24-abd8-a51560c1bfa2
+
+## Cluster 4  (2797 decks)
+    3.8×    5%  Brother Voodoo
+    3.8×   12%  Magic Attack
+    3.7×   12%  Shield Spell
+    3.6×    5%  "Welcome Aboard"
+    3.6×   10%  Summoning Spell
+    3.5×    9%  Danger Room
+    3.3×    7%  Lock and Load
+    3.3×    6%  Kaluu
+    3.2×    6%  Gunboat Diplomacy
+    3.1×    7%  Gambit
+    3.1×    6%  Establish Perimeter
+    3.1×   10%  Dum Dum Dugan
+    3.0×    8%  Armored Vest
+    3.0×   10%  Cerebro
+    3.0×    5%  Psimitar
+    2.9×    9%  Call for Backup
+    2.9×   17%  Mission Training
+    2.9×   16%  Field Agent
+    2.8×    5%  Med Team
+    2.8×    5%  SP//dr
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6fab-db82-7460-a631-6c14b12c2cac
+    http://localhost:4150/decks/019f7067-3cc5-7ea4-b8e7-bc2c02fc0e6b
+    http://localhost:4150/decks/019f6fbc-bd4c-7a58-b719-104ff1942b66
+    http://localhost:4150/decks/019f7039-57b4-7a51-aefe-0b70aa5c5440
+    http://localhost:4150/decks/019f7072-86d3-717f-9f98-30266ce30fd4
+
+## Cluster 5  (206 decks)
+   36.9×   54%  "Go for Champions!"
+   28.5×   59%  Wasp
+   26.7×   71%  Champions Mobile Bunker
+   24.4×   34%  Snowguard
+   21.2×   68%  Vivian
+   17.8×   81%  Moon Girl
+   12.7×    5%  Everyday Hero
+   11.8×   34%  Assess the Situation
+    7.8×   45%  Ingenuity
+    7.0×   27%  Yaw and Roll
+    5.5×   30%  Spider-Man
+    4.7×   17%  Agile Flight
+    4.1×   54%  The Power in All of Us
+    3.9×    7%  Soaring Acrobatics
+    3.7×   78%  One Way or Another
+    3.4×   62%  Multitasking
+    3.1×   20%  Justice Served
+    2.9×   58%  Sense of Justice
+    2.9×   45%  Ironheart
+    2.5×   22%  Team-Building Exercise
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6d75-555e-748d-8cec-dd072a3d87b7
+    http://localhost:4150/decks/019f6ecb-b120-750f-87d5-733f40abe9a7
+    http://localhost:4150/decks/019f6ca2-8270-79d7-9809-d6e162af16a0
+    http://localhost:4150/decks/019f6cd9-71dc-7599-a92b-4d2dcbe3b689
+    http://localhost:4150/decks/019f6be2-0222-73ac-9192-b4da4b829a1a
+
+## Cluster 6  (179 decks)
+   14.4×   86%  Espionage
+   11.6×   70%  Target Acquired
+    9.4×   88%  Spycraft
+    4.6×   99%  Counterintelligence
+    4.6×   99%  Agent Coulson
+    4.5×   53%  Stealth Strike
+    2.9×   84%  Quake
+    2.8×   45%  Interrogation Room
+    2.7×   52%  Daredevil
+    2.5×    9%  Lockjaw
+    2.3×   57%  Quincarrier
+    2.0×   29%  Followed
+    1.9×   17%  First Aid
+    1.9×   96%  The Power of Justice
+    1.9×   40%  Beat Cop
+    1.8×   73%  Nick Fury
+    1.7×   26%  Down Time
+    1.5×   65%  Under Surveillance
+    1.5×   38%  Mockingbird
+    1.5×   14%  Spider-Man
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6de0-8151-7e44-95f4-166ba6815a28
+    http://localhost:4150/decks/019f5e49-f652-78a7-9c96-d8b24db78900
+    http://localhost:4150/decks/019f5e2f-e8ea-72d7-a4e1-8112467f606c
+    http://localhost:4150/decks/019f6dad-ad73-7e94-b1fd-a1c6dbc3aec2
+    http://localhost:4150/decks/019f6c46-639d-749b-b2c7-51c96deb83c6
+
+## Cluster 7  (22 decks)
+   16.9×   73%  Enhanced Awareness
+    9.5×   86%  Foiled!
+    7.3×   18%  Enhanced Reflexes
+    6.9×  100%  Followed
+    6.0×   95%  Interrogation Room
+    5.2×   77%  Down Time
+    4.0×   95%  Jessica Jones
+    3.9×   36%  Spider-Man
+    3.4×    9%  Tenacity
+    3.2×    9%  Spider-Man
+    2.9×   95%  For Justice!
+    2.4×    9%  Emergency
+    2.4×  100%  Under Surveillance
+    2.2×  100%  Heroic Intuition
+    2.2×   64%  Quake
+    1.9×    9%  Haymaker
+    1.9×   95%  The Power of Justice
+    1.9×   50%  Endurance
+    1.4×   27%  Daredevil
+    1.3×    9%  Quasar
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6c81-9e2e-7813-9dda-f2d56ea70f0f
+    http://localhost:4150/decks/019f6643-9eda-71c3-a874-2e819ef643dd
+    http://localhost:4150/decks/019f664b-1c41-7dc0-bfc9-f4f0028d641d
+    http://localhost:4150/decks/019f7079-1455-70c9-afe1-cc6cf171816a
+    http://localhost:4150/decks/019f7037-a8c3-7d1d-9ba5-74b1b23e2034
+
+## Cluster 8  (25 decks)
+   19.5×   92%  Haymaker
+   17.1×   64%  Emergency
+    9.1×   60%  Great Responsibility
+    8.7×   76%  First Aid
+    6.2×  100%  Interrogation Room
+    5.2×  100%  Daredevil
+    5.2×  100%  Surveillance Team
+    4.5×   12%  Tenacity
+    4.2×  100%  Jessica Jones
+    4.0×  100%  Mockingbird
+    3.0×   96%  For Justice!
+    2.6×  100%  Avengers Mansion
+    2.5×  100%  Nick Fury
+    2.0×  100%  The Power of Justice
+    2.0×  100%  Helicarrier
+    2.0×   88%  Heroic Intuition
+    1.1×  100%  Strength
+    1.1×  100%  Energy
+    1.1×  100%  Genius
+    0.0×    0%  Mirage
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f5e28-8f0a-784d-b5f6-eccb58e0e262
+    http://localhost:4150/decks/019f5e27-7d4c-7653-80c6-2aff6b857cc9
+    http://localhost:4150/decks/019f5ded-0375-7fb6-9e71-0ea55935d5b5
+    http://localhost:4150/decks/019f5e40-bab3-7e93-b311-df45e7cc6193
+    http://localhost:4150/decks/019f6e94-68f0-7767-8353-3c135e37a238
+
+## Cluster 9  (26 decks)
+   37.3×  100%  Tenacity
+   25.7×   96%  Emergency
+   20.3×   96%  Haymaker
+   15.2×  100%  Great Responsibility
+   11.5×  100%  First Aid
+    6.2×  100%  Interrogation Room
+    5.2×  100%  Daredevil
+    5.2×  100%  Surveillance Team
+    4.2×  100%  Jessica Jones
+    4.0×  100%  Mockingbird
+    3.1×  100%  For Justice!
+    2.6×  100%  Avengers Mansion
+    2.5×  100%  Nick Fury
+    2.2×  100%  Heroic Intuition
+    2.0×  100%  The Power of Justice
+    2.0×  100%  Helicarrier
+    1.1×  100%  Strength
+    1.1×  100%  Energy
+    1.1×  100%  Genius
+    0.0×    0%  Mirage
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6acd-8b34-7c04-bbd5-c7c1502a803b
+    http://localhost:4150/decks/019f707a-9694-7d26-9c5c-173b7d838bd5
+    http://localhost:4150/decks/019f7067-2793-7b17-a566-4af68eee85e8
+    http://localhost:4150/decks/019f704c-4ed0-77be-a462-f6f94597564e
+    http://localhost:4150/decks/019f7044-2aa8-7918-9aa0-572f4e64ff15

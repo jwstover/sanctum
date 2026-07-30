@@ -1,0 +1,282 @@
+# Cluster report — 10 clusters (11266 decks noise)
+
+
+## Cluster 0  (57 decks)
+   31.8×   91%  Adrenaline Rush
+   20.8×   12%  Civic Duty
+   20.4×   21%  Order and Chaos
+   17.4×   82%  Tenacity
+   14.2×   70%  Earth's Mightiest Heroes
+    5.9×   72%  Battle Fury
+    4.7×   51%  Wasp
+    4.6×   86%  Jarnbjorn
+    4.1×   16%  Brute Force
+    3.8×   12%  Enhanced Reflexes
+    3.8×   26%  Sentry
+    3.5×   61%  Down Time
+    3.5×    5%  Resourceful
+    3.4×   42%  Ironheart
+    3.3×   51%  Moment of Triumph
+    3.0×   74%  Quincarrier
+    2.9×    7%  Enhanced Awareness
+    2.6×   61%  Spider-Girl
+    2.6×   21%  Enhanced Physique
+    2.5×   68%  Hulk
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6f01-590c-76fd-8679-eeb20db4bac7
+    http://localhost:4150/decks/019f7065-127a-79f3-b83e-bab3fb922d3b
+    http://localhost:4150/decks/019f6b07-0c18-7fd3-b40c-5bab091fc22a
+    http://localhost:4150/decks/019f6df6-20f6-74f5-812f-0b773d4a4714
+    http://localhost:4150/decks/019f6b4d-993d-7b3f-9f16-4ac974d8a643
+
+## Cluster 1  (103 decks)
+   33.3×   89%  The Bifrost
+   27.2×   63%  Godlike Stamina
+   21.6×   48%  Heimdall
+    9.7×   58%  Thor
+    8.2×   74%  "Bring It!"
+    7.8×   92%  Throg
+    5.9×   97%  Angela
+    5.5×   32%  Get Over Here!
+    5.5×   18%  Unshakable
+    4.9×   78%  Valkyrie
+    4.8×   55%  Looking for Trouble
+    4.7×   27%  Limitless Stamina
+    4.6×   53%  Team-Building Exercise
+    4.4×    8%  Soaring Acrobatics
+    3.3×   89%  Hall of Heroes
+    3.2×   50%  Moment of Triumph
+    2.9×   13%  Smash the Problem
+    2.9×   19%  Thor
+    2.8×   45%  Into the Fray
+    2.1×   32%  Deft Focus
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6ca4-78a3-76a0-8846-cfe28a37ff8a
+    http://localhost:4150/decks/019f6ba4-62ed-75e6-9191-984d6d0190d5
+    http://localhost:4150/decks/019f6dbd-8b20-72be-9ec4-707ec5756a79
+    http://localhost:4150/decks/019f6d0e-fa8c-7a7e-a049-a5a76cb91008
+    http://localhost:4150/decks/019f6e6a-20e5-7945-ad3e-0d5e97ad8c62
+
+## Cluster 2  (51 decks)
+   24.6×   29%  Invulnerability
+   22.2×   49%  Heimdall
+   21.1×   98%  Hercules
+   11.5×   67%  Get Over Here!
+    5.7×   90%  Valkyrie
+    5.6×   69%  Battle Fury
+    4.8×   86%  Chase Them Down
+    4.3×   49%  Melee
+    3.8×   65%  Mean Swing
+    3.6×   96%  Hall of Heroes
+    3.5×   67%  Jarnbjorn
+    2.9×   63%  Relentless Assault
+    2.8×   53%  Tigra
+    2.7×   82%  Avengers Mansion
+    2.7×   25%  Uppercut
+    2.4×   20%  Enhanced Physique
+    2.1×   10%  Tenacity
+    2.0×   16%  First Aid
+    1.9×   10%  Lockjaw
+    1.8×    6%  Enhanced Reflexes
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6ad7-917a-7011-98b6-3533cf714289
+    http://localhost:4150/decks/019f6ad6-ae95-7768-9235-74f3c65774cb
+    http://localhost:4150/decks/019f6aea-a44f-760a-ac86-03588bbf4772
+    http://localhost:4150/decks/019f6aee-feff-7630-b117-dff1a3d9e1fa
+    http://localhost:4150/decks/019f5e45-facb-7977-a7bb-095a76b0d2e3
+
+## Cluster 3  (456 decks)
+   13.7×   46%  Haymaker
+   13.0×   38%  Emergency
+    8.1×   66%  Tac Team
+    7.5×   72%  Uppercut
+    6.7×   32%  Tenacity
+    5.3×   43%  First Aid
+    4.1×   84%  Mockingbird
+    4.0×   72%  Chase Them Down
+    3.9×   75%  Tigra
+    3.8×   82%  Relentless Assault
+    3.4×    6%  To the Rescue!
+    3.3×   78%  Nick Fury
+    3.2×   16%  Lockjaw
+    2.7×   73%  Hulk
+    2.5×   75%  Avengers Mansion
+    2.5×   28%  Melee
+    2.1×   91%  Helicarrier
+    1.9×    6%  Enhanced Reflexes
+    1.7×   96%  The Power of Aggression
+    1.2×   72%  Combat Training
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6acc-9b91-77fb-a1a6-6fff32e82fa3
+    http://localhost:4150/decks/019f6cef-abdd-71b3-a7cf-65b2bd52c369
+    http://localhost:4150/decks/019f6aff-0847-7fee-b696-6c2ae9aa4e68
+    http://localhost:4150/decks/019f6ad4-a556-71a8-bfeb-6a6bc8566109
+    http://localhost:4150/decks/019f5e27-a274-7ec3-931d-f97db9d4d210
+
+## Cluster 4  (89 decks)
+   26.0×   46%  Machine Man
+   18.1×   61%  Unshakable
+   14.4×   83%  Limitless Stamina
+   13.2×   21%  Plan B
+   10.1×   15%  Honorary X-Men
+    9.9×   52%  Blade
+    8.0×   40%  Lockjaw
+    6.7×   31%  Symbiote Suit
+    6.7×   26%  Brute Force
+    6.6×    8%  Invulnerability
+    6.3×   13%  "Now I'm Mad"
+    5.7×   28%  Marvel Boy
+    5.5×   24%  Smash the Problem
+    5.5×    6%  Savage Strike
+    5.3×    7%  Recuperation
+    5.3×   12%  Keep Them Busy
+    4.8×   20%  Ingenuity
+    4.5×    7%  The Direct Approach
+    4.4×   24%  Spider-Man
+    4.3×   65%  Deft Focus
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6bca-41eb-7cdd-8a2e-f6ac9f8d8d41
+    http://localhost:4150/decks/019f6d5e-125f-728a-8ece-3a378b30339d
+    http://localhost:4150/decks/019f6cb0-c831-764c-8a85-15ab1f5624fa
+    http://localhost:4150/decks/019f7076-1fd8-77cd-a7be-046777d71fdf
+    http://localhost:4150/decks/019f6e9c-bc30-776c-9bc3-d0a08233960e
+
+## Cluster 5  (126 decks)
+   21.3×   23%  Star-Lord
+   17.7×   34%  Martinex
+   16.5×   43%  Drax
+   16.1×   29%  Booster Boots
+   14.2×   42%  Knowhere
+   13.6×   42%  Rocket Raccoon
+   13.1×   37%  Gamora
+   12.8×   18%  Plasma Pistol
+   12.5×   10%  Daughters of Thanos
+   12.1×   19%  Flora and Fauna
+   11.5×   21%  C.I.T.T.
+   11.5×   57%  Groot
+   10.9×   64%  Side Holster
+    9.9×   56%  Energy Spear
+    7.4×   37%  Marvel Boy
+    7.3×   13%  Pulse Grenade
+    6.7×    6%  Honorary Guardian
+    6.3×   51%  Fusillade
+    6.1×   17%  Cosmo
+    5.7×   84%  Bug
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6b4f-f750-7f7b-9fd1-fde124f9e1b9
+    http://localhost:4150/decks/019f6bdf-accb-79aa-bd23-40e7aa3b8add
+    http://localhost:4150/decks/019f7038-2660-7ee9-a406-1f1d003864f0
+    http://localhost:4150/decks/019f6be0-fd5b-7df8-afdf-09d1ef263821
+    http://localhost:4150/decks/019f6c2a-6dd2-7ac7-88af-73c3bff55f04
+
+## Cluster 6  (56 decks)
+   61.1×    7%  Pivotal Moment
+   60.0×   23%  First Hit
+   34.7×   41%  Impede
+   33.0×   52%  Hit and Run
+   24.6×   41%  Concussive Blow
+   24.2×   36%  Momentum Shift
+   23.5×   18%  Daughters of Thanos
+   21.3×   32%  Tackle
+   18.5×   48%  Drax
+   16.9×    7%  Hard Knocks
+   13.9×   43%  Clear the Area
+   13.3×   16%  Multitasking
+   12.2×    5%  Stealth Strike
+    9.6×   55%  Plan of Attack
+    7.6×    7%  Counter-Punch
+    6.3×    9%  For Justice!
+    5.8×   80%  Clobber
+    5.0×   25%  Groot
+    3.7×    7%  Martinex
+    3.6×   29%  Godslayer
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6b25-a0d4-7f8d-a28e-61b1bf47ce71
+    http://localhost:4150/decks/019f6b65-d64d-79f3-852c-ba905881d268
+    http://localhost:4150/decks/019f6b25-a00e-7dc8-9fd8-279dad0d3ee8
+    http://localhost:4150/decks/019f6cdc-ed1f-7c50-bd17-d5e3070150d8
+    http://localhost:4150/decks/019f7034-e92b-77d4-8af8-d9ed84985156
+
+## Cluster 7  (130 decks)
+   51.6×   55%  "Go for Champions!"
+   46.2×   25%  Bombshell
+   39.9×   68%  Champions Mobile Bunker
+   37.0×   25%  Everyday Hero
+   34.4×   86%  The Locust
+   31.7×   84%  Moon Girl
+   23.0×   25%  Snowguard
+   16.3×   35%  Vivian
+   12.6×   62%  Pitchback
+    8.5×   43%  No Quarter
+    7.9×   90%  Honed Technique
+    7.8×   66%  Dive Bomb
+    6.1×    9%  Resourceful
+    5.3×   28%  Spider-Man
+    5.1×   22%  Ingenuity
+    4.4×    8%  Soaring Acrobatics
+    4.0×   50%  Ironheart
+    3.8×   22%  One by One
+    3.2×   11%  Assault Training
+    2.9×   34%  Team-Building Exercise
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6be9-39f1-7d71-9edb-f04ec3379e11
+    http://localhost:4150/decks/019f6be2-1bfb-7ea4-bccc-11b8508cdd64
+    http://localhost:4150/decks/019f6c09-84d2-750f-9b6f-1e457f05cc42
+    http://localhost:4150/decks/019f6be2-f30c-79ab-9eaa-b6a86c7535c3
+    http://localhost:4150/decks/019f6bf3-7416-7060-a359-0f8c266b2a2f
+
+## Cluster 8  (1298 decks)
+    7.6×    6%  Deathlok
+    7.1×   12%  Danger Room
+    6.8×    8%  Psimitar
+    6.7×   10%  The Power of the Mind
+    6.5×   13%  Cerebro
+    6.2×    8%  Brother Voodoo
+    6.1×    7%  "Welcome Aboard"
+    6.1×    9%  Kaluu
+    6.0×    8%  Psi-Bow Attack
+    5.7×    5%  In-Betweener
+    5.4×   15%  Zone of Silence
+    5.4×   14%  Summoning Spell
+    5.4×   12%  Psychic Assault
+    5.4×    8%  S.H.I.E.L.D. Sidearm
+    5.3×    6%  The Power of Leadership
+    5.3×   16%  Shield Spell
+    5.3×    6%  Gambit
+    5.1×    8%  Captain America
+    4.9×    5%  Determination
+    4.9×    8%  Game Time
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6df0-0800-7f4e-9e4e-ac745c572433
+    http://localhost:4150/decks/019f707f-2c94-7daf-b273-0ca45a37904c
+    http://localhost:4150/decks/019f707f-9606-74cb-917f-4d350c217cb7
+    http://localhost:4150/decks/019f7086-d9c0-7fbc-afb9-960f0397d2d0
+    http://localhost:4150/decks/019f6f60-c622-7658-87f1-fcdaa981b022
+
+## Cluster 9  (60 decks)
+   80.0×   90%  Cannonball
+   67.8×   87%  The Power of Flight
+   38.5×   95%  Bombs Away
+   33.0×   58%  Soaring Acrobatics
+   32.6×    5%  Pete Wisdom
+   32.6×   18%  Soaring Hearts
+   28.2×   60%  Vivian
+   20.2×   17%  Storm
+   19.8×   97%  Pitchback
+   13.7×   10%  IPAC
+   11.6×   98%  Dive Bomb
+   10.0×   10%  Hope Summers
+    8.1×   23%  Moira MacTaggert
+    7.1×   82%  Team-Building Exercise
+    6.8×   17%  Enhanced Awareness
+    6.3×    8%  Boom Boom
+    6.2×   38%  X-Gene
+    6.2×   33%  Superpower Training
+    6.1×    7%  Marrow
+    6.0×    7%  Snowguard
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6fbe-ec23-7b68-8bbc-382378d8c6be
+    http://localhost:4150/decks/019f6fc6-93b1-787b-af9f-83d2e690f2a7
+    http://localhost:4150/decks/019f6dcc-7115-76e3-8ba0-b24ed7f1a48c
+    http://localhost:4150/decks/019f6ea4-eaf3-735f-9759-3b3f171f944a
+    http://localhost:4150/decks/019f6dbd-bcae-7a7a-b7e2-0c8d495ec03f

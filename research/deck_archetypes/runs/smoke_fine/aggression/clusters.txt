@@ -1,0 +1,702 @@
+# Cluster report — 25 clusters (11513 decks noise)
+
+
+## Cluster 0  (22 decks)
+   12.6×   68%  Spider-Man
+   10.8×   55%  Lockjaw
+   10.7×   32%  Knowhere
+    9.1×   86%  The Power in All of Us
+    8.9×    9%  SP//dr
+    7.3×   23%  Rocket Raccoon
+    6.5×   82%  Ironheart
+    5.8×    9%  Flora and Fauna
+    5.5×   27%  Groot
+    5.2×   14%  Drax
+    4.8×   18%  Avengers Tower
+    4.5×   27%  Thor
+    4.3×  100%  Nick Fury
+    4.2×   86%  Mockingbird
+    3.7×   27%  She-Hulk
+    3.4×   55%  Into the Fray
+    3.3×    9%  Cosmo
+    3.3×   23%  Sentry
+    3.3×    9%  Gamora
+    3.0×   45%  Boot Camp
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f704e-12e2-7142-b56e-944ec4604017
+    http://localhost:4150/decks/019f6d85-1270-775d-9298-78f7510b5b78
+    http://localhost:4150/decks/019f7039-92c6-751d-918d-513da886f761
+    http://localhost:4150/decks/019f6b02-9507-7464-99fe-699f7e01f071
+    http://localhost:4150/decks/019f6b07-5b8d-71b0-8a94-cc5e09066fa1
+
+## Cluster 1  (32 decks)
+   63.0×   91%  Espionage
+   30.5×   84%  Target Acquired
+    9.2×   94%  Counterattack
+    6.4×   53%  Enhanced Physique
+    4.6×   25%  Lie in Wait
+    4.6×   44%  Uppercut
+    4.3×   75%  Down Time
+    3.7×   19%  Lockjaw
+    3.2×    9%  Emergency
+    3.1×   59%  Jarnbjorn
+    2.9×   59%  Mockingbird
+    2.8×   69%  Quincarrier
+    2.6×   12%  Enraged
+    2.4×   38%  Valkyrie
+    2.3×   44%  Tigra
+    2.2×   69%  Endurance
+    2.0×   47%  Nick Fury
+    1.9×   53%  Hulk
+    1.9×   28%  Brawn
+    1.6×   34%  Relentless Assault
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f5e32-109e-7833-9d32-5ccb95ad9ee3
+    http://localhost:4150/decks/019f5e31-c5d1-7c6b-900d-bf5cde8ddbb1
+    http://localhost:4150/decks/019f5e31-db2b-7b7e-a810-e7fb10496bc1
+    http://localhost:4150/decks/019f6b3a-e530-70bc-b948-5aa2bca838d5
+    http://localhost:4150/decks/019f5e4e-3a82-7cbd-92cb-f11b4535567e
+
+## Cluster 2  (22 decks)
+   79.3×   91%  As One!
+   33.3×   55%  The Best Defense…
+   21.1×   82%  Brute Force
+   19.5×   95%  Marvel Boy
+   18.2×   77%  Quick Strike
+   16.9×   73%  Smash the Problem
+    8.4×    9%  Star-Lord
+    6.9×   82%  Throg
+    6.4×    9%  Swarm Tactics
+    5.9×   64%  Wasp
+    5.2×   86%  Angela
+    5.0×   14%  Cosmo
+    4.7×    9%  Martinex
+    4.3×   64%  Bug
+    4.0×   23%  Energy Spear
+    2.8×   14%  Enraged
+    2.7×   18%  Thor
+    2.1×   32%  Boot Camp
+    2.0×   55%  Hulk
+    1.8×   14%  Fluid Motion
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6c73-d1b2-7186-a67c-72f5c52860bf
+    http://localhost:4150/decks/019f6c60-4821-7ca3-b6b2-3a8520e96a45
+    http://localhost:4150/decks/019f6e66-e8d8-79dc-8f74-566b4cd68e6a
+    http://localhost:4150/decks/019f6c88-c3d1-741b-a8a1-89639692606e
+    http://localhost:4150/decks/019f6c42-a39d-73b7-83d5-26519e57e5a5
+
+## Cluster 3  (42 decks)
+   34.0×   98%  Adrenaline Rush
+   19.3×   95%  Earth's Mightiest Heroes
+   18.5×   19%  Order and Chaos
+   14.5×   69%  Tenacity
+    8.4×   90%  Wasp
+    5.8×   40%  Sentry
+    5.5×   67%  Battle Fury
+    5.0×   76%  Moment of Triumph
+    4.8×   90%  Jarnbjorn
+    4.7×   60%  Ironheart
+    3.8×   90%  Spider-Girl
+    3.8×   67%  Down Time
+    3.4×   93%  Hulk
+    3.4×   83%  Quincarrier
+    2.7×   55%  Mockingbird
+    2.4×   76%  Endurance
+    2.3×   12%  Blade
+    2.0×   31%  Deft Focus
+    1.9×    7%  Avengers Tower
+    1.8×   26%  Bug
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6b07-0c18-7fd3-b40c-5bab091fc22a
+    http://localhost:4150/decks/019f6acd-a397-725f-9024-5ef98f630b78
+    http://localhost:4150/decks/019f6b08-abe4-75bc-a637-bcc156b253d9
+    http://localhost:4150/decks/019f6b08-ba42-776d-9eb9-871bd5dc3495
+    http://localhost:4150/decks/019f6b09-0456-71b6-b5a4-d2446b8f3279
+
+## Cluster 4  (25 decks)
+   29.2×   44%  Fastball Special
+   25.7×   28%  Outta My Way!
+   16.9×   96%  Precision Strike
+   12.2×   52%  Quick Strike
+   11.3×   20%  Weapon X
+   11.2×   52%  Colossus
+   10.2×   44%  Smash the Problem
+    9.3×   80%  Aggressive Energy
+    9.0×   68%  Fluid Motion
+    7.4×   28%  Warrior Skill
+    7.1×   76%  Psylocke
+    7.0×   84%  Sunfire
+    6.0×   56%  The X-Jet
+    5.5×   76%  Clobber
+    4.8×   60%  Professor X
+    2.9×   52%  Chase Them Down
+    2.3×   72%  Endurance
+    2.3×   28%  Battle Fury
+    1.9×   32%  Mean Swing
+    1.6×   16%  Toe to Toe
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f7035-1502-7ced-922a-35c9c2c05197
+    http://localhost:4150/decks/019f7041-6722-76e4-9b77-3b217c7ad9c1
+    http://localhost:4150/decks/019f7061-7208-71e5-b85d-487c63ec2671
+    http://localhost:4150/decks/019f6d7a-8d05-7d13-a68f-0e7257f47c7d
+    http://localhost:4150/decks/019f6c64-401e-7c6a-8336-cdf6b693b5f4
+
+## Cluster 5  (120 decks)
+   21.6×   38%  Machine Man
+   15.7×   53%  Unshakable
+   13.4×   77%  Limitless Stamina
+   13.4×   22%  Plan B
+   10.9×   57%  Blade
+    7.5×   11%  Honorary X-Men
+    6.8×   34%  Lockjaw
+    6.0×   29%  Marvel Boy
+    5.6×    7%  Invulnerability
+    4.9×   21%  Quick Strike
+    4.8×   22%  Symbiote Suit
+    4.7×   20%  Ingenuity
+    4.5×   17%  Brute Force
+    4.5×   24%  Spider-Man
+    4.3×    7%  Browbeat
+    4.3×    9%  "Now I'm Mad"
+    3.9×   58%  Deft Focus
+    3.7×   10%  Assess the Situation
+    3.5×   15%  Smash the Problem
+    3.2×    7%  Keep Them Busy
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6c4f-3529-732a-a6c2-0d62fe2065b6
+    http://localhost:4150/decks/019f7013-6553-754f-a6d7-3c9046708ff7
+    http://localhost:4150/decks/019f6bca-41eb-7cdd-8a2e-f6ac9f8d8d41
+    http://localhost:4150/decks/019f6d5e-125f-728a-8ece-3a378b30339d
+    http://localhost:4150/decks/019f6cb0-c831-764c-8a85-15ab1f5624fa
+
+## Cluster 6  (133 decks)
+   33.4×   89%  The Bifrost
+   27.2×   63%  Godlike Stamina
+   18.4×   41%  Heimdall
+    9.3×   56%  Thor
+    7.6×   90%  Throg
+    6.9×   62%  "Bring It!"
+    5.9×   98%  Angela
+    5.4×   32%  Get Over Here!
+    5.0×   29%  Limitless Stamina
+    4.9×   17%  Unshakable
+    4.6×   73%  Valkyrie
+    4.4×   51%  Team-Building Exercise
+    4.2×   49%  Looking for Trouble
+    3.6×   25%  Thor
+    3.5×   15%  Smash the Problem
+    3.4×    6%  Soaring Acrobatics
+    3.4×   89%  Hall of Heroes
+    3.2×   48%  Moment of Triumph
+    2.5×   41%  Into the Fray
+    2.2×   38%  Mean Swing
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6ca4-78a3-76a0-8846-cfe28a37ff8a
+    http://localhost:4150/decks/019f6ba4-62ed-75e6-9191-984d6d0190d5
+    http://localhost:4150/decks/019f6d0e-fa8c-7a7e-a049-a5a76cb91008
+    http://localhost:4150/decks/019f6e6a-20e5-7945-ad3e-0d5e97ad8c62
+    http://localhost:4150/decks/019f6d03-2172-7ab2-861f-856ba5d695c2
+
+## Cluster 7  (22 decks)
+   14.6×   82%  Follow Through
+   14.5×   23%  Flora and Fauna
+   10.1×   50%  Groot
+    7.6×   82%  Wasp
+    6.7×  100%  Hand Cannon
+    6.3×   95%  Moment of Triumph
+    6.1×   91%  Bug
+    6.0×   95%  Into the Fray
+    4.2×   91%  Relentless Assault
+    4.0×   64%  Valkyrie
+    3.9×   23%  Side Holster
+    3.7×   64%  Mean Swing
+    3.7×   86%  Spider-Girl
+    3.0×   45%  Boot Camp
+    2.7×   73%  Hall of Heroes
+    2.2×   68%  Endurance
+    2.2×    9%  Ingenuity
+    2.0×   23%  Looking for Trouble
+    1.9×   32%  Angela
+    1.8×   77%  Helicarrier
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6af8-9b47-7a9a-af23-5cb20ee69222
+    http://localhost:4150/decks/019f6af8-a4ff-7360-a432-06c98a1c87b6
+    http://localhost:4150/decks/019f6af8-9196-70cd-9e56-acae5ee01833
+    http://localhost:4150/decks/019f6ae1-a167-77ff-9efd-6e380eae12de
+    http://localhost:4150/decks/019f6ae9-f634-76bf-b757-2157b90509d8
+
+## Cluster 8  (25 decks)
+   15.8×   92%  Get Over Here!
+    6.5×   80%  Battle Fury
+    5.3×   84%  Valkyrie
+    4.9×   92%  Jarnbjorn
+    4.9×   84%  Mean Swing
+    4.7×   84%  Chase Them Down
+    4.3×   44%  Counterattack
+    3.8×   80%  Skilled Strike
+    3.3×   64%  Tigra
+    3.2×   56%  Down Time
+    3.2×   88%  Hulk
+    2.7×   28%  "You'll Pay for That!"
+    1.9×   52%  Hall of Heroes
+    1.9×   16%  Enhanced Physique
+    1.6×   24%  Brawn
+    1.6×    8%  Earth's Mightiest Heroes
+    1.4×   80%  Combat Training
+    1.2×  100%  Energy
+    1.1×   24%  Relentless Assault
+    1.1×   92%  Genius
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6dc8-fe40-7f3b-b9e7-da94d019a9ed
+    http://localhost:4150/decks/019f5e3c-239a-712d-85ae-df0acf7a2070
+    http://localhost:4150/decks/019f5e3e-3cc2-754b-add8-d763891cb8de
+    http://localhost:4150/decks/019f6ad1-68e5-706e-aa42-f2594ba888d3
+    http://localhost:4150/decks/019f6d63-9dbe-74a5-ab63-c6de4a5bc4b7
+
+## Cluster 9  (80 decks)
+   21.5×  100%  Hercules
+   17.7×   21%  Invulnerability
+   17.0×   38%  Heimdall
+   10.1×   59%  Get Over Here!
+    5.4×   86%  Valkyrie
+    5.0×   61%  Battle Fury
+    4.9×   56%  Melee
+    4.5×   81%  Chase Them Down
+    3.8×   71%  Jarnbjorn
+    3.8×   65%  Mean Swing
+    3.7×   97%  Hall of Heroes
+    3.6×    9%  Enhanced Awareness
+    3.2×   61%  Tigra
+    3.1×   66%  Relentless Assault
+    2.7×   26%  Uppercut
+    2.7×   23%  Enhanced Physique
+    2.5×   76%  Avengers Mansion
+    2.4×   11%  Tenacity
+    2.3×    7%  Enhanced Reflexes
+    2.2×   18%  First Aid
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6ad7-917a-7011-98b6-3533cf714289
+    http://localhost:4150/decks/019f6ad6-ae95-7768-9235-74f3c65774cb
+    http://localhost:4150/decks/019f6aea-a44f-760a-ac86-03588bbf4772
+    http://localhost:4150/decks/019f6aee-feff-7630-b117-dff1a3d9e1fa
+    http://localhost:4150/decks/019f5e29-8d86-79d0-aa50-e4e6b2a95ca7
+
+## Cluster 10  (495 decks)
+   13.2×   45%  Haymaker
+   12.2×   35%  Emergency
+    7.8×   63%  Tac Team
+    7.2×   69%  Uppercut
+    6.3×   30%  Tenacity
+    5.2×   42%  First Aid
+    4.0×   82%  Mockingbird
+    3.9×   71%  Chase Them Down
+    3.9×   74%  Tigra
+    3.7×   80%  Relentless Assault
+    3.2×   75%  Nick Fury
+    3.2×    6%  To the Rescue!
+    3.2×   16%  Lockjaw
+    2.7×   31%  Melee
+    2.6×   73%  Hulk
+    2.5×   74%  Avengers Mansion
+    2.1×   89%  Helicarrier
+    2.0×    6%  Enhanced Reflexes
+    1.7×   96%  The Power of Aggression
+    1.3×   19%  Brawn
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6cef-abdd-71b3-a7cf-65b2bd52c369
+    http://localhost:4150/decks/019f6acc-9b91-77fb-a1a6-6fff32e82fa3
+    http://localhost:4150/decks/019f6ad4-a556-71a8-bfeb-6a6bc8566109
+    http://localhost:4150/decks/019f5e27-a274-7ec3-931d-f97db9d4d210
+    http://localhost:4150/decks/019f665e-962e-7bf7-b88a-2ddefaf8bef0
+
+## Cluster 11  (40 decks)
+   18.8×   95%  No Quarter
+   15.4×   65%  Ingenuity
+   14.2×   80%  Follow Through
+   12.7×   20%  Flora and Fauna
+    9.6×    5%  Critical Hit
+    8.3×   95%  Honed Technique
+    6.5×   55%  Dive Bomb
+    5.7×   68%  Throg
+    5.6×   27%  Marvel Boy
+    5.6×   93%  Angela
+    5.3×   85%  Into the Fray
+    4.6×   70%  Moment of Triumph
+    4.4×   15%  Marked
+    4.0×   15%  Warrior Skill
+    3.9×    8%  Martinex
+    3.6×   95%  Hall of Heroes
+    3.2×   38%  Looking for Trouble
+    3.2×   27%  Aggressive Energy
+    3.1×    5%  Directed Force
+    3.0×   17%  Side Holster
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6c10-bdad-7c63-9fd1-d7e09b803aa8
+    http://localhost:4150/decks/019f6d92-9490-77fc-a860-36cd2f3a1eb7
+    http://localhost:4150/decks/019f6cd4-86d6-7b55-b5db-04ad9bf19a40
+    http://localhost:4150/decks/019f6be7-2576-7915-b288-be76ba1bd644
+    http://localhost:4150/decks/019f7041-3a72-7cf5-9dfc-6e8679b8f544
+
+## Cluster 12  (126 decks)
+   23.5×   25%  Star-Lord
+   19.3×   37%  Martinex
+   18.6×   48%  Drax
+   16.1×   29%  Booster Boots
+   16.1×   50%  Rocket Raccoon
+   15.8×   47%  Knowhere
+   13.4×   37%  Gamora
+   12.6×   63%  Groot
+   12.5×   10%  Daughters of Thanos
+   12.3×   17%  Plasma Pistol
+   11.1×   17%  Flora and Fauna
+   10.2×   19%  C.I.T.T.
+   10.0×   59%  Side Holster
+    8.9×   50%  Energy Spear
+    7.6×    6%  Honorary Guardian
+    6.8×   13%  Pulse Grenade
+    6.8×   33%  Marvel Boy
+    6.1×   49%  Fusillade
+    5.5×   15%  Cosmo
+    5.5×   81%  Bug
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6b4f-f750-7f7b-9fd1-fde124f9e1b9
+    http://localhost:4150/decks/019f6be0-fd5b-7df8-afdf-09d1ef263821
+    http://localhost:4150/decks/019f6bdf-accb-79aa-bd23-40e7aa3b8add
+    http://localhost:4150/decks/019f6c2a-6dd2-7ac7-88af-73c3bff55f04
+    http://localhost:4150/decks/019f6c96-f041-786f-a839-662624b74959
+
+## Cluster 13  (101 decks)
+   40.9×   16%  First Hit
+   32.6×   39%  Impede
+   32.2×   50%  Hit and Run
+   28.7×   22%  Daughters of Thanos
+   24.8×   37%  Momentum Shift
+   23.7×   40%  Concussive Blow
+   18.8×   23%  Multitasking
+   16.4×   25%  Tackle
+   16.4×    7%  Hard Knocks
+   16.1×   50%  Clear the Area
+   13.7×   36%  Drax
+   13.6×    6%  Stealth Strike
+    9.2×   53%  Plan of Attack
+    9.1×   13%  For Justice!
+    5.3×   73%  Clobber
+    4.8×   24%  Groot
+    3.8×   12%  Rocket Raccoon
+    3.8×    7%  Booster Boots
+    3.3×   27%  Godslayer
+    3.1×    6%  Martinex
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6b25-a0d4-7f8d-a28e-61b1bf47ce71
+    http://localhost:4150/decks/019f6b65-d64d-79f3-852c-ba905881d268
+    http://localhost:4150/decks/019f6b25-a00e-7dc8-9fd8-279dad0d3ee8
+    http://localhost:4150/decks/019f6cdc-ed1f-7c50-bd17-d5e3070150d8
+    http://localhost:4150/decks/019f6e62-3d30-7874-b978-6c529a20babc
+
+## Cluster 14  (43 decks)
+  177.5×   79%  Ancient Rivalry
+  161.8×   72%  Avengers Compound
+  122.9×   51%  Evaluate Threat
+   63.7×    9%  Stick-To-Itiveness
+   36.9×   19%  Iron Lad
+   36.0×   79%  Face the Past
+   25.6×   16%  Yellow Jacket
+   21.7×   79%  Blood Rage
+   18.6×   28%  The Direct Approach
+   17.4×  100%  Limitless Stamina
+   16.5×   95%  Aggressive Conditioning
+   15.8×   16%  Savage Strike
+   14.8×   56%  Avengers Tower
+   13.0×   88%  Thor
+   12.7×   63%  Earth's Mightiest Heroes
+   12.3×   74%  Thor
+    8.2×   26%  Spoiling for a Fight
+    7.3×    7%  Two-Gun Kid
+    5.3×   28%  Build Support
+    4.9×   26%  Blade
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f707e-8170-7f41-b3b8-9603570e9b02
+    http://localhost:4150/decks/019f707e-db87-789f-9d8d-d5545ab60b14
+    http://localhost:4150/decks/019f707f-15cf-7417-b130-b22e4905fefc
+    http://localhost:4150/decks/019f707e-b5c9-72e5-be23-7ad2baa0c4b8
+    http://localhost:4150/decks/019f7071-715d-7579-a7e4-3014f284ae52
+
+## Cluster 15  (77 decks)
+   82.0×   92%  Cannonball
+   67.1×   86%  The Power of Flight
+   41.6×   23%  Soaring Hearts
+   35.8×   88%  Bombs Away
+   34.5×   61%  Soaring Acrobatics
+   25.1×   53%  Vivian
+   19.4×   95%  Pitchback
+   17.3×   14%  Storm
+   14.2×   10%  IPAC
+   11.6×   99%  Dive Bomb
+    9.0×   26%  Moira MacTaggert
+    7.8×    8%  Hope Summers
+    6.4×   16%  Enhanced Awareness
+    6.3×   73%  Team-Building Exercise
+    6.3×   39%  X-Gene
+    6.0×    6%  Marrow
+    5.9×    6%  Snowguard
+    5.4×   58%  Wasp
+    5.1×    9%  Weapon X
+    5.0×   27%  Superpower Training
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6e9b-7cd0-7fa9-af07-e2eb8e59c393
+    http://localhost:4150/decks/019f6fc6-93b1-787b-af9f-83d2e690f2a7
+    http://localhost:4150/decks/019f6fbe-ec23-7b68-8bbc-382378d8c6be
+    http://localhost:4150/decks/019f6dcc-7115-76e3-8ba0-b24ed7f1a48c
+    http://localhost:4150/decks/019f6ea4-eaf3-735f-9759-3b3f171f944a
+
+## Cluster 16  (112 decks)
+   49.7×   53%  "Go for Champions!"
+   43.5×   23%  Bombshell
+   42.1×   72%  Champions Mobile Bunker
+   36.4×   25%  Everyday Hero
+   33.5×   84%  The Locust
+   33.4×   88%  Moon Girl
+   23.5×   26%  Snowguard
+   18.1×   38%  Vivian
+   12.6×   62%  Pitchback
+    9.0×   46%  No Quarter
+    7.6×   87%  Honed Technique
+    7.2×   61%  Dive Bomb
+    5.9×    9%  Resourceful
+    4.9×   21%  Ingenuity
+    4.1×   23%  One by One
+    4.0×    7%  Soaring Acrobatics
+    4.0×   50%  Ironheart
+    3.8×   21%  Spider-Man
+    3.0×   45%  Brawn
+    2.9×   10%  Assault Training
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6be9-39f1-7d71-9edb-f04ec3379e11
+    http://localhost:4150/decks/019f6be2-1bfb-7ea4-bccc-11b8508cdd64
+    http://localhost:4150/decks/019f6bf3-7416-7060-a359-0f8c266b2a2f
+    http://localhost:4150/decks/019f6c09-84d2-750f-9b6f-1e457f05cc42
+    http://localhost:4150/decks/019f6c9c-7563-7dd2-8e4a-843cbbb2b5fa
+
+## Cluster 17  (28 decks)
+   68.1×   96%  Basic Spell
+   63.5×   71%  Bloodgem
+   39.1×   36%  Stepford Cuckoos
+   34.9×   93%  Triage
+   29.7×   39%  Tempus
+   26.4×   96%  Spiritual Meditation
+   23.0×   25%  Marrow
+   20.4×   29%  Legion
+   19.7×   46%  Goldballs
+   16.6×    7%  Cell Phone
+   16.0×    7%  Shadowcat
+   14.8×   43%  Full-Body Charge
+   13.7×   25%  Test the Defense
+   11.8×   50%  Magic Attack
+   10.5×   68%  The Sorcerer Supreme
+    6.8×   25%  Blood Rage
+    6.4×   39%  X-Gene
+    6.3×   14%  Digging Deep
+    5.7×   54%  The X-Jet
+    5.7×    7%  Recuperation
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f706f-1f93-782a-a486-d244afbe431e
+    http://localhost:4150/decks/019f706e-0fb4-732e-a50c-b2ed028aa3ed
+    http://localhost:4150/decks/019f71aa-2b3a-7946-a315-498946b1348e
+    http://localhost:4150/decks/019f706a-9512-73ba-9337-4e0320d4eea1
+    http://localhost:4150/decks/019f6f3b-6bf2-7521-95f2-3251e3488bbe
+
+## Cluster 18  (62 decks)
+   81.8×   16%  Get Behind Me!
+   76.4×   44%  Indomitable
+   69.4×   35%  Electrostatic Armor
+   59.5×   45%  Unflappable
+   51.0×   34%  Desperate Defense
+   46.6×   31%  Jessica Jones
+   41.4×   39%  Counter-Punch
+   37.9×   27%  Interrogation Room
+   35.6×    8%  Expert Defense
+   32.5×    8%  Preemptive Strike
+   31.1×   16%  Counterintelligence
+   27.2×   15%  Daredevil
+   26.0×   10%  Surveillance Team
+   22.9×   18%  Agent Coulson
+   22.5×   10%  Never Back Down
+   19.4×   24%  Brother Voodoo
+   18.4×    6%  Followed
+   18.0×   48%  Armored Vest
+   16.4×   16%  Quake
+   14.3×   34%  Skilled Investigator
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f663e-88ed-774d-97ed-f8b9166ad09a
+    http://localhost:4150/decks/019f6adc-aa26-72c2-95d7-9fc626fb1be5
+    http://localhost:4150/decks/019f6af7-47ee-70c9-b50f-4a94149a87f4
+    http://localhost:4150/decks/019f6648-d916-709f-a8d9-d1e66aadd2dc
+    http://localhost:4150/decks/019f6adf-35b6-7622-8f6b-623e689094e1
+
+## Cluster 19  (214 decks)
+   64.0×    9%  Ayo
+   64.0×    8%  Okoye
+   64.0×    5%  Dr. Sinclair
+   64.0×    6%  Surveillance Specialist
+   58.6×    5%  Defense Specialist
+   58.4×   10%  Aneka
+   57.2×   16%  Spider-Ham
+   54.4×    8%  Giant-Man
+   50.3×    5%  Front Line Specialist
+   49.4×    8%  Dora Milaje
+   45.2×    6%  Self Preservation
+   42.7×    6%  Self Control
+   42.7×    7%  Self Confidence
+   38.4×    6%  Stick-To-Itiveness
+   24.8×    6%  Combat Specialist
+   23.5×   15%  Mighty Avengers
+   19.2×   10%  Warrior of the Great Web
+   14.4×    5%  Avengers Assemble!
+   14.3×   10%  Spider-Woman
+   13.0×   14%  Spider-Man
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f707f-2c94-7daf-b273-0ca45a37904c
+    http://localhost:4150/decks/019f7014-2ee5-7801-b770-4dc37c0a9172
+    http://localhost:4150/decks/019f6def-9001-7c27-bb49-766031575364
+    http://localhost:4150/decks/019f6df0-0800-7f4e-9e4e-ac745c572433
+    http://localhost:4150/decks/019f7066-b4e4-7da3-9bc9-de4264225648
+
+## Cluster 20  (88 decks)
+  124.5×   14%  The Douglass
+   98.3×   14%  The Circe
+   90.3×   20%  Field Agent
+   88.9×   23%  Super Spies
+   80.6×   33%  Dum Dum Dugan
+   77.8×   10%  The Pericles
+   69.7×   15%  Melinda May
+   68.1×   40%  The Bellerophon
+   68.0×   43%  Government Liaison
+   61.4×   34%  Sky-Destroyer
+   61.1×   50%  Deathlok
+   47.1×   75%  Captain America
+   45.2×   31%  Super-Soldiers
+   43.4×   62%  S.H.I.E.L.D. Sidearm
+   41.9×   24%  Winter, Widow, Soldier, Spy
+   39.4×   47%  Agent 13
+   38.6×   39%  Nick Fury, Sr.
+   38.3×   18%  Command Team
+   35.0×   43%  Winter Soldier
+   31.8×   10%  Front Organization
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f704b-8f15-7016-be87-8afcef54fd38
+    http://localhost:4150/decks/019f7067-56c3-72a3-b274-227cb130f74b
+    http://localhost:4150/decks/019f7078-e66a-7803-abbc-b38c29afce35
+    http://localhost:4150/decks/019f7078-ec00-7129-96dc-e9b6a77a5a75
+    http://localhost:4150/decks/019f7047-cf73-70b8-89a1-9b1d83931b41
+
+## Cluster 21  (40 decks)
+  190.2×   12%  Domino
+  155.6×   12%  Sunspot
+  152.6×   83%  Eternity
+  146.0×   80%  Living Tribunal
+  143.0×   83%  The Gardener
+   92.6×   83%  In-Betweener
+   81.5×   12%  Mission Leader
+   78.2×   20%  Second Wind
+   74.4×   12%  Jump Flip
+   66.1×   27%  Charlie-27
+   55.4×   43%  Innovation
+   55.2×   12%  Expert Defense
+   49.3×   50%  Determination
+   48.9×   40%  Major Victory
+   46.7×    8%  Moondragon
+   45.6×   15%  Lay Down the Law
+   43.9×   48%  Preservation
+   39.3×   17%  Black Widow
+   37.7×   30%  Quasar
+   36.4×   12%  Iceman
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6c4e-cfe6-757f-8c91-6eb741877493
+    http://localhost:4150/decks/019f6d6d-b25e-716c-a4f8-0876af8d93a3
+    http://localhost:4150/decks/019f6d6d-d0ae-7f82-a70d-07d9c09367b5
+    http://localhost:4150/decks/019f6f20-2396-763a-af1a-7336836285d6
+    http://localhost:4150/decks/019f6d89-91ae-7b55-b29d-1e4376b33062
+
+## Cluster 22  (36 decks)
+   82.7×   97%  "Welcome Aboard"
+   73.4×   92%  Brother Voodoo
+   72.4×   11%  Mission Leader
+   67.2×   97%  Kaluu
+   66.6×   78%  The Power of Leadership
+   64.9×   81%  "Think Fast!"
+   55.6×   72%  The Power of Protection
+   49.6×    8%  Great Responsibility
+   45.9×   69%  Tackle
+   44.6×   69%  The Power of Justice
+   41.5×   69%  Concussive Blow
+   36.8×   97%  Summoning Spell
+   34.8×   97%  Zone of Silence
+   34.6×    6%  Upside the Head
+   32.1×   97%  Shield Spell
+   31.7×    8%  Overwatch
+   27.4×   28%  Determination
+   26.9×   75%  Gamora
+   25.4×   19%  Innovation
+   23.8×    6%  Captain Marvel
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6f9c-e970-727b-b4bf-395de5c13b2c
+    http://localhost:4150/decks/019f6c0e-2fe5-70cb-bb31-4df2ccae3150
+    http://localhost:4150/decks/019f6c0e-26c7-7071-ab65-76a16a1df38a
+    http://localhost:4150/decks/019f6b51-b353-7542-a2e6-7367bd06c69d
+    http://localhost:4150/decks/019f6e27-f07f-7696-a37f-90c02f479a2f
+
+## Cluster 23  (74 decks)
+   96.7×   47%  Telekinesis
+   85.2×   39%  Telepathy
+   75.1×   91%  Psimitar
+   66.7×   96%  The Power of the Mind
+   63.6×   88%  Psi-Bow Attack
+   44.7×   97%  Psychic Assault
+   37.0×   73%  Cerebro
+   30.8×   20%  White Queen
+   21.6×   12%  Soaring Hearts
+   18.3×   26%  Legion
+   16.3×   15%  Stepford Cuckoos
+   15.0×    8%  Deadpool
+   11.8×   19%  Directed Force
+   11.1×    8%  IPAC
+    9.9×   11%  Marrow
+    8.5×   32%  Forge
+    7.4×   93%  Professor X
+    7.3×   20%  Target Acquired
+    6.9×   62%  Wolverine
+    6.5×    9%  Honorary X-Men
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6f6f-946f-71de-bc15-65ebc866e4fc
+    http://localhost:4150/decks/019f6db3-9e67-76f9-86cb-1e9344ef6dd7
+    http://localhost:4150/decks/019f707f-05ec-7b2b-850d-575349feecbc
+    http://localhost:4150/decks/019f6e7b-5f5e-740e-886d-42187b8c9771
+    http://localhost:4150/decks/019f6f7f-fe9f-7728-b4f4-dc11a804f335
+
+## Cluster 24  (120 decks)
+   39.7×   65%  Danger Room
+   31.2×   49%  Game Time
+   23.2×    9%  Longshot
+   22.7×   46%  Team Strike
+   19.8×    7%  Nightcrawler
+   19.8×   17%  X-Men Instruction
+   18.6×   37%  Cerebro
+   17.9×    9%  Polaris
+   17.8×   86%  Utopia
+   17.4×   41%  Dust
+   17.4×   67%  Forge
+   17.1×   69%  Angel
+   16.7×   96%  Attack Training
+   13.5×   42%  Magik
+   12.6×   58%  Colossus
+   12.2×   15%  Gambit
+   12.1×   10%  Storm
+   12.1×   17%  Honorary X-Men
+   11.0×   56%  X-Mansion
+    9.6×    7%  Beast
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6ded-0880-7380-9d62-c7f71aff500e
+    http://localhost:4150/decks/019f6d5c-06a4-7289-944b-c0307038addb
+    http://localhost:4150/decks/019f6d1a-c374-7631-af67-dcfc3082d384
+    http://localhost:4150/decks/019f701b-b752-79da-91b4-55211f10a751
+    http://localhost:4150/decks/019f6e65-a87e-73a2-ac43-1e9081e7dee5

@@ -1,0 +1,138 @@
+{
+  "held_out": {
+    "mrr": 0.23700815310926615,
+    "n": 935,
+    "hit@1": 0.12513368983957218,
+    "hit@5": 0.3358288770053476,
+    "hit@10": 0.4716577540106952,
+    "hit@25": 0.6684491978609626
+  },
+  "anchors": {
+    "status": "ok",
+    "anchor_cards_resolved": 4,
+    "anchor_cards_unresolved": 5,
+    "anchor_decks_resolved": 0,
+    "card_precision@10": 0.13333333333333333
+  },
+  "intrinsic": {
+    "n_clusters": 2,
+    "noise_fraction": 0.24705882352941178,
+    "clustered_fraction": 0.7529411764705882,
+    "silhouette": 0.11800143325116676,
+    "davies_bouldin": 1.5132653372865588
+  },
+  "interpret": {
+    "n_clusters": 2,
+    "clusters": [
+      {
+        "cluster": 0,
+        "size": 664,
+        "top_cards": [
+          [
+            "Beak",
+            1.3,
+            0.06
+          ],
+          [
+            "Utopia",
+            1.2,
+            0.1
+          ],
+          [
+            "Triage",
+            1.2,
+            0.1
+          ],
+          [
+            "Forge",
+            1.2,
+            0.11
+          ],
+          [
+            "White Fox",
+            1.2,
+            0.08
+          ],
+          [
+            "Angel",
+            1.2,
+            0.08
+          ],
+          [
+            "Moon Girl",
+            1.2,
+            0.06
+          ],
+          [
+            "The Sorcerer Supreme",
+            1.2,
+            0.12
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f7063-bf11-79b8-959c-890a7006e349",
+          "http://localhost:4150/decks/019f7034-d793-7dd0-9432-0a74accb7a4d",
+          "http://localhost:4150/decks/019f7035-3132-72f7-bbd4-daf901dbf134",
+          "http://localhost:4150/decks/019f6fcd-e6b0-7d07-a328-4ade64eb6bb5",
+          "http://localhost:4150/decks/019f7038-8f68-7c79-90a9-522ea556e59c"
+        ]
+      },
+      {
+        "cluster": 1,
+        "size": 40,
+        "top_cards": [
+          [
+            "Spider-Ham",
+            20.5,
+            0.17
+          ],
+          [
+            "Madame Web",
+            20.5,
+            0.17
+          ],
+          [
+            "Spider-Man",
+            20.1,
+            0.78
+          ],
+          [
+            "Spider-Man",
+            19.7,
+            0.93
+          ],
+          [
+            "Across the Spider-Verse",
+            19.0,
+            0.98
+          ],
+          [
+            "Spider-Man",
+            18.2,
+            0.98
+          ],
+          [
+            "Web of Life and Destiny",
+            17.9,
+            0.98
+          ],
+          [
+            "SP//dr",
+            17.1,
+            0.55
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f7030-ae83-7346-a6a6-206728ecf6e4",
+          "http://localhost:4150/decks/019f7068-d2c3-7702-82fa-4c008f579052",
+          "http://localhost:4150/decks/019f703e-2e79-7c59-8651-d10083cf8efe",
+          "http://localhost:4150/decks/019f7048-03db-706c-a126-ddccb4fe4ce9",
+          "http://localhost:4150/decks/019f7041-9e28-79e8-901f-7ea46eb42839"
+        ]
+      }
+    ]
+  },
+  "projection": {
+    "status": "disabled"
+  }
+}
