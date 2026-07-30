@@ -1,3 +1,13 @@
+# [1.79.0](https://github.com/jwstover/sanctum/compare/v1.78.1...v1.79.0) (2026-07-30)
+
+
+### Features
+
+* **decks:** flag equal-aspect heroes that are short an aspect ([6e3392e](https://github.com/jwstover/sanctum/commit/6e3392e60cba4d0ff6faa481d9a8518a1b5de0d8))
+* **decks:** handle heroes with special deckbuilding rules ([e51ed6d](https://github.com/jwstover/sanctum/commit/e51ed6dac256c1f49ee9394af299fcb1ce618070))
+
+
+
 ## [1.78.1](https://github.com/jwstover/sanctum/compare/v1.78.0...v1.78.1) (2026-07-28)
 
 
@@ -31,15 +41,6 @@
 ### Bug Fixes
 
 * **cards:** browse reprints and clean up stale duplicate canonicals ([e786d39](https://github.com/jwstover/sanctum/commit/e786d39c6a24cb9f6e6b54e51038e22c34119a06))
-
-
-
-# [1.76.0](https://github.com/jwstover/sanctum/compare/v1.75.2...v1.76.0) (2026-07-28)
-
-
-### Features
-
-* **browse:** show reprints on the product details page ([5add9a9](https://github.com/jwstover/sanctum/commit/5add9a9521ea5aaebea7b8ce9398b35b236f8f98))
 
 
 
