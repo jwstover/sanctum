@@ -40,8 +40,12 @@ defmodule SanctumWeb.Components.DeckCards do
       qty: qty,
       name: side.name,
       cost: CardComponent.display_value(side.cost),
+      # The raw printed cost the charts bucket on: nil for costless cards,
+      # -1 for cost X. `cost` above is the display string.
+      cost_value: side.cost,
       type: side.type,
       hero?: side.ownership == :hero,
+      permanent: card.permanent == true,
       aspect_key: aspect_key,
       aspect_bg: CardComponent.aspect_classes(aspect_key).bg,
       pips: ChampionsIcons.resource_pips(side_resources(side)),

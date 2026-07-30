@@ -17,6 +17,7 @@ defmodule SanctumWeb.DeckLive.Build do
 
   import SanctumWeb.Components.CardPreview
   import SanctumWeb.Components.DeckCards
+  import SanctumWeb.Components.DeckCharts
   import SanctumWeb.Components.FilterSheet
   import SanctumWeb.Components.QueryInput
 
@@ -26,6 +27,7 @@ defmodule SanctumWeb.DeckLive.Build do
   alias Sanctum.Decks.Legality
   alias Sanctum.Decks.Writeup
   alias SanctumWeb.Components.DeckCards
+  alias SanctumWeb.Components.DeckCharts
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
@@ -570,14 +572,12 @@ defmodule SanctumWeb.DeckLive.Build do
 
   # -- deck panel data --------------------------------------------------------
 
-  # Grouped exactly like the deck page's "In This Deck" section: by card type
-  # in canonical order, hero signature cards folded into their type (marked
-  # with a lock), names sorted within each group.
-  defp panel_groups(entries, hero_gradient) do
+  # The panel's card display maps — the same shapes the deck page builds, fed
+  # to both the grouped list and the charts.
+  defp panel_card_views(entries, hero_gradient) do
     entries
     |> Map.values()
     |> Enum.map(&DeckCards.card_view(&1, hero_gradient))
-    |> DeckCards.group_by_type()
   end
 
   defp maybe_assign_count(socket, false, _count), do: socket
@@ -1253,8 +1253,15 @@ defmodule SanctumWeb.DeckLive.Build do
   attr :hero_gradient, :any, required: true
 
   defp deck_panel(assigns) do
-    assigns = assign(assigns, :groups, panel_groups(assigns.entries, assigns.hero_gradient))
-    assigns = assign(assigns, :size, deck_size(assigns.entries))
+    card_views = panel_card_views(assigns.entries, assigns.hero_gradient)
+
+    assigns =
+      assigns
+      # Grouped exactly like the deck page's "In This Deck" section: by card
+      # type in canonical order, names sorted within each group.
+      |> assign(:groups, DeckCards.group_by_type(card_views))
+      |> assign(:chart_stats, DeckCharts.stats(card_views))
+      |> assign(:size, deck_size(assigns.entries))
 
     ~H"""
     <div id={"deck-panel-#{@id}-body"} phx-hook="CardLinkPreview" class="flex flex-col gap-4 p-4">
@@ -1431,6 +1438,8 @@ defmodule SanctumWeb.DeckLive.Build do
       >
         No cards yet — tap + on a card to add it.
       </p>
+
+      <.deck_charts stats={@chart_stats} />
     </div>
     """
   end
