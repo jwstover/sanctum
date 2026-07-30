@@ -7,8 +7,10 @@ defmodule SanctumWeb.DeckLive.Show do
 
   import SanctumWeb.Components.CardPreview
   import SanctumWeb.Components.DeckCards
+  import SanctumWeb.Components.DeckCharts
 
   alias SanctumWeb.Components.DeckCards
+  alias SanctumWeb.Components.DeckCharts
 
   @impl true
   def render(assigns) do
@@ -246,6 +248,8 @@ defmodule SanctumWeb.DeckLive.Show do
                 </div>
               </.panel>
 
+              <.deck_charts stats={@chart_stats} />
+
               <!-- similar decks -->
               <.panel :if={@similar != []} class="p-4">
                 <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
@@ -342,6 +346,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:deck, nil)
       |> assign(:cover, nil)
       |> assign(:groups, [])
+      |> assign(:chart_stats, DeckCharts.stats([]))
       |> assign(:similar, [])
       |> assign(:writeup, nil)
       |> assign(:card_view, "images")
@@ -424,6 +429,7 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:deck, data.deck)
       |> assign(:cover, data.cover)
       |> assign(:groups, data.groups)
+      |> assign(:chart_stats, data.chart_stats)
       |> assign(:owned_summary, data.owned_summary)
       |> assign(:similar, data.similar)
       |> assign(:writeup, data.writeup)
@@ -485,6 +491,7 @@ defmodule SanctumWeb.DeckLive.Show do
            deck: deck,
            cover: cover_view(deck, hero_gradient),
            groups: groups,
+           chart_stats: DeckCharts.stats(card_views),
            owned_summary: owned_summary(card_views, actor),
            similar: similar_views(deck),
            writeup: Sanctum.Decks.Writeup.render(deck.description_md),
