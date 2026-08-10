@@ -26,6 +26,9 @@ defmodule Sanctum.Accounts do
       define :get_user, get_by: :id, action: :read
       define :get_user_by_email, args: [:email], get?: true, action: :get_by_email
       define :set_admin, args: [:admin], action: :set_admin
+      define :update_avatar, args: [:avatar_url], action: :update_avatar
+      define :clear_avatar, action: :clear_avatar
+      define :use_provider_avatar, action: :use_provider_avatar
     end
   end
 end

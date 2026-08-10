@@ -11,6 +11,7 @@ defmodule Sanctum.CardImages.Processor do
 
   @max_dimension 1200
   @jpeg_quality 90
+  @avatar_dimension 512
 
   @doc """
   Decodes `binary`, caps its long edge at #{@max_dimension} px, and re-encodes
@@ -26,12 +27,36 @@ defmodule Sanctum.CardImages.Processor do
     end
   end
 
+  @doc """
+  Like `normalize/2`, but produces a square #{@avatar_dimension}×#{@avatar_dimension}
+  image for use as a profile picture.
+
+  Avatars render in a small circle, so a "fit inside the box" resize is wrong —
+  a wide photo would letterbox. This crops to square instead, using libvips'
+  attention strategy to pick the region (it scores skin tones and edges, so
+  faces survive the crop rather than being sliced by a naive centre cut).
+  """
+  def normalize_avatar(binary, target_ext) when is_binary(binary) do
+    with {:ok, image} <- avatar_thumbnail(binary) do
+      Vix.Vips.Image.write_to_buffer(image, save_suffix(target_ext))
+    end
+  end
+
   # `thumbnail_buffer` decodes + downscales in one streaming pass and applies
   # EXIF orientation. `:VIPS_SIZE_DOWN` fits within the box without upscaling.
   defp thumbnail(binary) do
     Vix.Vips.Operation.thumbnail_buffer(binary, @max_dimension,
       height: @max_dimension,
       size: :VIPS_SIZE_DOWN
+    )
+  end
+
+  # No `size:` option here — avatars are upscaled to fill the square when the
+  # source is small, so every stored avatar has identical dimensions.
+  defp avatar_thumbnail(binary) do
+    Vix.Vips.Operation.thumbnail_buffer(binary, @avatar_dimension,
+      height: @avatar_dimension,
+      crop: :VIPS_INTERESTING_ATTENTION
     )
   end
 

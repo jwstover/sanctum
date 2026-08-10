@@ -25,12 +25,49 @@ defmodule SanctumWeb.ProfileLive.Index do
 
         <.panel class="mt-6 p-5">
           <div class="flex items-center gap-4 border-b-2 border-neutral pb-5">
+            <!-- The avatar itself is the file picker: a label wrapping a hidden
+                 live_file_input, same pattern as the homebrew upload chooser. -->
+            <form
+              :if={@uploads_configured?}
+              id="avatar-upload"
+              phx-change="validate_avatar"
+              class="shrink-0"
+            >
+              <label
+                class="group relative block cursor-pointer"
+                title="Upload a new profile picture"
+              >
+                <.live_file_input upload={@uploads.avatar} class="sr-only" />
+                <.avatar
+                  name={display_name(@current_user)}
+                  url={@current_user.avatar_url}
+                  seed={display_name(@current_user)}
+                  size="lg"
+                />
+                <span class={[
+                  "absolute inset-0 grid place-items-center rounded-full bg-base-300/80",
+                  "opacity-0 transition-opacity group-hover:opacity-100",
+                  @uploading_avatar? && "opacity-100"
+                ]}>
+                  <.icon
+                    name={(@uploading_avatar? && "hero-arrow-path") || "hero-camera"}
+                    class={
+                      "size-6 text-primary" <> ((@uploading_avatar? && " animate-spin") || "")
+                    }
+                  />
+                </span>
+              </label>
+            </form>
+
             <.avatar
+              :if={!@uploads_configured?}
               name={display_name(@current_user)}
               url={@current_user.avatar_url}
               seed={display_name(@current_user)}
               size="lg"
+              class="shrink-0"
             />
+
             <div class="min-w-0">
               <div class="truncate font-bangers text-2xl leading-none tracking-wide text-primary">
                 {display_name(@current_user)}
@@ -38,6 +75,45 @@ defmodule SanctumWeb.ProfileLive.Index do
               <div class="mt-1.5 truncate font-ibm-mono text-xs text-base-content/50">
                 {@current_user.email}
               </div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span
+                  :if={@uploads_configured?}
+                  class="font-barlow-condensed text-sm text-base-content/50"
+                >
+                  Click your picture to change it
+                </span>
+                <button
+                  :if={@current_user.avatar_url}
+                  type="button"
+                  phx-click="clear_avatar"
+                  class="cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-error"
+                >
+                  Remove
+                </button>
+                <!-- Only offered when we actually hold a provider picture; users
+                     who signed up before it was recorded get it on next sign-in. -->
+                <button
+                  :if={
+                    @current_user.provider_avatar_url &&
+                      @current_user.avatar_url != @current_user.provider_avatar_url
+                  }
+                  type="button"
+                  phx-click="use_provider_avatar"
+                  class="cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-primary"
+                >
+                  Use sign-in photo
+                </button>
+              </div>
+
+              <%!-- `.errors` covers both config-level (too many files) and
+                    per-entry (too large, wrong type) rejections. --%>
+              <p
+                :for={{_ref, err} <- @uploads.avatar.errors}
+                class="mt-1.5 font-barlow-condensed text-sm text-error"
+              >
+                {avatar_error(err)}
+              </p>
             </div>
           </div>
 
@@ -197,6 +273,15 @@ defmodule SanctumWeb.ProfileLive.Index do
       |> assign(:owned_card_count, 0)
       |> assign(:anthropic_key, nil)
       |> assign(:validating_key, false)
+      |> assign(:uploading_avatar?, false)
+      |> assign(:uploads_configured?, Sanctum.AvatarImages.configured?())
+      |> allow_upload(:avatar,
+        accept: ~w(.png .jpg .jpeg .webp),
+        max_entries: 1,
+        max_file_size: 10_000_000,
+        auto_upload: true,
+        progress: &handle_avatar_progress/3
+      )
       |> reset_api_key_form()
 
     socket =
@@ -211,6 +296,43 @@ defmodule SanctumWeb.ProfileLive.Index do
   def handle_event("validate", %{"profile" => params}, socket) do
     {:noreply,
      assign(socket, :form, to_form(AshPhoenix.Form.validate(socket.assigns.form.source, params)))}
+  end
+
+  # -- Avatar -----------------------------------------------------------------
+
+  # auto_upload: the picker fires a change event, then progress consumes it.
+  def handle_event("validate_avatar", _params, socket) do
+    {:noreply, assign(socket, :uploading_avatar?, uploading?(socket))}
+  end
+
+  def handle_event("clear_avatar", _params, socket) do
+    user = socket.assigns.current_user
+
+    case Sanctum.Accounts.clear_avatar(user, actor: user) do
+      {:ok, user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, user)
+         |> put_flash(:info, "Profile picture removed.")}
+
+      {:error, _error} ->
+        {:noreply, put_flash(socket, :error, "Could not remove your picture.")}
+    end
+  end
+
+  def handle_event("use_provider_avatar", _params, socket) do
+    user = socket.assigns.current_user
+
+    case Sanctum.Accounts.use_provider_avatar(user, actor: user) do
+      {:ok, user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, user)
+         |> put_flash(:info, "Profile picture restored.")}
+
+      {:error, _error} ->
+        {:noreply, put_flash(socket, :error, "Could not restore your sign-in photo.")}
+    end
   end
 
   def handle_event("toggle_pack", %{"id" => pack_id}, socket) do
@@ -292,6 +414,50 @@ defmodule SanctumWeb.ProfileLive.Index do
      |> assign(:validating_key, false)
      |> put_flash(:error, "Couldn't reach Anthropic — try again.")}
   end
+
+  # Consumed as soon as the single entry finishes. `path` is a LiveView-owned
+  # temp-upload path, not user input (Sobelow Traversal false positive, ignored
+  # project-wide).
+  defp handle_avatar_progress(:avatar, entry, socket) do
+    if entry.done? do
+      {:noreply, socket |> assign(:uploading_avatar?, false) |> store_avatar(entry)}
+    else
+      {:noreply, assign(socket, :uploading_avatar?, true)}
+    end
+  end
+
+  # Normalize + push to the bucket, then point the user at the resulting URL.
+  # Content-addressed keys mean re-uploading the same image is a no-op PUT and
+  # the previous object is left in place for anything still referencing it.
+  defp store_avatar(socket, entry) do
+    user = socket.assigns.current_user
+
+    stored =
+      consume_uploaded_entry(socket, entry, fn %{path: path} ->
+        {:ok,
+         with {:ok, body} <- File.read(path) do
+           Sanctum.AvatarImages.store(body, entry.client_type)
+         end}
+      end)
+
+    with {:ok, url} <- stored,
+         {:ok, user} <- Sanctum.Accounts.update_avatar(user, url, actor: user) do
+      socket
+      |> assign(:current_user, user)
+      |> put_flash(:info, "Profile picture updated.")
+    else
+      _ -> put_flash(socket, :error, "Could not save that image. Try a different file.")
+    end
+  end
+
+  defp uploading?(socket) do
+    Enum.any?(socket.assigns.uploads.avatar.entries, &(!&1.done?))
+  end
+
+  defp avatar_error(:too_large), do: "That image is too large — 10 MB max."
+  defp avatar_error(:not_accepted), do: "Use a PNG, JPG, or WEBP image."
+  defp avatar_error(:too_many_files), do: "Pick a single image."
+  defp avatar_error(_error), do: "That image could not be uploaded."
 
   # Validate then store: only a live key is ever persisted. The plaintext is
   # dropped as soon as the encrypted row is written.
