@@ -28,6 +28,7 @@ defmodule Sanctum.CardVision do
   require Logger
 
   @anthropic_url "https://api.anthropic.com/v1/messages"
+  @anthropic_models_url "https://api.anthropic.com/v1/models"
   # Sonnet 5: benchmarked at 90% field accuracy vs Opus 4.8's 88% on the
   # official-catalog eval (mix sanctum.vision_eval), at ~40% of the cost.
   @anthropic_model "claude-sonnet-5"
@@ -88,6 +89,44 @@ defmodule Sanctum.CardVision do
 
     result
   end
+
+  @doc """
+  Checks that an Anthropic API key is live, without spending tokens.
+
+  Hits the `/v1/models` listing (a plain GET, no message generation) and maps
+  the outcome to `:ok`, `{:error, :invalid}` (401/403 — rejected key),
+  `{:error, :rate_limited}` (429), or a generic `{:error, {:api_error, status}}`
+  / `{:error, {:request_failed, exception}}`. Used by the BYOK settings flow to
+  validate a key before storing it.
+  """
+  @spec validate_key(String.t()) ::
+          :ok
+          | {:error,
+             :invalid | :rate_limited | {:api_error, integer()} | {:request_failed, term()}}
+  def validate_key(api_key) when is_binary(api_key) and api_key != "" do
+    [
+      url: @anthropic_models_url,
+      headers: [
+        {"x-api-key", api_key},
+        {"anthropic-version", @anthropic_version}
+      ],
+      # A 429/5xx is a fast, actionable answer for the user — don't sit through
+      # Req's default exponential-backoff retries just to validate a key.
+      retry: false,
+      receive_timeout: 30_000
+    ]
+    |> Keyword.merge(config(:req_options, []))
+    |> Req.get()
+    |> case do
+      {:ok, %Req.Response{status: 200}} -> :ok
+      {:ok, %Req.Response{status: status}} when status in [401, 403] -> {:error, :invalid}
+      {:ok, %Req.Response{status: 429}} -> {:error, :rate_limited}
+      {:ok, %Req.Response{status: status}} -> {:error, {:api_error, status}}
+      {:error, exception} -> {:error, {:request_failed, exception}}
+    end
+  end
+
+  def validate_key(_), do: {:error, :invalid}
 
   # -- Anthropic provider --------------------------------------------------------
 

@@ -170,6 +170,129 @@ defmodule Sanctum.Accounts.UserProfileTest do
     end
   end
 
+  describe "avatar editing" do
+    test "update_avatar accepts a URL in our own bucket and marks it uploaded" do
+      user = user_fixture()
+
+      assert {:ok, updated} = Sanctum.Accounts.update_avatar(user, bucket_url(), actor: user)
+      assert updated.avatar_url == bucket_url()
+      assert updated.avatar_source == :uploaded
+    end
+
+    test "update_avatar rejects a URL outside our bucket" do
+      user = user_fixture()
+
+      for bad <- [
+            "https://evil.example.com/tracker.png",
+            "https://sanctum-cards.fly.storage.tigris.dev/cards/01001.png",
+            "not a url",
+            nil
+          ] do
+        assert {:error, %Ash.Error.Invalid{}} =
+                 Sanctum.Accounts.update_avatar(user, bad, actor: user),
+               inspect(bad)
+      end
+    end
+
+    test "another user cannot change your avatar" do
+      user = user_fixture()
+      other = user_fixture()
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Sanctum.Accounts.update_avatar(user, bucket_url(), actor: other)
+
+      assert {:error, %Ash.Error.Forbidden{}} = Sanctum.Accounts.clear_avatar(user, actor: other)
+    end
+
+    test "clear_avatar drops the picture and records the choice" do
+      user = user_fixture(avatar_url: "https://lh3.googleusercontent.com/a/pic")
+
+      assert {:ok, updated} = Sanctum.Accounts.clear_avatar(user, actor: user)
+      assert updated.avatar_url == nil
+      assert updated.avatar_source == :cleared
+    end
+
+    test "use_provider_avatar restores the recorded sign-in photo" do
+      email = "google-#{System.unique_integer([:positive])}@example.com"
+      picture = "https://lh3.googleusercontent.com/a/pic"
+      user = register_with_google!(google_user_info(email, %{"picture" => picture}))
+
+      {:ok, user} = Sanctum.Accounts.update_avatar(user, bucket_url(), actor: user)
+      assert {:ok, restored} = Sanctum.Accounts.use_provider_avatar(user, actor: user)
+
+      assert restored.avatar_url == picture
+      assert restored.avatar_source == :provider
+    end
+
+    test "use_provider_avatar errors when no provider photo was ever recorded" do
+      user = user_fixture()
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Sanctum.Accounts.use_provider_avatar(user, actor: user)
+    end
+  end
+
+  describe "avatar_source vs. the OAuth backfill" do
+    test "signing in again does not resurrect a cleared avatar" do
+      email = "google-#{System.unique_integer([:positive])}@example.com"
+      picture = "https://lh3.googleusercontent.com/a/pic"
+
+      # Same `sub` both times — a returning user, not a new identity.
+      info = google_user_info(email, %{"picture" => picture})
+
+      user = register_with_google!(info)
+      {:ok, _} = Sanctum.Accounts.clear_avatar(user, actor: user)
+
+      user = register_with_google!(info)
+
+      assert user.avatar_url == nil
+      assert user.avatar_source == :cleared
+    end
+
+    test "signing in again does not replace an uploaded avatar" do
+      email = "google-#{System.unique_integer([:positive])}@example.com"
+      existing = user_fixture(email: email)
+      {:ok, _} = Sanctum.Accounts.update_avatar(existing, bucket_url(), actor: existing)
+
+      user =
+        register_with_google!(
+          google_user_info(email, %{"picture" => "https://lh3.googleusercontent.com/a/pic"})
+        )
+
+      assert user.avatar_url == bucket_url()
+      assert user.avatar_source == :uploaded
+    end
+
+    test "the provider photo is still recorded while a custom avatar is in use" do
+      email = "google-#{System.unique_integer([:positive])}@example.com"
+      picture = "https://lh3.googleusercontent.com/a/pic"
+      existing = user_fixture(email: email)
+      {:ok, _} = Sanctum.Accounts.update_avatar(existing, bucket_url(), actor: existing)
+
+      user = register_with_google!(google_user_info(email, %{"picture" => picture}))
+
+      # Not in use, but available for "use my sign-in photo".
+      assert user.avatar_url == bucket_url()
+      assert user.provider_avatar_url == picture
+    end
+
+    test "a later sign-in updates the recorded provider photo" do
+      email = "google-#{System.unique_integer([:positive])}@example.com"
+      info = google_user_info(email, %{"picture" => "https://g/old"})
+
+      user = register_with_google!(info)
+      {:ok, _} = Sanctum.Accounts.clear_avatar(user, actor: user)
+
+      user = register_with_google!(%{info | "picture" => "https://g/new"})
+
+      assert user.provider_avatar_url == "https://g/new"
+    end
+  end
+
+  defp bucket_url do
+    Sanctum.CardImages.base_url() <> "/avatars/" <> String.duplicate("a", 64) <> ".png"
+  end
+
   defp claim(user, username, opts) do
     user
     |> Ash.Changeset.for_update(:update_profile, %{username: username}, opts)

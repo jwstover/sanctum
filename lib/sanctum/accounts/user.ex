@@ -106,7 +106,7 @@ defmodule Sanctum.Accounts.User do
       authorize_if AshAuthentication.Checks.AshAuthenticationInteraction
     end
 
-    field_policy [:email, :confirmed_at, :admin, :hashed_password] do
+    field_policy [:email, :confirmed_at, :admin, :hashed_password, :provider_avatar_url] do
       authorize_if expr(id == ^actor(:id))
       authorize_if actor_attribute_equals(:admin, true)
     end
@@ -131,7 +131,7 @@ defmodule Sanctum.Accounts.User do
 
     update :set_avatar do
       description "System-only avatar writes (OAuth backfill). Callers use authorize?: false."
-      accept [:avatar_url]
+      accept [:avatar_url, :avatar_source, :provider_avatar_url]
     end
 
     read :get_by_subject do
@@ -245,7 +245,7 @@ defmodule Sanctum.Accounts.User do
     end
 
     update :update_profile do
-      description "Self-service profile edits (username claim). Avatar editing lands with the settings page."
+      description "Self-service profile edits (username claim)."
 
       # The username match validation can't run atomically.
       require_atomic? false
@@ -253,6 +253,51 @@ defmodule Sanctum.Accounts.User do
 
       validate match(:username, ~r/^[a-zA-Z0-9_]{3,20}$/) do
         message "3–20 characters: letters, numbers, and underscores only"
+      end
+    end
+
+    update :update_avatar do
+      description "Self-service: point the avatar at a freshly uploaded object in our bucket."
+
+      # The bucket-URL validation can't run atomically.
+      require_atomic? false
+      accept [:avatar_url]
+      change set_attribute(:avatar_source, :uploaded)
+
+      # The URL is user-supplied params, not just whatever the LiveView passes.
+      # Restricting it to our own bucket stops an arbitrary host being hotlinked
+      # from every deck listing that renders this user's avatar.
+      validate Sanctum.Accounts.User.Validations.OwnAvatarUrl
+    end
+
+    update :clear_avatar do
+      description "Self-service: drop back to the initials-on-gradient fallback, permanently."
+
+      accept []
+      change set_attribute(:avatar_url, nil)
+      change set_attribute(:avatar_source, :cleared)
+    end
+
+    update :use_provider_avatar do
+      description "Self-service: restore the picture from the user's OAuth provider."
+
+      # Reads provider_avatar_url off the record to write avatar_url.
+      require_atomic? false
+      accept []
+
+      change fn changeset, _context ->
+        case Ash.Changeset.get_data(changeset, :provider_avatar_url) do
+          url when is_binary(url) and url != "" ->
+            changeset
+            |> Ash.Changeset.change_attribute(:avatar_url, url)
+            |> Ash.Changeset.change_attribute(:avatar_source, :provider)
+
+          _ ->
+            Ash.Changeset.add_error(changeset,
+              field: :avatar_url,
+              message: "we don't have a picture from your sign-in provider"
+            )
+        end
       end
     end
 
@@ -462,7 +507,7 @@ defmodule Sanctum.Accounts.User do
       authorize_if always()
     end
 
-    policy action(:update_profile) do
+    policy action([:update_profile, :update_avatar, :clear_avatar, :use_provider_avatar]) do
       authorize_if expr(id == ^actor(:id))
     end
 
@@ -489,11 +534,40 @@ defmodule Sanctum.Accounts.User do
       public? true
     end
 
-    # Seeded from Google's `picture` on first OAuth registration; users
-    # without one get a deterministic initials-on-gradient fallback in the UI.
+    # The avatar actually rendered: either a provider `picture` URL or an
+    # object in our own bucket. Users without one get a deterministic
+    # initials-on-gradient fallback in the UI.
     attribute :avatar_url, :string do
       allow_nil? true
       public? true
+    end
+
+    # Where `avatar_url` came from, and the reason a user's choice survives
+    # their next OAuth sign-in:
+    #
+    #   :provider — from the OAuth `picture` claim (or nil and eligible to be
+    #               backfilled with one on the next sign-in)
+    #   :uploaded — the user uploaded their own; never overwritten
+    #   :cleared  — the user explicitly removed it and wants the gradient
+    #               fallback; never re-filled
+    #
+    # Without this, Changes.BackfillAvatar re-fills any nil avatar on every
+    # OAuth sign-in, so "remove my photo" would silently undo itself at the
+    # next login.
+    attribute :avatar_source, :atom do
+      constraints one_of: [:provider, :uploaded, :cleared]
+      default :provider
+      allow_nil? false
+      public? true
+    end
+
+    # The provider's most recent `picture` claim, recorded on every OAuth
+    # sign-in whether or not it's the avatar in use. Kept so "use my Google
+    # photo" can restore it immediately rather than waiting for the next login
+    # to backfill. Not public: an implementation detail of the reset action.
+    attribute :provider_avatar_url, :string do
+      allow_nil? true
+      public? false
     end
 
     # Gates the /cards/* admin pages and Card/CardSide mutations. Not public:
@@ -518,11 +592,14 @@ defmodule Sanctum.Accounts.User do
 
   # Seeds avatar_url from the provider's user_info on first registration only —
   # `upsert_fields []` means nothing is written on conflict, so a re-login
-  # never clobbers an existing profile. Existing users *without* an avatar are
-  # handled separately by Changes.BackfillAvatar after the upsert resolves.
+  # never clobbers an existing profile. Existing users are handled separately
+  # by Changes.BackfillAvatar after the upsert resolves.
   defp seed_avatar(changeset, %{"picture" => picture})
        when is_binary(picture) and picture != "" do
-    Ash.Changeset.change_attribute(changeset, :avatar_url, picture)
+    changeset
+    |> Ash.Changeset.change_attribute(:avatar_url, picture)
+    |> Ash.Changeset.change_attribute(:avatar_source, :provider)
+    |> Ash.Changeset.change_attribute(:provider_avatar_url, picture)
   end
 
   defp seed_avatar(changeset, _user_info), do: changeset

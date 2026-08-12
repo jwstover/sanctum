@@ -63,6 +63,8 @@ defmodule Sanctum.MixProject do
       {:tidewave, "~> 0.2", only: [:dev, :prod_local]},
       {:live_debugger, "~> 1.0", only: [:dev, :prod_local]},
       {:ash_events, "~> 0.4"},
+      {:ash_cloak, "~> 0.1"},
+      {:cloak, "~> 1.1"},
       {:ash_state_machine, "~> 0.2"},
       {:oban_web, "~> 2.0"},
       {:ash_oban, "~> 0.8"},
