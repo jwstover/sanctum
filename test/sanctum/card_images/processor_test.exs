@@ -48,4 +48,32 @@ defmodule Sanctum.CardImages.ProcessorTest do
       assert {:error, _} = Processor.normalize(<<"not an image">>, ".png")
     end
   end
+
+  describe "normalize_avatar/2" do
+    test "crops a wide image to a 512px square" do
+      assert {:ok, converted} =
+               Processor.normalize_avatar(image_bytes(4000, 1000, ".png"), ".png")
+
+      assert {512, 512} = dimensions(converted)
+    end
+
+    test "crops a tall image to a 512px square" do
+      assert {:ok, converted} = Processor.normalize_avatar(image_bytes(600, 3000, ".png"), ".png")
+      assert {512, 512} = dimensions(converted)
+    end
+
+    test "upscales a small image so every avatar is the same size" do
+      assert {:ok, converted} = Processor.normalize_avatar(image_bytes(64, 64, ".png"), ".png")
+      assert {512, 512} = dimensions(converted)
+    end
+
+    test "honours the target format" do
+      assert {:ok, converted} = Processor.normalize_avatar(image_bytes(800, 800, ".png"), ".jpg")
+      assert @jpeg_magic <> _ = converted
+    end
+
+    test "returns an error for undecodable bytes" do
+      assert {:error, _} = Processor.normalize_avatar(<<"not an image">>, ".png")
+    end
+  end
 end

@@ -263,4 +263,41 @@ defmodule Sanctum.CardVisionTest do
     assert log =~ "CardVision extraction failed for #{@image_url}"
     assert log =~ "rate limited"
   end
+
+  describe "validate_key/1" do
+    defp stub_status(status, body \\ %{}) do
+      Req.Test.stub(CardVision, fn conn ->
+        conn
+        |> Plug.Conn.put_status(status)
+        |> Req.Test.json(body)
+      end)
+    end
+
+    test "returns :ok on a 200 from the models endpoint" do
+      stub_status(200, %{"data" => []})
+      assert :ok = CardVision.validate_key("sk-ant-good")
+    end
+
+    test "maps 401/403 to :invalid" do
+      stub_status(401, %{"error" => %{"message" => "invalid x-api-key"}})
+      assert {:error, :invalid} = CardVision.validate_key("sk-ant-bad")
+
+      stub_status(403)
+      assert {:error, :invalid} = CardVision.validate_key("sk-ant-forbidden")
+    end
+
+    test "maps 429 to :rate_limited" do
+      stub_status(429)
+      assert {:error, :rate_limited} = CardVision.validate_key("sk-ant-limited")
+    end
+
+    test "maps other statuses to a generic api_error" do
+      stub_status(500)
+      assert {:error, {:api_error, 500}} = CardVision.validate_key("sk-ant-oops")
+    end
+
+    test "rejects a blank key without a request" do
+      assert {:error, :invalid} = CardVision.validate_key("")
+    end
+  end
 end

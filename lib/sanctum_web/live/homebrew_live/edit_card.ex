@@ -33,6 +33,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
        |> assign(:alt_declare?, false)
        |> assign(:save_state, :pristine)
        |> assign(:extracting_side_id, nil)
+       |> assign(:extract_available?, extract_available?(socket.assigns.current_user))
        |> assign_card(card)}
     else
       {:error, _not_found} ->
@@ -101,16 +102,28 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
   # editable and autosaves as usual.
   def handle_event("extract_side", %{"side-id" => side_id}, socket) do
     side = Enum.find(socket.assigns.card.card_sides, &(&1.id == side_id))
+    user = socket.assigns.current_user
 
     if is_nil(socket.assigns.extracting_side_id) && side && side.image_url do
-      image_url = side.image_url
+      case resolve_extract_opts(user) do
+        {:ok, opts} ->
+          image_url = side.image_url
 
-      {:noreply,
-       socket
-       |> assign(:extracting_side_id, side_id)
-       |> start_async({:extract_side, side_id}, fn ->
-         Sanctum.CardVision.extract_side(image_url)
-       end)}
+          {:noreply,
+           socket
+           |> assign(:extracting_side_id, side_id)
+           |> start_async({:extract_side, side_id}, fn ->
+             Sanctum.CardVision.extract_side(image_url, opts)
+           end)}
+
+        :error ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "Add your Anthropic API key in your profile to use Fill from image."
+           )}
+      end
     else
       {:noreply, socket}
     end
@@ -241,13 +254,48 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
   end
 
   defp extract_error_message(:missing_api_key),
-    do: "Card reading isn't configured on this server (missing ANTHROPIC_API_KEY)."
+    do: "Add your Anthropic API key in your profile to use Fill from image."
 
   defp extract_error_message(:refused),
     do: "The card reader declined this image."
 
+  defp extract_error_message({:api_error, status, _message}) when status in [401, 403],
+    do: "Your Anthropic key was rejected — re-check it in your profile."
+
+  defp extract_error_message({:api_error, 429, _message}),
+    do: "Your Anthropic account hit a rate limit — try again shortly."
+
   defp extract_error_message(_reason),
     do: "Reading the card image failed — try again."
+
+  # BYOK: the user's own Anthropic key powers extraction. Admins fall back to
+  # the server key (eval/dev); a non-admin without a key is gated out entirely,
+  # so the feature never silently spends the server key.
+  defp resolve_extract_opts(user) do
+    case Sanctum.Accounts.api_key_for_provider(:anthropic, actor: user) do
+      {:ok, %Sanctum.Accounts.UserApiKey{} = row} ->
+        {:ok, [api_key: Ash.load!(row, [:key], actor: user).key]}
+
+      _ ->
+        if admin_server_key?(user), do: {:ok, []}, else: :error
+    end
+  end
+
+  defp extract_available?(user) do
+    match?(
+      {:ok, %Sanctum.Accounts.UserApiKey{}},
+      Sanctum.Accounts.api_key_for_provider(:anthropic, actor: user)
+    ) or admin_server_key?(user)
+  end
+
+  defp admin_server_key?(%{admin: true}) do
+    case Application.get_env(:sanctum, Sanctum.CardVision, [])[:api_key] do
+      key when is_binary(key) and key != "" -> true
+      _ -> false
+    end
+  end
+
+  defp admin_server_key?(_user), do: false
 
   # -- Helpers -----------------------------------------------------------------
 
@@ -413,8 +461,10 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
                 </div>
                 <%!-- Vision extraction: reads the printed fields off this
                      side's art and fills the form (autosaved, still fully
-                     editable). One read at a time across the whole card. --%>
+                     editable). One read at a time across the whole card. Gated
+                     on the user having their own Anthropic key (BYOK). --%>
                 <button
+                  :if={@extract_available?}
                   type="button"
                   phx-click="extract_side"
                   phx-value-side-id={side[:id].value}
@@ -428,6 +478,13 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
                     do: "Reading card…",
                     else: "Fill from image"}
                 </button>
+                <.link
+                  :if={!@extract_available?}
+                  navigate={~p"/profile"}
+                  class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/50 hover:text-primary"
+                >
+                  Add your Anthropic key →
+                </.link>
               </div>
 
               <div class="flex min-w-0 flex-1 flex-col gap-3">
