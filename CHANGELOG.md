@@ -1,3 +1,21 @@
+# [1.82.0](https://github.com/jwstover/sanctum/compare/v1.81.0...v1.82.0) (2026-08-12)
+
+
+### Bug Fixes
+
+* **config:** require real CLOAK_KEY in prod_local, not the dev key ([3bdd056](https://github.com/jwstover/sanctum/commit/3bdd05645f22afe46acec2bed9b900a33dcc3767))
+
+
+### Features
+
+* **accounts:** encrypted UserApiKey resource for BYOK vision extraction ([12efc69](https://github.com/jwstover/sanctum/commit/12efc69ecb26e9a6b465fed86e36746cfe55bef8))
+* **homebrew:** power Fill from image with the user's own key (BYOK) ([b36bc91](https://github.com/jwstover/sanctum/commit/b36bc91a52cecc4404dc50bc485687537b059a88))
+* **profile:** BYOK Anthropic key management on the profile page ([7acec3b](https://github.com/jwstover/sanctum/commit/7acec3bbcce53785b564b5b64fc4baebf6264136))
+* **profile:** let users upload their own profile picture ([73cc572](https://github.com/jwstover/sanctum/commit/73cc572c856e3f02125da9515d850e2cd9f7410a))
+* **vision:** add CardVision.validate_key/1 for BYOK key validation ([ebd1b3d](https://github.com/jwstover/sanctum/commit/ebd1b3d17d9df9c6c68ea4fdc3db8071f21f804a))
+
+
+
 # [1.81.0](https://github.com/jwstover/sanctum/compare/v1.80.0...v1.81.0) (2026-07-30)
 
 
@@ -39,15 +57,6 @@
 ### Bug Fixes
 
 * **mobile:** prevent double-tap-to-zoom via touch-action ([#338](https://github.com/jwstover/sanctum/issues/338)) ([4294b38](https://github.com/jwstover/sanctum/commit/4294b3840e8cafcbdfbac866299ab2f762cc3b4a))
-
-
-
-# [1.78.0](https://github.com/jwstover/sanctum/compare/v1.77.0...v1.78.0) (2026-07-28)
-
-
-### Features
-
-* **decks:** skip the name prompt when starting a deck ([e5de800](https://github.com/jwstover/sanctum/commit/e5de8004572c0783190704be530a64db614ce87f))
 
 
 
