@@ -197,6 +197,19 @@ defmodule SanctumWeb.Router do
     )
   end
 
+  # MarvelCDB account linking (OAuth2 authorization-code flow). Not part of the
+  # `auth_routes` block above: this links a MarvelCDB grant to an already
+  # signed-in user rather than authenticating one, so it's a plain controller.
+  # The callback path must match the redirect URI registered with MarvelCDB —
+  # they pin it per client and it can't be changed without asking them.
+  scope "/marvelcdb", SanctumWeb do
+    pipe_through :browser
+
+    get "/connect", MarvelCdbAuthController, :authorize
+    get "/callback", MarvelCdbAuthController, :callback
+    delete "/disconnect", MarvelCdbAuthController, :disconnect
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", SanctumWeb do
   #   pipe_through :api

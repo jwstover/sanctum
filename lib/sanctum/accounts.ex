@@ -22,6 +22,13 @@ defmodule Sanctum.Accounts do
       define :destroy_api_key, action: :destroy
     end
 
+    resource Sanctum.Accounts.McdbCredential do
+      define :connect_marvel_cdb, action: :upsert_credential
+      define :marvel_cdb_credential, action: :for_actor, get?: true, not_found_error?: false
+      define :rotate_marvel_cdb_tokens, action: :rotate_tokens
+      define :disconnect_marvel_cdb, action: :destroy
+    end
+
     resource Sanctum.Accounts.User do
       define :get_user, get_by: :id, action: :read
       define :get_user_by_email, args: [:email], get?: true, action: :get_by_email
