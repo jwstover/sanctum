@@ -63,6 +63,10 @@ defmodule Sanctum.Release do
   def sync_cards(opts \\ []) do
     # Unlike migrations, the sync needs the whole app (Repo, Ash) running.
     {:ok, _} = Application.ensure_all_started(@app)
+    # Card sides carry an aspect FK to `aspects.key`, so the official rows must
+    # exist before sync writes any. Idempotent; a no-op on an already-seeded DB
+    # (the normal case) and the safety net for a fresh-environment rebuild.
+    seed_aspects()
     Sanctum.CardSync.run(Keyword.merge([packs: :all, images?: false], opts))
   end
 
