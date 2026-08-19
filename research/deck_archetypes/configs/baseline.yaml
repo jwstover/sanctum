@@ -1,0 +1,167 @@
+# =============================================================================
+# Deck-archetype experiment config.  One file == one experiment.
+# Every channel/stage is independently ablatable so you can measure its worth.
+# Keys marked  [sweep]  are the high-leverage knobs to grid/Bayes search.
+# =============================================================================
+
+experiment:
+  name: baseline_ppmi_svd_hdbscan
+  seed: 42
+  snapshot: "2026-07-27"          # -> snapshots/<this>/  (must carry a snapshot_hash)
+
+# --- Corpus: which decks enter the study --------------------------------------
+corpus:
+  state: [final]
+  visibility: [published]
+  source: [native, marvelcdb]     # restrict to isolate a population if needed
+  min_deck_size: 40
+  strip_hero_cards: true          # drop ownership==:hero (zero archetype signal)
+  assert_canonicalized: true      # fail loudly if export left any alt/reprint code
+
+  # Aspect scoping. Most heroes build a single aspect, so archetypes live inside
+  # one — a global run mostly rediscovers the aspect partition. Default to
+  # clustering WITHIN each aspect (cross-hero, aspect-fixed).
+  partition_by: aspect            # aspect | null (null = one global cross-aspect run)
+  partition_min_decks: 200        # skip aspects with fewer decks than this
+  # aspects: [justice]            # or pin a single aspect for a one-off run
+  # For a deliberate cross-aspect run (basic-card / structural archetypes), set
+  # partition_by: null and representation.aspect_downweight below.
+
+# --- Card vocabulary: staple ("stopword") handling ----------------------------
+card_filter:
+  min_deck_count: 3               # [sweep] rarity floor; drop ultra-rare cards
+  staple_handling: tfidf          # tfidf | subsample | none
+  subsample_t: 1.0e-3             # word2vec-style, only if staple_handling==subsample
+
+# =============================================================================
+# REPRESENTATION — build ONE fused vector per card, from up to three channels.
+# =============================================================================
+representation:
+
+  # Channel A — distributional (what plays together)
+  distributional:
+    enabled: true
+    method: ppmi_svd              # ppmi_svd | word2vec | nmf | none
+    dim: 64                       # [sweep]
+    pmi_shift_k: 1                # shifted-PPMI negative-sample analogue
+    word2vec: { window: 999, epochs: 50 }   # window 999 == whole deck is context
+    nmf: { components: 20 }
+
+  # Shrinks the pull of aspect-specific cards (co-occurrence + pooling) so a
+  # cross-aspect run (partition_by: null) surfaces aspect-crossing basic-card /
+  # structural archetypes instead of rediscovering the aspects. 1.0 = off.
+  # Ignored/irrelevant under partition_by: aspect.
+  aspect_downweight: 1.0
+
+  # Channel B — rules-text meaning (enabled from the start, per decision)
+  text:
+    enabled: true
+    model: sentence-transformers/all-MiniLM-L6-v2   # or an AI-gateway model id
+    source_field: text
+    reduce_dim: 64                # PCA down from native 384; null = keep native
+
+  # Channel C — structured PER-CARD features (grounds rare cards; complements A/B)
+  card_features:
+    enabled: true
+    cost_bucket_edges: [0, 1, 2, 3, 4, 6]   # -> buckets: 0 · 1 · 2 · 3 · 4-5 · 6+
+    include:
+      cost: true
+      type: true                  # one-hot: event/ally/upgrade/support/resource
+      traits: true                # multi-hot
+      ownership: true             # one-hot
+      aspect: true                # one-hot
+      resource_icons: true        # phys/mental/energy/wild counts
+      stats: true                 # atk/thw/def/hp (star/scaling flattened to value)
+
+  # Fuse the enabled per-card channels into one card embedding
+  card_fusion:
+    normalize_per_channel: l2     # l2 | zscore | none  (before weighting)
+    weights:                      # [sweep] relative pull of each card channel
+      distributional: 1.0
+      text: 0.5
+      card_features: 0.5
+
+# =============================================================================
+# DECK VECTOR — two channels: pooled card embeddings + structural shape.
+# =============================================================================
+deck_vector:
+
+  # Channel 1 — pool fused card vectors into a deck vector
+  pooling:
+    method: weighted_mean         # weighted_mean | mean | max | nmf_loadings
+    quantity_weight: sqrt         # linear | sqrt | binary  (how 2x/3x copies count)
+    rarity_weight: tfidf          # tfidf | none  (down-weight staples in the pool)
+
+  # Channel 2 — STRUCTURAL deck summary (the deck's *shape*).  LOCKED FEATURE LIST.
+  # Captures archetypes mean-pooling can't see: "cheap allies", "few splashy
+  # finishers", "low-cost event tempo".  Implemented in features/structural.py.
+  structural:
+    enabled: true
+    normalize: both               # fractions | counts | both
+    features:
+      cost_by_type_crosstab: true # ★ cost-bucket × card-type matrix (the big one)
+      type_mix: true              # fraction per card type
+      trait_distribution: true    # fraction of cards carrying each trait
+      cost_curve: true            # flat cost histogram (marginal)
+      concentration:              # "splashiness" / focus
+        cost_variance: true
+        cost_gini: true
+        high_cost_count: true     # # distinct 4+ cost cards
+        type_entropy: true        # low == mono-type focused deck
+      ally_efficiency:            # separates aggro-ally from thwart-ally shells
+        atk_per_cost: true
+        thw_per_cost: true
+      resource_profile: true      # deck's total phys/mental/energy/wild generation
+      counts:                     # raw absolute counts (not just fractions)
+        n_allies: true
+        n_events: true
+        n_upgrades_supports: true
+        n_cheap_0_1: true
+        n_expensive_4plus: true
+
+  # Combine the two deck channels
+  channels:
+    normalize_per_channel: zscore # z-score each channel before weighting
+    weights:
+      embedding: 1.0
+      structural: 1.0             # [sweep] expected to be high-leverage
+    final_normalize: l2           # L2 so euclidean ~= cosine downstream
+
+# --- Clustering ---------------------------------------------------------------
+clustering:
+  method: hdbscan                 # hdbscan | louvain | kmeans | nmf_topics
+  reduce: { method: umap, dim: 15 }   # pre-cluster reduction; method: none to skip
+  hdbscan: { min_cluster_size: 50, min_samples: 10, metric: euclidean }
+  louvain: { knn: 15, resolution: 1.0 }   # [sweep] resolution
+  kmeans:  { k: 20 }
+  nmf_topics: { k: 20 }           # soft membership: deck = mixture of archetypes
+
+# --- Evaluation (the point of the whole harness) ------------------------------
+evaluation:
+  held_out_prediction:            # ★ primary, label-free
+    enabled: true
+    n_decks: 2000
+    k: [1, 5, 10, 25]             # hit@k + MRR
+  anchor_retrieval:               # secondary, label-light
+    enabled: true
+    anchors_file: anchors/archetypes.yaml
+    k: 10
+  intrinsic:
+    silhouette: true
+    davies_bouldin: true
+    bootstrap_stability: { enabled: true, n: 20 }
+  projection:
+    umap_2d: true
+    color_by: [aspect, hero, anchor_label, cluster]
+  interpret:
+    top_cards_per_cluster: 25
+    top_card_metric: lift         # lift | tfidf
+    cluster_structural_profile: true   # mean cost curve / type mix per cluster
+    sample_decks: 5               # representative deck links per cluster (0 = off)
+    deck_url_base: "http://localhost:4150/decks/"
+
+# --- Output -------------------------------------------------------------------
+output:
+  dir: runs/${experiment.name}
+  save: [card_vectors, deck_vectors, assignments]
+  leaderboard: runs/leaderboard.parquet
