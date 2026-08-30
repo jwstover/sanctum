@@ -185,7 +185,7 @@ defmodule SanctumWeb.Components.DeckCharts do
       </div>
 
       <div class="flex flex-col gap-5">
-        <.chart title="Card Skill Icons" subtitle="Hero-card icons shaded">
+        <.chart title="Resources" subtitle="Hero-card icons shaded">
           <.column_plot bars={resource_bars(@stats.resources)}>
             <:label :let={bar}>
               <ChampionsIcons.champions_icon token={bar.token} class="text-base" />
@@ -202,16 +202,16 @@ defmodule SanctumWeb.Components.DeckCharts do
           </div>
         </.chart>
 
-        <.chart title="Card Cost" subtitle="Cost X ignored">
+        <.chart title="Cost Curve" subtitle="Cost X ignored">
           <.cost_chart points={@stats.costs} />
         </.chart>
 
-        <.chart title="Card Aspects">
-          <.donut slices={@stats.aspects} total={@stats.total} label="Card aspects" />
+        <.chart title="Aspect Breakdown">
+          <.donut slices={@stats.aspects} total={@stats.total} label="Aspect breakdown" />
         </.chart>
 
-        <.chart title="Card Types">
-          <.donut slices={@stats.types} total={@stats.total} label="Card types" />
+        <.chart title="Type Breakdown">
+          <.donut slices={@stats.types} total={@stats.total} label="Type breakdown" />
         </.chart>
       </div>
     </.panel>
