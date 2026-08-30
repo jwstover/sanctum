@@ -105,6 +105,23 @@ defmodule Sanctum.Homebrew do
   end
 
   @doc """
+  Creates custom alt art for an official card directly from an uploaded image
+  — the primary alt-art entry (the creation wizard). No source card to
+  convert: the `CardAlt` is minted straight from `image_url`.
+
+  `attrs` must include `:homebrew_project_id`, `:image_url`, and
+  `:target_card_id` (an official card); optional `:side_identifier`
+  (default "a", the target side the art depicts) and `:artist`. Goes through
+  policies with the actor — the actor must own the target project, and the
+  target card must be official.
+  """
+  def create_alt_art(attrs, actor) do
+    Sanctum.Games.CardAlt
+    |> Ash.Changeset.for_create(:create_custom, attrs, actor: actor)
+    |> Ash.create()
+  end
+
+  @doc """
   Declares one of the actor's single-sided custom cards as alternate art for
   an official card. CONVERT semantics: the card row (and its side) is
   destroyed and a CardAlt is minted — enrichment metadata does not survive

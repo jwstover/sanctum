@@ -58,6 +58,20 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
     assert html =~ "Test Card"
   end
 
+  test "the Upload button opens the type chooser (Cards / Alt art)", ctx do
+    {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+
+    assert has_element?(lv, "button[phx-click='open_chooser']")
+
+    html = lv |> element("button[phx-click='open_chooser']") |> render_click()
+
+    # The chooser is one surface with both upload affordances (labels wrapping
+    # the file inputs); no separate upload pages.
+    assert html =~ "What are you adding?"
+    assert html =~ "Cards"
+    assert html =~ "Alt art"
+  end
+
   describe "alt art management" do
     defp official_fixture do
       import Sanctum.Factory
