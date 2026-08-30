@@ -52,7 +52,7 @@ defmodule SanctumWeb.DeckLive.HandSimulatorComponent do
             :if={!@state.mulliganed?}
             class="font-barlow text-sm text-base-content/60"
           >
-            Select cards to discard, then mulligan — you get one shot at this hand.
+            Select cards to discard, then mulligan.
           </div>
 
           <div class="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-2">
