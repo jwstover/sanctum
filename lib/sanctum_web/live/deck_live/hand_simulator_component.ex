@@ -17,7 +17,7 @@ defmodule SanctumWeb.DeckLive.HandSimulatorComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div id={@id}>
+    <div id={@id} class={@class}>
       <.panel class="p-4">
         <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
           <div class="font-anton text-lg uppercase tracking-[0.05em]">Opening Hand</div>
@@ -126,6 +126,7 @@ defmodule SanctumWeb.DeckLive.HandSimulatorComponent do
     # toggle) must not reshuffle an in-progress hand.
     socket =
       socket
+      |> assign_new(:class, fn -> nil end)
       |> assign_new(:state, fn -> nil end)
       |> assign_new(:selected, fn -> MapSet.new() end)
       |> assign_new(:draw_deck_size, fn ->

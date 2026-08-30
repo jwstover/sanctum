@@ -135,8 +135,14 @@ defmodule SanctumWeb.DeckLive.Show do
             phx-hook="CardLinkPreview"
             class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]"
           >
-            <div class="min-w-0 space-y-5">
-              <.panel class="p-5">
+            <!-- Below lg the two columns collapse into one stack. `contents`
+                 dissolves each column wrapper so every panel becomes a direct
+                 grid item, letting `order-*` interleave the two columns — the
+                 hand simulator sits under the decklist instead of above it.
+                 At lg the wrappers become real columns and `order-*` stops
+                 applying to their (block) children. -->
+            <div class="contents lg:block lg:min-w-0 lg:space-y-5">
+              <.panel class="order-1 min-w-0 p-5">
                 <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                   Deck Notes
                 </div>
@@ -165,11 +171,12 @@ defmodule SanctumWeb.DeckLive.Show do
                 id="hand-simulator"
                 card_views={@card_views}
                 hand_size={@hand_size}
+                class="order-3 min-w-0"
               />
             </div>
 
-            <div class="min-w-0 space-y-5">
-              <.panel class="p-4">
+            <div class="contents lg:block lg:min-w-0 lg:space-y-5">
+              <.panel class="order-2 min-w-0 p-4">
                 <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
                   <div class="font-anton text-lg uppercase tracking-[0.05em]">In This Deck</div>
                   <div class="ml-auto font-ibm-mono text-xs text-base-content/45">
@@ -258,10 +265,10 @@ defmodule SanctumWeb.DeckLive.Show do
                 </div>
               </.panel>
 
-              <.deck_charts stats={@chart_stats} />
+              <.deck_charts stats={@chart_stats} class="order-4 min-w-0" />
 
               <!-- similar decks -->
-              <.panel :if={@similar != []} class="p-4">
+              <.panel :if={@similar != []} class="order-5 min-w-0 p-4">
                 <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                   Similar Decks
                 </div>
@@ -299,7 +306,7 @@ defmodule SanctumWeb.DeckLive.Show do
               </.panel>
 
               <!-- details -->
-              <.panel class="p-4">
+              <.panel class="order-6 min-w-0 p-4">
                 <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                   Details
                 </div>
