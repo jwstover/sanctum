@@ -113,7 +113,7 @@ defmodule Sanctum.MixProject do
       {:jason, "~> 1.2"},
       {:nimble_parsec, "~> 1.4"},
       {:mdex, "~> 0.13"},
-      {:dns_cluster, "~> 0.2.0"},
+      {:dns_cluster, "~> 0.3.0"},
       {:bandit, "~> 1.5"},
       {:faker, "~> 0.18", only: :test}
     ]
