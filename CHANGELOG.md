@@ -1,3 +1,18 @@
+# [1.84.0](https://github.com/jwstover/sanctum/compare/v1.83.0...v1.84.0) (2026-09-02)
+
+
+### Bug Fixes
+
+* **decks:** stack the hand simulator below the decklist on mobile ([6c72970](https://github.com/jwstover/sanctum/commit/6c72970ba07523a6c3f1a77f4c5c4b7af1e45c83))
+* **decks:** trim the mulligan hint copy ([d836d15](https://github.com/jwstover/sanctum/commit/d836d1531aea60a5c0eb94827886ba98d55f4674))
+
+
+### Features
+
+* **decks:** add opening-hand draw simulator to deck view ([74481b8](https://github.com/jwstover/sanctum/commit/74481b82baf9cef1d4b90292fb57dba2580ff888))
+
+
+
 # [1.83.0](https://github.com/jwstover/sanctum/compare/v1.82.0...v1.83.0) (2026-08-18)
 
 
@@ -47,16 +62,6 @@
 * **vision:** pluggable providers + model eval harness for card extraction ([dd142ab](https://github.com/jwstover/sanctum/commit/dd142ab9d97769fc4e1777a728c9e6039d8ee644))
 * **vision:** record token usage in eval reports ([1e2aac6](https://github.com/jwstover/sanctum/commit/1e2aac68cc3d806be879c555ca7f3a15f7dbdcaa))
 * **vision:** switch extraction default to claude-sonnet-5 ([604243d](https://github.com/jwstover/sanctum/commit/604243d44bbf12dfe570ddf9c614b78d4c9170cc))
-
-
-
-# [1.79.0](https://github.com/jwstover/sanctum/compare/v1.78.1...v1.79.0) (2026-07-30)
-
-
-### Features
-
-* **decks:** flag equal-aspect heroes that are short an aspect ([6e3392e](https://github.com/jwstover/sanctum/commit/6e3392e60cba4d0ff6faa481d9a8518a1b5de0d8))
-* **decks:** handle heroes with special deckbuilding rules ([e51ed6d](https://github.com/jwstover/sanctum/commit/e51ed6dac256c1f49ee9394af299fcb1ce618070))
 
 
 
