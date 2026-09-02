@@ -272,7 +272,134 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     assert html =~ "100%"
   end
 
-  defp make_hero(name, set, base_code) do
+  describe "opening hand simulator" do
+    # 8 unique one-off allies — enough draw-deck depth that a mulligan still
+    # has cards to draw into. `hand_size` defaults to the alter-ego's printed
+    # value; callers pass opts through to `make_hero/4`.
+    defp hand_sim_deck(opts \\ []) do
+      hero = make_hero("Iron Man", "iron_man", "92000", opts)
+
+      allies =
+        for n <- 1..8 do
+          make_ally("Ally #{n}", "9201#{n}")
+        end
+
+      deck_with_hero("Repulsor Rush", hero, allies)
+    end
+
+    defp copy_ids(html) do
+      ~r/phx-value-copy_id="([^"]+)"/
+      |> Regex.scan(html)
+      |> Enum.map(fn [_, id] -> id end)
+    end
+
+    test "the hand is drawn to the alter-ego's printed hand size", %{conn: conn} do
+      # Hero side prints 1 and the alter-ego prints 6: decks start in alter-ego
+      # form, so 6 is the opening hand — this fails if the hero side wins.
+      deck = hand_sim_deck(alter_ego_hand_size: 6, hero_hand_size: 1)
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      render_async(view)
+
+      html =
+        view
+        |> element("#hand-simulator button", "Draw Opening Hand")
+        |> render_click()
+
+      assert length(copy_ids(html)) == 6
+    end
+
+    test "falls back to the hero side when the alter-ego prints no hand size",
+         %{conn: conn} do
+      deck = hand_sim_deck(hero_hand_size: 4)
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      render_async(view)
+
+      html =
+        view
+        |> element("#hand-simulator button", "Draw Opening Hand")
+        |> render_click()
+
+      assert length(copy_ids(html)) == 4
+    end
+
+    test "the panel renders on the deck page", %{conn: conn} do
+      deck = hand_sim_deck()
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      html = render_async(view)
+
+      assert html =~ "Opening Hand"
+      assert html =~ "Draw Opening Hand"
+    end
+
+    test "clicking draw produces hand_size tiles", %{conn: conn} do
+      deck = hand_sim_deck()
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      render_async(view)
+
+      html =
+        view
+        |> element("#hand-simulator button", "Draw Opening Hand")
+        |> render_click()
+
+      ids = copy_ids(html)
+      assert length(ids) == 5
+      assert length(Enum.uniq(ids)) == 5
+      assert html =~ "Mulligan (0)"
+    end
+
+    test "mulligan replaces only the selected cards", %{conn: conn} do
+      deck = hand_sim_deck()
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      render_async(view)
+
+      html =
+        view
+        |> element("#hand-simulator button", "Draw Opening Hand")
+        |> render_click()
+
+      [id1, id2 | rest] = copy_ids(html)
+      kept_ids = MapSet.new(rest)
+
+      view
+      |> element("#hand-simulator button[phx-value-copy_id='#{id1}']")
+      |> render_click()
+
+      html =
+        view
+        |> element("#hand-simulator button[phx-value-copy_id='#{id2}']")
+        |> render_click()
+
+      assert html =~ "Mulligan (2)"
+
+      html =
+        view
+        |> element("#hand-simulator button", "Mulligan (2)")
+        |> render_click()
+
+      assert html =~ "Mulligan used"
+
+      new_ids = MapSet.new(copy_ids(html))
+      # Still exactly hand_size cards in hand.
+      assert MapSet.size(new_ids) == 5
+      # The two discarded copies never reappear.
+      refute MapSet.member?(new_ids, id1)
+      refute MapSet.member?(new_ids, id2)
+      # The cards that weren't selected are untouched.
+      assert MapSet.subset?(kept_ids, new_ids)
+
+      # The mulligan is used up: no more selection controls.
+      refute html =~ "phx-click=\"toggle_card\""
+    end
+  end
+
+  # `opts` may carry `:hero_hand_size` / `:alter_ego_hand_size`; both default to
+  # nil (unprinted), matching what most fixtures need.
+  defp make_hero(name, set, base_code, opts \\ []) do
     card =
       create(Sanctum.Games.Card, attrs: %{base_code: base_code, code: base_code <> "a", set: set})
 
@@ -283,7 +410,8 @@ defmodule SanctumWeb.DeckLive.ShowTest do
         type: :hero,
         code: base_code <> "a",
         side_identifier: "A",
-        is_primary_side: true
+        is_primary_side: true,
+        hand_size: Keyword.get(opts, :hero_hand_size)
       }
     )
 
@@ -294,7 +422,8 @@ defmodule SanctumWeb.DeckLive.ShowTest do
         type: :alter_ego,
         code: base_code <> "b",
         side_identifier: "B",
-        is_primary_side: false
+        is_primary_side: false,
+        hand_size: Keyword.get(opts, :alter_ego_hand_size)
       }
     )
 

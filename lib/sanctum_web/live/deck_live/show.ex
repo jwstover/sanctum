@@ -135,31 +135,48 @@ defmodule SanctumWeb.DeckLive.Show do
             phx-hook="CardLinkPreview"
             class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]"
           >
-            <.panel class="min-w-0 p-5">
-              <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
-                Deck Notes
-              </div>
-              <div :if={@writeup} class="space-y-4">
-                <div :for={seg <- @writeup}>
-                  <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
-                  <iframe
-                    :if={seg.kind == :rich}
-                    title="Deck writeup"
-                    sandbox=""
-                    referrerpolicy="no-referrer"
-                    loading="lazy"
-                    class="deck-writeup-frame"
-                    srcdoc={seg.srcdoc}
-                  ></iframe>
+            <!-- Below lg the two columns collapse into one stack. `contents`
+                 dissolves each column wrapper so every panel becomes a direct
+                 grid item, letting `order-*` interleave the two columns — the
+                 hand simulator sits under the decklist instead of above it.
+                 At lg the wrappers become real columns and `order-*` stops
+                 applying to their (block) children. -->
+            <div class="contents lg:block lg:min-w-0 lg:space-y-5">
+              <.panel class="order-1 min-w-0 p-5">
+                <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+                  Deck Notes
                 </div>
-              </div>
-              <div :if={!@writeup} class="font-barlow text-sm italic text-base-content/45">
-                No writeup for this deck.
-              </div>
-            </.panel>
+                <div :if={@writeup} class="space-y-4">
+                  <div :for={seg <- @writeup}>
+                    <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
+                    <iframe
+                      :if={seg.kind == :rich}
+                      title="Deck writeup"
+                      sandbox=""
+                      referrerpolicy="no-referrer"
+                      loading="lazy"
+                      class="deck-writeup-frame"
+                      srcdoc={seg.srcdoc}
+                    ></iframe>
+                  </div>
+                </div>
+                <div :if={!@writeup} class="font-barlow text-sm italic text-base-content/45">
+                  No writeup for this deck.
+                </div>
+              </.panel>
 
-            <div class="min-w-0 space-y-5">
-              <.panel class="p-4">
+              <.live_component
+                :if={@deck}
+                module={SanctumWeb.DeckLive.HandSimulatorComponent}
+                id="hand-simulator"
+                card_views={@card_views}
+                hand_size={@hand_size}
+                class="order-3 min-w-0"
+              />
+            </div>
+
+            <div class="contents lg:block lg:min-w-0 lg:space-y-5">
+              <.panel class="order-2 min-w-0 p-4">
                 <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
                   <div class="font-anton text-lg uppercase tracking-[0.05em]">In This Deck</div>
                   <div class="ml-auto font-ibm-mono text-xs text-base-content/45">
@@ -248,10 +265,10 @@ defmodule SanctumWeb.DeckLive.Show do
                 </div>
               </.panel>
 
-              <.deck_charts stats={@chart_stats} />
+              <.deck_charts stats={@chart_stats} class="order-4 min-w-0" />
 
               <!-- similar decks -->
-              <.panel :if={@similar != []} class="p-4">
+              <.panel :if={@similar != []} class="order-5 min-w-0 p-4">
                 <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                   Similar Decks
                 </div>
@@ -289,7 +306,7 @@ defmodule SanctumWeb.DeckLive.Show do
               </.panel>
 
               <!-- details -->
-              <.panel class="p-4">
+              <.panel class="order-6 min-w-0 p-4">
                 <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
                   Details
                 </div>
@@ -353,6 +370,8 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:scroll_restore_pending?, false)
       |> assign(:owned_summary, nil)
       |> assign(:favorited, false)
+      |> assign(:card_views, [])
+      |> assign(:hand_size, 5)
       |> assign_card_preview()
 
     actor = socket.assigns[:current_user]
@@ -434,6 +453,8 @@ defmodule SanctumWeb.DeckLive.Show do
       |> assign(:similar, data.similar)
       |> assign(:writeup, data.writeup)
       |> assign(:favorited, data.favorited)
+      |> assign(:card_views, data.card_views)
+      |> assign(:hand_size, data.hand_size)
 
     socket =
       if socket.assigns.scroll_restore_pending? do
@@ -477,7 +498,7 @@ defmodule SanctumWeb.DeckLive.Show do
              :owner,
              :favorited,
              :favorite_count,
-             hero: [:display_name, :hero_side, card: [:primary_side]],
+             hero: [:display_name, :hero_side, :alter_ego_side, card: [:primary_side]],
              deck_cards: [card: card_loads]
            ]
          ) do
@@ -495,12 +516,23 @@ defmodule SanctumWeb.DeckLive.Show do
            owned_summary: owned_summary(card_views, actor),
            similar: similar_views(deck),
            writeup: Sanctum.Decks.Writeup.render(deck.description_md),
-           favorited: deck.favorited
+           favorited: deck.favorited,
+           card_views: card_views,
+           hand_size: hand_size(deck.hero)
          }}
 
       {:error, _} ->
         :not_found
     end
+  end
+
+  # The opening-hand size printed on the hero's identity: alter-ego takes
+  # priority (decks start in alter-ego form), falling back to the hero side
+  # for split identities missing one (SP//dr-style), then a hard default.
+  defp hand_size(hero) do
+    alter_ego = hero.alter_ego_side && hero.alter_ego_side.hand_size
+    hero_side = hero.hero_side && hero.hero_side.hand_size
+    alter_ego || hero_side || 5
   end
 
   # "You own X / Y" across the deck's card copies; nil (no line) for anonymous.
