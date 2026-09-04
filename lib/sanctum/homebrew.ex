@@ -1,6 +1,7 @@
 defmodule Sanctum.Homebrew do
   @moduledoc """
-  Community custom (homebrew) content: projects, their custom cards, and the
+  Community custom (homebrew) content: projects (the creator's private
+  workspace), the publishable sets inside them, their custom cards, and the
   data-driven set kinds (`SetKind`) a project can extend.
 
   A homebrew card is an image plus optional, progressively-added metadata —
@@ -24,6 +25,16 @@ defmodule Sanctum.Homebrew do
       define :destroy_project, action: :destroy
       define :get_project, action: :read, get_by: [:id]
       define :list_my_projects, action: :for_creator
+    end
+
+    resource Sanctum.Homebrew.HomebrewSet do
+      define :create_set, action: :create
+      define :update_set, action: :update
+      define :set_set_visibility, action: :set_visibility, args: [:visibility]
+      define :destroy_set, action: :destroy
+      define :get_set, action: :read, get_by: [:id]
+      define :list_my_sets, action: :for_creator
+      define :list_project_sets, action: :by_project, args: [:homebrew_project_id]
     end
 
     resource Sanctum.Homebrew.SetKind do
