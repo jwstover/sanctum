@@ -154,6 +154,30 @@ defmodule Sanctum.Release do
     end)
   end
 
+  @doc """
+  Seeds the official set kinds (see `Sanctum.Homebrew.SetKind`). Idempotent —
+  existing rows are matched by `key` among the official (project-less) kinds
+  and left untouched — so it is safe to run on every deploy.
+
+      /app/bin/sanctum eval 'Sanctum.Release.seed_set_kinds()'
+  """
+  def seed_set_kinds do
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    require Ash.Query
+
+    Enum.each(Sanctum.Homebrew.SetKind.official(), fn attrs ->
+      exists? =
+        Sanctum.Homebrew.SetKind
+        |> Ash.Query.filter(key == ^attrs.key and is_nil(homebrew_project_id))
+        |> Ash.exists?(authorize?: false)
+
+      unless exists? do
+        Ash.create!(Sanctum.Homebrew.SetKind, attrs, action: :create, authorize?: false)
+      end
+    end)
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end
