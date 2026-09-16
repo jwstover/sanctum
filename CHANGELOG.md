@@ -1,3 +1,12 @@
+# [1.85.0](https://github.com/jwstover/sanctum/compare/v1.84.0...v1.85.0) (2026-09-16)
+
+
+### Features
+
+* **decks:** built-in hero side decks on both deck surfaces ([c80065b](https://github.com/jwstover/sanctum/commit/c80065be25dbb891934d090f00db34946b96bf4e))
+
+
+
 # [1.84.0](https://github.com/jwstover/sanctum/compare/v1.83.0...v1.84.0) (2026-09-02)
 
 
@@ -46,22 +55,6 @@
 ### Features
 
 * **decks:** MarvelCDB-style deck charts on both deck surfaces ([2b4de77](https://github.com/jwstover/sanctum/commit/2b4de77c31814afe22b41803aa7e79058318ab75))
-
-
-
-# [1.80.0](https://github.com/jwstover/sanctum/compare/v1.79.0...v1.80.0) (2026-07-30)
-
-
-### Bug Fixes
-
-* **vision:** sniff image magic bytes for data-URL media type ([df37f0c](https://github.com/jwstover/sanctum/commit/df37f0cb5eab3dfa2fd93f61ce06e8c16f3f5ad4))
-
-
-### Features
-
-* **vision:** pluggable providers + model eval harness for card extraction ([dd142ab](https://github.com/jwstover/sanctum/commit/dd142ab9d97769fc4e1777a728c9e6039d8ee644))
-* **vision:** record token usage in eval reports ([1e2aac6](https://github.com/jwstover/sanctum/commit/1e2aac68cc3d806be879c555ca7f3a15f7dbdcaa))
-* **vision:** switch extraction default to claude-sonnet-5 ([604243d](https://github.com/jwstover/sanctum/commit/604243d44bbf12dfe570ddf9c614b78d4c9170cc))
 
 
 
