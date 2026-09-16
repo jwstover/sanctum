@@ -9,8 +9,9 @@ defmodule SanctumWeb.Components.DeckCards do
   """
 
   use Phoenix.Component
+  use SanctumWeb, :verified_routes
 
-  import SanctumWeb.CoreComponents, only: [icon: 1]
+  import SanctumWeb.CoreComponents, only: [icon: 1, panel: 1]
 
   alias SanctumWeb.Components.Card, as: CardComponent
   alias SanctumWeb.Components.ChampionsIcons
@@ -73,6 +74,27 @@ defmodule SanctumWeb.Components.DeckCards do
       }
     end)
     |> Enum.sort_by(&type_rank(&1.type))
+  end
+
+  @doc """
+  Turns `Sanctum.Decks.SideDeck` structs into render-ready groups shaped like
+  `group_by_type/1`'s output — `%{key, name, source, editable?, count, cards}`
+  — so `side_decks_section/1` renders them with the same tile markup as the
+  main decklist. `hero_gradient` paints the (hero-owned) side-deck tiles.
+  """
+  def side_deck_views(side_decks, hero_gradient) do
+    Enum.map(side_decks, fn sd ->
+      cards = Enum.map(sd.cards, &card_view(&1, hero_gradient))
+
+      %{
+        key: sd.key,
+        name: sd.name,
+        source: sd.source,
+        editable?: sd.editable?,
+        count: Enum.sum(Enum.map(cards, & &1.qty)),
+        cards: Enum.sort_by(cards, &String.downcase(&1.name))
+      }
+    end)
   end
 
   @doc """
@@ -197,6 +219,79 @@ defmodule SanctumWeb.Components.DeckCards do
 
   defp type_rank(type) do
     Enum.find_index(@type_order, &(&1 == type)) || length(@type_order)
+  end
+
+  @doc """
+  The "Side Decks" panel: the hero-kit decks that play *alongside* the main
+  deck (Invocation, Weather, Gift/Labor, …). Read-only — tiles link to the
+  card page but carry no quantity steppers, since built-in side decks are
+  fixed by the hero. Renders nothing when the hero has none. `side_decks` is
+  the output of `side_deck_views/2`; `card_view` toggles images/list to match
+  the main decklist.
+  """
+  attr :side_decks, :list, required: true
+  attr :card_view, :string, default: "images"
+  attr :class, :string, default: nil
+
+  def side_decks_section(assigns) do
+    ~H"""
+    <.panel :if={@side_decks != []} class={String.trim("p-4 #{@class}")}>
+      <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
+        <div class="font-anton text-lg uppercase tracking-[0.05em]">Side Decks</div>
+      </div>
+
+      <div :for={sd <- @side_decks} class="mb-4 last:mb-0">
+        <div class="mb-2 font-anton text-xs uppercase tracking-[0.06em] text-primary">
+          {sd.name} · {sd.count}
+        </div>
+        <div
+          :if={@card_view == "images"}
+          class="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2"
+        >
+          <.link
+            :for={c <- sd.cards}
+            navigate={~p"/cards/#{c.card_id}"}
+            class="relative h-[101px] border-2 border-neutral shadow-comic-sm"
+          >
+            <CardComponent.mc_card
+              name={c.name}
+              cost={c.cost}
+              aspect={c.aspect_key}
+              image_url={c.image_url}
+              gradient_from={c.gradient_from}
+              gradient_to={c.gradient_to}
+              qty={c.qty}
+              size="sm"
+              show_cost={false}
+            />
+          </.link>
+        </div>
+        <div :if={@card_view == "list"} class="divide-y divide-neutral/50">
+          <.link
+            :for={c <- sd.cards}
+            navigate={~p"/cards/#{c.card_id}"}
+            class="flex items-center gap-2 px-1 py-1 hover:bg-base-200"
+          >
+            <.row_cost cost={c.cost} />
+            <.icon
+              :if={c.aspect_key == :hero}
+              name="hero-user-solid"
+              class="size-3 flex-none text-aspect-hero"
+            />
+            <span :if={c.aspect_key != :hero} class={["size-2.5 flex-none", c.aspect_bg]}></span>
+            <span class="min-w-0 truncate font-barlow-condensed text-sm font-semibold text-base-content/85">
+              {c.name}
+            </span>
+            <span class="flex-1"></span>
+            <span class="flex-none font-ibm-mono text-sm text-base-content/50">×{c.qty}</span>
+            <span class="flex w-8 flex-none items-center justify-end gap-1">
+              <ChampionsIcons.champions_icon :for={token <- c.pips} token={token} class="text-sm" />
+            </span>
+          </.link>
+        </div>
+      </div>
+    </.panel>
+    """
   end
 
   @doc """

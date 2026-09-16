@@ -1,0 +1,58 @@
+# Cluster report — 2 clusters (231 decks noise)
+
+
+## Cluster 0  (664 decks)
+    1.3×    6%  Beak
+    1.2×   10%  Utopia
+    1.2×   10%  Triage
+    1.2×   11%  Forge
+    1.2×    8%  White Fox
+    1.2×    8%  Angel
+    1.2×    6%  Moon Girl
+    1.2×   12%  The Sorcerer Supreme
+    1.1×   11%  Colossus
+    1.1×    5%  First Aid
+    1.1×    6%  Vivian
+    1.1×    6%  Ambush
+    1.1×    7%  Spiritual Meditation
+    1.1×    9%  Digging Deep
+    1.1×    5%  Bazooka
+    1.1×   10%  Distraction
+    1.1×    5%  Stepford Cuckoos
+    1.1×    6%  Ingenuity
+    1.1×   17%  Git Gud
+    1.1×   42%  Get Rage-y
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f7063-bf11-79b8-959c-890a7006e349
+    http://localhost:4150/decks/019f7034-d793-7dd0-9432-0a74accb7a4d
+    http://localhost:4150/decks/019f7035-3132-72f7-bbd4-daf901dbf134
+    http://localhost:4150/decks/019f6fcd-e6b0-7d07-a328-4ade64eb6bb5
+    http://localhost:4150/decks/019f7038-8f68-7c79-90a9-522ea556e59c
+
+## Cluster 1  (40 decks)
+   20.5×   17%  Spider-Ham
+   20.5×   17%  Madame Web
+   20.1×   78%  Spider-Man
+   19.7×   93%  Spider-Man
+   19.0×   98%  Across the Spider-Verse
+   18.2×   98%  Spider-Man
+   17.9×   98%  Web of Life and Destiny
+   17.1×   55%  SP//dr
+   16.7×   75%  Ghost-Spider
+   16.5×   30%  Warrior of the Great Web
+   14.9×   17%  Scarlet Spider
+    3.8×   25%  Spider-Man
+    3.2×   10%  Face the Past
+    3.1×   27%  Team-Building Exercise
+    2.6×    5%  Champions Mobile Bunker
+    2.5×   55%  The Power in All of Us
+    2.3×    8%  Enhanced Physique
+    1.8×   12%  Limitless Stamina
+    1.7×   10%  Hope Summers
+    1.6×    8%  Assess the Situation
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f7030-ae83-7346-a6a6-206728ecf6e4
+    http://localhost:4150/decks/019f7068-d2c3-7702-82fa-4c008f579052
+    http://localhost:4150/decks/019f703e-2e79-7c59-8651-d10083cf8efe
+    http://localhost:4150/decks/019f7048-03db-706c-a126-ddccb4fe4ce9
+    http://localhost:4150/decks/019f7041-9e28-79e8-901f-7ea46eb42839

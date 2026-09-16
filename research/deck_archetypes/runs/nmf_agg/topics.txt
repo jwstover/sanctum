@@ -1,0 +1,155 @@
+# NMF topics — 20 topics over 13692 decks
+
+
+## Topic 0  (dominant for 99 decks)
+  cards: "Bring It!", Looking for Trouble, Angela, Godlike Stamina, Spoiling for a Fight, Throg, Lie in Wait, Reboot, The Bifrost, Target Spotter, Into the Fray, Hall of Heroes
+  top-loading decks:
+    0.92  http://localhost:4150/decks/019f6f56-121e-741c-89a7-bb6e4334e8cf
+    0.92  http://localhost:4150/decks/019f6f56-65df-7eca-bbae-1ebca570bb5d
+    0.70  http://localhost:4150/decks/019f6fc7-ed03-7ab9-95bd-0729c00a0d2d
+
+## Topic 1  (dominant for 666 decks)
+  cards: Follow Through, No Quarter, Into the Fray, Moment of Triumph, Relentless Assault, Looking for Trouble, Honed Technique, Marked, Hand Cannon, Dive Bomb, Ingenuity, The Power of Aggression
+  top-loading decks:
+    0.97  http://localhost:4150/decks/019f6c16-a391-75ec-bb4c-fd3bab0075b9
+    0.87  http://localhost:4150/decks/019f6c77-1096-710a-b2d9-ffe7e496a8d2
+    0.85  http://localhost:4150/decks/019f6d41-8a02-76a7-9a52-aa037b8cbf60
+
+## Topic 2  (dominant for 284 decks)
+  cards: Attack Training, Game Time, Team Strike, Wolverine, Utopia, Honorary X-Men, Angel, Danger Room, Colossus, X-Mansion, The X-Jet, Forge
+  top-loading decks:
+    1.00  http://localhost:4150/decks/019f707f-0bdf-77b3-9a01-6f370eebca9e
+    1.00  http://localhost:4150/decks/019f6f97-d74e-7f63-b743-39b33d7779ca
+    1.00  http://localhost:4150/decks/019f6e65-a87e-73a2-ac43-1e9081e7dee5
+
+## Topic 3  (dominant for 845 decks)
+  cards: Uppercut, Tac Team, Relentless Assault, Haymaker, Chase Them Down, Emergency, First Aid, Melee, Tenacity, Tigra, Mockingbird, The Power of Aggression
+  top-loading decks:
+    1.00  http://localhost:4150/decks/019f6661-c64b-7f6e-8990-991018782e97
+    1.00  http://localhost:4150/decks/019f6ccc-56dd-7284-8818-7a6b4ecab1df
+    1.00  http://localhost:4150/decks/019f704f-9e83-72d6-add8-6cbcfc3f605f
+
+## Topic 4  (dominant for 524 decks)
+  cards: Press the Advantage, Drop Kick, Clear the Area, Piercing Strike, Concussive Blow, Tackle, Skilled Strike, Skilled Investigator, Spider-Girl, For Justice!, Martial Prowess, Heroic Intuition
+  top-loading decks:
+    0.96  http://localhost:4150/decks/019f6b38-be97-7893-8056-5321a7fb2233
+    0.95  http://localhost:4150/decks/019f6b08-08c9-79d0-949a-5f53f4caf27f
+    0.95  http://localhost:4150/decks/019f6b2a-d9cc-79e2-beb5-077fe2257af9
+
+## Topic 5  (dominant for 316 decks)
+  cards: Psychic Assault, Psi-Bow Attack, The Power of the Mind, Psimitar, Cerebro, Telekinesis, Professor X, Team-Building Exercise, Telepathy, Directed Force, Wolverine, Honed Technique
+  top-loading decks:
+    1.00  http://localhost:4150/decks/019f6f7f-fe9f-7728-b4f4-dc11a804f335
+    0.99  http://localhost:4150/decks/019f6f6f-946f-71de-bc15-65ebc866e4fc
+    0.98  http://localhost:4150/decks/019f706b-cbb1-788c-9ba2-ae559f27a892
+
+## Topic 6  (dominant for 233 decks)
+  cards: Quick Strike, Smash the Problem, Brute Force, The Best Defense…, As One!, Fluid Motion, Unified Strike, "Now I'm Mad", Skilled Strike, Counter-Punch, Combat Training, The Direct Approach
+  top-loading decks:
+    0.96  http://localhost:4150/decks/019f6d89-dd9e-7b3f-b8db-f9e8d02c2052
+    0.92  http://localhost:4150/decks/019f703a-1565-70a2-831b-084a0900c6ad
+    0.92  http://localhost:4150/decks/019f702f-8439-74fa-a110-5a8a197ecc21
+
+## Topic 7  (dominant for 491 decks)
+  cards: Pitchback, Dive Bomb, Bombs Away, The Power of Flight, Honed Technique, Cannonball, Soaring Acrobatics, Team-Building Exercise, Vivian, Everyday Hero, The Locust, Moon Girl
+  top-loading decks:
+    0.97  http://localhost:4150/decks/019f6e9b-7cd0-7fa9-af07-e2eb8e59c393
+    0.97  http://localhost:4150/decks/019f6e65-9251-7573-9947-f0bbbbc524e2
+    0.96  http://localhost:4150/decks/019f6eff-38ad-7cfd-af52-819b55b041f0
+
+## Topic 8  (dominant for 801 decks)
+  cards: Fusillade, Mean Swing, Hand Cannon, Skilled Strike, Side Holster, Pulse Grenade, Plasma Pistol, Bug, Godslayer, Energy Spear, Jarnbjorn, Groot
+  top-loading decks:
+    0.98  http://localhost:4150/decks/019f6b2c-dbc9-7f36-a6cb-bf10d5dce98c
+    0.97  http://localhost:4150/decks/019f6b65-a69e-774d-bcec-849f1013e7c4
+    0.97  http://localhost:4150/decks/019f6b70-08a2-7004-8ce9-b9a277b93e1c
+
+## Topic 9  (dominant for 906 decks)
+  cards: Energy Spear, Enraged, Inspired, Shield Spell, Zone of Silence, As One!, Boot Camp, Summoning Spell, Laser Blaster, Magic Attack, Honorary Avenger, The Sorcerer Supreme
+  top-loading decks:
+    1.00  http://localhost:4150/decks/019f6d14-f8ed-7fac-ae38-b473783c246c
+    1.00  http://localhost:4150/decks/019f6b4e-a323-7931-9063-7e79074a8a80
+    1.00  http://localhost:4150/decks/019f6fc7-817f-72fd-b893-cdcec85b77dc
+
+## Topic 10  (dominant for 483 decks)
+  cards: Firepower, Spoiling for a Fight, S.H.I.E.L.D. Sidearm, Directed Force, Pulse Grenade, Aggressive Stance, Man on the Wall, Bambino, Lock and Load, Captain America, Sidearm, Deathlok
+  top-loading decks:
+    0.98  http://localhost:4150/decks/019f704d-2796-7147-a117-87e2debed587
+    0.98  http://localhost:4150/decks/019f703b-f104-702e-9826-2ec4e835d9f3
+    0.97  http://localhost:4150/decks/019f7067-56c3-72a3-b274-227cb130f74b
+
+## Topic 11  (dominant for 773 decks)
+  cards: Get Over Here!, Battle Fury, Mean Swing, Chase Them Down, Valkyrie, Enhanced Reflexes, Relentless Assault, Hall of Heroes, Jarnbjorn, Godlike Stamina, Moment of Triumph, Enhanced Physique
+  top-loading decks:
+    1.00  http://localhost:4150/decks/019f6d85-70ce-7643-97d1-d46efed8353f
+    1.00  http://localhost:4150/decks/019f6645-e948-7724-b545-5a08f9b2e9ff
+    1.00  http://localhost:4150/decks/019f5e2a-54d9-73bc-a1af-f1247be796f9
+
+## Topic 12  (dominant for 1134 decks)
+  cards: Toe to Toe, "You'll Pay for That!", Counterattack, Drop Kick, Skilled Strike, To the Rescue!, Enhanced Physique, Brawn, She-Hulk, Down Time, Martial Prowess, Target Acquired
+  top-loading decks:
+    1.00  http://localhost:4150/decks/019f5e55-a9c5-71e6-81e0-74a19741cbf8
+    1.00  http://localhost:4150/decks/019f5e55-9dd4-7756-8671-fcfdafb7b402
+    1.00  http://localhost:4150/decks/019f5e55-a722-70bd-bac9-b0955b1e6963
+
+## Topic 13  (dominant for 481 decks)
+  cards: Suppressing Fire, Marked, Take That!, Surprise Move, Gatekeeper, Air Cover, Shark-Girl, Glob, Spoiling for a Fight, Coup de Grâce, Savage Strike, Caught in the Crossfire
+  top-loading decks:
+    1.00  http://localhost:4150/decks/019f9a6f-3f42-70e6-8a68-77322cfeae4c
+    0.99  http://localhost:4150/decks/019f6f93-7bb1-7d85-905b-df6092fe41c4
+    0.97  http://localhost:4150/decks/019f6eb4-9586-787d-894a-9aab66c4bb7a
+
+## Topic 14  (dominant for 519 decks)
+  cards: Spiritual Meditation, Basic Spell, Digging Deep, Full-Body Charge, The Sorcerer Supreme, Magic Attack, Legion, Bloodgem, Triage, Goldballs, The Power in All of Us, White Fox
+  top-loading decks:
+    0.99  http://localhost:4150/decks/019f6e7f-f28e-7883-ad60-b9ec5f822876
+    0.99  http://localhost:4150/decks/019f6e81-5df0-7870-afc6-42ade951535e
+    0.98  http://localhost:4150/decks/019f702b-2bf2-70a7-b71b-93d5d2bdc87d
+
+## Topic 15  (dominant for 933 decks)
+  cards: Surprise Attack, Ready to Rumble, Lie in Wait, Swarm Tactics, Plan of Attack, Drop Kick, Browbeat, The Power in All of Us, Wasp, Into the Fray, Deft Focus, Ironheart
+  top-loading decks:
+    0.91  http://localhost:4150/decks/019f6bb8-afdd-78b0-a114-be1726a33e40
+    0.88  http://localhost:4150/decks/019f6bc7-708e-7b00-9fbd-2d5211764f44
+    0.86  http://localhost:4150/decks/019f6bb9-315a-759a-a4f1-d7f37440c3cc
+
+## Topic 16  (dominant for 791 decks)
+  cards: Limitless Stamina, Unshakable, Godlike Stamina, The Direct Approach, Savage Strike, Deft Focus, Spoiling for a Fight, Blood Rage, Aggressive Conditioning, Drop Kick, Smash the Problem, Blade
+  top-loading decks:
+    0.90  http://localhost:4150/decks/019f6e1f-0331-709d-a968-40acdbed220c
+    0.86  http://localhost:4150/decks/019f6ea1-f0fd-7cfc-a64e-d79fe30ff4f0
+    0.86  http://localhost:4150/decks/019f6c6f-7290-7d9c-b3d8-32e28f78f9f5
+
+## Topic 17  (dominant for 1043 decks)
+  cards: One by One, Precision Strike, Melee, Aggressive Energy, Warrior Skill, Mutant Education, Honed Technique, Fluid Motion, No Quarter, Psylocke, Sunfire, The X-Jet
+  top-loading decks:
+    0.99  http://localhost:4150/decks/019f702f-6e2a-77af-b2f3-8829f16d1941
+    0.98  http://localhost:4150/decks/019f6e7d-9851-757f-99ee-9d5a65fcfb2e
+    0.98  http://localhost:4150/decks/019f6d17-1a8e-7be9-83c9-4e5bbad1b8f0
+
+## Topic 18  (dominant for 983 decks)
+  cards: Earth's Mightiest Heroes, Adrenaline Rush, Tenacity, Skilled Strike, Civic Duty, Battle Fury, Assess the Situation, Enhanced Physique, Spider-Girl, Wasp, Honorary Avenger, Moment of Triumph
+  top-loading decks:
+    0.99  http://localhost:4150/decks/019f6b71-ba60-7a28-ac67-f730e221a076
+    0.99  http://localhost:4150/decks/019f6b43-69cf-7757-8c9a-2005f0624571
+    0.99  http://localhost:4150/decks/019f69b8-0bd1-7508-ae65-ffec7e79bf2b
+
+## Topic 19  (dominant for 1387 decks)
+  cards: Clobber, Plan of Attack, Hit and Run, Impede, Momentum Shift, Full-Body Charge, Fluid Motion, First Hit, Piercing Strike, Drop Kick, Precision Strike, Test the Defense
+  top-loading decks:
+    0.99  http://localhost:4150/decks/019f7035-b05e-79bc-aaa9-2a7773577b27
+    0.95  http://localhost:4150/decks/019f6b47-d887-7a73-8d9a-88ea8ea23a7e
+    0.95  http://localhost:4150/decks/019f6b2b-fbfd-7ad6-bc57-06113f6f11c5
+
+
+# Anchor label → topic loadings
+
+## firepower  (10 decks)  dominant topic = 10
+    topic 10  mean load 0.714   [Firepower, Spoiling for a Fight, S.H.I.E.L.D. Sidearm, Directed Force, Pulse Grenade, Aggressive Stance]
+    topic  8  mean load 0.061   [Fusillade, Mean Swing, Hand Cannon, Skilled Strike, Side Holster, Pulse Grenade]
+    topic 18  mean load 0.039   [Earth's Mightiest Heroes, Adrenaline Rush, Tenacity, Skilled Strike, Civic Duty, Battle Fury]
+
+## attack_stacking  (10 decks)  dominant topic = 13
+    topic 13  mean load 0.201   [Suppressing Fire, Marked, Take That!, Surprise Move, Gatekeeper, Air Cover]
+    topic 10  mean load 0.127   [Firepower, Spoiling for a Fight, S.H.I.E.L.D. Sidearm, Directed Force, Pulse Grenade, Aggressive Stance]
+    topic  8  mean load 0.122   [Fusillade, Mean Swing, Hand Cannon, Skilled Strike, Side Holster, Pulse Grenade]

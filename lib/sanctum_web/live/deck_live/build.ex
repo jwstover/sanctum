@@ -70,11 +70,18 @@ defmodule SanctumWeb.DeckLive.Build do
       end)
 
     signature_cards = Decks.signature_cards(deck.hero_id)
+    gradient = hero_gradient(deck.hero)
+
+    side_decks =
+      deck
+      |> Sanctum.Decks.SideDecks.for_deck()
+      |> DeckCards.side_deck_views(gradient)
 
     socket
     |> assign(:page_title, "Build · #{deck.title}")
     |> assign(:deck, deck)
-    |> assign(:hero_gradient, hero_gradient(deck.hero))
+    |> assign(:hero_gradient, gradient)
+    |> assign(:side_decks, side_decks)
     |> assign(:card_view, "images")
     |> assign(:entries, entries)
     |> assign(:signature_cards, signature_cards)
@@ -829,6 +836,7 @@ defmodule SanctumWeb.DeckLive.Build do
             issues={@issues}
             card_view={@card_view}
             hero_gradient={@hero_gradient}
+            side_decks={@side_decks}
           />
         </div>
       </div>
@@ -1208,6 +1216,7 @@ defmodule SanctumWeb.DeckLive.Build do
           issues={@issues}
           card_view={@card_view}
           hero_gradient={@hero_gradient}
+          side_decks={@side_decks}
         />
       </div>
 
@@ -1251,6 +1260,7 @@ defmodule SanctumWeb.DeckLive.Build do
   attr :issues, :list, required: true
   attr :card_view, :string, required: true
   attr :hero_gradient, :any, required: true
+  attr :side_decks, :list, required: true
 
   defp deck_panel(assigns) do
     card_views = panel_card_views(assigns.entries, assigns.hero_gradient)
@@ -1438,6 +1448,8 @@ defmodule SanctumWeb.DeckLive.Build do
       >
         No cards yet — tap + on a card to add it.
       </p>
+
+      <.side_decks_section side_decks={@side_decks} card_view={@card_view} />
 
       <.deck_charts stats={@chart_stats} />
     </div>

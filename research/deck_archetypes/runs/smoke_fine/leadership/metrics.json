@@ -1,0 +1,191 @@
+{
+  "held_out": {
+    "mrr": 0.17586868273581927,
+    "n": 1000,
+    "hit@1": 0.079,
+    "hit@5": 0.246,
+    "hit@10": 0.363,
+    "hit@25": 0.565
+  },
+  "anchors": {
+    "status": "ok",
+    "anchor_cards_resolved": 9,
+    "anchor_cards_unresolved": 0,
+    "anchor_decks_resolved": 0,
+    "card_precision@10": 0.09999999999999999
+  },
+  "intrinsic": {
+    "n_clusters": 3,
+    "noise_fraction": 0.4476498733464678,
+    "clustered_fraction": 0.5523501266535322,
+    "silhouette": -0.0067704673783249465,
+    "davies_bouldin": 1.5268152939966049
+  },
+  "interpret": {
+    "n_clusters": 3,
+    "clusters": [
+      {
+        "cluster": 0,
+        "size": 23,
+        "top_cards": [
+          [
+            "Heimdall",
+            15.2,
+            0.3
+          ],
+          [
+            "Regroup",
+            13.6,
+            0.87
+          ],
+          [
+            "Crew Quarters",
+            6.1,
+            0.22
+          ],
+          [
+            "War Machine",
+            5.6,
+            0.3
+          ],
+          [
+            "Ironheart",
+            5.4,
+            0.57
+          ],
+          [
+            "The Power in All of Us",
+            4.4,
+            0.57
+          ],
+          [
+            "Black Panther",
+            3.8,
+            0.3
+          ],
+          [
+            "Rapid Response",
+            3.0,
+            1.0
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6f4d-71ba-7ed6-81e4-c522168cc5bf",
+          "http://localhost:4150/decks/019f6fb5-7858-7c5f-85b6-f294311dffb5",
+          "http://localhost:4150/decks/019f6bf1-198f-70ae-86e0-52f4a05e180f",
+          "http://localhost:4150/decks/019f6c7a-795f-783f-b25d-6fd69fc2b53c",
+          "http://localhost:4150/decks/019f6c7a-88b7-7cbc-84bf-1dcec1e22ece"
+        ]
+      },
+      {
+        "cluster": 1,
+        "size": 7751,
+        "top_cards": [
+          [
+            "Polaris",
+            1.6,
+            0.05
+          ],
+          [
+            "Wolverine",
+            1.5,
+            0.06
+          ],
+          [
+            "\"To Me, My X-Men!\"",
+            1.5,
+            0.08
+          ],
+          [
+            "Cerebro",
+            1.5,
+            0.06
+          ],
+          [
+            "Danger Room",
+            1.5,
+            0.05
+          ],
+          [
+            "Uncanny X-Men",
+            1.5,
+            0.14
+          ],
+          [
+            "Forge",
+            1.5,
+            0.12
+          ],
+          [
+            "Angel",
+            1.5,
+            0.09
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6e33-9f71-7d1d-ac66-ca309e5a7c56",
+          "http://localhost:4150/decks/019f7085-36ed-7557-859d-97be8d8a3cf4",
+          "http://localhost:4150/decks/019f6e2e-3f86-7869-b1f0-29a78bd08f0a",
+          "http://localhost:4150/decks/019f7077-dc23-7e85-a829-905e60e6707f",
+          "http://localhost:4150/decks/019f6dfb-7234-7017-af59-033ef58f1cdc"
+        ]
+      },
+      {
+        "cluster": 2,
+        "size": 76,
+        "top_cards": [
+          [
+            "Save the Day",
+            40.2,
+            0.79
+          ],
+          [
+            "Go Down Swinging",
+            39.4,
+            0.95
+          ],
+          [
+            "Sneak Attack",
+            29.7,
+            0.99
+          ],
+          [
+            "Captain Marvel",
+            19.1,
+            0.76
+          ],
+          [
+            "Two Against the World",
+            13.9,
+            0.14
+          ],
+          [
+            "Goliath",
+            10.8,
+            0.96
+          ],
+          [
+            "Power Man",
+            10.5,
+            0.2
+          ],
+          [
+            "Heimdall",
+            10.5,
+            0.21
+          ]
+        ],
+        "sample_decks": [
+          "http://localhost:4150/decks/019f6e55-d815-7426-819e-8cd81c7bb6e0",
+          "http://localhost:4150/decks/019f6b9f-ca15-71d5-b170-1ae0095ce4e8",
+          "http://localhost:4150/decks/019f6fae-b743-727a-9c4d-93113499d829",
+          "http://localhost:4150/decks/019f6c18-54b1-7e2c-a955-1fa7acd961c1",
+          "http://localhost:4150/decks/019f6bba-7f97-7ec4-b50f-88b07036eed1"
+        ]
+      }
+    ]
+  },
+  "projection": {
+    "status": "disabled"
+  }
+}

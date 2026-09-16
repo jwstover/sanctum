@@ -1,0 +1,59 @@
+# Hand-seeded GOLD archetypes for anchor-retrieval evaluation.
+#
+# You do NOT need to label many decks. Two kinds of anchors, either or both per
+# archetype:
+#   - core_cards: card NAMES that (near-)define the archetype. Cheapest signal.
+#       Must match `name` in cards.jsonl exactly (the harness resolves name ->
+#       card_id). Names are used, not codes/uuids, because they're human-typable
+#       and survive a DB rebuild. Eval asks: are a core card's nearest cards the
+#       OTHER core cards?
+#   - decks:      a few deck ids you're confident belong to the archetype. Grab
+#       these straight from the app: the uuid in a /decks/:id URL. Eval asks: are
+#       an anchor deck's k-NN mostly the same archetype label?
+#
+# 5-10 archetypes x a handful each is plenty. Copy to anchors/archetypes.yaml
+# (that filename is gitignored / yours to edit) and fill in real values.
+
+archetypes:
+  - label: firepower
+    notes: >
+      Weapon/tech upgrades centered on Firepower; upgrades that ready or don't
+      need to exhaust. Cross-hero (War Machine, Iron Man, Spider-Man, ...).
+    core_cards: ["Firepower", "Jarnbjorn", "S.H.I.E.L.D. Sidearm", "Pulse Grenade"]
+    # From the deck-browser query: has Firepower AND (Sidearm|Pulse Grenade|Jarnbjorn).
+    decks:
+      - "019f7079-bf29-786e-b215-1e607724a084"
+      - "019f706f-3528-7469-a0b6-4af52afb60d1"
+      - "019fa1f1-c996-7c41-a41a-b48ec91e8051"  # Guess Who Remembered Their Ammo Bag?
+      - "019f94a4-0a49-759a-9fc5-223a0245a164"  # Cold Steel, Hot Lead
+      - "019f7086-9961-776b-8364-b5e53b654778"  # Nick Fury Firepower
+      - "019f7085-7f67-762d-88e2-3649663fe380"  # Wakanda Tech is Fire!
+      - "019f7084-05ed-727b-84a6-77d215f1df38"  # Firepower Forever!
+      - "019f7082-42ff-7dc6-8e03-ed9cb595bd08"  # War Machine has the (fire)power!
+      - "019f7082-105f-7f50-9d63-5b70a46c42e8"  # Axe Machine
+      - "019f7081-c50f-72cc-a8cb-e94c5fda4d3c"  # Web (and Weapon!) Shooter
+     
+  - label: attack_stacking
+    notes: >
+      Stacks the ATK stat high and leans on basic attack activations
+      (Combat Training, Aggressive Conditioning, Hand Cannon, ...). Aggression.
+    core_cards: ["Combat Training", "Aggressive Conditioning", "Hand Cannon"]
+    # From the deck-browser query (has all three). Deliberately excludes decks
+    # already labeled firepower so the two aggression labels stay disjoint.
+    decks:
+      - "019f995c-9239-72b7-9a3f-16fc18f8d45c"  # Crossfire Shenanigans!
+      - "019f878d-2f94-7e86-bda7-624efca7a504"  # Nightcrawler
+      - "019f7087-1cbe-7f07-baae-b5f56dee0d27"  # Valkyrie
+      - "019f7086-ed5e-7f43-b944-5fa56f48df18"  # Savage Giant
+      - "019f7086-b785-755e-b629-09ec110d3e25"  # Ghost Spider Test One-Shot
+      - "019f7084-149a-7d06-9669-eea4ce23fca2"  # How much for the gun?
+      - "019f7084-1448-7f6e-9841-db57fadece98"  # Black Widow - Pistol Whip
+      - "019f7081-5fc8-7be5-83f5-e749d2d3c337"  # Hollywood's Even Heavier Hitter
+      - "019f707f-6c7c-7baa-a70d-3fe706549227"  # Hulk Could Never
+      - "019f7084-e55f-728c-98b3-1929b0cc5ab6"  # Nova goes to Asgard
+
+  - label: Perfect Defense
+    notes: > 
+      Attempts to stack defense stat as high as possible to fully block the villain
+    core_cards: ["Armored Vest", "Defensive Conditioning", "Dauntless", "Unflappable", "Hard to Ignore"]
+    decks: ["019f7070-ef63-7b53-a53f-6bb12bb43540", "019f7083-afa7-7544-9969-57a8de779d0a"]

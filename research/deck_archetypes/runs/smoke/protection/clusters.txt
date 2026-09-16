@@ -1,0 +1,114 @@
+# Cluster report — 4 clusters (8215 decks noise)
+
+
+## Cluster 0  (59 decks)
+   61.1×   68%  Protector
+   57.9×   88%  Reboot
+   30.7×   76%  Machine Man
+   17.0×   83%  Victor Mancha
+    9.6×   41%  Subdue
+    8.2×   78%  Jocasta
+    7.9×   66%  Perseverance
+    6.4×    8%  Meditation
+    4.7×   19%  Ready to Rumble
+    4.7×   15%  Crew Quarters
+    4.1×   71%  Deft Focus
+    3.9×   10%  Blade
+    3.7×   34%  Defiance
+    3.3×    7%  Vivian
+    3.3×   34%  Side Step
+    3.2×   25%  Preservation
+    3.1×   27%  Team-Building Exercise
+    3.0×    5%  Earth's Mightiest Heroes
+    2.8×   27%  Flow Like Water
+    2.3×   22%  Ever Vigilant
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6c1a-1df6-7d18-a0d0-e2b276a2e83b
+    http://localhost:4150/decks/019f6be0-94c3-7266-bd40-480b771e2edc
+    http://localhost:4150/decks/019f6ba2-6cc0-7715-aca1-5bcab966d524
+    http://localhost:4150/decks/019f6bba-a3ed-73ae-bd5f-48695d0b838d
+    http://localhost:4150/decks/019f6b9b-2694-7ada-9d09-0981f608c688
+
+## Cluster 1  (971 decks)
+    7.3×   18%  Haymaker
+    6.6×   14%  Emergency
+    5.1×   64%  Luke Cage
+    4.0×   15%  Enhanced Awareness
+    3.8×   61%  Mockingbird
+    3.8×    9%  Tenacity
+    3.7×   64%  Black Widow
+    3.7×   23%  First Aid
+    3.6×   36%  Nova
+    3.4×   13%  Enhanced Reflexes
+    3.2×   13%  Lockjaw
+    3.2×   42%  Tackle
+    3.1×   38%  Get Behind Me!
+    2.9×    7%  Honorary Avenger
+    2.9×   68%  Nick Fury
+    2.4×   78%  Avengers Mansion
+    2.3×   71%  Med Team
+    2.3×   18%  Defensive Stance
+    2.2×   34%  Counter-Punch
+    2.1×   37%  Preemptive Strike
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f7051-d5c3-7af6-9be7-15951f3de72f
+    http://localhost:4150/decks/019f6652-aa9e-7e07-9d5b-620f60dc5940
+    http://localhost:4150/decks/019f6ad9-d02d-7f04-ace3-d777fa99e9da
+    http://localhost:4150/decks/019f5e29-c16c-7699-b44a-c8dc1a0bb1f8
+    http://localhost:4150/decks/019f5e4c-52bc-7b3a-ab0e-abd608293447
+
+## Cluster 2  (2433 decks)
+    3.9×    6%  Excelsior
+    3.7×    5%  Cannonball
+    3.6×    6%  Zone of Silence
+    3.6×    6%  Magic Attack
+    3.5×    8%  Combat Training
+    3.4×    6%  The Power of Flight
+    3.1×   13%  Utopia
+    3.1×    6%  Inspired
+    3.1×   10%  Forge
+    3.0×    7%  Mutant Protectors
+    3.0×    6%  White Fox
+    2.8×    7%  Angel
+    2.8×    8%  Triage
+    2.7×    6%  Digging Deep
+    2.6×    5%  Warpath
+    2.6×    6%  Rockslide
+    2.6×    9%  Protective Training
+    2.5×    9%  Colossus
+    2.5×    9%  Moira MacTaggert
+    2.3×   14%  Nightcrawler
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6e4b-8daf-7214-b8eb-d8f390ce31f0
+    http://localhost:4150/decks/019f6f0f-1e0e-7901-9291-f61490abbfde
+    http://localhost:4150/decks/019f6e77-110d-7cb7-ac15-46d7e2a69b4f
+    http://localhost:4150/decks/019f7060-febc-71a4-aa7a-1d8a2cbac660
+    http://localhost:4150/decks/019f7060-febb-7ef0-883f-10d7510e1e05
+
+## Cluster 3  (484 decks)
+   22.5×   18%  Spider-Ham
+   16.4×   24%  Scarlet Spider
+   15.3×   57%  Spider-Man
+   14.8×   72%  Spider-Man
+   14.6×   53%  SP//dr
+   13.8×   78%  Across the Spider-Verse
+   13.8×   87%  Spider-UK
+   13.7×   49%  Ghost-Spider
+   13.6×   35%  Spider-Man Noir
+   13.4×   41%  Thwip Thwip!
+   13.0×   94%  Web of Life and Destiny
+   13.0×    9%  Madame Web
+   13.0×   46%  Spider-Man
+   12.8×   28%  Warrior of the Great Web
+   12.3×   40%  Spider-Tingle
+   12.1×   72%  Spider-Man
+   11.6×   87%  Silk
+   11.2×   10%  Young Love
+    8.4×   10%  Scarlet Spider
+    8.2×   15%  Return the Favor
+  sample decks (nearest the cluster centroid):
+    http://localhost:4150/decks/019f6c44-004e-7b3d-bdf4-d8fe9e98615d
+    http://localhost:4150/decks/019f6fc9-ea6a-752a-bf03-6a6bcaef9318
+    http://localhost:4150/decks/019f702e-3779-7361-86db-179f170e44f2
+    http://localhost:4150/decks/019f6c7c-d891-7597-ad00-c9a6cabab16d
+    http://localhost:4150/decks/019f7060-ffec-7950-866d-f433c42c7750

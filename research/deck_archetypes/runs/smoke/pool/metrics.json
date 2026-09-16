@@ -1,0 +1,29 @@
+{
+  "held_out": {
+    "mrr": 0.23700815310926615,
+    "n": 935,
+    "hit@1": 0.12513368983957218,
+    "hit@5": 0.3358288770053476,
+    "hit@10": 0.4716577540106952,
+    "hit@25": 0.6684491978609626
+  },
+  "anchors": {
+    "status": "ok",
+    "anchor_cards_resolved": 6,
+    "anchor_cards_unresolved": 6,
+    "anchor_decks_resolved": 0,
+    "card_precision@10": 0.08
+  },
+  "intrinsic": {
+    "n_clusters": 0,
+    "noise_fraction": 1.0,
+    "clustered_fraction": 0.0
+  },
+  "interpret": {
+    "n_clusters": 0,
+    "clusters": []
+  },
+  "projection": {
+    "status": "disabled"
+  }
+}
