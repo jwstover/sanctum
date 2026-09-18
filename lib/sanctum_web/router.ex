@@ -21,6 +21,7 @@ defmodule SanctumWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug SanctumWeb.Plugs.ApiRateLimit
     plug :load_from_bearer
     plug :set_actor, :user
   end
@@ -197,10 +198,13 @@ defmodule SanctumWeb.Router do
     )
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", SanctumWeb do
-  #   pipe_through :api
-  # end
+  # Sanctum's first public JSON API: names-only deck payload for the TTS
+  # importer tile (see Sanctum.TTS.BagNames). No CSP/CSRF from :browser.
+  scope "/api", SanctumWeb.Api do
+    pipe_through :api
+
+    get "/decks/:id/tts", DeckTTSController, :show
+  end
 
   # CI-only webhook: announces an imminent deploy to connected users
   # (bearer-token guarded; see SanctumWeb.DeployNoticeController).
