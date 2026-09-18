@@ -21,6 +21,7 @@ defmodule SanctumWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug SanctumWeb.Plugs.ApiRateLimit
     plug :load_from_bearer
     plug :set_actor, :user
   end
