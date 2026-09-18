@@ -8,6 +8,9 @@ Ecto.Adapters.SQL.Sandbox.mode(Sanctum.Repo, :manual)
 # them on a real (non-sandbox) connection so the rows are committed and visible
 # inside every test's rolled-back sandbox transaction — otherwise any factory
 # card side carrying an aspect would violate the foreign key. Idempotent.
+# Official set kinds are seeded the same way so tests can read them as the
+# committed reference data they are in every environment.
 Ecto.Adapters.SQL.Sandbox.checkout(Sanctum.Repo, sandbox: false)
 Sanctum.Release.seed_aspects()
+Sanctum.Release.seed_set_kinds()
 Ecto.Adapters.SQL.Sandbox.checkin(Sanctum.Repo)
