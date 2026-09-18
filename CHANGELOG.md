@@ -1,3 +1,12 @@
+# [1.86.0](https://github.com/jwstover/sanctum/compare/v1.85.0...v1.86.0) (2026-09-18)
+
+
+### Features
+
+* **tts:** bag-name resolution layer for Hitch's TTS mod ([711a4e8](https://github.com/jwstover/sanctum/commit/711a4e8f9539bbdcb4982bb9c2a7d4bbb2d56f2d))
+
+
+
 # [1.85.0](https://github.com/jwstover/sanctum/compare/v1.84.0...v1.85.0) (2026-09-16)
 
 
@@ -46,15 +55,6 @@
 * **profile:** BYOK Anthropic key management on the profile page ([7acec3b](https://github.com/jwstover/sanctum/commit/7acec3bbcce53785b564b5b64fc4baebf6264136))
 * **profile:** let users upload their own profile picture ([73cc572](https://github.com/jwstover/sanctum/commit/73cc572c856e3f02125da9515d850e2cd9f7410a))
 * **vision:** add CardVision.validate_key/1 for BYOK key validation ([ebd1b3d](https://github.com/jwstover/sanctum/commit/ebd1b3d17d9df9c6c68ea4fdc3db8071f21f804a))
-
-
-
-# [1.81.0](https://github.com/jwstover/sanctum/compare/v1.80.0...v1.81.0) (2026-07-30)
-
-
-### Features
-
-* **decks:** MarvelCDB-style deck charts on both deck surfaces ([2b4de77](https://github.com/jwstover/sanctum/commit/2b4de77c31814afe22b41803aa7e79058318ab75))
 
 
 
