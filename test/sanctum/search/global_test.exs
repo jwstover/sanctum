@@ -7,9 +7,11 @@ defmodule Sanctum.Search.GlobalTest do
 
   use Sanctum.DataCase, async: true
 
+  import Sanctum.AccountsFixtures
   import Sanctum.Factory
 
-  alias Sanctum.Search.{CardFields, DeckFields, Global, HeroFields, Parser}
+  alias Sanctum.Games
+  alias Sanctum.Search.{CardFields, DeckFields, Global, HeroFields, Parser, ScenarioFields}
 
   # -- scope extraction (pure) -------------------------------------------------
 
@@ -116,6 +118,19 @@ defmodule Sanctum.Search.GlobalTest do
   end
 
   # -- remainder serialization (pure) --------------------------------------------
+
+  describe "applicable?/2 for scenarios" do
+    test "is:mine is a scenario flag, not a card one" do
+      assert applicable?("is:mine", ScenarioFields)
+      refute applicable?("is:mine", CardFields)
+      refute applicable?("is:unique", ScenarioFields)
+    end
+
+    test "villain: applies to scenarios but not decks" do
+      assert applicable?("villain:rhino", ScenarioFields)
+      refute applicable?("villain:rhino", DeckFields)
+    end
+  end
 
   describe "remainder/2" do
     defp remainder_of(input) do
@@ -291,7 +306,7 @@ defmodule Sanctum.Search.GlobalTest do
         attrs: %{name: "#{@marker} Scenario", villain_set_id: villain_set.id}
       )
 
-      %{pack: pack}
+      %{pack: pack, villain_set: villain_set}
     end
 
     test "a bare word fans out across every type in fixed order" do
@@ -339,6 +354,48 @@ defmodule Sanctum.Search.GlobalTest do
 
       [scenario] = group(result, :scenarios).results
       assert scenario.href == "/browse/#{pack.code}#zz_villain"
+      assert scenario.subtitle == "Official scenario"
+    end
+
+    test "a user-owned scenario surfaces in the scenarios group", %{
+      pack: pack,
+      villain_set: villain_set
+    } do
+      owner = user_fixture(%{username: "zzbuilder"})
+
+      Games.build_scenario!(
+        %{name: "#{@marker} Homebrew", villain_set_id: villain_set.id},
+        actor: owner
+      )
+
+      result = Global.search("in:scenarios #{@marker} Homebrew", nil)
+      [homebrew] = group(result, :scenarios).results
+
+      assert homebrew.title == "#{@marker} Homebrew"
+      assert homebrew.subtitle == "Scenario by zzbuilder"
+      assert homebrew.href == "/browse/#{pack.code}#zz_villain"
+
+      mine = Global.search("in:scenarios is:mine #{@marker}", owner)
+      assert [%{title: title}] = group(mine, :scenarios).results
+      assert title == "#{@marker} Homebrew"
+
+      assert group(Global.search("in:scenarios is:mine #{@marker}", nil), :scenarios) == nil
+    end
+
+    test "an owner without a username reads as a generic user scenario", %{
+      villain_set: villain_set
+    } do
+      owner = user_fixture()
+
+      Games.build_scenario!(
+        %{name: "#{@marker} Anon", villain_set_id: villain_set.id},
+        actor: owner
+      )
+
+      result = Global.search("in:scenarios #{@marker} Anon", nil)
+      [anon] = group(result, :scenarios).results
+
+      assert anon.subtitle in ["User scenario", "Scenario by #{owner.username}"]
     end
 
     test "typed clauses implicitly narrow to the types that understand them" do
