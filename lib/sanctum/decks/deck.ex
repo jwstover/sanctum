@@ -64,17 +64,9 @@ defmodule Sanctum.Decks.Deck do
             hero: [:display_name, :hero_side, card: [:primary_side]]
           ])
 
-        query =
-          if is_binary(search) and String.trim(search) != "" do
-            # Bare words search title/hero name; `field op value` terms filter
-            # any registered deck field (see Sanctum.Search.DeckFields).
-            case Sanctum.Search.compile(search, Sanctum.Search.DeckFields) do
-              %{expr: nil} -> query
-              %{expr: filter} -> Ash.Query.filter(query, ^filter)
-            end
-          else
-            query
-          end
+        # Bare words search title/hero name; `field op value` terms filter
+        # any registered deck field (see Sanctum.Search.DeckFields).
+        query = Sanctum.Search.filter_query(query, search, Sanctum.Search.DeckFields)
 
         case sort do
           "title" ->
