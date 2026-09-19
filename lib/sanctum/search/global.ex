@@ -448,7 +448,7 @@ defmodule Sanctum.Search.Global do
   defp do_fetch(:scenarios, expr, actor, limit) do
     Sanctum.Games.Scenario
     |> base_query(expr)
-    |> Ash.Query.load([:villain_set, :owner])
+    |> Ash.Query.load([:owner])
     |> Ash.Query.sort(name: :asc)
     |> Ash.Query.limit(limit)
     |> Ash.read!(actor: actor)
@@ -535,15 +535,13 @@ defmodule Sanctum.Search.Global do
     end)
   end
 
-  defp to_results(scenarios, :scenarios, actor) do
-    packs = pack_codes_by_set(Enum.map(scenarios, & &1.set), actor)
-
+  defp to_results(scenarios, :scenarios, _actor) do
     Enum.map(scenarios, fn scenario ->
       %{
         id: scenario.id,
         title: scenario.name,
         subtitle: scenario_subtitle(scenario),
-        href: browse_href(packs[scenario.set], scenario.set),
+        href: "/scenarios/#{scenario.id}",
         kind: :scenario
       }
     end)
@@ -557,7 +555,7 @@ defmodule Sanctum.Search.Global do
 
   defp scenario_subtitle(_scenario), do: "User scenario"
 
-  # Villains and scenarios carry a `set` slug that matches `card_sets.code`;
+  # Villains carry a `set` slug that matches `card_sets.code`;
   # resolve those to pack codes in one batch so results can link to the pack's
   # browse page. Unmatched sets simply yield link-less results.
   defp pack_codes_by_set([], _actor), do: %{}
