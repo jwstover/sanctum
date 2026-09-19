@@ -31,16 +31,49 @@ defmodule Sanctum.Games.Scenario do
       change Sanctum.Games.Changes.SetScenarioSet, only_when_valid?: true
       change manage_relationship(:modular_sets, type: :append_and_remove)
     end
+
+    create :build do
+      description "Creates a user-owned scenario for the signed-in user; name defaults to \"<villain set> Scenario\"."
+      accept [:villain_set_id, :name]
+
+      change relate_actor(:owner)
+
+      validate Sanctum.Games.Validations.ValidateVillainSet
+      change Sanctum.Games.Changes.SetScenarioSet, only_when_valid?: true
+      change Sanctum.Games.Changes.DefaultScenarioName
+    end
+
+    update :rename do
+      accept [:name]
+      require_atomic? false
+    end
+
+    update :set_modular_sets do
+      argument :modular_sets, {:array, :uuid}, allow_nil?: false, default: []
+      require_atomic? false
+
+      validate Sanctum.Games.Validations.ValidateModularSets
+      change manage_relationship(:modular_sets, type: :append_and_remove)
+    end
   end
 
   policies do
-    # Catalog writes are admin-only; seeds and tests use authorize?: false.
+    # Admins moderate any scenario, official or user-owned; seeds and tests use authorize?: false.
     bypass [actor_attribute_equals(:admin, true), action_type([:create, :update, :destroy])] do
       authorize_if always()
     end
 
     policy action_type(:read) do
       authorize_if always()
+    end
+
+    policy action(:build) do
+      authorize_if actor_present()
+    end
+
+    # Official rows (owner_id nil) never match, so they're immutable for non-admins.
+    policy action_type([:update, :destroy]) do
+      authorize_if relates_to_actor_via(:owner)
     end
   end
 
@@ -92,6 +125,17 @@ defmodule Sanctum.Games.Scenario do
       destination_attribute :set
       filter expr(primary_side.type not in [:villain, :main_scheme])
     end
+  end
+
+  calculations do
+    # A nil actor compares owner_id to NULL, which matches nothing (loads as nil).
+    calculate :mine, :boolean, expr(owner_id == ^actor(:id))
+
+    calculate :official, :boolean, expr(is_nil(owner_id))
+  end
+
+  aggregates do
+    count :modular_set_count, :modular_sets
   end
 
   identities do
