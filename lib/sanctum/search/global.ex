@@ -448,6 +448,7 @@ defmodule Sanctum.Search.Global do
   defp do_fetch(:scenarios, expr, actor, limit) do
     Sanctum.Games.Scenario
     |> base_query(expr)
+    |> Ash.Query.load([:villain_set, :owner])
     |> Ash.Query.sort(name: :asc)
     |> Ash.Query.limit(limit)
     |> Ash.read!(actor: actor)
@@ -541,12 +542,20 @@ defmodule Sanctum.Search.Global do
       %{
         id: scenario.id,
         title: scenario.name,
-        subtitle: "Scenario",
+        subtitle: scenario_subtitle(scenario),
         href: browse_href(packs[scenario.set], scenario.set),
         kind: :scenario
       }
     end)
   end
+
+  # Match on owner_id so an owner that failed to load is never read as official.
+  defp scenario_subtitle(%{owner_id: nil}), do: "Official scenario"
+
+  defp scenario_subtitle(%{owner: %{username: username}}) when not is_nil(username),
+    do: "Scenario by #{username}"
+
+  defp scenario_subtitle(_scenario), do: "User scenario"
 
   # Villains and scenarios carry a `set` slug that matches `card_sets.code`;
   # resolve those to pack codes in one batch so results can link to the pack's

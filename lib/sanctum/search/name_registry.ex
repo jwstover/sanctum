@@ -1,7 +1,7 @@
 defmodule Sanctum.Search.NameRegistry do
   @moduledoc """
   Shared implementation for the minimal single-field registries the global
-  search fans out to (packs, heroes, villains, scenarios, card sets): one
+  search fans out to (packs, heroes, villains, card sets): one
   `name` text field plus the bare-word fallback, both matching through the
   same `pattern -> Ash expression` function.
 

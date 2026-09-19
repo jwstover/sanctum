@@ -46,6 +46,22 @@ defmodule Sanctum.Search do
     %{ast: ast, expr: expr, diagnostics: parse_diags ++ compile_diags}
   end
 
+  @doc """
+  Filter `query` by a search string compiled against `registry`. Blank or
+  unusable input leaves the query untouched; diagnostics are the caller's
+  (LiveView's) business.
+  """
+  def filter_query(query, search, registry) do
+    require Ash.Query
+
+    with true <- is_binary(search) and String.trim(search) != "",
+         %{expr: filter} when not is_nil(filter) <- compile(search, registry) do
+      Ash.Query.filter(query, ^filter)
+    else
+      _ -> query
+    end
+  end
+
   @doc "Parse `input` into `{ast | nil, diagnostics}` without compiling."
   defdelegate parse(input), to: Parser
 end
