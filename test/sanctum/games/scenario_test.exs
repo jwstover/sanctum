@@ -224,5 +224,30 @@ defmodule Sanctum.Games.ScenarioTest do
       loaded = Ash.load!(s, :modular_sets, authorize?: false)
       assert Enum.map(loaded.modular_sets, & &1.id) == [m.id]
     end
+
+    test "the game-setup picker lists official plus own scenarios, sorted by name" do
+      user = user_fixture()
+
+      official =
+        Games.create_scenario!(%{name: "Zzz Official", villain_set_id: villain_set!().id},
+          authorize?: false
+        )
+
+      mine = build!(user, %{name: "Aaa Mine"})
+      theirs = build!(user_fixture(), %{name: "Mmm Theirs"})
+
+      scenarios = Games.list_scenarios_for_game_setup!(actor: user)
+      ids = Enum.map(scenarios, & &1.id)
+
+      assert official.id in ids
+      assert mine.id in ids
+      refute theirs.id in ids
+
+      names = Enum.map(scenarios, & &1.name)
+      assert names == Enum.sort(names)
+
+      # The filter reads the actor, so a signed-out read is refused rather than widened.
+      assert {:error, %Ash.Error.Invalid{}} = Games.list_scenarios_for_game_setup()
+    end
   end
 end

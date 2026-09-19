@@ -46,6 +46,13 @@ defmodule Sanctum.Games.Scenario do
       end
     end
 
+    read :for_game_setup do
+      description "The new-game picker: official scenarios plus the actor's own, by name."
+
+      filter expr(is_nil(owner_id) or owner_id == ^actor(:id))
+      prepare build(sort: [name: :asc, id: :asc])
+    end
+
     create :create do
       primary? true
       accept [:name, :villain_set_id]
