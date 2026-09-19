@@ -54,6 +54,8 @@ defmodule Sanctum.Games do
       define :list_scenarios, action: :read
     end
 
+    resource Sanctum.Games.ScenarioModularSet
+
     resource Sanctum.Games.GamePlayer do
       define :flip_identity, action: :flip
       define :get_game_player, get_by: :game_id, action: :read

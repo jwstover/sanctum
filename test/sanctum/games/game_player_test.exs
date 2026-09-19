@@ -21,8 +21,7 @@ defmodule Sanctum.Games.GamePlayerTest do
     {:ok, scenario} =
       Games.create_scenario(%{
         name: "Test Scenario",
-        set: set_name,
-        recommended_modular_sets: []
+        set: set_name
       })
 
     villain_code = "testv#{:rand.uniform(100_000)}"
