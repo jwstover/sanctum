@@ -30,10 +30,13 @@ defmodule Sanctum.GamesTest do
   describe "villain enum values" do
     setup do
       {:ok, scenario} =
-        Games.create_scenario(%{
-          name: "Villain Zone Scenario",
-          set: "villain_zone_scenario"
-        })
+        Games.create_scenario(
+          %{
+            name: "Villain Zone Scenario",
+            villain_set_id: villain_set!("villain_zone_scenario").id
+          },
+          authorize?: false
+        )
 
       {:ok, card} =
         create_card_with_side(
@@ -144,11 +147,11 @@ defmodule Sanctum.GamesTest do
 
       attrs = %{
         name: "Rhino",
-        set: "rhino",
+        villain_set_id: villain_set!("rhino").id,
         modular_sets: [card_set.id]
       }
 
-      assert {:ok, scenario} = Games.create_scenario(attrs)
+      assert {:ok, scenario} = Games.create_scenario(attrs, authorize?: false)
 
       assert ["bomb_scare"] ==
                scenario
@@ -160,10 +163,10 @@ defmodule Sanctum.GamesTest do
     test "sets timestamps on creation" do
       attrs = %{
         name: "Klaw",
-        set: "klaw"
+        villain_set_id: villain_set!("klaw").id
       }
 
-      assert {:ok, scenario} = Games.create_scenario(attrs)
+      assert {:ok, scenario} = Games.create_scenario(attrs, authorize?: false)
       assert %DateTime{} = scenario.inserted_at
       assert %DateTime{} = scenario.updated_at
     end
@@ -173,10 +176,13 @@ defmodule Sanctum.GamesTest do
     setup do
       # Create a scenario with encounter cards but no recommended modular sets
       {:ok, scenario} =
-        Games.create_scenario(%{
-          name: "Test Scenario",
-          set: "test_scenario"
-        })
+        Games.create_scenario(
+          %{
+            name: "Test Scenario",
+            villain_set_id: villain_set!("test_scenario").id
+          },
+          authorize?: false
+        )
 
       # Create a villain card for the scenario
       {:ok, _villain_card} =
@@ -344,13 +350,16 @@ defmodule Sanctum.GamesTest do
         )
 
       {:ok, modular_scenario} =
-        Games.create_scenario(%{
-          name: "Modular Test Scenario",
-          set: "test_scenario",
-          modular_sets: [card_set.id]
-        })
+        Games.create_scenario(
+          %{
+            name: "Modular Test Scenario",
+            villain_set_id: villain_set!("test_scenario").id,
+            modular_sets: [card_set.id]
+          },
+          authorize?: false
+        )
 
-      # Same `set` as the setup scenario, so this is an upsert onto that row —
+      # Same villain set as the setup scenario, so this is an upsert onto that row —
       # exercises manage_relationship(:append_and_remove) on an existing scenario.
       assert modular_scenario.id == scenario.id
 
@@ -400,10 +409,13 @@ defmodule Sanctum.GamesTest do
     } do
       # Create scenario with no encounter cards
       {:ok, empty_scenario} =
-        Games.create_scenario(%{
-          name: "Empty Scenario",
-          set: "empty_scenario"
-        })
+        Games.create_scenario(
+          %{
+            name: "Empty Scenario",
+            villain_set_id: villain_set!("empty_scenario").id
+          },
+          authorize?: false
+        )
 
       # Create a villain for the empty scenario
       {:ok, _empty_villain} =
@@ -652,10 +664,13 @@ defmodule Sanctum.GamesTest do
   describe "main scheme game cards" do
     setup do
       {:ok, scenario} =
-        Games.create_scenario(%{
-          name: "Scheme Scenario",
-          set: "scheme_scenario"
-        })
+        Games.create_scenario(
+          %{
+            name: "Scheme Scenario",
+            villain_set_id: villain_set!("scheme_scenario").id
+          },
+          authorize?: false
+        )
 
       # Villain card drives game_villain creation (required for a valid game).
       {:ok, _villain_card} =
