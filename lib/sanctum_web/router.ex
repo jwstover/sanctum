@@ -95,6 +95,10 @@ defmodule SanctumWeb.Router do
       live "/decks/:id", DeckLive.Show, :show
       live "/decks/:id/build", DeckLive.Build, :build
 
+      # Public scenario detail (scenario reads are unauthenticated).
+      # /scenarios (step B) and /scenarios/new (step C) must precede /scenarios/:id.
+      live "/scenarios/:id", ScenarioLive.Show, :show
+
       # Reference page for the card/deck search query language.
       live "/search-help", SearchHelpLive, :index
 
