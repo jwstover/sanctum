@@ -12,7 +12,12 @@ Sanctum.Release.seed_aspects()
 :ok = MarvelCdb.load_pack("core")
 
 bomb_scare = Sanctum.Catalog.get_card_set_by_code!("bomb_scare", authorize?: false)
-Games.create_scenario!(%{name: "Rhino", set: "rhino", modular_sets: [bomb_scare.id]})
+rhino = Sanctum.Catalog.get_card_set_by_code!("rhino", authorize?: false)
+
+Games.create_scenario!(
+  %{name: "Rhino", villain_set_id: rhino.id, modular_sets: [bomb_scare.id]},
+  authorize?: false
+)
 
 # Bootstrap admin. Idempotent: the user is normally created on first Google
 # sign-in, so find-or-create by email, then set the admin flag. A later Google

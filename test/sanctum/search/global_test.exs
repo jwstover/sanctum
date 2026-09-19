@@ -277,15 +277,19 @@ defmodule Sanctum.Search.GlobalTest do
           attrs: %{code: "zzp", name: "#{@marker} Rising"}
         )
 
-      insert_card_set(%{
-        code: "zz_villain",
-        name: "#{@marker} Set",
-        set_type: :villain,
-        pack_id: pack.id
-      })
+      villain_set =
+        insert_card_set(%{
+          code: "zz_villain",
+          name: "#{@marker} Set",
+          set_type: :villain,
+          pack_id: pack.id
+        })
 
       insert_villain(%{villain_name: "#{@marker} Prime", set: "zz_villain"})
-      create(Sanctum.Games.Scenario, attrs: %{name: "#{@marker} Scenario", set: "zz_villain"})
+
+      create(Sanctum.Games.Scenario,
+        attrs: %{name: "#{@marker} Scenario", villain_set_id: villain_set.id}
+      )
 
       %{pack: pack}
     end

@@ -8,24 +8,38 @@ defmodule Sanctum.Games.Scenario do
   postgres do
     table "scenarios"
     repo Sanctum.Repo
+
+    identity_wheres_to_sql unique_official_villain_set: "owner_id IS NULL"
+
+    references do
+      reference :owner, on_delete: :nilify
+    end
   end
 
   actions do
-    defaults [:read]
+    defaults [:read, :destroy]
 
     create :create do
       primary? true
-      accept [:*]
+      accept [:name, :villain_set_id]
       upsert? true
-      upsert_identity :unique_set
+      upsert_identity :unique_official_villain_set
 
       argument :modular_sets, {:array, :uuid}
+
+      validate Sanctum.Games.Validations.ValidateVillainSet
+      change Sanctum.Games.Changes.SetScenarioSet, only_when_valid?: true
       change manage_relationship(:modular_sets, type: :append_and_remove)
     end
   end
 
   policies do
-    policy always() do
+    # Catalog writes are admin-only; seeds and tests use authorize?: false.
+    bypass [actor_attribute_equals(:admin, true), action_type([:create, :update, :destroy])] do
+      authorize_if always()
+    end
+
+    policy action_type(:read) do
       authorize_if always()
     end
   end
@@ -34,12 +48,26 @@ defmodule Sanctum.Games.Scenario do
     uuid_v7_primary_key :id
 
     attribute :name, :string, public?: true, allow_nil?: false
+    # Derived from villain_set.code; kept as a column for the Card.set joins below.
     attribute :set, :string, public?: true, allow_nil?: false
 
     timestamps()
   end
 
   relationships do
+    # The villain CardSet, not Villains.Villain: sets like Loki, Marauders and
+    # Sinister Six have several Villain rows each.
+    belongs_to :villain_set, Sanctum.Catalog.CardSet do
+      public? true
+      allow_nil? false
+    end
+
+    # nil = official scenario.
+    belongs_to :owner, Sanctum.Accounts.User do
+      public? true
+      allow_nil? true
+    end
+
     many_to_many :modular_sets, Sanctum.Catalog.CardSet do
       public? true
       through Sanctum.Games.ScenarioModularSet
@@ -67,6 +95,9 @@ defmodule Sanctum.Games.Scenario do
   end
 
   identities do
-    identity :unique_set, [:set]
+    # One official scenario per villain set; user-owned scenarios may share a set.
+    identity :unique_official_villain_set, [:villain_set_id] do
+      where expr(is_nil(owner_id))
+    end
   end
 end
