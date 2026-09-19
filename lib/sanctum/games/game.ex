@@ -16,6 +16,12 @@ defmodule Sanctum.Games.Game do
   postgres do
     table "games"
     repo Sanctum.Repo
+
+    # Game creation copies the villain and modular sets into the game, so a
+    # game survives its scenario being deleted.
+    references do
+      reference :scenario, on_delete: :nilify
+    end
   end
 
   actions do
@@ -23,6 +29,7 @@ defmodule Sanctum.Games.Game do
 
     create :create do
       accept [:*]
+      require_attributes [:scenario_id]
 
       change set_attribute(:state, :setup)
       change SetRecommendedModularSets, only_when_valid?: true
@@ -61,7 +68,7 @@ defmodule Sanctum.Games.Game do
   end
 
   relationships do
-    belongs_to :scenario, Sanctum.Games.Scenario, public?: true, allow_nil?: false
+    belongs_to :scenario, Sanctum.Games.Scenario, public?: true, allow_nil?: true
 
     has_one :game_villain, Sanctum.Games.GameVillain
     has_one :encounter_deck, Sanctum.Games.GameEncounterDeck

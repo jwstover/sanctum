@@ -9,10 +9,13 @@ defmodule SanctumWeb.GameLive.IndexTest do
     set_name = "test_scenario_#{:rand.uniform(100_000)}"
 
     {:ok, scenario} =
-      Games.create_scenario(%{
-        name: "Test Scenario",
-        set: set_name
-      })
+      Games.create_scenario(
+        %{
+          name: "Test Scenario",
+          villain_set_id: Sanctum.Factory.villain_set!(set_name).id
+        },
+        authorize?: false
+      )
 
     villain_code = "testv#{:rand.uniform(100_000)}"
 

@@ -98,13 +98,21 @@ defmodule Sanctum.Factory do
     }
   end
 
-  def scenario_factory do
-    unique_id = :rand.uniform(100_000)
+  # A villain CardSet for building scenarios. Upserts on code, so passing a
+  # fixed code twice returns the same set.
+  def villain_set!(code \\ Faker.Util.format("villain_%5d")) do
+    Sanctum.Catalog.CardSet
+    |> Ash.Changeset.for_create(:upsert, %{
+      code: code,
+      name: "Villain #{code}",
+      set_type: :villain
+    })
+    |> Ash.create!(authorize?: false)
+  end
 
-    %{
-      name: "Test Scenario #{unique_id}",
-      set: "test_scenario_#{unique_id}"
-    }
+  def scenario_factory do
+    villain_set = villain_set!()
+    %{name: "Test Scenario #{villain_set.code}", villain_set_id: villain_set.id}
   end
 
   def card_set_factory do
