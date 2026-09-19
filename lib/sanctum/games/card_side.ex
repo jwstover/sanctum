@@ -66,17 +66,10 @@ defmodule Sanctum.Games.CardSide do
         query =
           if context.actor, do: Ash.Query.load(query, :owned), else: query
 
-        if is_binary(search) and String.trim(search) != "" do
-          # Bare words search name/subname; `field op value` terms filter
-          # any registered card field. Malformed input degrades gracefully
-          # (diagnostics are surfaced by the LiveView, not here).
-          case Sanctum.Search.compile(search, Sanctum.Search.CardFields) do
-            %{expr: nil} -> query
-            %{expr: filter} -> Ash.Query.filter(query, ^filter)
-          end
-        else
-          query
-        end
+        # Bare words search name/subname; `field op value` terms filter
+        # any registered card field. Malformed input degrades gracefully
+        # (diagnostics are surfaced by the LiveView, not here).
+        Sanctum.Search.filter_query(query, search, Sanctum.Search.CardFields)
       end
     end
 
