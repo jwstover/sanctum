@@ -49,10 +49,13 @@ defmodule Sanctum.Games.GameCardTest do
     set_name = "test_scenario_#{System.unique_integer([:positive])}"
 
     {:ok, scenario} =
-      Games.create_scenario(%{
-        name: "Test Scenario",
-        set: set_name
-      })
+      Games.create_scenario(
+        %{
+          name: "Test Scenario",
+          villain_set_id: villain_set!(set_name).id
+        },
+        authorize?: false
+      )
 
     villain_code = "testv#{System.unique_integer([:positive])}"
 
