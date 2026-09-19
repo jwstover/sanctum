@@ -353,12 +353,11 @@ defmodule Sanctum.Search.GlobalTest do
       assert villain.href == "/browse/#{pack.code}#zz_villain"
 
       [scenario] = group(result, :scenarios).results
-      assert scenario.href == "/browse/#{pack.code}#zz_villain"
+      assert scenario.href == "/scenarios/#{scenario.id}"
       assert scenario.subtitle == "Official scenario"
     end
 
     test "a user-owned scenario surfaces in the scenarios group", %{
-      pack: pack,
       villain_set: villain_set
     } do
       owner = user_fixture(%{username: "zzbuilder"})
@@ -373,7 +372,7 @@ defmodule Sanctum.Search.GlobalTest do
 
       assert homebrew.title == "#{@marker} Homebrew"
       assert homebrew.subtitle == "Scenario by zzbuilder"
-      assert homebrew.href == "/browse/#{pack.code}#zz_villain"
+      assert homebrew.href == "/scenarios/#{homebrew.id}"
 
       mine = Global.search("in:scenarios is:mine #{@marker}", owner)
       assert [%{title: title}] = group(mine, :scenarios).results
