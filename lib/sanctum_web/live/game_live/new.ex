@@ -32,9 +32,16 @@ defmodule SanctumWeb.GameLive.New do
   end
 
   defp assign_scenarios(socket) do
-    {:ok, scenarios} = Games.list_scenarios()
+    scenarios = Games.list_scenarios_for_game_setup!(actor: socket.assigns.current_user)
 
-    assign(socket, :scenarios, Enum.map(scenarios, &{&1.name, &1.id}))
+    {official, mine} = Enum.split_with(scenarios, &is_nil(&1.owner_id))
+
+    options =
+      [{"Official", official}, {"My scenarios", mine}]
+      |> Enum.reject(fn {_group, list} -> list == [] end)
+      |> Enum.map(fn {group, list} -> {group, Enum.map(list, &{&1.name, &1.id})} end)
+
+    assign(socket, :scenarios, options)
   end
 
   defp assign_form(socket) do
