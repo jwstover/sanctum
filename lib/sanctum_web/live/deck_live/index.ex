@@ -11,6 +11,7 @@ defmodule SanctumWeb.DeckLive.Index do
   import SanctumWeb.Components.FilterSheet
   import SanctumWeb.Components.QueryInput
 
+  alias Sanctum.Decks.Writeup
   alias Sanctum.Search.FormSync
   alias SanctumWeb.Components.DeckCards
   alias SanctumWeb.InfiniteScroll
@@ -486,7 +487,7 @@ defmodule SanctumWeb.DeckLive.Index do
       source_label: DeckCards.source_label(deck.source),
       state: deck.state,
       visibility: deck.visibility,
-      tagline: excerpt(deck.description_md),
+      tagline: Writeup.excerpt(deck.description_md),
       author: author && author.name,
       author_avatar: author && author.avatar,
       total_card_count: deck.total_card_count || 0,
@@ -497,24 +498,6 @@ defmodule SanctumWeb.DeckLive.Index do
       updated: format_date(deck.mcdb_date_update || deck.updated_at, timezone)
     }
   end
-
-  # Turn description markdown into a short plain-text teaser.
-  defp excerpt(md) when is_binary(md) and md != "" do
-    text =
-      md
-      |> String.replace(~r/\[([^\]]+)\]\([^)]*\)/, "\\1")
-      |> String.replace(~r/[#>*_`~]/, "")
-      |> String.replace(~r/\s+/, " ")
-      |> String.trim()
-
-    cond do
-      text == "" -> nil
-      String.length(text) > 140 -> String.slice(text, 0, 140) <> "…"
-      true -> text
-    end
-  end
-
-  defp excerpt(_), do: nil
 
   defp format_date(%DateTime{} = dt, timezone),
     do: dt |> Timezone.to_local(timezone) |> Calendar.strftime("%b %-d, %Y")

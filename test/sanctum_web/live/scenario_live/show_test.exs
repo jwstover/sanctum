@@ -76,6 +76,21 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute has_element?(view, "#scenario-build")
   end
 
+  test "a description renders as markdown; without one the panel is absent", ctx do
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
+    render_async(view)
+    refute has_element?(view, "#scenario-description")
+
+    Sanctum.Games.set_scenario_description!(ctx.mine, %{description_md: "**Zz bold** notes"},
+      actor: ctx.owner
+    )
+
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
+    html = render_async(view)
+    assert has_element?(view, "#scenario-description")
+    assert html =~ "<strong>Zz bold</strong>"
+  end
+
   test "the owner gets a Build link", ctx do
     conn = log_in_user(ctx.conn, ctx.owner)
     {:ok, view, _} = live(conn, ~p"/scenarios/#{ctx.mine.id}")
