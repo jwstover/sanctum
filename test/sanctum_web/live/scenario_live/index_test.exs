@@ -81,6 +81,20 @@ defmodule SanctumWeb.ScenarioLive.IndexTest do
     refute html =~ "New Scenario"
   end
 
+  test "a tile shows a plain-text excerpt of the description", %{conn: conn} do
+    owner = Sanctum.AccountsFixtures.user_fixture(%{username: "zzdesc"})
+    s = user_scenario!("Zz Described", owner)
+
+    Sanctum.Games.set_scenario_description!(s, %{description_md: "**Zz bold** notes"},
+      actor: owner
+    )
+
+    {:ok, view, _} = live(conn, ~p"/scenarios")
+    html = render_async(view)
+    assert html =~ "Zz bold notes"
+    refute html =~ "**Zz bold**"
+  end
+
   test "signed-in users get a New Scenario link", %{conn: conn} do
     conn = log_in_user(conn, Sanctum.AccountsFixtures.user_fixture())
     {:ok, view, _html} = live(conn, ~p"/scenarios")

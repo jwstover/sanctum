@@ -1,6 +1,6 @@
 defmodule SanctumWeb.ScenarioLive.Show do
   @moduledoc """
-  Public scenario detail: villain art, name, villain set, modular sets and author.
+  Public scenario detail: villain art, name, villain set, description (markdown), modular sets and author.
   """
   use SanctumWeb, :live_view
 
@@ -65,6 +65,26 @@ defmodule SanctumWeb.ScenarioLive.Show do
                     {@view.author.name}
                   </span>
                 <% end %>
+              </div>
+            </div>
+          </.panel>
+
+          <.panel :if={@view.description} id="scenario-description" class="min-w-0 p-4">
+            <h2 class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+              Description
+            </h2>
+            <div class="mt-3 space-y-4">
+              <div :for={seg <- @view.description}>
+                <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
+                <iframe
+                  :if={seg.kind == :rich}
+                  title="Scenario description"
+                  sandbox=""
+                  referrerpolicy="no-referrer"
+                  loading="lazy"
+                  class="deck-writeup-frame"
+                  srcdoc={seg.srcdoc}
+                ></iframe>
               </div>
             </div>
           </.panel>
@@ -162,6 +182,7 @@ defmodule SanctumWeb.ScenarioLive.Show do
         s.modular_sets
         |> Enum.sort_by(&String.downcase(&1.name || &1.code))
         |> Enum.map(&(&1.name || &1.code)),
+      description: Sanctum.Decks.Writeup.render(s.description_md),
       author: author(s),
       # :mine loads nil for a nil actor.
       mine: s.mine == true
