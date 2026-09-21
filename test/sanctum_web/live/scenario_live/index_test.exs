@@ -81,6 +81,12 @@ defmodule SanctumWeb.ScenarioLive.IndexTest do
     refute html =~ "New Scenario"
   end
 
+  test "signed-in users get a New Scenario link", %{conn: conn} do
+    conn = log_in_user(conn, Sanctum.AccountsFixtures.user_fixture())
+    {:ok, view, _html} = live(conn, ~p"/scenarios")
+    assert has_element?(view, ~s(a[href="/scenarios/new"]))
+  end
+
   test "the query narrows the results", %{conn: conn} do
     owner = Sanctum.AccountsFixtures.user_fixture(%{username: "zzbrowser"})
     user_scenario!("Zz Alpha", owner)

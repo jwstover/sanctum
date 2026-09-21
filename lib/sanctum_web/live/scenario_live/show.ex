@@ -20,13 +20,11 @@ defmodule SanctumWeb.ScenarioLive.Show do
         <.header>
           {@scenario.name}
           <:actions>
-            <%!-- TODO(step C): navigate={~p"/scenarios/#{@scenario.id}/build"} --%>
             <.button
               :if={@view.mine}
               id="scenario-build"
               variant="primary"
-              disabled
-              title="Coming soon"
+              navigate={~p"/scenarios/#{@scenario.id}/build"}
             >
               <.icon name="hero-wrench-screwdriver" /> Build
             </.button>

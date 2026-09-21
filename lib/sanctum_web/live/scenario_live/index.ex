@@ -28,7 +28,12 @@ defmodule SanctumWeb.ScenarioLive.Index do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:scenarios}>
       <div id="scroll-restore" phx-hook="ScrollRestore" data-offset={@offset}></div>
       <.header>
-        Browse Scenarios <%!-- TODO(step C): New Scenario button (signed-in only) --%>
+        Browse Scenarios
+        <:actions>
+          <.button :if={@current_user} variant="primary" navigate={~p"/scenarios/new"}>
+            <.icon name="hero-plus" /> New Scenario
+          </.button>
+        </:actions>
       </.header>
 
       <!-- search + count -->
