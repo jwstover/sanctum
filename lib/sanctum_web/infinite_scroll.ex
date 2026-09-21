@@ -83,6 +83,29 @@ defmodule SanctumWeb.InfiniteScroll do
   def assign_count(socket, true, count), do: assign(socket, :count, count)
 
   @doc """
+  Assigns the initial state every browse page shares: empty query, default
+  sort, closed filter sheet, and the not-yet-loaded feed bookkeeping (`total`
+  and `count` stay nil until the first async load lands).
+  """
+  def init_browse(socket, page_title, sort_options) do
+    socket
+    |> assign(:page_title, page_title)
+    |> assign(:query, "")
+    |> assign(:search_diagnostics, [])
+    |> assign(:sort, "new")
+    |> assign(:filters_open?, false)
+    |> assign(:filter_count, 0)
+    |> assign(:total, nil)
+    |> assign(:count, nil)
+    |> assign(:sort_options, sort_options)
+    |> assign(:offset, 0)
+    |> assign(:end_of_timeline?, false)
+    |> assign(:req_id, 0)
+    |> assign(:loading?, true)
+    |> assign(:scroll_restore_pending?, false)
+  end
+
+  @doc """
   Resolves a `start_load/3` call's opts into `{query_offset, limit, reset?}`.
   `restore: true` refetches pages 0..offset in one query (for scroll
   restoration) while `offset` stays the logical last-page offset.
