@@ -50,7 +50,6 @@ defmodule Sanctum.Games do
     resource Sanctum.Games.Scenario do
       define :create_scenario, action: :create
       define :get_scenario, get_by: :id, action: :read
-      define :get_scenario_by_set, get_by: :set, action: :read
       define :list_scenarios, action: :read
     end
 
