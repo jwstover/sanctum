@@ -585,6 +585,7 @@ defmodule Sanctum.Search.Global do
 
   defp more_url(:cards, rest), do: "/cards" <> query_param(rest)
   defp more_url(:decks, rest), do: "/decks" <> query_param(rest)
+  defp more_url(:scenarios, rest), do: "/scenarios" <> query_param(rest)
   defp more_url(_key, _rest), do: nil
 
   defp query_param(""), do: ""

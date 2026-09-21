@@ -30,7 +30,7 @@ defmodule SanctumWeb.ScenarioLive.Show do
             >
               <.icon name="hero-wrench-screwdriver" /> Build
             </.button>
-            <.back_button fallback={~p"/"} />
+            <.back_button fallback={~p"/scenarios"} />
           </:actions>
         </.header>
 
@@ -123,19 +123,18 @@ defmodule SanctumWeb.ScenarioLive.Show do
      |> assign(:view, data.view)}
   end
 
-  # TODO(step B): navigate to ~p"/scenarios" instead.
   def handle_async(:load_scenario, {:ok, :not_found}, socket) do
     {:noreply,
      socket
      |> put_flash(:error, "Scenario not found.")
-     |> push_navigate(to: ~p"/")}
+     |> push_navigate(to: ~p"/scenarios")}
   end
 
   def handle_async(:load_scenario, {:exit, reason}, socket) do
     {:noreply,
      socket
      |> put_flash(:error, "Couldn’t load scenario: #{inspect(reason)}")
-     |> push_navigate(to: ~p"/")}
+     |> push_navigate(to: ~p"/scenarios")}
   end
 
   # `:not_found` covers an unknown or invalid id.
@@ -157,17 +156,9 @@ defmodule SanctumWeb.ScenarioLive.Show do
   end
 
   defp view(s) do
-    first_villain =
-      s.villains
-      |> Enum.filter(& &1.primary_side)
-      |> Enum.sort_by(&{&1.primary_side.stage || 999, &1.code})
-      |> List.first()
-
     %{
       villain_image: villain_image(s),
-      villain_name:
-        (first_villain && first_villain.primary_side.name) ||
-          (s.villain_set && s.villain_set.name),
+      villain_name: villain_name(s),
       villain_set_name: s.villain_set && s.villain_set.name,
       modular_sets:
         s.modular_sets

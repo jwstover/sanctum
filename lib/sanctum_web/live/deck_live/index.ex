@@ -232,21 +232,7 @@ defmodule SanctumWeb.DeckLive.Index do
   def mount(_params, _session, socket) do
     socket =
       socket
-      |> assign(:page_title, "Browse Decks")
-      |> assign(:query, "")
-      |> assign(:search_diagnostics, [])
-      |> assign(:sort, "new")
-      |> assign(:filters_open?, false)
-      |> assign(:filter_count, 0)
-      # nil until the first async load lands — drives the loading/skeleton UI.
-      |> assign(:total, nil)
-      |> assign(:count, nil)
-      |> assign(:sort_options, @sorts)
-      |> assign(:offset, 0)
-      |> assign(:end_of_timeline?, false)
-      |> assign(:req_id, 0)
-      |> assign(:loading?, true)
-      |> assign(:scroll_restore_pending?, false)
+      |> InfiniteScroll.init_browse("Browse Decks", @sorts)
       |> assign(:return_path, ~p"/decks")
       |> stream(:decks, [])
 

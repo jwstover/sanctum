@@ -132,10 +132,10 @@ defmodule SanctumWeb.SearchHelpLive do
         <section id="scenarios">
           <.section_title>Scenario fields</.section_title>
           <p class="mb-2.5 font-barlow text-base text-base-content/85">
-            Scenarios are searchable from the global search — add <.q c="in:scenarios" />
-            to see only them.
+            Browse scenarios at <.link navigate={~p"/scenarios"} class="link">/scenarios</.link>,
+            or search them from the global search — add <.q c="in:scenarios" /> to see only them.
           </p>
-          <.fields_table fields={@scenario_fields} base_path={nil} />
+          <.fields_table fields={@scenario_fields} base_path="/scenarios" />
         </section>
 
         <section>
