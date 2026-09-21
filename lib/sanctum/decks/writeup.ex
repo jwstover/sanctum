@@ -102,6 +102,28 @@ defmodule Sanctum.Decks.Writeup do
 
   def to_html(_), do: nil
 
+  @doc """
+  Turns description markdown into a short plain-text teaser (140 chars max), or
+  `nil` when blank.
+  """
+  @spec excerpt(String.t() | nil) :: String.t() | nil
+  def excerpt(md) when is_binary(md) and md != "" do
+    text =
+      md
+      |> String.replace(~r/\[([^\]]+)\]\([^)]*\)/, "\\1")
+      |> String.replace(~r/[#>*_`~]/, "")
+      |> String.replace(~r/\s+/, " ")
+      |> String.trim()
+
+    cond do
+      text == "" -> nil
+      String.length(text) > 140 -> String.slice(text, 0, 140) <> "…"
+      true -> text
+    end
+  end
+
+  def excerpt(_), do: nil
+
   defp render_segment({:md, text}) do
     {:safe, iodata} = html = inline_html(text)
 
