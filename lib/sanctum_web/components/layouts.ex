@@ -195,6 +195,9 @@ defmodule SanctumWeb.Layouts do
             <.sidebar_link navigate={~p"/cards"} active={@active_tab == :cards}>
               Cards
             </.sidebar_link>
+            <.sidebar_link navigate={~p"/scenarios"} active={@active_tab == :scenarios}>
+              Scenarios
+            </.sidebar_link>
             <.sidebar_link navigate={~p"/decks"} active={@active_tab == :decks}>
               Decks
             </.sidebar_link>

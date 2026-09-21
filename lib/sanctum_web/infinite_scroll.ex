@@ -9,8 +9,12 @@ defmodule SanctumWeb.InfiniteScroll do
   the pages' local `start_load/3` already takes.
   """
 
+  require Ash.Query
+
   import Phoenix.Component, only: [assign: 3]
-  import Phoenix.LiveView, only: [push_event: 3]
+  import Phoenix.LiveView, only: [push_event: 3, stream: 4]
+
+  alias Sanctum.Search.FormSync
 
   # Deepest infinite-scroll offset a scroll restore will refetch in one query
   # (limit = offset + page size must stay within Ash's 250 max page size).
@@ -77,6 +81,105 @@ defmodule SanctumWeb.InfiniteScroll do
   """
   def assign_count(socket, false, _count), do: socket
   def assign_count(socket, true, count), do: assign(socket, :count, count)
+
+  @doc """
+  Assigns the initial state every browse page shares: empty query, default
+  sort, closed filter sheet, and the not-yet-loaded feed bookkeeping (`total`
+  and `count` stay nil until the first async load lands).
+  """
+  def init_browse(socket, page_title, sort_options) do
+    socket
+    |> assign(:page_title, page_title)
+    |> assign(:query, "")
+    |> assign(:search_diagnostics, [])
+    |> assign(:sort, "new")
+    |> assign(:filters_open?, false)
+    |> assign(:filter_count, 0)
+    |> assign(:total, nil)
+    |> assign(:count, nil)
+    |> assign(:sort_options, sort_options)
+    |> assign(:offset, 0)
+    |> assign(:end_of_timeline?, false)
+    |> assign(:req_id, 0)
+    |> assign(:loading?, true)
+    |> assign(:scroll_restore_pending?, false)
+  end
+
+  @doc """
+  Resolves a `start_load/3` call's opts into `{query_offset, limit, reset?}`.
+  `restore: true` refetches pages 0..offset in one query (for scroll
+  restoration) while `offset` stays the logical last-page offset.
+  """
+  def load_opts(offset, page_size, opts) do
+    reset? = Keyword.get(opts, :reset, false)
+    restore? = Keyword.get(opts, :restore, false)
+    {query_offset, limit} = if restore?, do: {0, offset + page_size}, else: {offset, page_size}
+    {query_offset, limit, reset?}
+  end
+
+  @doc """
+  Reads one page of a resource's `:browse` action for the window from
+  `load_opts/3`, with `extra_loads` on top of what the action already loads.
+  """
+  def read_page(resource, args, actor, {query_offset, limit, reset?}, extra_loads \\ []) do
+    resource
+    |> Ash.Query.for_read(:browse, args, actor: actor)
+    |> Ash.Query.load(extra_loads)
+    |> Ash.read!(page: [limit: limit, offset: query_offset, count: reset?])
+  end
+
+  @doc "Full unfiltered size of a resource's `:browse` set (the \"/ N\" denominator)."
+  def count_all(resource, actor) do
+    resource
+    |> Ash.Query.for_read(:browse, %{}, actor: actor)
+    |> Ash.count!()
+  end
+
+  @doc """
+  Applies an async page result to the socket: assigns offset, end-of-feed,
+  total and count, and streams the rows through `to_view`. A result from a
+  superseded request (`req` behind `req_id`) is dropped so out-of-order
+  completions can't clobber the current view.
+  """
+  def put_page(socket, stream_name, result, to_view) do
+    %{req: req, offset: offset, reset?: reset?, page: page, total: total} = result
+
+    if req == socket.assigns.req_id do
+      socket
+      |> assign(:offset, offset)
+      |> assign(:end_of_timeline?, !page.more?)
+      |> assign(:loading?, false)
+      |> assign_total(total)
+      |> assign_count(reset?, page.count)
+      |> stream(stream_name, Enum.map(page.results, to_view), reset: reset?)
+      |> maybe_confirm_scroll_restore()
+    else
+      socket
+    end
+  end
+
+  @doc """
+  The `[query:, sort:]` URL params for a browse page, dropping an empty query
+  and the default sort so the canonical URL stays bare.
+  """
+  def browse_params(query, sort, default_sort) do
+    Enum.reject([query: query, sort: sort], fn
+      {:query, v} -> v == ""
+      {:sort, v} -> v == default_sort
+    end)
+  end
+
+  @doc """
+  A filter-sheet change: splices the submitted controls back into the query
+  string and picks the sidecar sort radio (falling back to `current_sort`).
+  Returns `{query, sort}`.
+  """
+  def sheet_change(params, query, registry, sort_keys, current_sort) do
+    fields = FormSync.fields_from_params(params, registry)
+    query = FormSync.update(query, registry, fields)
+    sort = if params["sort"] in sort_keys, do: params["sort"], else: current_sort
+    {query, sort}
+  end
 
   defp confirm_scroll_restore(socket) do
     socket
