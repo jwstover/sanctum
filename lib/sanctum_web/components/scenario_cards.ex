@@ -10,16 +10,38 @@ defmodule SanctumWeb.Components.ScenarioCards do
   Primary-stage villain art for a scenario, or nil. Expects `villains:
   [:primary_side]` loaded; the lowest stage wins, ties broken by card code.
   """
-  def villain_image(%{villains: vs}) when is_list(vs) do
-    vs
-    |> Enum.filter(& &1.primary_side)
-    |> Enum.sort_by(&{&1.primary_side.stage || 999, &1.code})
+  def villain_image(scenario) do
+    scenario
+    |> sorted_villains()
     |> Enum.find_value(fn %{primary_side: side} ->
       if is_binary(side.image_url), do: side.image_url
     end)
   end
 
-  def villain_image(_), do: nil
+  @doc "The scenario's lowest-stage villain card (with `primary_side` loaded), or nil."
+  def primary_villain(scenario), do: scenario |> sorted_villains() |> List.first()
+
+  @doc """
+  The villain's name for display: the primary villain side's name, else the
+  villain set's name when loaded, else nil.
+  """
+  def villain_name(scenario) do
+    case primary_villain(scenario) do
+      %{primary_side: %{name: name}} when is_binary(name) -> name
+      _ -> villain_set_name(scenario)
+    end
+  end
+
+  defp villain_set_name(%{villain_set: %{name: name}}) when is_binary(name), do: name
+  defp villain_set_name(_), do: nil
+
+  defp sorted_villains(%{villains: vs}) when is_list(vs) do
+    vs
+    |> Enum.filter(& &1.primary_side)
+    |> Enum.sort_by(&{&1.primary_side.stage || 999, &1.code})
+  end
+
+  defp sorted_villains(_), do: []
 
   @doc """
   The scenario's author as `%{official?, name, avatar}`, or nil when the owner

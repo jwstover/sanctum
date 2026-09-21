@@ -92,10 +92,10 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute has_element?(view, "#scenario-build")
   end
 
-  test "an unknown id redirects home", %{conn: conn} do
+  test "an unknown id redirects to the scenario browser", %{conn: conn} do
     {:ok, view, _} = live(conn, ~p"/scenarios/#{Ecto.UUID.generate()}")
 
-    assert_redirect(view, "/")
+    assert_redirect(view, "/scenarios")
   end
 
   test "a scenario whose set has no villain cards still renders", %{conn: conn} do
