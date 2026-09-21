@@ -5,6 +5,7 @@ defmodule Sanctum.Heroes do
   resources do
     resource Sanctum.Heroes.Hero do
       define :get_by_set, get_by: :set, action: :read
+      define :list_heroes, action: :read
       define :create_hero, action: :create
       define :find_or_create_hero, action: :find_or_create
     end

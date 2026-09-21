@@ -189,17 +189,24 @@ defmodule SanctumWeb.Layouts do
             <.sidebar_link navigate={~p"/"} active={@active_tab == :home}>
               Home
             </.sidebar_link>
-            <.sidebar_link navigate={~p"/browse"} active={@active_tab == :browse}>
-              Packs
+            <.sidebar_link navigate={~p"/decks"} active={@active_tab == :decks}>
+              Decks
             </.sidebar_link>
             <.sidebar_link navigate={~p"/cards"} active={@active_tab == :cards}>
               Cards
             </.sidebar_link>
+            <.sidebar_link navigate={~p"/browse"} active={@active_tab == :browse}>
+              Packs
+            </.sidebar_link>
             <.sidebar_link navigate={~p"/scenarios"} active={@active_tab == :scenarios}>
               Scenarios
             </.sidebar_link>
-            <.sidebar_link navigate={~p"/decks"} active={@active_tab == :decks}>
-              Decks
+            <.sidebar_link
+              :if={@current_user}
+              navigate={~p"/game-log"}
+              active={@active_tab == :game_log}
+            >
+              Game Log
             </.sidebar_link>
             <.sidebar_link
               :if={@current_user && @current_user.admin}
