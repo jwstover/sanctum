@@ -113,4 +113,116 @@ defmodule Sanctum.Games.ScenarioTest do
   test "a game still requires a scenario" do
     assert {:error, _} = Games.create_game(%{modular_sets: []}, actor: user_fixture())
   end
+
+  describe "user-built scenarios" do
+    defp build!(user, attrs \\ %{}) do
+      Games.build_scenario!(Map.put_new(attrs, :villain_set_id, villain_set!().id), actor: user)
+    end
+
+    test "a signed-out user can read but not build" do
+      assert {:ok, _} = Games.list_scenarios()
+
+      assert {:error, error} = Games.build_scenario(%{villain_set_id: villain_set!().id})
+      assert error.__struct__ in [Ash.Error.Invalid, Ash.Error.Forbidden]
+    end
+
+    test "build sets the owner, derives the set and the default name" do
+      user = user_fixture()
+      vs = villain_set!("dflt_x")
+
+      scenario = build!(user, %{villain_set_id: vs.id})
+
+      assert scenario.owner_id == user.id
+      assert scenario.set == vs.code
+      assert scenario.name == "#{vs.name} Scenario"
+
+      scenario = Ash.load!(scenario, [:modular_set_count, :official, :mine], actor: user)
+      assert scenario.modular_set_count == 0
+      assert scenario.official == false
+      assert scenario.mine == true
+
+      assert build!(user, %{name: "Custom"}).name == "Custom"
+      assert build!(user, %{villain_set_id: vs.id, name: "  "}).name == "#{vs.name} Scenario"
+    end
+
+    test "builds are not upserted into the official row" do
+      vs = villain_set!()
+      official = Games.create_scenario!(%{name: "Off", villain_set_id: vs.id}, authorize?: false)
+
+      a = build!(user_fixture(), %{villain_set_id: vs.id})
+      b = build!(user_fixture(), %{villain_set_id: vs.id})
+
+      assert length(Enum.uniq([official.id, a.id, b.id])) == 3
+    end
+
+    test "the owner can rename, set modular sets and destroy" do
+      owner = user_fixture()
+      s = build!(owner)
+
+      assert Games.rename_scenario!(s, %{name: "Mine"}, actor: owner).name == "Mine"
+
+      m1 = create(Sanctum.Catalog.CardSet, action: :upsert)
+      m2 = create(Sanctum.Catalog.CardSet, action: :upsert)
+
+      Games.set_scenario_modular_sets!(s, %{modular_sets: [m1.id, m2.id]}, actor: owner)
+      loaded = Ash.load!(s, [:modular_sets, :modular_set_count], authorize?: false)
+      assert loaded.modular_set_count == 2
+      assert Enum.sort(Enum.map(loaded.modular_sets, & &1.id)) == Enum.sort([m1.id, m2.id])
+
+      Games.set_scenario_modular_sets!(s, %{modular_sets: [m2.id]}, actor: owner)
+      loaded = Ash.load!(s, [:modular_sets], authorize?: false)
+      assert Enum.map(loaded.modular_sets, & &1.id) == [m2.id]
+
+      assert :ok = Games.destroy_scenario(s, actor: owner)
+      assert {:error, _} = Games.get_scenario(s.id)
+    end
+
+    test "a non-owner is forbidden" do
+      s = build!(user_fixture())
+      other = user_fixture()
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Games.rename_scenario(s, %{name: "X"}, actor: other)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Games.set_scenario_modular_sets(s, %{modular_sets: []}, actor: other)
+
+      assert {:error, %Ash.Error.Forbidden{}} = Games.destroy_scenario(s, actor: other)
+    end
+
+    test "official rows are forbidden to non-admins" do
+      official =
+        Games.create_scenario!(%{name: "Off", villain_set_id: villain_set!().id},
+          authorize?: false
+        )
+
+      user = user_fixture()
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Games.rename_scenario(official, %{name: "X"}, actor: user)
+
+      assert {:error, %Ash.Error.Forbidden{}} = Games.destroy_scenario(official, actor: user)
+      assert Ash.load!(official, :official, authorize?: false).official == true
+
+      assert {:ok, %{name: "Admin"}} =
+               Games.rename_scenario(official, %{name: "Admin"}, actor: admin_user_fixture())
+    end
+
+    test "non-modular and unknown set ids are rejected" do
+      owner = user_fixture()
+      s = build!(owner)
+      m = create(Sanctum.Catalog.CardSet, action: :upsert)
+      Games.set_scenario_modular_sets!(s, %{modular_sets: [m.id]}, actor: owner)
+
+      for bad <- [villain_set!().id, Ash.UUID.generate()] do
+        assert {:error, %Ash.Error.Invalid{errors: errors}} =
+                 Games.set_scenario_modular_sets(s, %{modular_sets: [bad]}, actor: owner)
+
+        assert Enum.any?(errors, &(Map.get(&1, :field) == :modular_sets))
+      end
+
+      loaded = Ash.load!(s, :modular_sets, authorize?: false)
+      assert Enum.map(loaded.modular_sets, & &1.id) == [m.id]
+    end
+  end
 end
