@@ -55,7 +55,7 @@ defmodule Sanctum.Games.Scenario do
 
     create :create do
       primary? true
-      accept [:name, :villain_set_id]
+      accept [:name, :description_md, :villain_set_id]
       upsert? true
       upsert_identity :unique_official_villain_set
 
@@ -68,7 +68,7 @@ defmodule Sanctum.Games.Scenario do
 
     create :build do
       description "Creates a user-owned scenario for the signed-in user; name defaults to \"<villain set> Scenario\"."
-      accept [:villain_set_id, :name]
+      accept [:villain_set_id, :name, :description_md]
 
       change relate_actor(:owner)
 
@@ -79,6 +79,11 @@ defmodule Sanctum.Games.Scenario do
 
     update :rename do
       accept [:name]
+      require_atomic? false
+    end
+
+    update :set_description do
+      accept [:description_md]
       require_atomic? false
     end
 
@@ -115,6 +120,7 @@ defmodule Sanctum.Games.Scenario do
     uuid_v7_primary_key :id
 
     attribute :name, :string, public?: true, allow_nil?: false
+    attribute :description_md, :string, public?: true, allow_nil?: true
     # Derived from villain_set.code; kept as a column for the Card.set joins below.
     attribute :set, :string, public?: true, allow_nil?: false
 

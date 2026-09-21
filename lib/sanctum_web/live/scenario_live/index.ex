@@ -141,6 +141,12 @@ defmodule SanctumWeb.ScenarioLive.Index do
             <div class="mt-1 break-words font-anton text-2xl uppercase leading-[0.95]">
               {s.name}
             </div>
+            <div
+              :if={s.tagline}
+              class="mt-1.5 break-words font-barlow text-sm leading-[1.42] text-base-content/60"
+            >
+              {s.tagline}
+            </div>
             <div class="mt-1.5 font-barlow-condensed text-sm font-bold uppercase tracking-[0.1em] text-base-content/60">
               {modular_label(s.modular_set_count)}
             </div>
@@ -334,6 +340,7 @@ defmodule SanctumWeb.ScenarioLive.Index do
       villain_name: villain_name(s),
       villain_set_name: s.villain_set && s.villain_set.name,
       villain_image: villain_image(s),
+      tagline: Sanctum.Decks.Writeup.excerpt(s.description_md),
       modular_set_count: s.modular_set_count || 0,
       author: author(s),
       updated: format_date(s.updated_at, timezone)

@@ -1,6 +1,6 @@
 defmodule SanctumWeb.ScenarioLive.Build do
   @moduledoc """
-  Owner-only scenario builder: rename (autosaves), toggle modular sets
+  Owner-only scenario builder: rename and description (both autosave), toggle modular sets
   (persisted immediately, no Save step) and delete. Non-owners and official
   scenarios are sent to the detail page.
   """
@@ -44,6 +44,7 @@ defmodule SanctumWeb.ScenarioLive.Build do
     socket
     |> assign(:scenario, scenario)
     |> assign(:page_title, "Build · #{scenario.name}")
+    |> assign(:description_draft, scenario.description_md || "")
     |> assign(:villain_image, villain_image(scenario))
     |> assign(:villain_name, villain_name(scenario))
     |> assign(
@@ -119,6 +120,26 @@ defmodule SanctumWeb.ScenarioLive.Build do
     end
   end
 
+  # Autosave: the textarea debounces client-side, so each event is a settled pause.
+  def handle_event("description_change", %{"description" => draft}, socket) do
+    %{scenario: scenario, current_user: user} = socket.assigns
+
+    if draft == (scenario.description_md || "") do
+      {:noreply, assign(socket, :description_draft, draft)}
+    else
+      case Games.set_scenario_description(scenario, %{description_md: draft}, actor: user) do
+        {:ok, updated} ->
+          {:noreply,
+           socket
+           |> assign(:scenario, %{scenario | description_md: updated.description_md})
+           |> assign(:description_draft, draft)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Couldn’t save the description.")}
+      end
+    end
+  end
+
   def handle_event("delete", _params, socket) do
     Games.destroy_scenario!(socket.assigns.scenario, actor: socket.assigns.current_user)
 
@@ -181,6 +202,25 @@ defmodule SanctumWeb.ScenarioLive.Build do
           </form>
         </div>
       </.panel>
+
+      <section id="scenario-description" class="mb-6">
+        <form id="description-form" phx-change="description_change" phx-submit="description_change">
+          <label
+            for="scenario-description-input"
+            class="mb-1.5 block font-anton text-xs uppercase tracking-[0.06em] text-base-content/45"
+          >
+            Description
+          </label>
+          <textarea
+            id="scenario-description-input"
+            name="description"
+            phx-debounce="600"
+            rows="6"
+            placeholder="How this scenario plays, why these modular sets, setup notes… Markdown supported."
+            class="block w-full border-[2.5px] border-line bg-black px-3.5 py-3 font-ibm-mono text-sm leading-relaxed text-base-content outline-none focus:border-primary"
+          >{@description_draft}</textarea>
+        </form>
+      </section>
 
       <section id="modular-sets" class="pb-6">
         <h2 class="mb-3 font-anton text-xl uppercase tracking-[0.05em]">

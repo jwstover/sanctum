@@ -110,6 +110,17 @@ defmodule SanctumWeb.ScenarioLive.BuildTest do
     assert Games.get_scenario!(ctx.scenario.id, authorize?: false).name == "Zz Renamed"
   end
 
+  test "the description autosaves and shows on re-mount", ctx do
+    conn = log_in_user(ctx.conn, ctx.owner)
+    {:ok, view, _} = live(conn, ~p"/scenarios/#{ctx.scenario.id}/build")
+
+    view |> form("#description-form", %{description: "Zz notes"}) |> render_change()
+    assert Games.get_scenario!(ctx.scenario.id, authorize?: false).description_md == "Zz notes"
+
+    {:ok, view, _} = live(conn, ~p"/scenarios/#{ctx.scenario.id}/build")
+    assert has_element?(view, "#scenario-description-input", "Zz notes")
+  end
+
   test "deleting goes through the confirm dialog and returns to the browser", ctx do
     conn = log_in_user(ctx.conn, ctx.owner)
     {:ok, view, _html} = live(conn, ~p"/scenarios/#{ctx.scenario.id}/build")
