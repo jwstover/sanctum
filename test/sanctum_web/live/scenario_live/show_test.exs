@@ -139,18 +139,31 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
   end
 
   test "a modular set's section shows a card fan; stats are combined in the side panel", ctx do
-    encounter_card!(ctx.modular, "88001", :minion, %{boost: 2})
-    encounter_card!(ctx.modular, "88002", :treachery, %{boost: 1})
-    encounter_card!(ctx.modular, "88003", :side_scheme, %{boost_star: true})
+    encounter_card!(ctx.modular, "88001", :minion, %{
+      boost: 2,
+      image_url: "https://example.test/88001.png"
+    })
+
+    encounter_card!(ctx.modular, "88002", :treachery, %{
+      boost: 1,
+      image_url: "https://example.test/88002.png"
+    })
+
+    encounter_card!(ctx.modular, "88003", :side_scheme, %{
+      boost_star: true,
+      image_url: "https://example.test/88003.png"
+    })
 
     {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.official.id}")
     html = render_async(view)
 
     assert has_element?(view, "#modular-set-#{ctx.modular.code}")
-    # Fan: one card per distinct type, in the modular set's own row.
-    assert html =~ "Zz minion 88001"
-    assert html =~ "Zz treachery 88002"
-    assert html =~ "Zz side_scheme 88003"
+    # Fan: one card per distinct type, in the modular set's own row. The fan's
+    # thumbnails are too small for the name/type overlay, so this only checks
+    # via the (unconditional) image alt text, not the rendered title.
+    assert html =~ "https://example.test/88001.png"
+    assert html =~ "https://example.test/88002.png"
+    assert html =~ "https://example.test/88003.png"
     # Content stats are combined (villain set + every modular set) in the
     # page-level side panel, deck-weighted (deck_limit: 2 each here). No
     # boost-curve chart — just the type-count tiles.
