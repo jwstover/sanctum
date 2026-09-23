@@ -6,6 +6,30 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
   import Phoenix.LiveViewTest
   import Sanctum.Factory
 
+  defp encounter_card!(set, code, type, side_attrs) do
+    card =
+      create(Sanctum.Games.Card,
+        attrs: %{base_code: code, code: code, set: set.code, card_set_id: set.id, deck_limit: 2}
+      )
+
+    create(Sanctum.Games.CardSide,
+      attrs:
+        Map.merge(
+          %{
+            card_id: card.id,
+            name: "Zz #{type} #{code}",
+            type: type,
+            code: code,
+            side_identifier: "A",
+            is_primary_side: true
+          },
+          side_attrs
+        )
+    )
+
+    card
+  end
+
   defp villain_card!(set, code, stage, image_url) do
     card = create(Sanctum.Games.Card, attrs: %{base_code: code, code: code, set: set.code})
 
@@ -112,6 +136,26 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     {:ok, view, _} = live(conn, ~p"/scenarios/#{Ecto.UUID.generate()}")
 
     assert_redirect(view, "/scenarios")
+  end
+
+  test "a modular set's section shows a card fan; stats are combined in the side panel", ctx do
+    encounter_card!(ctx.modular, "88001", :minion, %{boost: 2})
+    encounter_card!(ctx.modular, "88002", :treachery, %{boost: 1})
+    encounter_card!(ctx.modular, "88003", :side_scheme, %{boost_star: true})
+
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.official.id}")
+    html = render_async(view)
+
+    assert has_element?(view, "#modular-set-#{ctx.modular.code}")
+    # Fan: one card per distinct type, in the modular set's own section.
+    assert html =~ "Zz minion 88001"
+    assert html =~ "Zz treachery 88002"
+    assert html =~ "Zz side_scheme 88003"
+    # Content stats are combined (villain set + every modular set) in the
+    # page-level side panel, deck-weighted (deck_limit: 2 each here).
+    assert has_element?(view, "#scenario-stats")
+    assert html =~ "Boost curve"
+    assert html =~ "avg 1.5"
   end
 
   test "a scenario whose set has no villain cards still renders", %{conn: conn} do
