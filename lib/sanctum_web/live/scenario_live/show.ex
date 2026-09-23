@@ -17,57 +17,133 @@ defmodule SanctumWeb.ScenarioLive.Show do
       </div>
 
       <div :if={@scenario != nil}>
-        <.header>
-          {@scenario.name}
-          <:actions>
+        <div class="mb-1 flex items-center gap-2 font-barlow-condensed text-sm uppercase tracking-[0.14em] text-base-content/50">
+          <.link navigate={~p"/scenarios"}>Scenarios</.link>
+          <span aria-hidden="true">/</span>
+          <span class="text-secondary">Scenario</span>
+        </div>
+        <header class="mb-6 flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div class="min-w-0">
+            <h1 class="font-anton text-4xl uppercase leading-none [text-wrap:balance] sm:text-5xl">
+              {@scenario.name}
+            </h1>
+            <div id="scenario-meta" class="mt-3 flex flex-wrap gap-2">
+              <span class="meta-chip">
+                <span class="size-2 bg-error"></span>Villain · {@view.villain_name}
+              </span>
+              <span class="meta-chip">
+                {length(@view.modular_sets)} modular {if length(@view.modular_sets) == 1,
+                  do: "set",
+                  else: "sets"}
+              </span>
+              <span :if={@view.author} class="meta-chip">By {@view.author.name}</span>
+              <span class="meta-chip">
+                Updated {Calendar.strftime(@scenario.updated_at, "%b %-d, %Y")}
+              </span>
+            </div>
+          </div>
+          <div class="flex flex-none items-center gap-3">
             <.button
               :if={@view.mine}
               id="scenario-build"
               variant="primary"
               navigate={~p"/scenarios/#{@scenario.id}/build"}
             >
-              <.icon name="hero-wrench-screwdriver" /> Build
+              <.icon name="hero-pencil-square" /> Edit
             </.button>
             <.back_button fallback={~p"/scenarios"} />
-          </:actions>
-        </.header>
+          </div>
+        </header>
 
         <div class="space-y-5">
-          <.panel class="relative flex flex-col gap-5 overflow-hidden p-4 sm:flex-row sm:items-start">
-            <div
-              class="h-[330px] w-[236px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start"
-              style="transform:rotate(-1.5deg);"
-            >
-              <.mc_card
-                name={@view.villain_name}
-                aspect="encounter"
-                image_url={@view.villain_image}
-                size="lg"
-                show_cost={false}
-              />
+          <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
+            <div class="min-w-0 space-y-5">
+              <section id="scenario-encounter-deck" aria-labelledby="deck-h">
+                <h2 id="deck-h" class="mb-3 font-anton text-2xl uppercase tracking-[0.02em]">
+                  Encounter deck
+                </h2>
+                <.panel class="flex flex-col gap-6 p-5 sm:flex-row">
+                  <div class="w-[190px] flex-none self-center sm:self-start">
+                    <div class="h-[266px] w-[190px] shadow-comic-sm">
+                      <.mc_card
+                        name={@view.villain_name}
+                        aspect="encounter"
+                        image_url={@view.villain_image}
+                        size="lg"
+                        show_cost={false}
+                      />
+                    </div>
+                  </div>
+                  <div class="min-w-0 flex-1 space-y-2">
+                    <div id="scenario-villain-set" class="deck-row border-l-error">
+                      <div class="flex-1">
+                        <div class="font-barlow-condensed text-[17px] font-bold uppercase tracking-[0.05em]">
+                          {@view.villain_set_name}
+                        </div>
+                        <div class="mt-1 text-xs text-base-content/50">Villain encounter set</div>
+                      </div>
+                      <span class="deck-tag">Villain</span>
+                    </div>
+                    <div
+                      :if={@view.modular_sets == []}
+                      class="font-barlow text-sm italic text-base-content/45"
+                    >
+                      No modular sets.
+                    </div>
+                    <div :for={ms <- @view.modular_sets} class="deck-row border-l-primary">
+                      <div class="flex-1">
+                        <div class="font-barlow-condensed text-[17px] font-bold uppercase tracking-[0.05em]">
+                          {ms.name}
+                        </div>
+                        <div class="mt-1 text-xs text-base-content/50">Modular set</div>
+                      </div>
+                      <span class="deck-tag">Modular</span>
+                    </div>
+                  </div>
+                </.panel>
+              </section>
+
+              <section
+                :for={ms <- @view.modular_sets}
+                id={"modular-set-#{ms.code}"}
+                aria-labelledby={"modular-#{ms.code}-h"}
+              >
+                <h2
+                  id={"modular-#{ms.code}-h"}
+                  class="mb-3 font-anton text-2xl uppercase tracking-[0.02em]"
+                >
+                  {ms.name}
+                </h2>
+                <.panel class="flex flex-col gap-6 p-5 sm:flex-row">
+                  <div class="flex-none self-center sm:self-start">
+                    <.card_fan cards={ms.fan} />
+                  </div>
+                  <div class="min-w-0 flex-1 space-y-3">
+                    <div class="deck-row border-l-primary">
+                      <div class="flex-1">
+                        <div class="font-barlow-condensed text-[17px] font-bold uppercase tracking-[0.05em]">
+                          {ms.name}
+                        </div>
+                        <div class="mt-1 text-xs text-base-content/50">Modular set</div>
+                      </div>
+                      <span class="deck-tag">Modular</span>
+                    </div>
+                  </div>
+                </.panel>
+              </section>
             </div>
 
-            <div class="flex min-w-0 flex-1 flex-col">
-              <div
-                id="scenario-villain-set"
-                class="font-ibm-mono text-xs uppercase tracking-[0.25em] text-primary"
-              >
-                Scenario · {@view.villain_set_name}
+            <.panel
+              :if={stats_present?(@view.overall_stats)}
+              id="scenario-stats"
+              class="min-w-0 p-4"
+            >
+              <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+                Encounter Stats
               </div>
-              <h1 class="mt-1.5 font-anton text-4xl uppercase leading-[0.9] [text-wrap:balance] sm:text-5xl sm:leading-[0.88]">
-                {@scenario.name}
-              </h1>
-              <div :if={@view.author} id="scenario-author" class="mt-4 flex items-center gap-2">
-                <.official_badge :if={@view.author.official?} />
-                <%= if !@view.author.official? do %>
-                  <.avatar name={@view.author.name} url={@view.author.avatar} size="md" />
-                  <span class="font-barlow-condensed text-sm font-bold text-primary">
-                    {@view.author.name}
-                  </span>
-                <% end %>
-              </div>
-            </div>
-          </.panel>
+              <.encounter_stats stats={@view.overall_stats} />
+            </.panel>
+          </div>
 
           <.panel :if={@view.description} id="scenario-description" class="min-w-0 p-4">
             <h2 class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
@@ -86,26 +162,6 @@ defmodule SanctumWeb.ScenarioLive.Show do
                   srcdoc={seg.srcdoc}
                 ></iframe>
               </div>
-            </div>
-          </.panel>
-
-          <.panel id="scenario-modular-sets" class="p-4">
-            <h2 class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
-              Modular Sets
-            </h2>
-            <div
-              :if={@view.modular_sets == []}
-              class="mt-3 font-barlow text-sm italic text-base-content/45"
-            >
-              No modular sets.
-            </div>
-            <div :if={@view.modular_sets != []} class="mt-3 flex flex-wrap gap-2">
-              <span
-                :for={name <- @view.modular_sets}
-                class="border-2 border-neutral bg-base-200 px-2 py-1 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em]"
-              >
-                {name}
-              </span>
             </div>
           </.panel>
         </div>
@@ -163,8 +219,8 @@ defmodule SanctumWeb.ScenarioLive.Show do
              :mine,
              :official,
              :owner,
-             :villain_set,
-             :modular_sets,
+             villain_set: [cards: [:primary_side]],
+             modular_sets: [cards: [:primary_side]],
              villains: [:primary_side]
            ]
          ) do
@@ -178,10 +234,11 @@ defmodule SanctumWeb.ScenarioLive.Show do
       villain_image: villain_image(s),
       villain_name: villain_name(s),
       villain_set_name: s.villain_set && s.villain_set.name,
+      overall_stats: combined_stats([s.villain_set | s.modular_sets]),
       modular_sets:
         s.modular_sets
         |> Enum.sort_by(&String.downcase(&1.name || &1.code))
-        |> Enum.map(&(&1.name || &1.code)),
+        |> Enum.map(&encounter_set_view/1),
       description: Sanctum.Decks.Writeup.render(s.description_md),
       author: author(s),
       # :mine loads nil for a nil actor.
