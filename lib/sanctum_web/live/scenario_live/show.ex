@@ -22,27 +22,10 @@ defmodule SanctumWeb.ScenarioLive.Show do
           <span aria-hidden="true">/</span>
           <span class="text-secondary">Scenario</span>
         </div>
-        <header class="mb-6 flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div class="min-w-0">
-            <h1 class="font-anton text-4xl uppercase leading-none [text-wrap:balance] sm:text-5xl">
-              {@scenario.name}
-            </h1>
-            <div id="scenario-meta" class="mt-3 flex flex-wrap gap-2">
-              <span class="meta-chip">
-                <span class="size-2 bg-error"></span>Villain · {@view.villain_name}
-              </span>
-              <span class="meta-chip">
-                {length(@view.modular_sets)} modular {if length(@view.modular_sets) == 1,
-                  do: "set",
-                  else: "sets"}
-              </span>
-              <span :if={@view.author} class="meta-chip">By {@view.author.name}</span>
-              <span class="meta-chip">
-                Updated {Calendar.strftime(@scenario.updated_at, "%b %-d, %Y")}
-              </span>
-            </div>
-          </div>
-          <div class="flex flex-none items-center gap-3">
+
+        <.header>
+          {@scenario.name}
+          <:actions>
             <.button
               :if={@view.mine}
               id="scenario-build"
@@ -52,118 +35,139 @@ defmodule SanctumWeb.ScenarioLive.Show do
               <.icon name="hero-pencil-square" /> Edit
             </.button>
             <.back_button fallback={~p"/scenarios"} />
-          </div>
-        </header>
+          </:actions>
+        </.header>
 
         <div class="space-y-5">
-          <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
-            <div class="min-w-0 space-y-5">
-              <section id="scenario-encounter-deck" aria-labelledby="deck-h">
-                <h2 id="deck-h" class="mb-3 font-anton text-2xl uppercase tracking-[0.02em]">
-                  Encounter deck
-                </h2>
-                <.panel class="flex flex-col gap-6 p-5 sm:flex-row">
-                  <div class="w-[190px] flex-none self-center sm:self-start">
-                    <div class="h-[266px] w-[190px] shadow-comic-sm">
-                      <.mc_card
-                        name={@view.villain_name}
-                        aspect="encounter"
-                        image_url={@view.villain_image}
-                        size="lg"
-                        show_cost={false}
-                      />
-                    </div>
-                  </div>
-                  <div class="min-w-0 flex-1 space-y-2">
-                    <div id="scenario-villain-set" class="deck-row border-l-error">
-                      <div class="flex-1">
-                        <div class="font-barlow-condensed text-[17px] font-bold uppercase tracking-[0.05em]">
-                          {@view.villain_set_name}
-                        </div>
-                        <div class="mt-1 text-xs text-base-content/50">Villain encounter set</div>
-                      </div>
-                      <span class="deck-tag">Villain</span>
-                    </div>
-                    <div
-                      :if={@view.modular_sets == []}
-                      class="font-barlow text-sm italic text-base-content/45"
-                    >
-                      No modular sets.
-                    </div>
-                    <div :for={ms <- @view.modular_sets} class="deck-row border-l-primary">
-                      <div class="flex-1">
-                        <div class="font-barlow-condensed text-[17px] font-bold uppercase tracking-[0.05em]">
-                          {ms.name}
-                        </div>
-                        <div class="mt-1 text-xs text-base-content/50">Modular set</div>
-                      </div>
-                      <span class="deck-tag">Modular</span>
-                    </div>
-                  </div>
-                </.panel>
-              </section>
-
-              <section
-                :for={ms <- @view.modular_sets}
-                id={"modular-set-#{ms.code}"}
-                aria-labelledby={"modular-#{ms.code}-h"}
-              >
-                <h2
-                  id={"modular-#{ms.code}-h"}
-                  class="mb-3 font-anton text-2xl uppercase tracking-[0.02em]"
-                >
-                  {ms.name}
-                </h2>
-                <.panel class="flex flex-col gap-6 p-5 sm:flex-row">
-                  <div class="flex-none self-center sm:self-start">
-                    <.card_fan cards={ms.fan} />
-                  </div>
-                  <div class="min-w-0 flex-1 space-y-3">
-                    <div class="deck-row border-l-primary">
-                      <div class="flex-1">
-                        <div class="font-barlow-condensed text-[17px] font-bold uppercase tracking-[0.05em]">
-                          {ms.name}
-                        </div>
-                        <div class="mt-1 text-xs text-base-content/50">Modular set</div>
-                      </div>
-                      <span class="deck-tag">Modular</span>
-                    </div>
-                  </div>
-                </.panel>
-              </section>
+          <!-- cover -->
+          <.panel class="flex flex-col gap-5 p-4 sm:flex-row sm:items-start">
+            <div
+              class="h-[300px] w-[214px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start"
+              style="transform:rotate(-1.5deg);"
+            >
+              <.mc_card
+                name={@view.villain_name}
+                aspect="encounter"
+                image_url={@view.villain_image}
+                size="lg"
+                show_cost={false}
+              />
             </div>
 
-            <.panel
-              :if={stats_present?(@view.overall_stats)}
-              id="scenario-stats"
-              class="min-w-0 p-4"
-            >
-              <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
-                Encounter Stats
+            <div class="flex min-w-0 flex-1 flex-col">
+              <div class="font-ibm-mono text-xs uppercase tracking-[0.25em] text-primary">
+                Scenario · {@view.villain_set_name}
               </div>
-              <.encounter_stats stats={@view.overall_stats} />
-            </.panel>
-          </div>
+              <h1 class="mt-1.5 font-anton text-4xl uppercase leading-[0.9] [text-wrap:balance] sm:text-5xl sm:leading-[0.88]">
+                {@scenario.name}
+              </h1>
 
-          <.panel :if={@view.description} id="scenario-description" class="min-w-0 p-4">
-            <h2 class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
-              Description
-            </h2>
-            <div class="mt-3 space-y-4">
-              <div :for={seg <- @view.description}>
-                <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
-                <iframe
-                  :if={seg.kind == :rich}
-                  title="Scenario description"
-                  sandbox=""
-                  referrerpolicy="no-referrer"
-                  loading="lazy"
-                  class="deck-writeup-frame"
-                  srcdoc={seg.srcdoc}
-                ></iframe>
+              <span
+                :if={@view.author && @view.author.official?}
+                class="mt-3 inline-flex w-fit"
+              >
+                <.official_badge />
+              </span>
+
+              <div class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
+                <div>
+                  <div class="font-anton text-3xl leading-none">{length(@view.modular_sets)}</div>
+                  <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
+                    {(length(@view.modular_sets) == 1 && "Modular Set") || "Modular Sets"}
+                  </div>
+                </div>
+                <div :if={@view.total_cards > 0}>
+                  <div class="font-anton text-3xl leading-none">{@view.total_cards}</div>
+                  <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
+                    Encounter Cards
+                  </div>
+                </div>
+                <div :if={@view.author && !@view.author.official?} class="flex items-center gap-2">
+                  <.avatar name={@view.author.name} url={@view.author.avatar} size="md" />
+                  <span class="font-barlow-condensed text-sm font-bold text-primary">
+                    {@view.author.name}
+                  </span>
+                </div>
+                <span class="font-barlow text-sm text-base-content/50">
+                  Updated {Calendar.strftime(@scenario.updated_at, "%b %-d, %Y")}
+                </span>
               </div>
             </div>
           </.panel>
+
+          <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
+            <.panel id="scenario-description" class="min-w-0 p-5">
+              <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+                Description
+              </div>
+              <div :if={@view.description} class="mt-3 space-y-4">
+                <div :for={seg <- @view.description}>
+                  <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
+                  <iframe
+                    :if={seg.kind == :rich}
+                    title="Scenario description"
+                    sandbox=""
+                    referrerpolicy="no-referrer"
+                    loading="lazy"
+                    class="deck-writeup-frame"
+                    srcdoc={seg.srcdoc}
+                  ></iframe>
+                </div>
+              </div>
+              <div
+                :if={!@view.description}
+                class="mt-3 font-barlow text-sm italic text-base-content/45"
+              >
+                No description for this scenario.
+              </div>
+            </.panel>
+
+            <div class="min-w-0 space-y-5">
+              <.panel id="scenario-modular-sets" class="min-w-0 p-4">
+                <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
+                  <div class="font-anton text-lg uppercase tracking-[0.05em]">In This Scenario</div>
+                  <div class="ml-auto font-ibm-mono text-xs text-base-content/45">
+                    {length(@view.modular_sets)} {(length(@view.modular_sets) == 1 && "set") ||
+                      "sets"}
+                  </div>
+                </div>
+                <div
+                  :if={@view.modular_sets == []}
+                  class="font-barlow text-sm italic text-base-content/45"
+                >
+                  No modular sets.
+                </div>
+                <div class="divide-y divide-neutral/50">
+                  <div
+                    :for={ms <- @view.modular_sets}
+                    id={"modular-set-#{ms.code}"}
+                    class="flex items-center gap-4 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div class="flex-none">
+                      <.card_fan cards={ms.fan} />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="font-barlow-condensed text-[17px] font-bold uppercase tracking-[0.05em]">
+                        {ms.name}
+                      </div>
+                      <div class="mt-1 text-xs text-base-content/50">Modular set</div>
+                    </div>
+                  </div>
+                </div>
+              </.panel>
+
+              <.panel
+                :if={stats_present?(@view.overall_stats)}
+                id="scenario-stats"
+                class="min-w-0 p-4"
+              >
+                <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+                  Encounter Stats
+                </div>
+                <.encounter_stats stats={@view.overall_stats} />
+              </.panel>
+            </div>
+          </div>
         </div>
       </div>
     </Layouts.app>
@@ -230,11 +234,14 @@ defmodule SanctumWeb.ScenarioLive.Show do
   end
 
   defp view(s) do
+    overall_stats = combined_stats([s.villain_set | s.modular_sets])
+
     %{
       villain_image: villain_image(s),
       villain_name: villain_name(s),
       villain_set_name: s.villain_set && s.villain_set.name,
-      overall_stats: combined_stats([s.villain_set | s.modular_sets]),
+      overall_stats: overall_stats,
+      total_cards: overall_stats.type_counts |> Map.values() |> Enum.sum(),
       modular_sets:
         s.modular_sets
         |> Enum.sort_by(&String.downcase(&1.name || &1.code))
