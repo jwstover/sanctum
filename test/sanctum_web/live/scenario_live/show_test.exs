@@ -100,10 +100,10 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute has_element?(view, "#scenario-build")
   end
 
-  test "a description renders as markdown; without one the panel is absent", ctx do
+  test "a description renders as markdown; without one the panel shows a placeholder", ctx do
     {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
-    render_async(view)
-    refute has_element?(view, "#scenario-description")
+    html = render_async(view)
+    assert html =~ "No description for this scenario."
 
     Sanctum.Games.set_scenario_description!(ctx.mine, %{description_md: "**Zz bold** notes"},
       actor: ctx.owner
@@ -147,15 +147,18 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     html = render_async(view)
 
     assert has_element?(view, "#modular-set-#{ctx.modular.code}")
-    # Fan: one card per distinct type, in the modular set's own section.
+    # Fan: one card per distinct type, in the modular set's own row.
     assert html =~ "Zz minion 88001"
     assert html =~ "Zz treachery 88002"
     assert html =~ "Zz side_scheme 88003"
     # Content stats are combined (villain set + every modular set) in the
-    # page-level side panel, deck-weighted (deck_limit: 2 each here).
+    # page-level side panel, deck-weighted (deck_limit: 2 each here). No
+    # boost-curve chart — just the type-count tiles.
     assert has_element?(view, "#scenario-stats")
-    assert html =~ "Boost curve"
-    assert html =~ "avg 1.5"
+    assert html =~ "Minions"
+    assert html =~ "Treacheries"
+    assert html =~ "Side Schemes"
+    refute html =~ "Boost curve"
   end
 
   test "a scenario whose set has no villain cards still renders", %{conn: conn} do

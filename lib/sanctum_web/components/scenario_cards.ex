@@ -91,27 +91,6 @@ defmodule SanctumWeb.Components.ScenarioCards do
           into: %{},
           do: {type, sum_weight.(group)}
 
-    boostable = Enum.filter(sides, fn {_card, side} -> side.boost != nil or side.boost_star end)
-    {starred, numeric} = Enum.split_with(boostable, fn {_card, side} -> side.boost_star end)
-
-    boost_curve =
-      numeric
-      |> Enum.group_by(fn {_card, side} -> side.boost end)
-      |> Map.new(fn {boost, group} -> {boost, sum_weight.(group)} end)
-      |> Enum.sort()
-
-    numeric_weight = sum_weight.(numeric)
-
-    avg_boost =
-      if numeric_weight > 0 do
-        total =
-          numeric
-          |> Enum.map(fn {card, side} -> side.boost * weight.({card, side}) end)
-          |> Enum.sum()
-
-        Float.round(total / numeric_weight, 1)
-      end
-
     icon_counts =
       for icon <- @boost_icon_types,
           group = Enum.filter(sides, fn {_card, side} -> Map.get(side, icon) end),
@@ -119,23 +98,15 @@ defmodule SanctumWeb.Components.ScenarioCards do
           into: %{},
           do: {icon, sum_weight.(group)}
 
-    %{
-      type_counts: type_counts,
-      boost_curve: boost_curve,
-      boost_star_count: sum_weight.(starred),
-      avg_boost: avg_boost,
-      icon_counts: icon_counts
-    }
+    %{type_counts: type_counts, icon_counts: icon_counts}
   end
 
   @doc "Whether `stats` (from `combined_stats/1`) has anything worth rendering."
-  def stats_present?(stats),
-    do: stats.type_counts != %{} or stats.boost_curve != [] or stats.icon_counts != %{}
+  def stats_present?(stats), do: stats.type_counts != %{} or stats.icon_counts != %{}
 
   @doc """
-  Renders an encounter set's content stats: deck-weighted type-count tiles, a
-  boost-value bar curve (with average and ★-boost count), and boost-icon
-  counts. Renders nothing for a set with no countable content.
+  Renders an encounter set's content stats: deck-weighted type-count tiles and
+  boost-icon counts. Renders nothing for a set with no countable content.
   """
   attr :stats, :map, required: true
   attr :class, :string, default: nil
@@ -149,49 +120,12 @@ defmodule SanctumWeb.Components.ScenarioCards do
     assigns = assign(assigns, type_tiles: type_tiles)
 
     ~H"""
-    <div
-      :if={@type_tiles != [] or @stats.boost_curve != [] or @stats.icon_counts != %{}}
-      class={["space-y-3", @class]}
-    >
+    <div :if={@type_tiles != [] or @stats.icon_counts != %{}} class={["space-y-3", @class]}>
       <div :if={@type_tiles != []} class="grid grid-cols-3 gap-x-3 gap-y-2 sm:grid-cols-4">
         <div :for={{label, count} <- @type_tiles} class="min-w-0">
           <div class="font-anton text-xl leading-none text-secondary">{count}</div>
           <div class="mt-0.5 truncate font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em] text-base-content/50">
             {label}
-          </div>
-        </div>
-      </div>
-
-      <div
-        :if={@stats.boost_curve != [] or @stats.boost_star_count > 0}
-        class="border-t border-line/60 pt-3"
-      >
-        <div class="flex items-center justify-between">
-          <span class="font-ibm-mono text-[11px] uppercase tracking-[0.16em] text-base-content/50">
-            Boost curve
-          </span>
-          <span
-            :if={@stats.avg_boost}
-            class="font-barlow-condensed text-xs font-bold text-base-content/70"
-          >
-            avg {@stats.avg_boost}
-          </span>
-        </div>
-        <div class="mt-2 flex h-[44px] items-end gap-1.5">
-          <div
-            :for={{value, count} <- @stats.boost_curve}
-            class="flex h-full flex-1 flex-col justify-end gap-1"
-          >
-            <div class="w-full bg-primary/70" style={"height:#{bar_height(count, @stats)}px;"}></div>
-            <span class="text-center font-ibm-mono text-[10px] text-base-content/50">{value}</span>
-          </div>
-          <div :if={@stats.boost_star_count > 0} class="flex h-full flex-1 flex-col justify-end gap-1">
-            <div
-              class="w-full bg-primary/40"
-              style={"height:#{bar_height(@stats.boost_star_count, @stats)}px;"}
-            >
-            </div>
-            <span class="text-center font-ibm-mono text-[10px] text-base-content/50">★</span>
           </div>
         </div>
       </div>
@@ -208,15 +142,6 @@ defmodule SanctumWeb.Components.ScenarioCards do
 
   defp icon_token(icon), do: icon |> Atom.to_string() |> String.replace_suffix("_icon", "")
 
-  defp bar_height(count, stats) do
-    max =
-      [stats.boost_star_count | Enum.map(stats.boost_curve, &elem(&1, 1))]
-      |> Enum.max(fn -> 1 end)
-      |> max(1)
-
-    max(round(count / max * 36), 4)
-  end
-
   @doc """
   Renders a set's card fan: up to 3 cards, the first centered and on top as
   the highlight, the rest peeking out rotated behind it.
@@ -232,17 +157,17 @@ defmodule SanctumWeb.Components.ScenarioCards do
       end
 
     side_styles = [
-      "top:22px;left:-16px;right:auto;transform:rotate(-13deg);",
-      "top:22px;right:-16px;left:auto;transform:rotate(13deg);"
+      "top:11px;left:-8px;right:auto;transform:rotate(-13deg);",
+      "top:11px;right:-8px;left:auto;transform:rotate(13deg);"
     ]
 
     assigns = assign(assigns, highlight: highlight, side_cards: Enum.zip(rest, side_styles))
 
     ~H"""
-    <div class={["relative h-[266px] w-[190px]", @class]}>
+    <div class={["relative h-[136px] w-[97px]", @class]}>
       <div
         :for={{c, style} <- @side_cards}
-        class="absolute h-[210px] w-[150px] origin-bottom opacity-60 saturate-75"
+        class="absolute h-[107px] w-[77px] origin-bottom opacity-60 saturate-75"
         style={style}
       >
         <.mc_card
@@ -250,7 +175,7 @@ defmodule SanctumWeb.Components.ScenarioCards do
           type={c.type}
           aspect="encounter"
           image_url={c.image_url}
-          size="md"
+          size="sm"
           show_cost={false}
         />
       </div>
@@ -260,7 +185,7 @@ defmodule SanctumWeb.Components.ScenarioCards do
           type={@highlight.type}
           aspect="encounter"
           image_url={@highlight.image_url}
-          size="lg"
+          size="sm"
           show_cost={false}
         />
       </div>
