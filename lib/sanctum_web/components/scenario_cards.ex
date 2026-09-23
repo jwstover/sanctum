@@ -143,8 +143,10 @@ defmodule SanctumWeb.Components.ScenarioCards do
   defp icon_token(icon), do: icon |> Atom.to_string() |> String.replace_suffix("_icon", "")
 
   @doc """
-  Renders a set's card fan: up to 3 cards, the first centered and on top as
-  the highlight, the rest peeking out rotated behind it.
+  Renders a set's card fan: up to 3 cards fanned out bottom-anchored in a
+  landscape box (the highlight centered on top, the rest rotated behind it) —
+  same composition as the design mock's compact set thumbnail. Every card
+  stays within the box; nothing overhangs into a sibling.
   """
   attr :cards, :list, default: [], doc: "each %{name:, type:, image_url:}, highlight first"
   attr :class, :string, default: nil
@@ -157,17 +159,17 @@ defmodule SanctumWeb.Components.ScenarioCards do
       end
 
     side_styles = [
-      "top:11px;left:-8px;right:auto;transform:rotate(-13deg);",
-      "top:11px;right:-8px;left:auto;transform:rotate(13deg);"
+      "left:6px;bottom:0;transform:rotate(-12deg);",
+      "right:6px;bottom:0;transform:rotate(12deg);"
     ]
 
     assigns = assign(assigns, highlight: highlight, side_cards: Enum.zip(rest, side_styles))
 
     ~H"""
-    <div class={["relative h-[136px] w-[97px]", @class]}>
+    <div class={["relative h-[100px] w-[150px]", @class]}>
       <div
         :for={{c, style} <- @side_cards}
-        class="absolute h-[107px] w-[77px] origin-bottom opacity-60 saturate-75"
+        class="absolute h-[89px] w-[64px] origin-bottom"
         style={style}
       >
         <.mc_card
@@ -177,9 +179,13 @@ defmodule SanctumWeb.Components.ScenarioCards do
           image_url={c.image_url}
           size="sm"
           show_cost={false}
+          show_title={false}
         />
       </div>
-      <div :if={@highlight} class="absolute inset-0 shadow-comic-sm">
+      <div
+        :if={@highlight}
+        class="absolute bottom-0 left-1/2 h-[89px] w-[64px] -translate-x-1/2 shadow-comic-sm"
+      >
         <.mc_card
           name={@highlight.name}
           type={@highlight.type}
@@ -187,6 +193,7 @@ defmodule SanctumWeb.Components.ScenarioCards do
           image_url={@highlight.image_url}
           size="sm"
           show_cost={false}
+          show_title={false}
         />
       </div>
     </div>

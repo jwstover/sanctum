@@ -98,6 +98,7 @@ defmodule SanctumWeb.Components.Card do
 
   attr :gradient_to, :string, default: nil, doc: "hero gradient-border end color"
   attr :show_cost, :boolean, default: true, doc: "render the cost bubble overlay"
+  attr :show_title, :boolean, default: true, doc: "render the bottom name/type gradient overlay"
   attr :class, :string, default: ""
   attr :rest, :global
 
@@ -208,6 +209,7 @@ defmodule SanctumWeb.Components.Card do
 
       <!-- bottom title gradient -->
       <div
+        :if={@show_title}
         class="absolute inset-x-0 bottom-0 z-[3]"
         style={"padding:#{@dims.pad}px;background:linear-gradient(to top,rgba(7,7,9,.97) 0%,rgba(7,7,9,.78) 55%,transparent 100%);"}
       >
