@@ -343,6 +343,58 @@ defmodule Sanctum.MarvelCdb.DecklistPagesTest do
       assert reimported.mcdb_social_synced_at == synced_at
     end
 
+    test "re-importing a favorited deck preserves favorite_count" do
+      hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "77003", code: "77003"})
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          name: "Favorite Regression Hero",
+          type: :hero,
+          code: "77003a",
+          side_identifier: "A",
+          is_primary_side: true
+        }
+      )
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          name: "Favorite Regression Alter Ego",
+          type: :alter_ego,
+          code: "77003b",
+          side_identifier: "B",
+          is_primary_side: false
+        }
+      )
+
+      slot_card = create(Sanctum.Games.Card, attrs: %{base_code: "77004", code: "77004"})
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{card_id: slot_card.id, code: "77004", side_identifier: "A"}
+      )
+
+      payload = %{
+        "id" => 55_556,
+        "name" => "Favorite regression deck",
+        "hero_code" => "77003a",
+        "slots" => %{"77004" => 2}
+      }
+
+      assert {:ok, deck} = MarvelCdb.import_decklist(payload)
+
+      user = Sanctum.AccountsFixtures.user_fixture()
+      Sanctum.Decks.favorite_deck!(deck.id, actor: user)
+
+      # Re-import the same decklist (an upsert via create_with_cards) — the
+      # trigger-maintained counter must survive it.
+      assert {:ok, reimported} = MarvelCdb.import_decklist(payload)
+      assert reimported.id == deck.id
+
+      reloaded = Ash.get!(Sanctum.Decks.Deck, deck.id, load: [:favorite_count], authorize?: false)
+      assert reloaded.favorite_count == 1
+    end
+
     test "find_or_create_mcdb_user preserves an existing username" do
       {:ok, user} =
         Sanctum.Decks.find_or_create_mcdb_user(%{mcdb_user_id: 909_090, username: "original"})

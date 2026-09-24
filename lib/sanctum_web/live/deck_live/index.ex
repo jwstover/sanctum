@@ -1,8 +1,8 @@
 defmodule SanctumWeb.DeckLive.Index do
   @moduledoc """
   Public "Deck Browser" — a feed of decks filterable by name/hero, aspect, and
-  hero, with Newest / A–Z sorting. The comic-dossier counterpart to the admin
-  deck table.
+  hero, with Newest / Popular / Unique / A–Z sorting. The comic-dossier
+  counterpart to the admin deck table.
   """
   use SanctumWeb, :live_view
 
@@ -26,11 +26,11 @@ defmodule SanctumWeb.DeckLive.Index do
     :mcdb_user,
     :owner,
     :favorited,
-    :favorite_count,
+    :popularity,
     hero: [:display_name, :hero_side, card: [:primary_side]]
   ]
 
-  @sorts [{"new", "Newest"}, {"unique", "Unique"}, {"title", "A–Z"}]
+  @sorts [{"new", "Newest"}, {"popular", "Popular"}, {"unique", "Unique"}, {"title", "A–Z"}]
   @sort_keys Enum.map(@sorts, &elem(&1, 0))
 
   @impl true
@@ -193,13 +193,13 @@ defmodule SanctumWeb.DeckLive.Index do
 
             <div class="flex flex-none items-center gap-4 border-t-2 border-neutral pt-3 sm:w-[120px] sm:flex-col sm:items-start sm:justify-center sm:gap-2 sm:border-l-2 sm:border-t-0 sm:pl-4 sm:pt-0">
               <.uniqueness_meter percentile={deck.uniqueness} class="w-[110px] sm:w-full" />
-              <!-- primary stat: favorites (star icon carries the meaning) -->
+              <!-- primary stat: popularity (MarvelCDB likes + Sanctum favorites) -->
               <div
                 class="flex items-center gap-1.5 font-anton text-2xl leading-none"
-                title={"#{deck.favorite_count} #{(deck.favorite_count == 1 && "favorite") || "favorites"}"}
+                title={"#{deck.popularity} #{(deck.popularity == 1 && "favorite") || "favorites"}"}
               >
                 <.icon name="hero-star-solid" class="size-5 text-primary" />
-                {deck.favorite_count}
+                {deck.popularity}
               </div>
               <!-- secondary stat: card count, de-emphasized -->
               <div class="font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
@@ -541,7 +541,7 @@ defmodule SanctumWeb.DeckLive.Index do
       card_row_count: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
       favorited: deck.favorited,
-      favorite_count: deck.favorite_count || 0,
+      popularity: deck.popularity || 0,
       updated: format_date(deck.mcdb_date_update || deck.updated_at, timezone)
     }
   end

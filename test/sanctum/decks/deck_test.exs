@@ -236,4 +236,136 @@ defmodule Sanctum.Decks.DeckTest do
     # card_ids from the first import are fully replaced.
     refute Enum.any?(reloaded_ids, &(&1 in card_ids))
   end
+
+  describe "favorite_count / popularity" do
+    defp valid_deck!(base_code) do
+      hero_card =
+        create(Sanctum.Games.Card, attrs: %{base_code: base_code, set: "she_hulk"})
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          name: "She-Hulk",
+          type: :hero,
+          code: base_code <> "a",
+          side_identifier: "A",
+          is_primary_side: true
+        }
+      )
+
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          name: "Jennifer Walters",
+          type: :alter_ego,
+          code: base_code <> "b",
+          side_identifier: "B",
+          is_primary_side: false
+        }
+      )
+
+      {:ok, hero} =
+        Sanctum.Heroes.find_or_create_hero(%{
+          hero_name: "She-Hulk",
+          alter_ego_name: "Jennifer Walters",
+          set: "she_hulk",
+          base_code: base_code,
+          card_id: hero_card.id
+        })
+
+      Deck
+      |> Ash.Changeset.for_create(:create, %{title: "Popularity Test", hero_id: hero.id})
+      |> Ash.create!()
+    end
+
+    defp reload!(deck) do
+      Ash.get!(Deck, deck.id, load: [:favorite_count, :popularity], authorize?: false)
+    end
+
+    test "favoriting increments favorite_count, and it's idempotent per user" do
+      deck = valid_deck!("91001")
+      u1 = Sanctum.AccountsFixtures.user_fixture()
+      u2 = Sanctum.AccountsFixtures.user_fixture()
+
+      Sanctum.Decks.favorite_deck!(deck.id, actor: u1)
+      assert reload!(deck).favorite_count == 1
+
+      # Favoriting again (the upsert) is a no-op, not a double-count.
+      Sanctum.Decks.favorite_deck!(deck.id, actor: u1)
+      assert reload!(deck).favorite_count == 1
+
+      Sanctum.Decks.favorite_deck!(deck.id, actor: u2)
+      assert reload!(deck).favorite_count == 2
+    end
+
+    test "unfavoriting decrements favorite_count, and is a no-op when not favorited" do
+      deck = valid_deck!("91002")
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      Sanctum.Decks.favorite_deck!(deck.id, actor: user)
+      assert reload!(deck).favorite_count == 1
+
+      Sanctum.Decks.unfavorite_deck(deck.id, user)
+      assert reload!(deck).favorite_count == 0
+
+      # Unfavoriting again (nothing to remove) doesn't go negative.
+      Sanctum.Decks.unfavorite_deck(deck.id, user)
+      assert reload!(deck).favorite_count == 0
+    end
+
+    test "popularity is mcdb_like_count + favorite_count" do
+      deck = valid_deck!("91003")
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      Sanctum.Decks.favorite_deck!(deck.id, actor: user)
+
+      deck
+      |> Ash.Changeset.for_update(:set_mcdb_social, %{mcdb_like_count: 5})
+      |> Ash.update!(authorize?: false)
+
+      reloaded = reload!(deck)
+      assert reloaded.favorite_count == 1
+      assert reloaded.popularity == 6
+    end
+
+    test "a native deck with no likes has popularity equal to its favorite count" do
+      deck = valid_deck!("91004")
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      Sanctum.Decks.favorite_deck!(deck.id, actor: user)
+
+      reloaded = reload!(deck)
+      assert reloaded.favorite_count == 1
+      assert reloaded.popularity == 1
+    end
+
+    test "destroying a favorited deck succeeds and doesn't error the trigger" do
+      deck = valid_deck!("91005")
+      user = Sanctum.AccountsFixtures.user_fixture()
+
+      Sanctum.Decks.favorite_deck!(deck.id, actor: user)
+
+      assert :ok = Ash.destroy(deck, authorize?: false)
+    end
+
+    test "favorite_count can't be set through :update or :create" do
+      deck = valid_deck!("91006")
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               deck
+               |> Ash.Changeset.for_update(:update, %{favorite_count: 99})
+               |> Ash.update(authorize?: false)
+
+      hero = Ash.get!(Sanctum.Heroes.Hero, deck.hero_id, authorize?: false)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Deck
+               |> Ash.Changeset.for_create(:create, %{
+                 title: "Can't set favorite_count",
+                 hero_id: hero.id,
+                 favorite_count: 99
+               })
+               |> Ash.create()
+    end
+  end
 end

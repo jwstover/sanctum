@@ -250,6 +250,44 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     assert html =~ "Alpha Deck"
   end
 
+  test "the sort radio includes Popular", %{conn: conn} do
+    make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
+
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    render_async(view)
+
+    assert has_element?(view, ~s(input[name="sort"][value="popular"]))
+  end
+
+  test "?sort=popular orders decks by mcdb likes + favorites, newest breaking ties", %{
+    conn: conn
+  } do
+    most_liked =
+      make_deck("Liked Deck", "spider_man", "90001", "Spider-Man", [:justice])
+
+    most_liked
+    |> Ash.Changeset.for_update(:set_mcdb_social, %{mcdb_like_count: 3})
+    |> Ash.update!(authorize?: false)
+
+    favorited =
+      make_deck("Favorited Deck", "captain_marvel", "90002", "Captain Marvel", [:aggression])
+
+    user = Sanctum.AccountsFixtures.user_fixture()
+    Sanctum.Decks.favorite_deck!(favorited.id, actor: user)
+
+    make_deck("Plain Deck", "she_hulk", "90003", "She-Hulk", [:leadership])
+
+    {:ok, view, _html} = live(conn, ~p"/decks?sort=popular")
+    html = render_async(view)
+
+    liked_pos = :binary.match(html, "Liked Deck") |> elem(0)
+    favorited_pos = :binary.match(html, "Favorited Deck") |> elem(0)
+    plain_pos = :binary.match(html, "Plain Deck") |> elem(0)
+
+    assert liked_pos < favorited_pos
+    assert favorited_pos < plain_pos
+  end
+
   test "legacy aspect/hero_id/mine params fold into the query string", %{conn: conn} do
     deck = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
     make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression])
