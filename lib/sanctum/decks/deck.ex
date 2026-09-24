@@ -32,6 +32,14 @@ defmodule Sanctum.Decks.Deck do
       # sort, so top-N pagination can walk the index directly.
       index ["(COALESCE(mcdb_date_update, updated_at)) DESC"],
         name: "decks_newest_at_index"
+
+      # Matches the `:browse` action's popular sort (popularity, then newest
+      # as a tie-break) so top-N pagination can walk the index directly.
+      index [
+              "(mcdb_like_count + favorite_count) DESC",
+              "(COALESCE(mcdb_date_update, updated_at)) DESC"
+            ],
+            name: "decks_popularity_index"
     end
   end
 
@@ -60,7 +68,7 @@ defmodule Sanctum.Decks.Deck do
             :mcdb_user,
             :owner,
             :favorited,
-            :favorite_count,
+            :popularity,
             hero: [:display_name, :hero_side, card: [:primary_side]]
           ])
 
@@ -84,6 +92,12 @@ defmodule Sanctum.Decks.Deck do
           # below the min-deck threshold) sort last.
           "unique" ->
             Ash.Query.sort(query, uniqueness_percentile: :desc_nils_last)
+
+          # Most popular first; nearly every deck ties at 0, so newest breaks
+          # ties (keeps offset pagination deterministic and matches
+          # decks_popularity_index).
+          "popular" ->
+            Ash.Query.sort(query, popularity: :desc, newest_at: :desc)
 
           _ ->
             Ash.Query.sort(query, newest_at: :desc)
@@ -356,9 +370,22 @@ defmodule Sanctum.Decks.Deck do
 
     # MarvelCDB social data, scraped from the decklist list pages
     # (Sanctum.MarvelCdb.DecklistPages) — the JSON API exposes neither. Distinct
-    # from `favorite_count`, which aggregates Sanctum's own DeckFavorite rows.
+    # from `favorite_count`, which the `deck_favorites` trigger maintains (see
+    # DeckFavorite's custom_statements).
     attribute :mcdb_like_count, :integer, public?: true, allow_nil?: false, default: 0
     attribute :mcdb_social_synced_at, :utc_datetime, public?: true
+
+    # The public total of Sanctum favorites (DeckFavorite rows) for this deck.
+    # Kept in sync by a trigger on `deck_favorites` (see DeckFavorite's
+    # custom_statements) rather than a live aggregate, so the `popularity`
+    # sort can be indexed. Never exposes *who* favorited — only the count.
+    # writable?: false is required: create_with_cards/:update/:create all
+    # accept [:*], and a MarvelCDB re-import must not reset this to 0.
+    attribute :favorite_count, :integer,
+      public?: true,
+      allow_nil?: false,
+      default: 0,
+      writable?: false
 
     # Deck uniqueness, precomputed by Sanctum.Decks.ComputeUniquenessWorker.
     # Measures how unlike other decks of the *same hero* this deck's chosen
@@ -418,20 +445,17 @@ defmodule Sanctum.Decks.Deck do
     calculate :newest_at,
               :utc_datetime,
               expr(fragment("COALESCE(?, ?)", mcdb_date_update, updated_at))
+
+    # Public popularity: MarvelCDB likes + Sanctum favorites (native decks have
+    # 0 likes). Backs the tiles/deck page count and the browser's "Popular"
+    # sort; the fragment mirrors decks_popularity_index's expression exactly
+    # so top-N pagination can walk the index.
+    calculate :popularity, :integer, expr(fragment("(? + ?)", mcdb_like_count, favorite_count))
   end
 
   aggregates do
     count :card_row_count, :deck_cards
     sum :total_card_count, :deck_cards, :quantity
-
-    # Public popularity signal: how many users have favorited this deck.
-    # `authorize? false` bypasses DeckFavorite's private (owner-only) read
-    # policy — otherwise the count would be scoped to the viewer's own
-    # favorites (0 for everyone but the one owner). It only ever exposes the
-    # total, never *who* favorited.
-    count :favorite_count, :favorites do
-      authorize? false
-    end
   end
 
   identities do

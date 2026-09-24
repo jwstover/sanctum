@@ -1,0 +1,196 @@
+{
+  "attributes": [
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"uuid_generate_v7()\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": true,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inserted_at",
+      "type": "utc_datetime_usec"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "updated_at",
+      "type": "utc_datetime_usec"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": {
+        "deferrable": false,
+        "destination_attribute": "id",
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null,
+        "index?": false,
+        "index_where": null,
+        "match_tenant?": false,
+        "match_type": null,
+        "match_with": null,
+        "multitenancy": {
+          "attribute": null,
+          "global": null,
+          "strategy": null
+        },
+        "name": "deck_favorites_user_id_fkey",
+        "on_delete": null,
+        "on_update": null,
+        "primary_key?": true,
+        "schema": "public",
+        "table": "users"
+      },
+      "scale": null,
+      "size": null,
+      "source": "user_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": {
+        "deferrable": false,
+        "destination_attribute": "id",
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null,
+        "index?": false,
+        "index_where": null,
+        "match_tenant?": false,
+        "match_type": null,
+        "match_with": null,
+        "multitenancy": {
+          "attribute": null,
+          "global": null,
+          "strategy": null
+        },
+        "name": "deck_favorites_deck_id_fkey",
+        "on_delete": "delete",
+        "on_update": null,
+        "primary_key?": true,
+        "schema": "public",
+        "table": "decks"
+      },
+      "scale": null,
+      "size": null,
+      "source": "deck_id",
+      "type": "uuid"
+    }
+  ],
+  "base_filter": null,
+  "check_constraints": [],
+  "create_table_options": null,
+  "custom_indexes": [
+    {
+      "all_tenants?": false,
+      "concurrently": false,
+      "error_fields": [
+        "user_id"
+      ],
+      "fields": [
+        {
+          "type": "atom",
+          "value": "user_id"
+        }
+      ],
+      "include": null,
+      "include_base_filter?": true,
+      "message": null,
+      "name": null,
+      "nulls_distinct": true,
+      "prefix": null,
+      "table": null,
+      "unique": false,
+      "using": null,
+      "where": null
+    }
+  ],
+  "custom_statements": [
+    {
+      "after_tables": [
+        "decks"
+      ],
+      "code?": false,
+      "down": "DROP FUNCTION IF EXISTS deck_favorites_count_trigger();",
+      "global?": false,
+      "name": "deck_favorite_count_fn",
+      "up": "CREATE OR REPLACE FUNCTION deck_favorites_count_trigger() RETURNS trigger AS $$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    UPDATE decks SET favorite_count = favorite_count + 1 WHERE id = NEW.deck_id;\n    RETURN NEW;\n  ELSE\n    UPDATE decks SET favorite_count = GREATEST(favorite_count - 1, 0) WHERE id = OLD.deck_id;\n    RETURN OLD;\n  END IF;\nEND;\n$$ LANGUAGE plpgsql;\n"
+    },
+    {
+      "after_tables": [
+        "decks"
+      ],
+      "code?": false,
+      "down": "DROP TRIGGER IF EXISTS deck_favorites_count ON deck_favorites;",
+      "global?": false,
+      "name": "deck_favorite_count_trigger",
+      "up": "CREATE TRIGGER deck_favorites_count\nAFTER INSERT OR DELETE ON deck_favorites\nFOR EACH ROW EXECUTE FUNCTION deck_favorites_count_trigger();\n"
+    },
+    {
+      "after_tables": [
+        "decks"
+      ],
+      "code?": false,
+      "down": "SELECT 1;",
+      "global?": false,
+      "name": "deck_favorite_count_backfill",
+      "up": "UPDATE decks d SET favorite_count = f.n\nFROM (SELECT deck_id, count(*) AS n FROM deck_favorites GROUP BY deck_id) f\nWHERE d.id = f.deck_id;\n"
+    }
+  ],
+  "has_create_action": true,
+  "hash": "4E1E4E4ABDFD1B09EAD25CB6A77D196902389D8B1096025EDD2816B4FE307A94",
+  "identities": [
+    {
+      "all_tenants?": false,
+      "base_filter": null,
+      "index_name": "deck_favorites_unique_user_deck_index",
+      "keys": [
+        {
+          "type": "atom",
+          "value": "user_id"
+        },
+        {
+          "type": "atom",
+          "value": "deck_id"
+        }
+      ],
+      "name": "unique_user_deck",
+      "nils_distinct?": true,
+      "where": null
+    }
+  ],
+  "multitenancy": {
+    "attribute": null,
+    "global": null,
+    "strategy": null
+  },
+  "repo": "Elixir.Sanctum.Repo",
+  "schema": null,
+  "table": "deck_favorites"
+}

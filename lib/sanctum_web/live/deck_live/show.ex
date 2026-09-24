@@ -106,13 +106,13 @@ defmodule SanctumWeb.DeckLive.Show do
                     Unique
                   </div>
                 </div>
-                <div :if={@cover.favorite_count > 0}>
+                <div :if={@cover.popularity > 0}>
                   <div class="flex items-center gap-1 font-anton text-3xl leading-none">
                     <.icon name="hero-star-solid" class="size-6 text-primary" />
-                    {@cover.favorite_count}
+                    {@cover.popularity}
                   </div>
                   <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
-                    {(@cover.favorite_count == 1 && "Favorite") || "Favorites"}
+                    {(@cover.popularity == 1 && "Favorite") || "Favorites"}
                   </div>
                 </div>
                 <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
@@ -417,11 +417,12 @@ defmodule SanctumWeb.DeckLive.Show do
         do: Sanctum.Decks.favorite_deck!(deck.id, actor: actor),
         else: Sanctum.Decks.unfavorite_deck(deck.id, actor)
 
-      # Reflect the count locally too (the aggregate would otherwise only
-      # refresh on a full reload).
+      # Reflect the count locally too, so the toggle doesn't need a re-fetch
+      # (favorite_count is a trigger-maintained column plus a calculation,
+      # not a live aggregate).
       cover = %{
         socket.assigns.cover
-        | favorite_count: socket.assigns.cover.favorite_count + ((now_favorited && 1) || -1)
+        | popularity: socket.assigns.cover.popularity + ((now_favorited && 1) || -1)
       }
 
       {:noreply, socket |> assign(:favorited, now_favorited) |> assign(:cover, cover)}
@@ -505,7 +506,7 @@ defmodule SanctumWeb.DeckLive.Show do
              :mcdb_user,
              :owner,
              :favorited,
-             :favorite_count,
+             :popularity,
              hero: [:display_name, :hero_side, :alter_ego_side, card: [:primary_side]],
              deck_cards: [card: card_loads]
            ]
@@ -590,7 +591,7 @@ defmodule SanctumWeb.DeckLive.Show do
       total_cards: deck.total_card_count || 0,
       unique_cards: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,
-      favorite_count: deck.favorite_count || 0,
+      popularity: deck.popularity || 0,
       author: author && author.name,
       author_avatar: author && author.avatar
     }
