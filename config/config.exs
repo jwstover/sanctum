@@ -29,7 +29,9 @@ config :sanctum, Oban,
     {Oban.Plugins.Cron,
      crontab: [
        {"0 * * * *", Sanctum.Decks.DecklistSyncWorker},
-       {"30 4 * * *", Sanctum.Decks.ComputeUniquenessWorker}
+       {"30 4 * * *", Sanctum.Decks.ComputeUniquenessWorker},
+       # Clear of the hourly sync and the uniqueness sweep.
+       {"15 6 * * *", Sanctum.Decks.McdbSocialRefreshWorker}
      ]}
   ]
 
