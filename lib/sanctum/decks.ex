@@ -39,6 +39,8 @@ defmodule Sanctum.Decks do
     resource Sanctum.Decks.McdbUser do
       define :find_or_create_mcdb_user, action: :find_or_create
       define :upsert_mcdb_username, action: :upsert_username
+      define :claim_mcdb_user, action: :claim
+      define :list_claimed_mcdb_users, action: :claimed_by_actor
     end
 
     resource Sanctum.Decks.DeckSyncState do
