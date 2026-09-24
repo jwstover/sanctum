@@ -19,7 +19,7 @@ defmodule Sanctum.Decks.McdbUser do
   end
 
   actions do
-    defaults [:read, create: :*]
+    defaults [:read, create: [:mcdb_user_id, :username]]
 
     create :find_or_create do
       accept [:mcdb_user_id, :username]
@@ -35,11 +35,29 @@ defmodule Sanctum.Decks.McdbUser do
       upsert_identity :unique_mcdb_user_id
       upsert_fields [:username]
     end
+
+    # Sets the owning Sanctum user once they've proven the MarvelCDB account is
+    # theirs over OAuth. Idempotent for the same user; the policy refuses a
+    # record already claimed by someone else.
+    update :claim do
+      accept []
+      change set_attribute(:sanctum_user_id, actor(:id))
+    end
+
+    read :claimed_by_actor do
+      filter expr(sanctum_user_id == ^actor(:id))
+    end
   end
 
   policies do
-    policy always() do
+    # Sync/import/scrape run with a nil actor — these must stay open.
+    policy action([:read, :create, :find_or_create, :upsert_username, :claimed_by_actor]) do
       authorize_if always()
+    end
+
+    policy action(:claim) do
+      forbid_unless actor_present()
+      authorize_if expr(is_nil(sanctum_user_id) or sanctum_user_id == ^actor(:id))
     end
   end
 

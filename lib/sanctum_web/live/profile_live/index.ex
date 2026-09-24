@@ -10,6 +10,9 @@ defmodule SanctumWeb.ProfileLive.Index do
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
+  alias Sanctum.MarvelCdb.Credentials
+  alias Sanctum.MarvelCdb.OAuth
+
   # The checklist mirrors the Browse page: waves in release order, packs
   # within a wave ranked by product type then release position.
   @type_rank %{core: 0, campaign_expansion: 1, scenario_pack: 2, hero_pack: 3, promo: 4}
@@ -192,6 +195,72 @@ defmodule SanctumWeb.ProfileLive.Index do
           </.form>
         </.panel>
 
+        <%!-- MarvelCDB: linking proves which MarvelCDB account is theirs (over
+             OAuth), which credits imported decks to them. Hidden entirely when
+             the server has no MarvelCDB client configured and the user was
+             never connected. --%>
+        <.panel :if={@mcdb_configured? or @mcdb_connected?} class="mt-6 p-5">
+          <div class="flex items-baseline justify-between border-b-2 border-neutral pb-3">
+            <h2 class="font-anton text-xl uppercase tracking-[0.03em]">MarvelCDB</h2>
+            <span :if={@mcdb_connected?} class="font-ibm-mono text-xs text-success">
+              Connected
+            </span>
+          </div>
+
+          <div :if={!@mcdb_connected?}>
+            <p class="mt-3 font-barlow-condensed text-sm text-base-content/60">
+              Connect your MarvelCDB account to credit decks you imported from there to
+              your Sanctum profile.
+            </p>
+            <.link
+              href={~p"/marvelcdb/connect"}
+              class="mt-4 inline-flex items-center gap-1 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-primary hover:text-primary/80"
+            >
+              Connect MarvelCDB <.icon name="hero-arrow-right" class="size-3.5" />
+            </.link>
+          </div>
+
+          <div :if={@mcdb_connected?}>
+            <ul :if={@mcdb_accounts != []} class="mt-3 space-y-1">
+              <li
+                :for={mcdb_user <- @mcdb_accounts}
+                class="font-barlow-condensed text-sm text-base-content/80"
+              >
+                {mcdb_account_label(mcdb_user)}
+              </li>
+            </ul>
+
+            <p :if={@mcdb_accounts == []} class="mt-3 font-barlow-condensed text-sm text-warning">
+              Connected, but not linked to a MarvelCDB account yet — MarvelCDB only reveals
+              your account through your decks. Create a deck on MarvelCDB, then reconnect.
+            </p>
+
+            <div class="mt-4 flex items-center gap-3">
+              <.link
+                :if={@mcdb_accounts == []}
+                href={~p"/marvelcdb/connect"}
+                class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-primary hover:text-primary/80"
+              >
+                Reconnect
+              </.link>
+              <button
+                type="button"
+                phx-click={open_confirm("confirm-disconnect-mcdb")}
+                class="cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-base-content/60 hover:text-error"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+
+          <.confirm_dialog
+            id="confirm-disconnect-mcdb"
+            message="Disconnect your MarvelCDB account? Your linked account stays linked."
+            confirm_label="Disconnect"
+            phx-click="disconnect_mcdb"
+          />
+        </.panel>
+
         <!-- collection: private to this user (policy-scoped reads). Every
              product in the catalog with a checkbox — the one-place manager. -->
         <.panel class="mt-6 p-5">
@@ -273,6 +342,9 @@ defmodule SanctumWeb.ProfileLive.Index do
       |> assign(:owned_card_count, 0)
       |> assign(:anthropic_key, nil)
       |> assign(:validating_key, false)
+      |> assign(:mcdb_configured?, OAuth.configured?())
+      |> assign(:mcdb_connected?, false)
+      |> assign(:mcdb_accounts, [])
       |> assign(:uploading_avatar?, false)
       |> assign(:uploads_configured?, Sanctum.AvatarImages.configured?())
       |> allow_upload(:avatar,
@@ -286,7 +358,7 @@ defmodule SanctumWeb.ProfileLive.Index do
 
     socket =
       if connected?(socket),
-        do: socket |> assign_collection() |> assign_api_key(),
+        do: socket |> assign_collection() |> assign_api_key() |> assign_marvel_cdb(),
         else: socket
 
     {:ok, assign_form(socket)}
@@ -374,6 +446,22 @@ defmodule SanctumWeb.ProfileLive.Index do
       row ->
         Sanctum.Accounts.destroy_api_key(row, actor: socket.assigns.current_user)
         {:noreply, socket |> assign_api_key() |> put_flash(:info, "Anthropic key removed.")}
+    end
+  end
+
+  def handle_event("disconnect_mcdb", _params, socket) do
+    user = socket.assigns.current_user
+
+    case Credentials.disconnect(user) do
+      :ok ->
+        {:noreply,
+         socket
+         |> assign_marvel_cdb()
+         |> put_flash(:info, "Disconnected from MarvelCDB.")}
+
+      {:error, _reason} ->
+        {:noreply,
+         put_flash(socket, :error, "Could not disconnect from MarvelCDB. Please try again.")}
     end
   end
 
@@ -492,6 +580,23 @@ defmodule SanctumWeb.ProfileLive.Index do
     do: "Anthropic returned an error (#{status}). Try again."
 
   defp key_error_message(_other), do: "Couldn't reach Anthropic — try again."
+
+  defp assign_marvel_cdb(socket) do
+    user = socket.assigns.current_user
+    connected? = Credentials.connected?(user)
+
+    accounts =
+      if connected?, do: Sanctum.Decks.list_claimed_mcdb_users!(actor: user), else: []
+
+    socket
+    |> assign(:mcdb_connected?, connected?)
+    |> assign(:mcdb_accounts, accounts)
+  end
+
+  defp mcdb_account_label(%{username: username}) when is_binary(username) and username != "",
+    do: "@#{username}"
+
+  defp mcdb_account_label(%{mcdb_user_id: id}), do: "mcdb ##{id}"
 
   defp assign_api_key(socket) do
     key =

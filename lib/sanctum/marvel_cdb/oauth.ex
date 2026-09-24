@@ -18,12 +18,19 @@ defmodule Sanctum.MarvelCdb.OAuth do
   endpoints (which signal failure as `success: false` in a 200 body), the token
   endpoint uses real HTTP status codes and the standard `error` /
   `error_description` shape.
+
+  MarvelCDB's OAuth API has no user-info endpoint, so `owner_id/1` identifies
+  the token owner indirectly: it lists the owner's decks (`/api/oauth2/decks`)
+  and reads the `user_id` MarvelCDB stamps on each one. A user with no decks
+  gives up no id at all — the endpoint 500s on an empty list rather than
+  returning `[]`, which is treated as the same "no decks yet" outcome.
   """
 
   require Logger
 
   @authorize_url "https://marvelcdb.com/oauth/v2/auth"
   @token_url "https://marvelcdb.com/oauth/v2/token"
+  @decks_url "https://marvelcdb.com/api/oauth2/decks"
 
   @doc """
   The URL to send the user to so they can authorize Sanctum.
@@ -80,6 +87,83 @@ defmodule Sanctum.MarvelCdb.OAuth do
   def client_id, do: Application.get_env(:sanctum, :marvelcdb_client_id)
   def client_secret, do: Application.get_env(:sanctum, :marvelcdb_client_secret)
   def redirect_uri, do: Application.get_env(:sanctum, :marvelcdb_redirect_uri)
+
+  @doc """
+  Lists the decks owned by the token holder, straight from MarvelCDB's
+  `/api/oauth2/decks` endpoint.
+
+  A status of 500+ is treated as expected rather than a failure — it's what
+  the endpoint does for an account with zero decks (`max([])` blows up
+  server-side) as much as for a real outage, and callers can't tell those
+  apart from here.
+  """
+  @spec list_decks(String.t()) :: {:ok, list(map())} | {:error, term()}
+  def list_decks(access_token) do
+    started_at = System.monotonic_time(:millisecond)
+    result = Req.get(@decks_url, [auth: {:bearer, access_token}] ++ req_options())
+
+    :telemetry.execute(
+      [:sanctum, :marvel_cdb, :request, :stop],
+      %{duration_ms: System.monotonic_time(:millisecond) - started_at},
+      %{endpoint: "oauth2/decks", status: status_tag(result)}
+    )
+
+    handle_decks_response(result)
+  end
+
+  @doc """
+  Resolves the MarvelCDB account id behind an access token from the `user_id`
+  on the owner's own decks — the OAuth API exposes no user-info endpoint, so
+  this is the only signal available. `{:error, :no_decks}` covers both a
+  deckless account and MarvelCDB's 500-on-empty quirk; there's no way to tell
+  them apart from the response alone.
+  """
+  @spec owner_id(String.t()) :: {:ok, integer()} | {:error, term()}
+  def owner_id(access_token) do
+    case list_decks(access_token) do
+      {:ok, decks} ->
+        decks
+        |> Enum.map(& &1["user_id"])
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+        |> case do
+          [id] -> {:ok, id}
+          [] -> {:error, :no_decks}
+          _ids -> {:error, :ambiguous_owner}
+        end
+
+      {:error, {:server_error, status}} ->
+        Logger.warning("MarvelCDB decks lookup got a server error (status #{status})")
+        {:error, :no_decks}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp handle_decks_response({:ok, %Req.Response{status: 200, body: body}})
+       when is_list(body) do
+    {:ok, body}
+  end
+
+  defp handle_decks_response({:ok, %Req.Response{status: 200}}) do
+    Logger.warning("MarvelCDB decks response was 200 but not a list")
+    {:error, :unexpected_response}
+  end
+
+  defp handle_decks_response({:ok, %Req.Response{status: status}}) when status >= 500 do
+    {:error, {:server_error, status}}
+  end
+
+  defp handle_decks_response({:ok, %Req.Response{status: status}}) do
+    Logger.warning("MarvelCDB decks lookup failed (status #{status})")
+    {:error, {:http_error, status}}
+  end
+
+  defp handle_decks_response({:error, reason}) do
+    Logger.warning("MarvelCDB decks lookup transport error: #{inspect(reason)}")
+    {:error, {:transport_error, reason}}
+  end
 
   defp post_token(params) do
     params =
