@@ -212,7 +212,7 @@ defmodule Sanctum.Search.BrowseIntegrationTest do
   end
 
   describe "deck :browse with advanced queries" do
-    defp insert_hero_deck(hero_name, alter_ego, set, base_code) do
+    defp insert_hero_deck(hero_name, alter_ego, set, base_code, deck_attrs \\ %{}) do
       card = insert_card(%{base_code: base_code, set: set})
 
       for {name, type, side_id} <- [{hero_name, :hero, "A"}, {alter_ego, :alter_ego, "B"}] do
@@ -241,7 +241,10 @@ defmodule Sanctum.Search.BrowseIntegrationTest do
         })
 
       Sanctum.Decks.Deck
-      |> Ash.Changeset.for_create(:create, %{title: "#{alter_ego} deck", hero_id: hero.id})
+      |> Ash.Changeset.for_create(
+        :create,
+        Map.merge(%{title: "#{alter_ego} deck", hero_id: hero.id}, deck_attrs)
+      )
       |> Ash.create!(authorize?: false)
     end
 
@@ -262,6 +265,27 @@ defmodule Sanctum.Search.BrowseIntegrationTest do
       assert deck_titles("hero:shuri") == ["Shuri deck"]
       # The bare hero name still matches both.
       assert deck_titles(~s{hero:"black panther"}) == ["Shuri deck", "T'Challa deck"]
+    end
+
+    test "author: matches the MCDB author's username or the native owner's username" do
+      {:ok, mcdb_user} =
+        Sanctum.Decks.find_or_create_mcdb_user(%{mcdb_user_id: 4242, username: "webhead"})
+
+      owner = Sanctum.AccountsFixtures.user_fixture(username: "deck_smith")
+
+      insert_hero_deck("Spider-Man", "Peter Parker", "spider_man", "90001", %{
+        source: :marvelcdb,
+        mcdb_user_id: mcdb_user.id
+      })
+
+      insert_hero_deck("Captain Marvel", "Carol Danvers", "captain_marvel", "90002", %{
+        owner_id: owner.id
+      })
+
+      insert_hero_deck("She-Hulk", "Jennifer Walters", "she_hulk", "90003")
+
+      assert deck_titles("author:webhead") == ["Peter Parker deck"]
+      assert deck_titles("author:deck_smith") == ["Carol Danvers deck"]
     end
 
     test "hero, aspect, and containment queries run" do

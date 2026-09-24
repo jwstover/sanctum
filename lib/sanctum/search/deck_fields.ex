@@ -30,6 +30,20 @@ defmodule Sanctum.Search.DeckFields do
         text_build(fn pattern -> expr(ilike(title, ^pattern)) end)
       ),
       %Field{
+        name: "author",
+        aliases: [],
+        kind: :text,
+        example: "author:webhead",
+        hint: "MarvelCDB author or Sanctum owner username",
+        build:
+          text_build(fn pattern ->
+            expr(
+              ilike(mcdb_user.username, ^pattern) or
+                ilike(type(owner.username, :string), ^pattern)
+            )
+          end)
+      },
+      %Field{
         name: "hero",
         aliases: ["h"],
         kind: :text,
