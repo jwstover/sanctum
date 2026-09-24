@@ -96,6 +96,9 @@ config :sanctum, :card_image_base_url, "https://sanctum-cards.fly.storage.tigris
 # to route requests to a Req.Test stub.
 config :sanctum, :marvel_cdb_req_options, []
 
+# Identifies Sanctum to MarvelCDB on scraped site pages (contact approved 2026-09-23).
+config :sanctum, :marvel_cdb_contact, url: "https://sanctummc.com", email: "jwstover@gmail.com"
+
 # Configures the endpoint
 config :sanctum, SanctumWeb.Endpoint,
   url: [host: "localhost"],

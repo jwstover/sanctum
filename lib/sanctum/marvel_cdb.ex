@@ -28,6 +28,7 @@ defmodule Sanctum.MarvelCdb do
   alias Sanctum.Heroes
 
   @base_url "https://marvelcdb.com/api/public"
+  @site_url "https://marvelcdb.com"
 
   # MarvelCDB's by-date endpoint can be sluggish; give a slow-but-alive response
   # room to land before treating it as a transient failure.
@@ -463,6 +464,33 @@ defmodule Sanctum.MarvelCdb do
   @spec decklists_endpoint_healthy?() :: boolean()
   def decklists_endpoint_healthy? do
     match?({:ok, _}, get_decklists_by_date(@decklists_health_check_date))
+  end
+
+  @doc "Fetches one HTML list page of published decklists (`/decklists/find/{page}?sort=…`)."
+  @spec get_decklist_page(pos_integer(), :date | :likes) :: {:ok, String.t()} | {:error, term()}
+  def get_decklist_page(page, sort)
+      when is_integer(page) and page >= 1 and sort in [:date, :likes] do
+    "#{@site_url}/decklists/find/#{page}?sort=#{sort}"
+    |> http_get(:decklist_pages,
+      headers: [user_agent: user_agent()],
+      retry: :transient,
+      max_retries: 2,
+      receive_timeout: @decklist_receive_timeout_ms
+    )
+    |> handle_response()
+  end
+
+  @doc """
+  The User-Agent Sanctum sends on MarvelCDB requests that scrape site (not
+  API) pages, identifying the app and a contact address per MarvelCDB's
+  request. Built at runtime (not compile time) so the version reflects the
+  running release. Configured via `:sanctum, :marvel_cdb_contact`.
+  """
+  @spec user_agent() :: String.t()
+  def user_agent do
+    contact = Application.get_env(:sanctum, :marvel_cdb_contact, [])
+    version = Application.spec(:sanctum, :vsn)
+    "Sanctum/#{version} (+#{contact[:url]}; #{contact[:email]})"
   end
 
   # Like `handle_response/1`, but surfaces a 5xx as a distinct `{:server_error,
