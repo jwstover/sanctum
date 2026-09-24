@@ -103,6 +103,19 @@ defmodule Sanctum.Release do
   end
 
   @doc """
+  One-off: links every already-stored MarvelCDB credential to the account it
+  belongs to (see `Sanctum.MarvelCdb.AccountLink.link_existing/0`). Safe to
+  re-run — already-linked accounts just claim themselves again.
+
+      /app/bin/sanctum eval 'Sanctum.Release.link_mcdb_accounts()'
+  """
+  def link_mcdb_accounts do
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    Sanctum.MarvelCdb.AccountLink.link_existing()
+  end
+
+  @doc """
   One-time backfill of `card_alts.pack_id` from the legacy `pack` code string
   for alts synced before the FK existed. New syncs populate it directly; alts
   whose pack code has no `Pack` row are left nil and simply don't count toward
