@@ -1,3 +1,12 @@
+# [1.88.0](https://github.com/jwstover/sanctum/compare/v1.87.0...v1.88.0) (2026-09-24)
+
+
+### Features
+
+* **decks:** combined popularity count and Popular sort ([0aa18a1](https://github.com/jwstover/sanctum/commit/0aa18a173cdb4d94b721a417e7bb0e333a262ac4))
+
+
+
 # [1.87.0](https://github.com/jwstover/sanctum/compare/v1.86.0...v1.87.0) (2026-09-24)
 
 
@@ -37,15 +46,6 @@
 ### Features
 
 * **decks:** add opening-hand draw simulator to deck view ([74481b8](https://github.com/jwstover/sanctum/commit/74481b82baf9cef1d4b90292fb57dba2580ff888))
-
-
-
-# [1.83.0](https://github.com/jwstover/sanctum/compare/v1.82.0...v1.83.0) (2026-08-18)
-
-
-### Features
-
-* **cards:** add CardSide.aspect_def FK to Aspect (phase 2a) ([b5c1239](https://github.com/jwstover/sanctum/commit/b5c1239b73734cf00513b755c8150699a4210a5b))
 
 
 
