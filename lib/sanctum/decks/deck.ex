@@ -173,6 +173,19 @@ defmodule Sanctum.Decks.Deck do
       end
     end
 
+    update :set_mcdb_social do
+      description "Records MarvelCDB social data (like count) scraped from the decklist list pages."
+      accept [:mcdb_like_count, :mcdb_social_synced_at]
+      require_atomic? false
+      skip_global_validations? true
+
+      # Same rationale as :set_mcdb_dates: this isn't a local sync, so keep
+      # updated_at untouched.
+      change fn changeset, _context ->
+        Ash.Changeset.atomic_update(changeset, :updated_at, Ash.Expr.ref(:updated_at))
+      end
+    end
+
     create :create_with_cards do
       description "Upserts an imported deck and replaces its card list. Each slot is %{card_id, quantity, ignore_deck_limit}."
       accept [:*]
@@ -255,7 +268,7 @@ defmodule Sanctum.Decks.Deck do
   policies do
     # MarvelCDB imports and backfills run actorless from system code
     # (deck sync workers, Release tasks).
-    bypass action([:create_with_cards, :set_mcdb_dates]) do
+    bypass action([:create_with_cards, :set_mcdb_dates, :set_mcdb_social]) do
       authorize_if always()
     end
 
@@ -340,6 +353,12 @@ defmodule Sanctum.Decks.Deck do
     # last synced the row locally. Nil for native decks.
     attribute :mcdb_date_creation, :utc_datetime, public?: true
     attribute :mcdb_date_update, :utc_datetime, public?: true
+
+    # MarvelCDB social data, scraped from the decklist list pages
+    # (Sanctum.MarvelCdb.DecklistPages) — the JSON API exposes neither. Distinct
+    # from `favorite_count`, which aggregates Sanctum's own DeckFavorite rows.
+    attribute :mcdb_like_count, :integer, public?: true, allow_nil?: false, default: 0
+    attribute :mcdb_social_synced_at, :utc_datetime, public?: true
 
     # Deck uniqueness, precomputed by Sanctum.Decks.ComputeUniquenessWorker.
     # Measures how unlike other decks of the *same hero* this deck's chosen

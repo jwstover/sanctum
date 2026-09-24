@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Decklist search results &middot; MarvelCDB</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icon-120.png" />
+        <meta name="description" content="Browse the collection of thousands of premade decks.">
+    <link href='https://fonts.googleapis.com/css?family=Amiri:400,400italic,700,700italic|Julius+Sans+One|Open+Sans:400,400italic,700,700italic|Open+Sans+Condensed:300' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/qtip2/2.1.1/jquery.qtip.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-markdown/2.9.0/css/bootstrap-markdown.min.css">
+        <link rel="stylesheet" href="/css/app.css" />
+		<!--[if lt IE 9]>
+      <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.js"></script>
+      <script src="//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.js"></script>
+    <![endif]-->
+	  </head>
+  <body>
+  <div id="wrapper">
+      <nav class="navbar navbar-default navbar-static-top" role="navigation">
+      <div class="container">
+                  <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <span class="icon icon-link-half-top"></span>
+            <span class="icon icon-link-half-bottom"></span>
+            MarvelCDB
+          </a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/decks">My Decks</a></li>
+            <li><a href="/decklists">Decklists</a></li>
+            <li><a href="/search">Cards</a></li>
+            <li class="hidden-sm"><a href="/reviews">Reviews</a></li>
+            <li class="hidden-sm"><a href="/rules">Rules</a></li>
+            <li class="hidden-sm"><a href="/faqs">FAQs</a></li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="dropdown hidden-xs hidden-lg">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="fa fa-search"></span></a>
+                <div class="dropdown-menu">
+                  <form action="/find" target="_blank">
+                    <input type="text" placeholder="Card Search" class="form-control" name="q">
+                  </form>
+              </div>
+            </li>
+
+            <!-- locale selection -->
+
+                                                                        <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown">
+                <span class="lang-sm" lang="en"></span>
+                <span class="caret">
+              </a>
+              <ul class="dropdown-menu">
+                                  <li>
+                    <a href="/decklists/find/4560?sort=date">
+                      <span lang="en" class="lang-sm lang-lbl lang-lbl-full"></span>
+                    </a>
+                  </li>
+                                  <li>
+                    <a href="https://es.marvelcdb.com/decklists/find/4560?sort=date">
+                      <span lang="es" class="lang-sm lang-lbl lang-lbl-full"></span>
+                    </a>
+                  </li>
+                                  <li>
+                    <a href="https://fr.marvelcdb.com/decklists/find/4560?sort=date">
+                      <span lang="fr" class="lang-sm lang-lbl lang-lbl-full"></span>
+                    </a>
+                  </li>
+                                  <li>
+                    <a href="https://de.marvelcdb.com/decklists/find/4560?sort=date">
+                      <span lang="de" class="lang-sm lang-lbl lang-lbl-full"></span>
+                    </a>
+                  </li>
+                                  <li>
+                    <a href="https://it.marvelcdb.com/decklists/find/4560?sort=date">
+                      <span lang="it" class="lang-sm lang-lbl lang-lbl-full"></span>
+                    </a>
+                  </li>
+                                  <li>
+                    <a href="https://ko.marvelcdb.com/decklists/find/4560?sort=date">
+                      <span lang="ko" class="lang-sm lang-lbl lang-lbl-full"></span>
+                    </a>
+                  </li>
+                              </ul>
+            </li>
+                        
+            <li id="login">
+                <a href="#" class="disabled"><span class="fa fa-user"></span></a>
+            </li>
+
+
+          </ul>
+          <form class="navbar-form navbar-right visible-lg-block visible-xs-block external" action="/find" target="_blank">
+            <div class="form-group">
+              <input type="text" placeholder="Card Search" class="form-control" name="q">
+            </div>
+          </form>
+        </div><!--/.navbar-collapse -->
+              </div>
+    </nav>
+
+
+<style>
+
+</style>
+
+<div class="main white container" >
+	<!--
+	<div class="col-md-3">
+		<ul class="nav nav-pills nav-stacked" style="margin-bottom:2em">
+		<li class=""><a href="/decklists/popular">Popular</a></li>
+		<li class=""><a href="/decklists/recent">Recent</a></li>
+		<li class=""><a href="/decklists/hottopics">Hot topics</a></li>
+		<li class=""><a href="/decklists/solo">Solo</a></li>
+		<li class=""><a href="/decklists/multiplayer">Multiplayer</a></li>
+		<li class=""><a href="/decklists/beginner">Beginner</a></li>
+		<li class=""><a href="/decklists/theme">Theme</a></li>
+		<li class=""><a href="/decklists/halloffame">Hall of Fame</a></li>
+		<li class=""><a href="/decklists/favorites">My favorites</a></li>
+		<li class=""><a href="/decklists/mine">My decklists</a></li>
+		<li class=""><a href="/decklists/search"><span class="fa fa-search"></span> Search</a></li>
+		</ul>
+	</div>
+	-->
+
+	<div >
+		<div>
+			<form method="GET" action="/decklists" role="form" id="decklist-search-form">
+				<header style="background-image: linear-gradient(100deg, rgba(159, 159, 159, 0.5) 49.5%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.2) 51%, rgba(200, 200, 200, 0.5) 51.5%, rgba(200, 200, 200, 0.5) 100%); border-radius: 5px; padding: 1rem;">
+					
+<div class="quick-search-decklists">
+	<select class="form-control" id="decklist-quick-category" name="category">
+		<option  value="">All Decklists</option>
+		<option  value="favorites">My favorites</option>
+		<option  value="mine">My decklists</option>
+	</select>
+
+	<select class="form-control" id="decklist-quick-hero" name="hero">
+		<option value="">Any hero</option>
+				<option value="21031a">
+			Adam Warlock 		</option>
+				<option value="42001a">
+			Angel (Warren Worthington III)		</option>
+				<option value="12001a">
+			Ant-Man (Scott Lang)		</option>
+				<option value="45001a">
+			Bishop (Lucas Bishop)		</option>
+				<option value="01040a">
+			Black Panther (T&#039;Challa)		</option>
+				<option value="51001a">
+			Black Panther (Shuri)		</option>
+				<option value="08001a">
+			Black Widow (Natasha Romanoff)		</option>
+				<option value="40001a">
+			Cable (Nathan Summers)		</option>
+				<option value="03001a">
+			Captain America (Steve Rogers)		</option>
+				<option value="01010a">
+			Captain Marvel (Carol Danvers)		</option>
+				<option value="32001a">
+			Colossus (Piotr Rasputin)		</option>
+				<option value="33001a">
+			Cyclops (Scott Summers)		</option>
+				<option value="60001a">
+			Daredevil (Matt Murdock)		</option>
+				<option value="44001a">
+			Deadpool (Wade Wilson)		</option>
+				<option value="09001a">
+			Doctor Strange (Stephen Strange)		</option>
+				<option value="40037a">
+			Domino (Neena Thurman)		</option>
+				<option value="19001a">
+			Drax 		</option>
+				<option value="60037a">
+			Echo (Maya Lopez)		</option>
+				<option value="53001a">
+			Falcon (Sam Wilson)		</option>
+				<option value="37001a">
+			Gambit (Remy LeBeau)		</option>
+				<option value="18001a">
+			Gamora 		</option>
+				<option value="27001a">
+			Ghost-Spider (Gwen Stacy)		</option>
+				<option value="16001a">
+			Groot 		</option>
+				<option value="04001a">
+			Hawkeye (Clint Barton)		</option>
+				<option value="59001a">
+			Hercules 		</option>
+				<option value="10001a">
+			Hulk (Bruce Banner)		</option>
+				<option value="56029a">
+			Hulkling (Teddy Altman)		</option>
+				<option value="46001a">
+			Iceman (Bobby Drake)		</option>
+				<option value="01029a">
+			Iron Man (Tony Stark)		</option>
+				<option value="29001a">
+			Ironheart (Riri Williams)		</option>
+				<option value="61001a">
+			Jessica Jones 		</option>
+				<option value="47001a">
+			Jubilee (Jubilation Lee)		</option>
+				<option value="62001a">
+			Luke Cage 		</option>
+				<option value="45030a">
+			Magik (Illyana Rasputin)		</option>
+				<option value="49001a">
+			Magneto (Erik Lehnsherr)		</option>
+				<option value="50001a">
+			Maria Hill 		</option>
+				<option value="05001a">
+			Ms. Marvel (Kamala Khan)		</option>
+				<option value="22001a">
+			Nebula 		</option>
+				<option value="50034a">
+			Nick Fury 		</option>
+				<option value="48001a">
+			Nightcrawler (Kurt Wagner)		</option>
+				<option value="28001a">
+			Nova (Sam Alexander)		</option>
+				<option value="34001a">
+			Phoenix (Jean Grey)		</option>
+				<option value="41001a">
+			Psylocke (Betsy Braddock)		</option>
+				<option value="14001a">
+			Quicksilver (Pietro Maximoff)		</option>
+				<option value="16029a">
+			Rocket Raccoon 		</option>
+				<option value="38001a">
+			Rogue (Anna Marie)		</option>
+				<option value="15001a">
+			Scarlet Witch (Wanda Maximoff)		</option>
+				<option value="32030a">
+			Shadowcat (Kitty Pryde)		</option>
+				<option value="01019a">
+			She-Hulk (Jennifer Walters)		</option>
+				<option value="52001a">
+			Silk (Cindy Moon)		</option>
+				<option value="31001a">
+			SP//dr Suit 		</option>
+				<option value="21001a">
+			Spectrum (Monica Rambeau)		</option>
+				<option value="30001a">
+			Spider-Ham (Peter Porker)		</option>
+				<option value="01001a">
+			Spider-Man (Peter Parker)		</option>
+				<option value="27030a">
+			Spider-Man (Miles Morales)		</option>
+				<option value="04031a">
+			Spider-Woman (Jessica Drew)		</option>
+				<option value="17001a">
+			Star-Lord (Peter Quill)		</option>
+				<option value="36001a">
+			Storm (Ororo Munroe)		</option>
+				<option value="06001a">
+			Thor (Odinson)		</option>
+				<option value="56001a">
+			Tigra (Greer Nelson)		</option>
+				<option value="25001a">
+			Valkyrie (Brunnhilde)		</option>
+				<option value="20001a">
+			Venom (Flash Thompson)		</option>
+				<option value="26001a">
+			Vision 		</option>
+				<option value="23001a">
+			War Machine (James Rhodes)		</option>
+				<option value="13001a">
+			Wasp (Nadia Van Dyne)		</option>
+				<option value="54001a">
+			Winter Soldier (Bucky Barnes)		</option>
+				<option value="35001a">
+			Wolverine (Logan)		</option>
+				<option value="58001a">
+			Wonder Man (Simon Williams)		</option>
+				<option value="43001a">
+			X-23 (Laura Kinney)		</option>
+			</select>
+
+	<select class="form-control" id="decklist-quick-aspect" name="aspect">
+		<option value="">Any aspect</option>
+					<option value="pool">&#039;Pool</option>
+					<option value="aggression">Aggression</option>
+					<option value="justice">Justice</option>
+					<option value="leadership">Leadership</option>
+					<option value="protection">Protection</option>
+			</select>
+
+	<select class="form-control" id="decklist-quick-tag" name="tag">
+		<option  value="">All Tags</option>
+		<option  value="solo">Solo</option>
+		<option  value="multiplayer">Multiplayer</option>
+		<option  value="beginner">Beginner</option>
+		<option  value="theme">Theme</option>
+	</select>
+
+	<select class="form-control" id="decklist-quick-collection" name="collection">
+		<option  value="">All Cards</option>
+		<option  value="mine">My Collection (must be logged in)</option>
+	</select>
+
+	<select class="form-control" id="decklist-quick-sort" name="sort">
+		<option  value="">Sort by Popularity</option>
+		<option  selected="selected" value="date">Sort by Date</option>
+		<option  value="activity">Sort by Activity (Hot topics)</option>
+		<option  value="likes">Sort by Number of Likes</option>
+		<option  value="reputation">Sort by Reputation of Author</option>
+	</select>
+</div>
+
+
+				</header>
+				<div class="advanced">
+					<style>
+
+</style>
+
+<div class="decklists-advanced-search-toggle" id="toggle-advanced-decklist-search">
+	<span class="fa fa-caret-down"></span><a>Show advanced search</a>
+</div>
+
+<div style="background-image: linear-gradient(100deg, rgba(159, 159, 159, 0.5) 49.5%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.2) 51%, rgba(200, 200, 200, 0.5) 51.5%, rgba(200, 200, 200, 0.5) 100%); border-radius: 5px; padding: 1rem;" class="decklists-advanced-search ">
+	<div>
+		<div>
+			
+			<input type="text" class="form-control" id="card" placeholder="Enter card name">
+		</div>
+		<div>
+			<input type="text"
+				class="form-control" id="author" name="author"
+				placeholder="Enter author name" value="">
+		</div>
+		<div>
+			<div class="form-group">
+				<input type="text"
+					class="form-control" id="name" name="name" value=""
+					placeholder="Enter text to search in name">
+			</div>
+		</div>
+		<div>
+			<button type="submit" class="btn btn-primary btn-block">Search</button>
+		</div>
+	</div>
+	<div>
+		<div>
+			<p>
+				<a data-toggle="collapse" data-target="#allowed_packs">View allowed packs</a> (<span id="packs-on">63</span> on, <span id="packs-off">0</span> off)
+				(<a id="allowed_collection_packs">Select packs from your collection</a>)
+			</p>
+			<div id="allowed_packs" class="collapse">
+				<a href="#" id="select_all"><span class="fa fa-check"></span> all</a>
+				/ <a href="#" id="select_none"><span class="fa fa-times"></span> none</a>
+									<h4><small>Core</small></h4>
+					<div class="decklists-advanced-packs-category">
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-1" type="checkbox" name="packs[]" value="1" checked="checked" >Core Set</label>
+							</div>
+											</div>
+									<h4><small>Scenario Pack</small></h4>
+					<div class="decklists-advanced-packs-category">
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-2" type="checkbox" name="packs[]" value="2" checked="checked" >The Green Goblin</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-6" type="checkbox" name="packs[]" value="6" checked="checked" >The Wrecking Crew</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-11" type="checkbox" name="packs[]" value="11" checked="checked" >The Once and Future Kang</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-25" type="checkbox" name="packs[]" value="25" checked="checked" >The Hood</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-36" type="checkbox" name="packs[]" value="36" checked="checked" >Mojo Mania</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-56" type="checkbox" name="packs[]" value="56" checked="checked" >Trickster Takeover</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-58" type="checkbox" name="packs[]" value="58" checked="checked" >Synthezoid Smackdown</label>
+							</div>
+											</div>
+									<h4><small>Hero Pack</small></h4>
+					<div class="decklists-advanced-packs-category">
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-3" type="checkbox" name="packs[]" value="3" checked="checked" >Captain America</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-4" type="checkbox" name="packs[]" value="4" checked="checked" >Ms. Marvel</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-5" type="checkbox" name="packs[]" value="5" checked="checked" >Thor</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-7" type="checkbox" name="packs[]" value="7" checked="checked" >Black Widow</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-8" type="checkbox" name="packs[]" value="8" checked="checked" >Doctor Strange</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-9" type="checkbox" name="packs[]" value="9" checked="checked" >Hulk</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-12" type="checkbox" name="packs[]" value="12" checked="checked" >Ant-Man</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-13" type="checkbox" name="packs[]" value="13" checked="checked" >Wasp</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-14" type="checkbox" name="packs[]" value="14" checked="checked" >Quicksilver</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-15" type="checkbox" name="packs[]" value="15" checked="checked" >Scarlet Witch</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-18" type="checkbox" name="packs[]" value="18" checked="checked" >Star-Lord</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-19" type="checkbox" name="packs[]" value="19" checked="checked" >Gamora</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-20" type="checkbox" name="packs[]" value="20" checked="checked" >Drax</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-21" type="checkbox" name="packs[]" value="21" checked="checked" >Venom</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-23" type="checkbox" name="packs[]" value="23" checked="checked" >Nebula</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-24" type="checkbox" name="packs[]" value="24" checked="checked" >War Machine</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-26" type="checkbox" name="packs[]" value="26" checked="checked" >Valkyrie</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-27" type="checkbox" name="packs[]" value="27" checked="checked" >Vision</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-29" type="checkbox" name="packs[]" value="29" checked="checked" >Nova</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-30" type="checkbox" name="packs[]" value="30" checked="checked" >Ironheart</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-31" type="checkbox" name="packs[]" value="31" checked="checked" >Spider-Ham</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-32" type="checkbox" name="packs[]" value="32" checked="checked" >SP//dr</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-34" type="checkbox" name="packs[]" value="34" checked="checked" >Cyclops</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-35" type="checkbox" name="packs[]" value="35" checked="checked" >Phoenix</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-37" type="checkbox" name="packs[]" value="37" checked="checked" >Wolverine</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-38" type="checkbox" name="packs[]" value="38" checked="checked" >Storm</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-39" type="checkbox" name="packs[]" value="39" checked="checked" >Gambit</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-40" type="checkbox" name="packs[]" value="40" checked="checked" >Rogue</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-42" type="checkbox" name="packs[]" value="42" checked="checked" >Psylocke</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-43" type="checkbox" name="packs[]" value="43" checked="checked" >Angel</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-44" type="checkbox" name="packs[]" value="44" checked="checked" >X-23</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-45" type="checkbox" name="packs[]" value="45" checked="checked" >Deadpool</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-47" type="checkbox" name="packs[]" value="47" checked="checked" >Iceman</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-48" type="checkbox" name="packs[]" value="48" checked="checked" >Jubilee</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-49" type="checkbox" name="packs[]" value="49" checked="checked" >Nightcrawler</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-50" type="checkbox" name="packs[]" value="50" checked="checked" >Magneto</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-52" type="checkbox" name="packs[]" value="52" checked="checked" >Black Panther</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-53" type="checkbox" name="packs[]" value="53" checked="checked" >Silk</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-54" type="checkbox" name="packs[]" value="54" checked="checked" >Falcon</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-55" type="checkbox" name="packs[]" value="55" checked="checked" >Winter Soldier</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-59" type="checkbox" name="packs[]" value="59" checked="checked" >Wonder Man</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-60" type="checkbox" name="packs[]" value="60" checked="checked" >Hercules</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-62" type="checkbox" name="packs[]" value="62" checked="checked" >Jessica Jones</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-63" type="checkbox" name="packs[]" value="63" checked="checked" >Luke Cage</label>
+							</div>
+											</div>
+									<h4><small>Campaign</small></h4>
+					<div class="decklists-advanced-packs-category">
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-10" type="checkbox" name="packs[]" value="10" checked="checked" >The Rise of Red Skull</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-17" type="checkbox" name="packs[]" value="17" checked="checked" >The Galaxy&#039;s Most Wanted</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-22" type="checkbox" name="packs[]" value="22" checked="checked" >The Mad Titan&#039;s Shadow</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-28" type="checkbox" name="packs[]" value="28" checked="checked" >Sinister Motives</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-33" type="checkbox" name="packs[]" value="33" checked="checked" >Mutant Genesis</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-41" type="checkbox" name="packs[]" value="41" checked="checked" >NeXt Evolution</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-46" type="checkbox" name="packs[]" value="46" checked="checked" >Age of Apocalypse</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-51" type="checkbox" name="packs[]" value="51" checked="checked" >Agents of S.H.I.E.L.D.</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-57" type="checkbox" name="packs[]" value="57" checked="checked" >Civil War</label>
+							</div>
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-61" type="checkbox" name="packs[]" value="61" checked="checked" >Fear No Evil</label>
+							</div>
+											</div>
+									<h4><small>Encounter</small></h4>
+					<div class="decklists-advanced-packs-category">
+													<div class="decklists-advanced-pack-checkbox">
+								<label class=""><input id="collection-16" type="checkbox" name="packs[]" value="16" checked="checked" >Ronan Modular Set</label>
+							</div>
+											</div>
+							</div>
+		</div>
+	</div>
+</div>
+
+
+				</div>
+			</form>
+		</div>
+	</div>
+	<div>
+		<div class="text-center">
+<ul class="pagination pagination-sm" style="margin: 0;">
+
+  <li class=""><a href="/decklists/find/4559?sort=date">&laquo;</a></li>
+
+		  <li><a href="/decklists/find?sort=date">1</a></li>
+			  <li><a href="/decklists/find/4558?sort=date">4558</a></li>
+			  <li><a href="/decklists/find/4559?sort=date">4559</a></li>
+			  <li class="active"><a href="/decklists/find/4560?sort=date">4560 <span class="sr-only">(current)</span></a></li>
+	
+  <li class=""><a href="/decklists/find/4560?sort=date">&raquo;</a></li>
+
+</ul>
+</div>
+
+		<div class="decklists">
+								<div class="box">
+		<div style="background-color: rgba(255,255,255,0.97); border-radius: 5px;">
+			<div class="bg-faction faint-aggression" style="display: flex; align-items: stretch;">
+				<h4 style="font-size: 1.15em; flex: 1; margin: 0; padding: 0.5rem; padding-left: 1rem; padding-right: 1rem; display: flex; align-items: center;">
+					<a href="/decklist/view/3/she-hulk-aggression-starter-deck-1.0">She-Hulk - Aggression - Starter Deck</a>
+				</h4>
+									<div class="card-thumbnail-wide card-thumbnail-hero" style="min-height: 55px; background-image:url(/bundles/cards/01019a.jpg)"></div>
+							</div>
+						<div style="background-image: linear-gradient(100deg, #572d79 49.5%, #fefaf8 50%, #fefaf8 51%, #1b8b45 51.5%, #1b8b45 100%); padding: 0.4rem;">
+			</div>
+			<div style="padding: 1rem;">
+											<div style="display: flex; justify-content: stretch;">
+					<div style="flex: 0.5;">
+						<a class="card card-tip fg-hero" data-code="01019a" data-toggle="modal" data-target="#cardModal" data-remote="false" href="">She-Hulk</a>
+						<div>
+						<span class="fa fa-circle fg-aggression" title="aggression"></span> Aggression 												</div>
+						<div style="font-size: 1.2rem;">
+							Tags: beginner
+						</div>
+					</div>
+					<div style="flex: 0.5; text-align: right;">
+						<div class="small">
+						<span class="social-icons">
+	<a id="social-icon-like" href="#" class="social-icon-like" data-toggle="tooltip" data-placement="bottom" title="Like">
+		<span class="fa fa-heart"></span> <span class="num">18</span>
+	</a>
+	<a id="social-icon-favorite" href="#" class="social-icon-favorite" data-toggle="tooltip" data-placement="bottom" title="Favorite">
+		<span class="fa fa-star"></span> <span class="num">12</span>
+	</a>
+	<a id="social-icon-comment" href="#comment-form" class="social-icon-comment" data-toggle="tooltip" data-placement="bottom" title="Comment">
+		<span class="fa fa-comment"></span> <span class="num">0</span>
+	</a>
+	<span class="social-icon-version" data-toggle="tooltip" data-placement="bottom" title="Version">
+		<span class="fa fa-code-fork"></span> <span class="num">1.0</span>
+	</a>
+</span>
+
+						</div>
+						<div>
+							<span class="username">by <a href="/user/profile/1/kamalisk" class="username">kamalisk</a>
+ &middot; <small title="User Reputation">539</small>
+</span>
+						</div>
+						<div class="small pull-right">
+							<time datetime="2019-08-10T12:47:25+00:00">Aug 10, 2019</time>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+								<div class="box">
+		<div style="background-color: rgba(255,255,255,0.97); border-radius: 5px;">
+			<div class="bg-faction faint-leadership" style="display: flex; align-items: stretch;">
+				<h4 style="font-size: 1.15em; flex: 1; margin: 0; padding: 0.5rem; padding-left: 1rem; padding-right: 1rem; display: flex; align-items: center;">
+					<a href="/decklist/view/2/captain-marvel-leadership-starter-deck-1.0">Captain Marvel - Leadership - Starter Deck</a>
+				</h4>
+									<div class="card-thumbnail-wide card-thumbnail-hero" style="min-height: 55px; background-image:url(/bundles/cards/01010a.jpg)"></div>
+							</div>
+						<div style="background-image: linear-gradient(100deg, #2a377b 49.5%, #f3ee25 50%, #f3ee25 51%, #902b26 51.5%, #902b26 100%); padding: 0.4rem;">
+			</div>
+			<div style="padding: 1rem;">
+											<div style="display: flex; justify-content: stretch;">
+					<div style="flex: 0.5;">
+						<a class="card card-tip fg-hero" data-code="01010a" data-toggle="modal" data-target="#cardModal" data-remote="false" href="">Captain Marvel</a>
+						<div>
+						<span class="fa fa-circle fg-leadership" title="leadership"></span> Leadership 												</div>
+						<div style="font-size: 1.2rem;">
+							Tags: beginner
+						</div>
+					</div>
+					<div style="flex: 0.5; text-align: right;">
+						<div class="small">
+						<span class="social-icons">
+	<a id="social-icon-like" href="#" class="social-icon-like" data-toggle="tooltip" data-placement="bottom" title="Like">
+		<span class="fa fa-heart"></span> <span class="num">21</span>
+	</a>
+	<a id="social-icon-favorite" href="#" class="social-icon-favorite" data-toggle="tooltip" data-placement="bottom" title="Favorite">
+		<span class="fa fa-star"></span> <span class="num">15</span>
+	</a>
+	<a id="social-icon-comment" href="#comment-form" class="social-icon-comment" data-toggle="tooltip" data-placement="bottom" title="Comment">
+		<span class="fa fa-comment"></span> <span class="num">0</span>
+	</a>
+	<span class="social-icon-version" data-toggle="tooltip" data-placement="bottom" title="Version">
+		<span class="fa fa-code-fork"></span> <span class="num">1.0</span>
+	</a>
+</span>
+
+						</div>
+						<div>
+							<span class="username">by <a href="/user/profile/1/kamalisk" class="username">kamalisk</a>
+ &middot; <small title="User Reputation">539</small>
+</span>
+						</div>
+						<div class="small pull-right">
+							<time datetime="2019-08-10T12:47:16+00:00">Aug 10, 2019</time>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+								<div class="box">
+		<div style="background-color: rgba(255,255,255,0.97); border-radius: 5px;">
+			<div class="bg-faction faint-protection" style="display: flex; align-items: stretch;">
+				<h4 style="font-size: 1.15em; flex: 1; margin: 0; padding: 0.5rem; padding-left: 1rem; padding-right: 1rem; display: flex; align-items: center;">
+					<a href="/decklist/view/1/black-panther-protection-starter-deck-1.0">Black Panther - Protection - Starter Deck</a>
+				</h4>
+									<div class="card-thumbnail-wide card-thumbnail-hero" style="min-height: 55px; background-image:url(/bundles/cards/01040a.jpg)"></div>
+							</div>
+						<div style="background-image: linear-gradient(100deg, #492b5f 49.5%, #f1f017 50%, #f1f017 51%, #492b5f 51.5%, #492b5f 100%); padding: 0.4rem;">
+			</div>
+			<div style="padding: 1rem;">
+											<div style="display: flex; justify-content: stretch;">
+					<div style="flex: 0.5;">
+						<a class="card card-tip fg-hero" data-code="01040a" data-toggle="modal" data-target="#cardModal" data-remote="false" href="">Black Panther</a>
+						<div>
+						<span class="fa fa-circle fg-protection" title="protection"></span> Protection 												</div>
+						<div style="font-size: 1.2rem;">
+							Tags: beginner
+						</div>
+					</div>
+					<div style="flex: 0.5; text-align: right;">
+						<div class="small">
+						<span class="social-icons">
+	<a id="social-icon-like" href="#" class="social-icon-like" data-toggle="tooltip" data-placement="bottom" title="Like">
+		<span class="fa fa-heart"></span> <span class="num">29</span>
+	</a>
+	<a id="social-icon-favorite" href="#" class="social-icon-favorite" data-toggle="tooltip" data-placement="bottom" title="Favorite">
+		<span class="fa fa-star"></span> <span class="num">20</span>
+	</a>
+	<a id="social-icon-comment" href="#comment-form" class="social-icon-comment" data-toggle="tooltip" data-placement="bottom" title="Comment">
+		<span class="fa fa-comment"></span> <span class="num">0</span>
+	</a>
+	<span class="social-icon-version" data-toggle="tooltip" data-placement="bottom" title="Version">
+		<span class="fa fa-code-fork"></span> <span class="num">1.0</span>
+	</a>
+</span>
+
+						</div>
+						<div>
+							<span class="username">by <a href="/user/profile/1/kamalisk" class="username">kamalisk</a>
+ &middot; <small title="User Reputation">539</small>
+</span>
+						</div>
+						<div class="small pull-right">
+							<time datetime="2019-08-10T12:47:04+00:00">Aug 10, 2019</time>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+					</div>
+
+		<div class="text-center">
+<ul class="pagination pagination-sm" style="margin: 0;">
+
+  <li class=""><a href="/decklists/find/4559?sort=date">&laquo;</a></li>
+
+		  <li><a href="/decklists/find?sort=date">1</a></li>
+			  <li><a href="/decklists/find/4558?sort=date">4558</a></li>
+			  <li><a href="/decklists/find/4559?sort=date">4559</a></li>
+			  <li class="active"><a href="/decklists/find/4560?sort=date">4560 <span class="sr-only">(current)</span></a></li>
+	
+  <li class=""><a href="/decklists/find/4560?sort=date">&raquo;</a></li>
+
+</ul>
+</div>
+
+	</div>
+
+</div>
+
+    <div id="push"></div>
+  </div>
+  <footer class="hidden-print">
+    <div class="container">
+
+<div class="row">
+    <div class="col-xs-12">
+
+    <ul class="list-inline">
+    <li><a href="/about">About</a></li>
+    <li><a href="/api/">API</a></li>
+    </ul>
+
+    <p>
+    Based on ThronesDB by Alsciende. Modified by Zzorba and Kam.
+    Contact:
+    <a href="https://reddit.com/user/kamalisk/" title="Reddit"><span class="fa fa-reddit"></span></a>
+    </p>
+    <p>
+    Please post bug reports and feature requests on <a href="https://github.com/zzorba/marvelsdb">GitHub</a>
+    </p>
+    <p>
+    I set up a <a href="https://www.patreon.com/kamalisk">Patreon</a> for those who want to help support the site.
+    </p>
+    <p>
+    The information presented on this site about Marvel Champions: The Card Game, both literal and graphical, is copyrighted by Fantasy Flight Games.
+    This website is not produced, endorsed, supported, or affiliated with Fantasy Flight Games.
+    </p>
+
+    </div>
+</div>
+
+    </div>
+    </footer>
+    <!--  card modal -->
+<div class="modal" id="cardModal" tabindex="-1" role="dialog" aria-labelledby="cardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h3 class="modal-title card-name">Modal title</h3>
+                <div class="row modal-deck-options">
+                    <div class="col-sm-7 text-center modal-deck-qty">
+                        Deck Quantity: <div class="btn-group modal-qty" data-toggle="buttons"></div>
+                    </div>
+                    <div class="col-sm-5 text-center modal-deck-ignore">
+                        Ignore Limit: <div class="btn-group modal-ignore" data-toggle="buttons"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-sm-6 modal-image hidden-xs"></div>
+                    <div class="col-sm-6 modal-info card-content"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a role="button" href="#" class="btn btn-default card-modal-link">Go to card page</a>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--  /cardModal -->
+
+    <script src="/bundles/fosjsrouting/js/router.js"></script>
+    <script src="/js/routing?callback=fos.Router.setData"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qtip2/2.1.1/jquery.qtip.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typeahead.js/0.10.4/typeahead.jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.5/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.textcomplete/0.2.2/jquery.textcomplete.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/8.1.2/highcharts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/8.1.2/modules/drilldown.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-markdown/2.9.0/js/bootstrap-markdown.min.js"></script>
+    <script type="text/javascript">
+    var app = {};
+    moment.locale('en');
+    $(function() {
+            	});
+    </script>
+
+			<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+		<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-83182253-2', 'auto');
+ga('send', 'pageview');
+</script>
+	
+		<script src="/js/app.js"></script>
+	
+			<script src="/js/d66d88d.js"></script>
+	<script type="text/javascript">
+	$(function () {
+		var type = "find";
+		$('time').each(function (index, element) {
+			var datetime = moment($(element).attr('datetime'));
+			var formatted;
+			switch(type) {
+			case 'popular':
+			case 'recent':
+			case 'hottopics':
+				formatted = datetime.fromNow();
+				break;
+			case 'halloffame':
+			case 'favorites':
+			case 'mine':
+			case 'search':
+			default:
+				formatted = datetime.format('ll');
+				break;
+			}
+			$(element).html(formatted);
+			$(element).attr('title', datetime.format('LLLL'));
+		});
+	});
+</script>
+    </body>
+</html>

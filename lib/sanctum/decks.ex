@@ -16,6 +16,7 @@ defmodule Sanctum.Decks do
       define :list_decks, action: :read
       define :get_deck_by_mcdb_id, get_by: :mcdb_id, action: :read, not_found_error?: false
       define :set_deck_mcdb_dates, action: :set_mcdb_dates
+      define :set_deck_mcdb_social, action: :set_mcdb_social
       define :build_deck, action: :build
       define :rename_deck, action: :rename
       define :set_deck_aspects, action: :set_aspects
@@ -37,6 +38,7 @@ defmodule Sanctum.Decks do
 
     resource Sanctum.Decks.McdbUser do
       define :find_or_create_mcdb_user, action: :find_or_create
+      define :upsert_mcdb_username, action: :upsert_username
     end
 
     resource Sanctum.Decks.DeckSyncState do

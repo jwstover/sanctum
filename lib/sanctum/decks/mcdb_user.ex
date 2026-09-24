@@ -26,6 +26,15 @@ defmodule Sanctum.Decks.McdbUser do
       upsert? true
       upsert_identity :unique_mcdb_user_id
     end
+
+    # Narrower than :find_or_create — only ever overwrites the username, so a
+    # call with no username can't clobber one an earlier import captured.
+    create :upsert_username do
+      accept [:mcdb_user_id, :username]
+      upsert? true
+      upsert_identity :unique_mcdb_user_id
+      upsert_fields [:username]
+    end
   end
 
   policies do
