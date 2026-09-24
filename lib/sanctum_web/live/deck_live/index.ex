@@ -185,7 +185,20 @@ defmodule SanctumWeb.DeckLive.Index do
 
               <div :if={deck.author} class="mt-auto flex items-center gap-2 pt-3">
                 <.avatar name={deck.author} url={deck.author_avatar} />
-                <span class="font-barlow-condensed text-sm font-bold text-primary">
+                <span class="font-barlow-condensed text-sm text-base-content/50">by</span>
+                <a
+                  :if={deck.author_url}
+                  href={deck.author_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="relative z-[2] font-barlow-condensed text-sm font-bold text-primary hover:underline"
+                >
+                  {deck.author}
+                </a>
+                <span
+                  :if={!deck.author_url}
+                  class="font-barlow-condensed text-sm font-bold text-primary"
+                >
                   {deck.author}
                 </span>
               </div>
@@ -537,6 +550,7 @@ defmodule SanctumWeb.DeckLive.Index do
       tagline: excerpt(deck.description_md),
       author: author && author.name,
       author_avatar: author && author.avatar,
+      author_url: author && author.url,
       total_card_count: deck.total_card_count || 0,
       card_row_count: deck.card_row_count || 0,
       uniqueness: deck.uniqueness_percentile,

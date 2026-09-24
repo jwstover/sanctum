@@ -190,20 +190,25 @@ defmodule SanctumWeb.Components.DeckCards do
   def source_label(other), do: other |> to_string() |> String.capitalize()
 
   @doc """
-  Attribution: imported decks credit the MarvelCDB author; native decks
-  credit the owner's claimed username (never their email — the field is
-  policy-hidden). Owners without a username get no attribution row.
+  Attribution: imported decks credit the MarvelCDB author (plain username,
+  linking to their MarvelCDB profile — no username yet falls back to
+  "MarvelCDB user"); native decks credit the owner's claimed username
+  (never their email — the field is policy-hidden). Owners without a
+  username get no attribution row.
   """
-  def author(%{mcdb_user: %{username: username}}) when is_binary(username) and username != "",
-    do: %{name: "@" <> username, avatar: nil}
+  def author(%{mcdb_user: %{username: username} = mu})
+      when is_binary(username) and username != "",
+      do: %{name: username, avatar: nil, url: mcdb_profile_url(mu)}
 
-  def author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id),
-    do: %{name: "mcdb ##{id}", avatar: nil}
+  def author(%{mcdb_user: %{mcdb_user_id: id} = mu}) when not is_nil(id),
+    do: %{name: "MarvelCDB user", avatar: nil, url: mcdb_profile_url(mu)}
 
   def author(%{owner: %{username: %Ash.CiString{} = username, avatar_url: avatar}}),
-    do: %{name: "@" <> to_string(username), avatar: avatar}
+    do: %{name: "@" <> to_string(username), avatar: avatar, url: nil}
 
   def author(_deck), do: nil
+
+  defp mcdb_profile_url(%{mcdb_user_id: id}), do: "https://marvelcdb.com/user/profile/#{id}"
 
   # true/false only when the :owned calc was loaded (signed-in); nil renders
   # no collection UI.

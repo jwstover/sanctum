@@ -132,6 +132,9 @@ defmodule SanctumWeb.HomeLive.Index do
                   {deck.title}
                 </div>
                 <div class="mt-1.5 flex items-center gap-2">
+                  <span :if={deck.author} class="font-barlow-condensed text-sm text-base-content/50">
+                    by
+                  </span>
                   <span
                     :if={deck.author}
                     class="font-barlow-condensed text-sm font-bold text-primary"
