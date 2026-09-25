@@ -116,7 +116,7 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
     """
   end
 
-  defp page_html(rows, opts \\ []) do
+  defp page_html(rows, opts) do
     last_page = Keyword.get(opts, :last_page, :none)
     boxes = Enum.map_join(rows, "\n", &box_html/1)
 
