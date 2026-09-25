@@ -8,7 +8,7 @@ defmodule SanctumWeb.DeckLive.ShowTest do
   import Phoenix.LiveViewTest
   import Sanctum.Factory
 
-  defp make_deck_with_card do
+  defp make_deck_with_card(deck_attrs \\ %{}) do
     hero_card =
       create(Sanctum.Games.Card, attrs: %{base_code: "90050", code: "90050a", set: "spider_man"})
 
@@ -45,13 +45,19 @@ defmodule SanctumWeb.DeckLive.ShowTest do
 
     {:ok, deck} =
       Sanctum.Decks.Deck
-      |> Ash.Changeset.for_create(:create, %{
-        title: "Web Warrior",
-        hero_id: hero.id,
-        aspects: [:justice],
-        source: :native,
-        description_md: "Thwart twice, apologise never."
-      })
+      |> Ash.Changeset.for_create(
+        :create,
+        Map.merge(
+          %{
+            title: "Web Warrior",
+            hero_id: hero.id,
+            aspects: [:justice],
+            source: :native,
+            description_md: "Thwart twice, apologise never."
+          },
+          deck_attrs
+        )
+      )
       |> Ash.create()
 
     ally = create(Sanctum.Games.Card, attrs: %{base_code: "90051", code: "90051a"})
@@ -88,6 +94,43 @@ defmodule SanctumWeb.DeckLive.ShowTest do
     assert html =~ "In This Deck"
     assert html =~ "Allies"
     assert html =~ "Thwart twice"
+  end
+
+  describe "author attribution" do
+    test "an MCDB-authored deck credits the author by username", %{conn: conn} do
+      {:ok, mcdb_user} =
+        Sanctum.Decks.find_or_create_mcdb_user(%{mcdb_user_id: 4242, username: "webhead"})
+
+      deck = make_deck_with_card(%{source: :marvelcdb, mcdb_user_id: mcdb_user.id})
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      html = render_async(view)
+
+      assert html =~ "webhead"
+      refute html =~ "mcdb #"
+    end
+
+    test "an MCDB-authored deck without a username falls back to a generic label", %{conn: conn} do
+      {:ok, mcdb_user} = Sanctum.Decks.find_or_create_mcdb_user(%{mcdb_user_id: 4243})
+
+      deck = make_deck_with_card(%{source: :marvelcdb, mcdb_user_id: mcdb_user.id})
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      html = render_async(view)
+
+      assert html =~ "mcdb #4243"
+    end
+
+    test "a native deck credits its owner's username with no marvelcdb.com link", %{conn: conn} do
+      owner = Sanctum.AccountsFixtures.user_fixture(username: "deck_smith")
+      deck = make_deck_with_card(%{owner_id: owner.id})
+
+      {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
+      html = render_async(view)
+
+      assert html =~ "@deck_smith"
+      refute html =~ "marvelcdb.com/user"
+    end
   end
 
   describe "edit button" do

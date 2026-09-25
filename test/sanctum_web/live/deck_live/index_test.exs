@@ -352,6 +352,36 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     refute html =~ to_string(owner.email)
   end
 
+  test "an MCDB-authored deck credits the author by username", %{conn: conn} do
+    {:ok, mcdb_user} =
+      Sanctum.Decks.find_or_create_mcdb_user(%{mcdb_user_id: 4242, username: "webhead"})
+
+    make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice], %{
+      source: :marvelcdb,
+      mcdb_user_id: mcdb_user.id
+    })
+
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    html = render_async(view)
+
+    assert html =~ "webhead"
+    refute html =~ "mcdb #"
+  end
+
+  test "an MCDB-authored deck without a username falls back to a generic label", %{conn: conn} do
+    {:ok, mcdb_user} = Sanctum.Decks.find_or_create_mcdb_user(%{mcdb_user_id: 4243})
+
+    make_deck("Cosmic Blast", "captain_marvel", "90002", "Captain Marvel", [:aggression], %{
+      source: :marvelcdb,
+      mcdb_user_id: mcdb_user.id
+    })
+
+    {:ok, view, _html} = live(conn, ~p"/decks")
+    html = render_async(view)
+
+    assert html =~ "mcdb #4243"
+  end
+
   test "a scored deck shows its uniqueness meter; an unscored one doesn't", %{conn: conn} do
     scored = make_deck("Web Warrior", "spider_man", "90001", "Spider-Man", [:justice])
 

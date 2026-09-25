@@ -190,12 +190,13 @@ defmodule SanctumWeb.Components.DeckCards do
   def source_label(other), do: other |> to_string() |> String.capitalize()
 
   @doc """
-  Attribution: imported decks credit the MarvelCDB author; native decks
-  credit the owner's claimed username (never their email — the field is
+  Attribution: imported decks credit the MarvelCDB author (plain username —
+  no username yet falls back to "mcdb #<id>"); native decks credit the
+  owner's claimed username (never their email — the field is
   policy-hidden). Owners without a username get no attribution row.
   """
   def author(%{mcdb_user: %{username: username}}) when is_binary(username) and username != "",
-    do: %{name: "@" <> username, avatar: nil}
+    do: %{name: username, avatar: nil}
 
   def author(%{mcdb_user: %{mcdb_user_id: id}}) when not is_nil(id),
     do: %{name: "mcdb ##{id}", avatar: nil}
