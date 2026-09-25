@@ -1,3 +1,17 @@
+# [1.90.0](https://github.com/jwstover/sanctum/compare/v1.89.0...v1.90.0) (2026-09-25)
+
+
+### Bug Fixes
+
+* **decks:** drop unused default arg from mcdb scrape test helper ([fb762da](https://github.com/jwstover/sanctum/commit/fb762da6fd3abe690226e6c57eed6fd7dff1665a))
+
+
+### Features
+
+* **decks:** paced MarvelCDB list-page sweep for usernames and like counts ([20816ea](https://github.com/jwstover/sanctum/commit/20816ea2d3f5411fdaf210d5ab466dc7293a2405))
+
+
+
 # [1.89.0](https://github.com/jwstover/sanctum/compare/v1.88.0...v1.89.0) (2026-09-25)
 
 
@@ -37,15 +51,6 @@
 ### Features
 
 * **tts:** bag-name resolution layer for Hitch's TTS mod ([711a4e8](https://github.com/jwstover/sanctum/commit/711a4e8f9539bbdcb4982bb9c2a7d4bbb2d56f2d))
-
-
-
-# [1.85.0](https://github.com/jwstover/sanctum/compare/v1.84.0...v1.85.0) (2026-09-16)
-
-
-### Features
-
-* **decks:** built-in hero side decks on both deck surfaces ([c80065b](https://github.com/jwstover/sanctum/commit/c80065be25dbb891934d090f00db34946b96bf4e))
 
 
 
