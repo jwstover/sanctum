@@ -93,6 +93,57 @@ defmodule SanctumWeb.AdminLive.IndexTest do
     assert_enqueued(worker: Sanctum.Decks.DecklistSyncWorker, args: %{since: "2024-01-01"})
   end
 
+  test "renders the MarvelCDB Social Sweep section with Never run", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    html = render_async(view)
+
+    assert html =~ "MarvelCDB Social Sweep"
+    assert html =~ "Never run"
+  end
+
+  test "starting a sweep enqueues the worker and flashes; a second click flashes a conflict", %{
+    conn: conn
+  } do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    render_async(view)
+
+    html = render_click(view, "start_mcdb_scrape", %{})
+    assert html =~ "MarvelCDB sweep enqueued."
+    assert_enqueued(worker: Sanctum.Decks.McdbScrapeWorker, args: %{"page" => 1})
+
+    html = render_click(view, "start_mcdb_scrape", %{})
+    assert html =~ "already queued or running"
+  end
+
+  test "a failed sweep state renders Resume, and clicking it enqueues the next page", %{
+    conn: conn
+  } do
+    Sanctum.Decks.put_mcdb_scrape_state!(
+      %{
+        status: :failed,
+        sort: "date",
+        page: 12,
+        last_page: 100,
+        rows_seen: 144,
+        matched: 140,
+        unmatched: 4,
+        users_updated: 100,
+        started_at: DateTime.utc_now(),
+        last_error: "page 13: {:error, {:server_error, 503}}"
+      },
+      authorize?: false
+    )
+
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    html = render_async(view)
+
+    assert html =~ "Resume"
+
+    html = render_click(view, "resume_mcdb_scrape", %{})
+    assert html =~ "resumed from page 13"
+    assert_enqueued(worker: Sanctum.Decks.McdbScrapeWorker, args: %{"page" => 13})
+  end
+
   # The hero (both sides) and one player card, so the decklist import resolves
   # every code from the local catalog without extra MarvelCDB fetches.
   defp seed_catalog do
