@@ -45,6 +45,11 @@ defmodule Sanctum.Decks do
       define :get_deck_sync_state, action: :current
       define :set_last_synced_date, action: :set_last_synced_date, args: [:last_synced_date]
     end
+
+    resource Sanctum.Decks.McdbScrapeState do
+      define :get_mcdb_scrape_state, action: :current
+      define :put_mcdb_scrape_state, action: :put
+    end
   end
 
   @doc """

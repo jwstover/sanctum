@@ -154,6 +154,53 @@ defmodule Sanctum.Release do
     end)
   end
 
+  @doc """
+  Starts (or resumes) the one-time MarvelCDB list-page sweep that fills deck
+  authors' usernames and like counts (see `Sanctum.Decks.McdbScrape`). Runs
+  in the `:mcdb_scrape` Oban queue; progress shows on `/admin`.
+
+  Prefer the `/admin` "Start sweep" button over this function: `eval` boots a
+  second VM on the same Fly machine, and `Application.ensure_all_started/1`
+  starts the whole app, including `Sanctum.Oban.BootRescue` — which resets
+  `executing` jobs whose `attempted_by` node matches this machine's, and
+  could reset a sweep page the *live* app is genuinely still executing. This
+  function is a fallback for when the app isn't reachable, and is only safe
+  to run before a sweep has started (or while the running one is idle
+  between pages).
+
+      /app/bin/sanctum eval 'Sanctum.Release.start_mcdb_scrape()'
+      /app/bin/sanctum eval 'Sanctum.Release.start_mcdb_scrape(page: 1200, resume: true)'
+  """
+  def start_mcdb_scrape(opts \\ []) do
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    Sanctum.Decks.McdbScrape.start(opts)
+  end
+
+  @doc """
+  Post-sweep report: username coverage plus the decklists the latest sweep
+  didn't see (candidates for a follow-up reconcile). Same second-VM caveat as
+  `start_mcdb_scrape/1` — harmless here since this only reads, but only run
+  it after the sweep has actually finished (`state.status == :done`).
+
+      /app/bin/sanctum eval 'IO.inspect(Sanctum.Release.mcdb_scrape_report(), limit: :infinity)'
+  """
+  def mcdb_scrape_report do
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    case Sanctum.Decks.get_mcdb_scrape_state(authorize?: false) do
+      {:ok, %{started_at: %DateTime{} = started_at} = state} ->
+        %{
+          state: state,
+          coverage: Sanctum.Decks.McdbScrape.username_coverage(),
+          missing: Sanctum.Decks.McdbScrape.missing_decklists(started_at)
+        }
+
+      _ ->
+        {:error, :never_run}
+    end
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end

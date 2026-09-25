@@ -13,6 +13,7 @@ config :sanctum, Sanctum.Games.CardPoolCount, ttl: 0
 
 config :sanctum, Oban, testing: :manual
 config :sanctum, :marvel_cdb_req_options, plug: {Req.Test, Sanctum.MarvelCdb}
+config :sanctum, Sanctum.Decks.McdbScrapeWorker, pace_seconds: 0..0
 config :sanctum, token_signing_secret: "/oZ9ck2w3h4oPYA4x7ZebHnqCh1MKXIp"
 config :sanctum, :deploy_notice_token, "test-deploy-notice-token"
 config :bcrypt_elixir, log_rounds: 1

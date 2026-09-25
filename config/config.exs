@@ -12,7 +12,9 @@ config :ash_oban, pro?: false
 config :sanctum, Oban,
   engine: Oban.Engines.Basic,
   notifier: Oban.Notifiers.Postgres,
-  queues: [default: 10],
+  # The MarvelCDB list-page sweep is strictly serial and polite, so it gets
+  # its own single-slot queue.
+  queues: [default: 10, mcdb_scrape: 1],
   repo: Sanctum.Repo,
   plugins: [
     # Prune old completed/discarded jobs so the table doesn't grow unbounded.
@@ -98,6 +100,13 @@ config :sanctum, :marvel_cdb_req_options, []
 
 # Identifies Sanctum to MarvelCDB on scraped site pages (contact approved 2026-09-23).
 config :sanctum, :marvel_cdb_contact, url: "https://sanctummc.com", email: "jwstover@gmail.com"
+
+# Daily MarvelCDB social refresh: how many top-liked and newest list pages to re-scrape.
+# Deep `sort=likes` pages are big like-count ties with no stable order, so the likes walk is capped.
+config :sanctum, Sanctum.Decks.McdbSocialRefresh, likes_max_pages: 50, date_pages: 35
+
+# Delay between list pages of the MarvelCDB social sweep (jittered within the range).
+config :sanctum, Sanctum.Decks.McdbScrapeWorker, pace_seconds: 3..5
 
 # Configures the endpoint
 config :sanctum, SanctumWeb.Endpoint,

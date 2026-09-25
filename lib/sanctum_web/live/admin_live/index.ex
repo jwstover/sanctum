@@ -153,6 +153,116 @@ defmodule SanctumWeb.AdminLive.Index do
 
       <section class="mt-8">
         <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+          MarvelCDB Social Sweep
+        </h2>
+        <div :if={@mcdb_scrape == nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <.stat_skeleton :for={_ <- 1..5} />
+        </div>
+        <div
+          :if={@mcdb_scrape != nil}
+          class="border-[3px] border-neutral bg-base-300 p-4 space-y-4"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span class={[
+                "inline-flex items-center border-2 px-3 py-1 font-ibm-mono text-xs uppercase tracking-[0.15em]",
+                mcdb_scrape_status_class(mcdb_scrape_status(@mcdb_scrape.state))
+              ]}>
+                {mcdb_scrape_status_label(mcdb_scrape_status(@mcdb_scrape.state))}
+              </span>
+              <span
+                :if={@mcdb_scrape.state && @mcdb_scrape.state.started_at}
+                class="font-ibm-mono text-xs text-base-content/55"
+              >
+                started {fmt_ts(@mcdb_scrape.state.started_at)}
+              </span>
+              <span
+                :if={@mcdb_scrape.state && @mcdb_scrape.state.finished_at}
+                class="font-ibm-mono text-xs text-base-content/55"
+              >
+                &middot; finished {fmt_ts(@mcdb_scrape.state.finished_at)}
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                :if={mcdb_scrape_status(@mcdb_scrape.state) in [:failed, :stalled]}
+                type="button"
+                phx-click="resume_mcdb_scrape"
+                class="inline-flex items-center gap-2 border-2 border-neutral bg-base-300 px-3 py-2 font-barlow-condensed text-sm font-bold uppercase tracking-[0.1em] text-primary hover:text-white"
+              >
+                <.icon name="hero-play" class="size-4" /> Resume
+              </button>
+              <.confirm_button
+                id="confirm-mcdb-scrape"
+                message="Scrape every MarvelCDB decklist page (~4,500 pages, several hours)?"
+                confirm_label="Start sweep"
+                phx-click="start_mcdb_scrape"
+                disabled={mcdb_scrape_status(@mcdb_scrape.state) == :running}
+                class="inline-flex -rotate-1 items-center gap-2 border-2 border-neutral bg-base-300 bg-halftone px-3 py-2 font-barlow-condensed text-base font-bold uppercase tracking-[0.1em] text-primary shadow-comic-sm transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50 lg:px-2.5 lg:py-1.5 lg:text-sm"
+              >
+                <.icon name="hero-play" class="size-4" />
+                {if mcdb_scrape_status(@mcdb_scrape.state) == :running,
+                  do: "Sweeping…",
+                  else: "Start sweep"}
+              </.confirm_button>
+            </div>
+          </div>
+
+          <div :if={mcdb_scrape_status(@mcdb_scrape.state) == :running} class="space-y-2">
+            <div class="flex items-baseline justify-between font-ibm-mono text-xs text-base-content/70">
+              <span>page {@mcdb_scrape.state.page} / {@mcdb_scrape.state.last_page || "?"}</span>
+            </div>
+            <div class="h-2 w-full overflow-hidden bg-base-100">
+              <div
+                class="h-full bg-primary transition-[width] duration-150"
+                style={"width: #{mcdb_scrape_percent(@mcdb_scrape.state)}%"}
+              >
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <.stat_tile label="Rows seen" value={mcdb_scrape_stat(@mcdb_scrape.state, :rows_seen)} />
+            <.stat_tile label="Matched" value={mcdb_scrape_stat(@mcdb_scrape.state, :matched)} />
+            <.stat_tile label="Unmatched" value={mcdb_scrape_stat(@mcdb_scrape.state, :unmatched)} />
+            <.stat_tile
+              label="Usernames updated"
+              value={mcdb_scrape_stat(@mcdb_scrape.state, :users_updated)}
+            />
+            <.text_tile
+              label="Decklists missed"
+              value={mcdb_scrape_missing_label(@mcdb_scrape.state)}
+              accent={mcdb_scrape_missing_accent?(@mcdb_scrape.state)}
+            />
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <.text_tile
+              label="Usernames (all authors)"
+              value={fmt_coverage(@mcdb_scrape.coverage.with_username, @mcdb_scrape.coverage.total)}
+            />
+            <.text_tile
+              label="Usernames (decklist authors)"
+              value={
+                fmt_coverage(
+                  @mcdb_scrape.coverage.decklist_authors_with_username,
+                  @mcdb_scrape.coverage.decklist_authors
+                )
+              }
+            />
+          </div>
+
+          <p
+            :if={@mcdb_scrape.state && @mcdb_scrape.state.last_error}
+            class="break-words font-ibm-mono text-xs text-error"
+          >
+            {@mcdb_scrape.state.last_error}
+          </p>
+        </div>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
           Import Deck
         </h2>
         <div class="border-[3px] border-neutral bg-base-300 p-4 space-y-3">
@@ -268,11 +378,15 @@ defmodule SanctumWeb.AdminLive.Index do
 
   attr :label, :string, required: true
   attr :value, :string, required: true
+  attr :accent, :boolean, default: false
 
   defp text_tile(assigns) do
     ~H"""
     <div class="border-[3px] border-neutral bg-base-300 px-4 py-3">
-      <div class="truncate font-barlow-condensed text-xl font-bold leading-none text-primary">
+      <div class={[
+        "truncate font-barlow-condensed text-xl font-bold leading-none",
+        (@accent && "text-error") || "text-primary"
+      ]}>
         {@value}
       </div>
       <div class="mt-1 font-ibm-mono text-xs uppercase tracking-[0.15em] text-base-content/55">
@@ -322,6 +436,8 @@ defmodule SanctumWeb.AdminLive.Index do
       |> assign(:deck_health, %{cursor: nil, last_run: nil})
       |> assign(:deck_import, %{status: :idle, deck: nil, error: nil, url: ""})
       |> assign(:deck_sync_since, "")
+      |> assign(:mcdb_scrape, nil)
+      |> assign(:mcdb_poll_scheduled?, false)
 
     # Skip the ~10 count/aggregate queries on the static render; load them
     # asynchronously once the socket connects so the shell paints immediately.
@@ -333,7 +449,12 @@ defmodule SanctumWeb.AdminLive.Index do
 
   # The health snapshot: catalog counts, Oban job tallies, and deck-sync health.
   defp load_admin do
-    %{stats: load_stats(), jobs: load_job_counts(), deck_health: load_deck_health()}
+    %{
+      stats: load_stats(),
+      jobs: load_job_counts(),
+      deck_health: load_deck_health(),
+      mcdb_scrape: load_mcdb_scrape()
+    }
   end
 
   defp zero_stats do
@@ -385,6 +506,42 @@ defmodule SanctumWeb.AdminLive.Index do
     end
   end
 
+  # Enqueue the one-time MarvelCDB list-page sweep. `McdbScrape.start/1` keeps
+  # the worker's default uniqueness, so a second click while one is already
+  # queued/executing is surfaced as an informational flash rather than a
+  # second sweep.
+  @impl true
+  def handle_event("start_mcdb_scrape", _params, socket) do
+    case Sanctum.Decks.McdbScrape.start() do
+      {:ok, job} ->
+        message =
+          if job.conflict?,
+            do: "A MarvelCDB sweep is already queued or running.",
+            else: "MarvelCDB sweep enqueued."
+
+        {:noreply,
+         socket
+         |> assign(:mcdb_scrape, load_mcdb_scrape())
+         |> maybe_schedule_mcdb_poll()
+         |> put_flash(:info, message)}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, "Couldn’t start MarvelCDB sweep: #{inspect(reason)}")}
+    end
+  end
+
+  # Resumes a :failed or :stalled sweep from the page after the last one
+  # successfully applied. `resume: true` keeps the existing counters and
+  # started_at, so the missing-deck report still measures the whole sweep.
+  @impl true
+  def handle_event("resume_mcdb_scrape", _params, socket) do
+    case socket.assigns.mcdb_scrape && socket.assigns.mcdb_scrape.state do
+      %{page: page, sort: sort} when is_integer(page) -> do_resume_mcdb_scrape(socket, page, sort)
+      _ -> {:noreply, put_flash(socket, :error, "No MarvelCDB sweep to resume.")}
+    end
+  end
+
   @impl true
   def handle_event("import_deck", %{"deck_url" => url}, socket) do
     case parse_deck_url(url) do
@@ -406,13 +563,35 @@ defmodule SanctumWeb.AdminLive.Index do
     end
   end
 
+  defp do_resume_mcdb_scrape(socket, page, sort) do
+    case Sanctum.Decks.McdbScrape.start(page: page + 1, sort: sort, resume: true) do
+      {:ok, job} ->
+        message =
+          if job.conflict?,
+            do: "A MarvelCDB sweep is already queued or running.",
+            else: "MarvelCDB sweep resumed from page #{page + 1}."
+
+        {:noreply,
+         socket
+         |> assign(:mcdb_scrape, load_mcdb_scrape())
+         |> maybe_schedule_mcdb_poll()
+         |> put_flash(:info, message)}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, "Couldn’t resume MarvelCDB sweep: #{inspect(reason)}")}
+    end
+  end
+
   @impl true
   def handle_async(:load_admin, {:ok, data}, socket) do
     {:noreply,
      socket
      |> assign(:stats, data.stats)
      |> assign(:jobs, data.jobs)
-     |> assign(:deck_health, data.deck_health)}
+     |> assign(:deck_health, data.deck_health)
+     |> assign(:mcdb_scrape, data.mcdb_scrape)
+     |> maybe_schedule_mcdb_poll()}
   end
 
   def handle_async(:load_admin, {:exit, reason}, socket) do
@@ -420,6 +599,7 @@ defmodule SanctumWeb.AdminLive.Index do
      socket
      |> assign(:stats, zero_stats())
      |> assign(:jobs, zero_jobs())
+     |> assign(:mcdb_scrape, %{state: nil, coverage: zero_mcdb_coverage()})
      |> put_flash(:error, "Couldn’t load admin stats: #{inspect(reason)}")}
   end
 
@@ -479,6 +659,24 @@ defmodule SanctumWeb.AdminLive.Index do
 
   defp import_error(reason) when is_binary(reason), do: reason
   defp import_error(reason), do: inspect(reason)
+
+  # Polls the DB-backed sweep state every 5s while it's running — there's no
+  # PubSub broadcast for it (unlike the in-memory deck-sync Monitor), since
+  # the sweep needs to be visible across machines and process restarts.
+  @impl true
+  def handle_info(:poll_mcdb_scrape, socket) do
+    socket = assign(socket, :mcdb_scrape, load_mcdb_scrape())
+
+    socket =
+      if socket.assigns.mcdb_scrape.state && socket.assigns.mcdb_scrape.state.status == :running do
+        Process.send_after(self(), :poll_mcdb_scrape, 5_000)
+        socket
+      else
+        assign(socket, :mcdb_poll_scheduled?, false)
+      end
+
+    {:noreply, socket}
+  end
 
   # Live progress from the deck-sync Monitor. Reload the DB-backed health
   # (cursor + last Oban run) once a run settles, since those change on completion.
@@ -587,4 +785,91 @@ defmodule SanctumWeb.AdminLive.Index do
   end
 
   defp fmt_last_run(_), do: "never"
+
+  # DB-backed progress for the MarvelCDB list-page sweep — see
+  # `Sanctum.Decks.McdbScrape`/`McdbScrapeState`. `missing_count` on the state
+  # comes from the last completed sweep's report rather than being recomputed
+  # on every load (a full decklist scan).
+  defp load_mcdb_scrape do
+    state =
+      case Sanctum.Decks.get_mcdb_scrape_state(authorize?: false) do
+        {:ok, state} -> stall_guard(state)
+        _ -> nil
+      end
+
+    %{state: state, coverage: Sanctum.Decks.McdbScrape.username_coverage()}
+  rescue
+    _ -> %{state: nil, coverage: zero_mcdb_coverage()}
+  end
+
+  # A sweep can be left "running" forever if its chained job was cancelled
+  # from /admin/oban. Detect that (no incomplete job for the worker left) and
+  # show it as "Stalled" with a Resume option instead of a permanent spinner.
+  defp stall_guard(%{status: :running} = state) do
+    if mcdb_scrape_job_active?(), do: state, else: %{state | status: :stalled}
+  end
+
+  defp stall_guard(state), do: state
+
+  defp mcdb_scrape_job_active? do
+    from(j in "oban_jobs",
+      where: j.worker == "Sanctum.Decks.McdbScrapeWorker",
+      where: j.state in ["available", "scheduled", "executing", "retryable"],
+      select: count(j.id)
+    )
+    |> Sanctum.Repo.one()
+    |> Kernel.>(0)
+  rescue
+    _ -> true
+  end
+
+  defp zero_mcdb_coverage,
+    do: %{total: 0, with_username: 0, decklist_authors: 0, decklist_authors_with_username: 0}
+
+  defp maybe_schedule_mcdb_poll(socket) do
+    state = socket.assigns.mcdb_scrape && socket.assigns.mcdb_scrape.state
+    running? = match?(%{status: :running}, state)
+
+    if running? && connected?(socket) && !socket.assigns.mcdb_poll_scheduled? do
+      Process.send_after(self(), :poll_mcdb_scrape, 5_000)
+      assign(socket, :mcdb_poll_scheduled?, true)
+    else
+      socket
+    end
+  end
+
+  defp mcdb_scrape_status(nil), do: nil
+  defp mcdb_scrape_status(%{status: status}), do: status
+
+  defp mcdb_scrape_status_label(nil), do: "Never run"
+  defp mcdb_scrape_status_label(:running), do: "Running"
+  defp mcdb_scrape_status_label(:done), do: "Completed"
+  defp mcdb_scrape_status_label(:failed), do: "Failed"
+  defp mcdb_scrape_status_label(:stalled), do: "Stalled"
+
+  defp mcdb_scrape_status_class(nil), do: "border-neutral text-base-content/60"
+  defp mcdb_scrape_status_class(:running), do: "border-info text-info"
+  defp mcdb_scrape_status_class(:done), do: "border-success text-success"
+  defp mcdb_scrape_status_class(:failed), do: "border-error text-error"
+  defp mcdb_scrape_status_class(:stalled), do: "border-warning text-warning"
+
+  defp mcdb_scrape_percent(%{page: page, last_page: last_page})
+       when is_integer(page) and is_integer(last_page) and last_page > 0,
+       do: Float.round(page / last_page * 100, 1)
+
+  defp mcdb_scrape_percent(_state), do: 0
+
+  defp mcdb_scrape_stat(nil, _key), do: 0
+  defp mcdb_scrape_stat(state, key), do: Map.get(state, key) || 0
+
+  defp mcdb_scrape_missing_label(%{missing_count: n}) when is_integer(n), do: to_string(n)
+  defp mcdb_scrape_missing_label(_state), do: "—"
+
+  defp mcdb_scrape_missing_accent?(%{missing_count: n}) when is_integer(n) and n > 0, do: true
+  defp mcdb_scrape_missing_accent?(_state), do: false
+
+  defp fmt_coverage(with_count, total) when is_integer(total) and total > 0,
+    do: "#{with_count}/#{total} (#{Float.round(with_count / total * 100, 1)}%)"
+
+  defp fmt_coverage(with_count, total), do: "#{with_count}/#{total}"
 end
