@@ -185,7 +185,6 @@ defmodule SanctumWeb.DeckLive.Index do
 
               <div :if={deck.author} class="mt-auto flex items-center gap-2 pt-3">
                 <.avatar name={deck.author} url={deck.author_avatar} />
-                <span class="font-barlow-condensed text-sm text-base-content/50">by</span>
                 <a
                   :if={deck.author_url}
                   href={deck.author_url}

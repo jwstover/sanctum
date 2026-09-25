@@ -118,7 +118,6 @@ defmodule SanctumWeb.DeckLive.Show do
                 <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
                 <div :if={@cover.author} class="flex items-center gap-2 self-center">
                   <.avatar name={@cover.author} url={@cover.author_avatar} size="md" />
-                  <span class="font-barlow-condensed text-sm text-base-content/50">by</span>
                   <a
                     :if={@cover.author_url}
                     href={@cover.author_url}
