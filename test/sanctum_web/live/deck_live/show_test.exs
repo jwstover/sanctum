@@ -97,7 +97,7 @@ defmodule SanctumWeb.DeckLive.ShowTest do
   end
 
   describe "author attribution" do
-    test "an MCDB-authored deck credits the author with a link to their profile", %{conn: conn} do
+    test "an MCDB-authored deck credits the author by username", %{conn: conn} do
       {:ok, mcdb_user} =
         Sanctum.Decks.find_or_create_mcdb_user(%{mcdb_user_id: 4242, username: "webhead"})
 
@@ -107,7 +107,6 @@ defmodule SanctumWeb.DeckLive.ShowTest do
       html = render_async(view)
 
       assert html =~ "webhead"
-      assert html =~ "https://marvelcdb.com/user/profile/4242"
       refute html =~ "mcdb #"
     end
 
@@ -119,9 +118,7 @@ defmodule SanctumWeb.DeckLive.ShowTest do
       {:ok, view, _html} = live(conn, ~p"/decks/#{deck.id}")
       html = render_async(view)
 
-      assert html =~ "MarvelCDB user"
-      assert html =~ "https://marvelcdb.com/user/profile/4243"
-      refute html =~ "mcdb #"
+      assert html =~ "mcdb #4243"
     end
 
     test "a native deck credits its owner's username with no marvelcdb.com link", %{conn: conn} do

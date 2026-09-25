@@ -314,7 +314,7 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     refute html =~ to_string(owner.email)
   end
 
-  test "an MCDB-authored deck credits the author with a link to their profile", %{conn: conn} do
+  test "an MCDB-authored deck credits the author by username", %{conn: conn} do
     {:ok, mcdb_user} =
       Sanctum.Decks.find_or_create_mcdb_user(%{mcdb_user_id: 4242, username: "webhead"})
 
@@ -327,7 +327,6 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     html = render_async(view)
 
     assert html =~ "webhead"
-    assert html =~ "https://marvelcdb.com/user/profile/4242"
     refute html =~ "mcdb #"
   end
 
@@ -342,9 +341,7 @@ defmodule SanctumWeb.DeckLive.IndexTest do
     {:ok, view, _html} = live(conn, ~p"/decks")
     html = render_async(view)
 
-    assert html =~ "MarvelCDB user"
-    assert html =~ "https://marvelcdb.com/user/profile/4243"
-    refute html =~ "mcdb #"
+    assert html =~ "mcdb #4243"
   end
 
   test "a scored deck shows its uniqueness meter; an unscored one doesn't", %{conn: conn} do

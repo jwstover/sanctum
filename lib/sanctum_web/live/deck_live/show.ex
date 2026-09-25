@@ -118,19 +118,7 @@ defmodule SanctumWeb.DeckLive.Show do
                 <.uniqueness_meter percentile={@cover.uniqueness} size="lg" class="self-center" />
                 <div :if={@cover.author} class="flex items-center gap-2 self-center">
                   <.avatar name={@cover.author} url={@cover.author_avatar} size="md" />
-                  <a
-                    :if={@cover.author_url}
-                    href={@cover.author_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="font-barlow-condensed text-sm font-bold text-primary hover:underline"
-                  >
-                    {@cover.author}
-                  </a>
-                  <span
-                    :if={!@cover.author_url}
-                    class="font-barlow-condensed text-sm font-bold text-primary"
-                  >
+                  <span class="font-barlow-condensed text-sm font-bold text-primary">
                     {@cover.author}
                   </span>
                 </div>
@@ -604,8 +592,7 @@ defmodule SanctumWeb.DeckLive.Show do
       uniqueness: deck.uniqueness_percentile,
       favorite_count: deck.favorite_count || 0,
       author: author && author.name,
-      author_avatar: author && author.avatar,
-      author_url: author && author.url
+      author_avatar: author && author.avatar
     }
   end
 
