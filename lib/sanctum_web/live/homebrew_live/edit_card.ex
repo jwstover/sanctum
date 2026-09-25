@@ -741,7 +741,12 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
           </p>
         </div>
 
-        <form :if={is_nil(@alt_target)} phx-change="alt_search" onsubmit="return false">
+        <form
+          :if={is_nil(@alt_target)}
+          id="declare-alt-search"
+          phx-change="alt_search"
+          onsubmit="return false"
+        >
           <.input
             type="text"
             name="q"
