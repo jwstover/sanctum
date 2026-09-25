@@ -1,3 +1,18 @@
+# [1.89.0](https://github.com/jwstover/sanctum/compare/v1.88.0...v1.89.0) (2026-09-25)
+
+
+### Bug Fixes
+
+* **decks:** drop MarvelCDB profile links, keep numeric fallback label ([364cd68](https://github.com/jwstover/sanctum/commit/364cd68e1992eae78f60490a0388c27c9de3e190))
+
+
+### Features
+
+* **decks:** credit MarvelCDB authors on deck tiles and deck page ([31440e8](https://github.com/jwstover/sanctum/commit/31440e8d1c840dfcf4256ea6ac5bed2f552e514e))
+* **search:** add author: deck search field ([3419030](https://github.com/jwstover/sanctum/commit/3419030559c80bb13ada1be0bfb783d0571ccf4b))
+
+
+
 # [1.88.0](https://github.com/jwstover/sanctum/compare/v1.87.0...v1.88.0) (2026-09-24)
 
 
@@ -31,21 +46,6 @@
 ### Features
 
 * **decks:** built-in hero side decks on both deck surfaces ([c80065b](https://github.com/jwstover/sanctum/commit/c80065be25dbb891934d090f00db34946b96bf4e))
-
-
-
-# [1.84.0](https://github.com/jwstover/sanctum/compare/v1.83.0...v1.84.0) (2026-09-02)
-
-
-### Bug Fixes
-
-* **decks:** stack the hand simulator below the decklist on mobile ([6c72970](https://github.com/jwstover/sanctum/commit/6c72970ba07523a6c3f1a77f4c5c4b7af1e45c83))
-* **decks:** trim the mulligan hint copy ([d836d15](https://github.com/jwstover/sanctum/commit/d836d1531aea60a5c0eb94827886ba98d55f4674))
-
-
-### Features
-
-* **decks:** add opening-hand draw simulator to deck view ([74481b8](https://github.com/jwstover/sanctum/commit/74481b82baf9cef1d4b90292fb57dba2580ff888))
 
 
 
