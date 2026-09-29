@@ -62,9 +62,9 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
     %{"access_token" => "access-abc", "refresh_token" => "refresh-xyz", "expires_in" => 3600}
   end
 
-  describe "GET /marvelcdb/connect" do
+  describe "GET /auth/user/marvelcdb/connect" do
     test "redirects a signed-in user to MarvelCDB and stashes a state", %{conn: conn, user: user} do
-      conn = conn |> log_in_user(user) |> get(~p"/marvelcdb/connect")
+      conn = conn |> log_in_user(user) |> get(~p"/auth/user/marvelcdb/connect")
 
       location = redirected_to(conn, 302)
       assert location =~ "https://marvelcdb.com/oauth/v2/auth"
@@ -75,7 +75,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
     end
 
     test "sends a signed-out visitor to sign in instead", %{conn: conn} do
-      conn = get(conn, ~p"/marvelcdb/connect")
+      conn = get(conn, ~p"/auth/user/marvelcdb/connect")
 
       assert redirected_to(conn) == ~p"/sign-in"
       refute get_session(conn, @state_session_key)
@@ -84,14 +84,14 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
     test "refuses when the server has no MarvelCDB credentials", %{conn: conn, user: user} do
       Application.put_env(:sanctum, :marvelcdb_client_id, nil)
 
-      conn = conn |> log_in_user(user) |> get(~p"/marvelcdb/connect")
+      conn = conn |> log_in_user(user) |> get(~p"/auth/user/marvelcdb/connect")
 
       assert redirected_to(conn) == ~p"/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "isn't configured"
     end
   end
 
-  describe "GET /marvelcdb/callback" do
+  describe "GET /auth/user/marvelcdb/callback" do
     test "stores the grant when the state matches", %{conn: conn, user: user} do
       stub_marvel_cdb(
         token: {200, default_token_body()},
@@ -102,7 +102,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         conn
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "the-state"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
 
       assert redirected_to(conn) == ~p"/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "connected"
@@ -125,7 +125,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         conn
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "the-state"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
 
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "linked"
 
@@ -146,7 +146,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
       conn
       |> log_in_user(user)
       |> init_test_session(%{@state_session_key => "the-state"})
-      |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+      |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
 
       [mcdb_user] = Decks.list_claimed_mcdb_users!(actor: user)
       assert mcdb_user.username == "atom"
@@ -167,7 +167,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         conn
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "the-state"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
 
       assert redirected_to(conn) == ~p"/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "already linked"
@@ -187,7 +187,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         conn
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "the-state"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
 
       assert redirected_to(conn) == ~p"/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "couldn't identify"
@@ -205,7 +205,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         conn
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "the-state"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
 
       assert redirected_to(conn) == ~p"/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "couldn't identify"
@@ -222,14 +222,14 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
       conn
       |> log_in_user(user)
       |> init_test_session(%{@state_session_key => "state-1"})
-      |> get(~p"/marvelcdb/callback", %{"code" => "code-1", "state" => "state-1"})
+      |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "code-1", "state" => "state-1"})
 
       conn2 =
         conn
         |> recycle()
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "state-2"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "code-2", "state" => "state-2"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "code-2", "state" => "state-2"})
 
       assert Phoenix.Flash.get(conn2.assigns.flash, :info) =~ "linked"
       [mcdb_user] = Decks.list_claimed_mcdb_users!(actor: user)
@@ -242,7 +242,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
       conn
       |> log_in_user(user)
       |> init_test_session(%{@state_session_key => "state-1"})
-      |> get(~p"/marvelcdb/callback", %{"code" => "code-1", "state" => "state-1"})
+      |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "code-1", "state" => "state-1"})
 
       assert Decks.list_claimed_mcdb_users!(actor: user) == []
 
@@ -256,7 +256,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         |> recycle()
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "state-2"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "code-2", "state" => "state-2"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "code-2", "state" => "state-2"})
 
       assert Phoenix.Flash.get(conn2.assigns.flash, :info) =~ "linked"
       [mcdb_user] = Decks.list_claimed_mcdb_users!(actor: user)
@@ -274,7 +274,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         conn
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "the-real-state"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "forged"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "the-code", "state" => "forged"})
 
       assert redirected_to(conn) == ~p"/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "expired"
@@ -289,7 +289,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
       conn =
         conn
         |> log_in_user(user)
-        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "anything"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "the-code", "state" => "anything"})
 
       assert redirected_to(conn) == ~p"/profile"
       refute Credentials.connected?(user)
@@ -302,7 +302,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         conn
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "the-state"})
-        |> get(~p"/marvelcdb/callback", %{"code" => "stale", "state" => "the-state"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"code" => "stale", "state" => "the-state"})
 
       assert redirected_to(conn) == ~p"/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Could not connect"
@@ -314,7 +314,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
         conn
         |> log_in_user(user)
         |> init_test_session(%{@state_session_key => "the-state"})
-        |> get(~p"/marvelcdb/callback", %{"error" => "access_denied"})
+        |> get(~p"/auth/user/marvelcdb/callback", %{"error" => "access_denied"})
 
       assert redirected_to(conn) == ~p"/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "cancelled"
@@ -322,7 +322,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
     end
   end
 
-  describe "DELETE /marvelcdb/disconnect" do
+  describe "DELETE /auth/user/marvelcdb/disconnect" do
     test "drops a connected user's grant", %{conn: conn, user: user} do
       {:ok, _} =
         Credentials.connect(user, %{
@@ -331,14 +331,14 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
           expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
         })
 
-      conn = conn |> log_in_user(user) |> delete(~p"/marvelcdb/disconnect")
+      conn = conn |> log_in_user(user) |> delete(~p"/auth/user/marvelcdb/disconnect")
 
       assert redirected_to(conn) == ~p"/profile"
       refute Credentials.connected?(user)
     end
 
     test "sends a signed-out visitor to sign in", %{conn: conn} do
-      conn = delete(conn, ~p"/marvelcdb/disconnect")
+      conn = delete(conn, ~p"/auth/user/marvelcdb/disconnect")
 
       assert redirected_to(conn) == ~p"/sign-in"
     end
