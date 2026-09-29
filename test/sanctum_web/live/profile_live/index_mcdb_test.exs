@@ -36,7 +36,7 @@ defmodule SanctumWeb.ProfileLive.IndexMcdbTest do
 
     {:ok, view, _html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
 
-    refute has_element?(view, ~s{a[href="/marvelcdb/connect"]})
+    refute has_element?(view, ~s{a[href="/auth/user/marvelcdb/connect"]})
     refute has_element?(view, "h2", "MarvelCDB")
   end
 
@@ -46,7 +46,7 @@ defmodule SanctumWeb.ProfileLive.IndexMcdbTest do
     {:ok, view, html} = live(log_in_user(conn, user_fixture()), ~p"/profile")
 
     assert html =~ "MarvelCDB"
-    assert has_element?(view, ~s{a[href="/marvelcdb/connect"]}, "Connect MarvelCDB")
+    assert has_element?(view, ~s{a[href="/auth/user/marvelcdb/connect"]}, "Connect MarvelCDB")
   end
 
   test "a linked account shows its username", %{conn: conn} do
@@ -102,7 +102,7 @@ defmodule SanctumWeb.ProfileLive.IndexMcdbTest do
     {:ok, view, html} = live(log_in_user(conn, user), ~p"/profile")
 
     assert html =~ "not linked to a MarvelCDB account yet"
-    assert has_element?(view, ~s{a[href="/marvelcdb/connect"]}, "Reconnect")
+    assert has_element?(view, ~s{a[href="/auth/user/marvelcdb/connect"]}, "Reconnect")
   end
 
   test "disconnect_mcdb drops the credential", %{conn: conn} do
@@ -121,7 +121,7 @@ defmodule SanctumWeb.ProfileLive.IndexMcdbTest do
     html = render_click(view, "disconnect_mcdb", %{})
 
     refute Credentials.connected?(user)
-    assert has_element?(view, ~s{a[href="/marvelcdb/connect"]}, "Connect MarvelCDB")
+    assert has_element?(view, ~s{a[href="/auth/user/marvelcdb/connect"]}, "Connect MarvelCDB")
     refute html =~ "Connected"
   end
 end

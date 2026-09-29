@@ -157,6 +157,25 @@ defmodule SanctumWeb.Router do
     oban_dashboard("/oban", csp_nonce_assign_key: :csp_nonce)
   end
 
+  # MarvelCDB account linking (OAuth2 authorization-code flow). Not part of the
+  # `auth_routes` block below: this links a MarvelCDB grant to an already
+  # signed-in user rather than authenticating one, so it's a plain controller.
+  # The callback path must match the redirect URI registered with MarvelCDB —
+  # they pin it per client and it can't be changed without asking them.
+  #
+  # MUST stay declared above `auth_routes` below. `auth_routes` mounts as a
+  # `forward "/auth", AshAuthentication.Phoenix.StrategyRouter`, and Phoenix
+  # matches routes in declaration order — a route under "/auth" declared after
+  # that forward never gets a chance to match; the forward claims it first and
+  # answers with AshAuthentication's own 404 instead of ours.
+  scope "/auth/user/marvelcdb", SanctumWeb do
+    pipe_through :browser
+
+    get "/connect", MarvelCdbAuthController, :authorize
+    get "/callback", MarvelCdbAuthController, :callback
+    delete "/disconnect", MarvelCdbAuthController, :disconnect
+  end
+
   scope "/", SanctumWeb do
     pipe_through [:browser, :capture_return_to]
 
@@ -196,19 +215,6 @@ defmodule SanctumWeb.Router do
       auth_routes_prefix: "/auth",
       overrides: [SanctumWeb.AuthOverrides, AshAuthentication.Phoenix.Overrides.Default]
     )
-  end
-
-  # MarvelCDB account linking (OAuth2 authorization-code flow). Not part of the
-  # `auth_routes` block above: this links a MarvelCDB grant to an already
-  # signed-in user rather than authenticating one, so it's a plain controller.
-  # The callback path must match the redirect URI registered with MarvelCDB —
-  # they pin it per client and it can't be changed without asking them.
-  scope "/marvelcdb", SanctumWeb do
-    pipe_through :browser
-
-    get "/connect", MarvelCdbAuthController, :authorize
-    get "/callback", MarvelCdbAuthController, :callback
-    delete "/disconnect", MarvelCdbAuthController, :disconnect
   end
 
   # Sanctum's first public JSON API: names-only deck payload for the TTS
