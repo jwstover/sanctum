@@ -1,3 +1,12 @@
+# [1.93.0](https://github.com/jwstover/sanctum/compare/v1.92.0...v1.93.0) (2026-09-30)
+
+
+### Features
+
+* **homebrew:** add SetKind lookup resource + seed official kinds ([ebf02e6](https://github.com/jwstover/sanctum/commit/ebf02e6cb9a6e3addcc16c1b5aea760b50cb9c20))
+
+
+
 # [1.92.0](https://github.com/jwstover/sanctum/compare/v1.91.1...v1.92.0) (2026-09-30)
 
 
@@ -42,21 +51,6 @@
 ### Features
 
 * **decks:** paced MarvelCDB list-page sweep for usernames and like counts ([20816ea](https://github.com/jwstover/sanctum/commit/20816ea2d3f5411fdaf210d5ab466dc7293a2405))
-
-
-
-# [1.89.0](https://github.com/jwstover/sanctum/compare/v1.88.0...v1.89.0) (2026-09-25)
-
-
-### Bug Fixes
-
-* **decks:** drop MarvelCDB profile links, keep numeric fallback label ([364cd68](https://github.com/jwstover/sanctum/commit/364cd68e1992eae78f60490a0388c27c9de3e190))
-
-
-### Features
-
-* **decks:** credit MarvelCDB authors on deck tiles and deck page ([31440e8](https://github.com/jwstover/sanctum/commit/31440e8d1c840dfcf4256ea6ac5bed2f552e514e))
-* **search:** add author: deck search field ([3419030](https://github.com/jwstover/sanctum/commit/3419030559c80bb13ada1be0bfb783d0571ccf4b))
 
 
 
