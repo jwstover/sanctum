@@ -182,7 +182,7 @@ defmodule Sanctum.Accounts.User do
 
     create :register_with_google do
       argument :user_info, :map, allow_nil?: false
-      argument :oauth_tokens, :map, allow_nil?: false
+      argument :oauth_tokens, :map, allow_nil?: false, sensitive?: true
       upsert? true
       upsert_identity :unique_email
 
@@ -208,7 +208,7 @@ defmodule Sanctum.Accounts.User do
 
     create :register_with_discord do
       argument :user_info, :map, allow_nil?: false
-      argument :oauth_tokens, :map, allow_nil?: false
+      argument :oauth_tokens, :map, allow_nil?: false, sensitive?: true
       upsert? true
       upsert_identity :unique_email
 
