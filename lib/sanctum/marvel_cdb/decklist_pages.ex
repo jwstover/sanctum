@@ -9,9 +9,9 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
   block by block so a row missing its author link can't accidentally borrow
   the next row's author.
 
-  Ships dormant — nothing in the app calls this yet. The one-time backfill
-  and the periodic refresh are separate follow-up work that will drive it in
-  production.
+  Also parses a single decklist's detail page (`parse_detail/1`), whose header
+  carries the same social counts, for the per-decklist refresh
+  (`Sanctum.Decks.McdbDeckRefresh`).
   """
 
   require Ash.Query
@@ -33,6 +33,8 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
   @box_marker ~s(<div class="box">)
   @pagination_marker ~s(<ul class="pagination)
 
+  @detail_social_marker ~s(<span class="social-icons">)
+
   @decklist_id_regex ~r{href="/decklist/view/(\d+)}
   @like_count_regex ~r{class="social-icon-like".*?<span class="num">(\d+)</span>}s
   @favorite_count_regex ~r{class="social-icon-favorite".*?<span class="num">(\d+)</span>}s
@@ -53,6 +55,46 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
   def fetch(page, sort) do
     with {:ok, html} <- MarvelCdb.get_decklist_page(page, sort) do
       {:ok, parse(html)}
+    end
+  end
+
+  @doc "Fetches and parses one decklist's detail page. See `parse_detail/1`."
+  @spec fetch_detail(String.t()) :: {:ok, map()} | {:error, term()}
+  def fetch_detail(mcdb_id) do
+    with {:ok, html} <- MarvelCdb.get_decklist_detail(mcdb_id) do
+      parse_detail(html)
+    end
+  end
+
+  @doc """
+  Parses a decklist detail page's header social block into
+  `%{like_count, favorite_count, comment_count}`.
+
+  All three counts must be present, else `{:error, :no_social_counts}` — unlike
+  list pages, a missing count is never read as 0, because a layout change would
+  then silently zero every refreshed deck's like count.
+  """
+  @spec parse_detail(String.t()) ::
+          {:ok,
+           %{
+             like_count: non_neg_integer(),
+             favorite_count: non_neg_integer(),
+             comment_count: non_neg_integer()
+           }}
+          | {:error, :no_social_counts}
+  def parse_detail(html) when is_binary(html) do
+    with [_before, block] <- String.split(html, @detail_social_marker, parts: 2),
+         [_, likes] <- Regex.run(@like_count_regex, block),
+         [_, favorites] <- Regex.run(@favorite_count_regex, block),
+         [_, comments] <- Regex.run(@comment_count_regex, block) do
+      {:ok,
+       %{
+         like_count: String.to_integer(likes),
+         favorite_count: String.to_integer(favorites),
+         comment_count: String.to_integer(comments)
+       }}
+    else
+      _ -> {:error, :no_social_counts}
     end
   end
 
@@ -125,7 +167,7 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
 
     Deck
     |> Ash.Query.filter(mcdb_type == :decklist and mcdb_id in ^ids)
-    |> Ash.Query.select([:id, :mcdb_id, :updated_at])
+    |> Ash.Query.select([:id, :mcdb_id, :updated_at, :mcdb_like_count])
     |> Ash.read!(authorize?: false)
     |> Map.new(&{&1.mcdb_id, &1})
   end

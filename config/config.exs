@@ -31,7 +31,9 @@ config :sanctum, Oban,
        {"0 * * * *", Sanctum.Decks.DecklistSyncWorker},
        {"30 4 * * *", Sanctum.Decks.ComputeUniquenessWorker},
        # Clear of the hourly sync and the uniqueness sweep.
-       {"15 6 * * *", Sanctum.Decks.McdbSocialRefreshWorker}
+       {"15 6 * * *", Sanctum.Decks.McdbSocialRefreshWorker},
+       # Hourly adaptive per-decklist like refresh; clear of the :00 sync.
+       {"45 * * * *", Sanctum.Decks.McdbDeckRefreshWorker}
      ]}
   ]
 
@@ -106,6 +108,15 @@ config :sanctum, :marvel_cdb_contact, url: "https://sanctummc.com", email: "jwst
 # Daily MarvelCDB social refresh: how many top-liked and newest list pages to re-scrape.
 # Deep `sort=likes` pages are big like-count ties with no stable order, so the likes walk is capped.
 config :sanctum, Sanctum.Decks.McdbSocialRefresh, likes_max_pages: 50, date_pages: 35
+
+# Adaptive per-decklist like-count refresh (Sanctum.Decks.McdbDeckRefresh).
+# batch_size 25 x hourly = hard cap of 600 detail-page requests/day.
+config :sanctum, Sanctum.Decks.McdbDeckRefresh,
+  floor_days: 3,
+  ceiling_days: 365,
+  growth_factor: 2.0,
+  initial_delay_days: 7,
+  batch_size: 25
 
 # Delay between list pages of the MarvelCDB social sweep (jittered within the range).
 config :sanctum, Sanctum.Decks.McdbScrapeWorker, pace_seconds: 3..5

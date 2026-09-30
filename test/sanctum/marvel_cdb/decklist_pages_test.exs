@@ -203,6 +203,65 @@ defmodule Sanctum.MarvelCdb.DecklistPagesTest do
     end
   end
 
+  describe "parse_detail/1" do
+    defp detail_block(likes, favorites, comments) do
+      """
+      <span class="social-icons">
+        <a id="social-icon-like" href="#" class="social-icon-like" title="Like">
+          <span class="fa fa-heart"></span> <span class="num">#{likes}</span>
+        </a>
+        <a id="social-icon-favorite" href="#" class="social-icon-favorite" title="Favorite">
+          <span class="fa fa-star"></span> <span class="num">#{favorites}</span>
+        </a>
+        <a id="social-icon-comment" href="#comment-form" class="social-icon-comment" title="Comment">
+          <span class="fa fa-comment"></span> <span class="num">#{comments}</span>
+        </a>
+      </span>
+      """
+    end
+
+    test "parses the header social counts" do
+      assert DecklistPages.parse_detail(detail_block(0, 0, 0)) ==
+               {:ok, %{like_count: 0, favorite_count: 0, comment_count: 0}}
+
+      assert DecklistPages.parse_detail("<html>" <> detail_block(12, 3, 7)) ==
+               {:ok, %{like_count: 12, favorite_count: 3, comment_count: 7}}
+    end
+
+    test "errors when the social block is missing" do
+      assert DecklistPages.parse_detail("<html></html>") == {:error, :no_social_counts}
+    end
+
+    test "errors (never 0) when a count is missing" do
+      html = String.replace(detail_block(5, 1, 1), "social-icon-like", "renamed")
+      assert DecklistPages.parse_detail(html) == {:error, :no_social_counts}
+    end
+  end
+
+  describe "apply_rows/2 like_changed_at" do
+    test "stamps mcdb_like_changed_at only when the count changes" do
+      hero = create_hero()
+      same = create_mcdb_deck(hero, "70001")
+      changed = create_mcdb_deck(hero, "70002")
+
+      row = fn id, likes ->
+        %{
+          decklist_id: id,
+          like_count: likes,
+          favorite_count: 0,
+          comment_count: 0,
+          user_id: nil,
+          username: nil
+        }
+      end
+
+      DecklistPages.apply_rows([row.("70001", 0), row.("70002", 4)])
+
+      assert Ash.get!(Deck, same.id, authorize?: false).mcdb_like_changed_at == nil
+      assert Ash.get!(Deck, changed.id, authorize?: false).mcdb_like_changed_at != nil
+    end
+  end
+
   describe "apply_rows/2" do
     test "updates matched decks and fills usernames, leaves others untouched" do
       hero = create_hero()
@@ -249,7 +308,7 @@ defmodule Sanctum.MarvelCdb.DecklistPagesTest do
         # A no-author row must not blank an existing username or crash.
         %{
           decklist_id: "67147",
-          like_count: 0,
+          like_count: 3,
           favorite_count: 0,
           comment_count: 0,
           user_id: nil,
@@ -267,7 +326,7 @@ defmodule Sanctum.MarvelCdb.DecklistPagesTest do
       assert DateTime.compare(matched_atom.updated_at, aged_at) == :eq
 
       matched_bluer = Ash.get!(Deck, matched_bluer.id, authorize?: false)
-      assert matched_bluer.mcdb_like_count == 0
+      assert matched_bluer.mcdb_like_count == 3
       assert DateTime.compare(matched_bluer.updated_at, aged_at) == :eq
 
       other_space = Ash.get!(Deck, other_space.id, authorize?: false)

@@ -237,6 +237,68 @@ defmodule Sanctum.Decks.DeckTest do
     refute Enum.any?(reloaded_ids, &(&1 in card_ids))
   end
 
+  test "re-importing a decklist leaves its refresh schedule intact" do
+    hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "01004", set: "sched_hero"})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: hero_card.id,
+        name: "Sched Hero",
+        type: :hero,
+        code: hero_card.code <> "a",
+        side_identifier: "A",
+        is_primary_side: true
+      }
+    )
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{
+        card_id: hero_card.id,
+        name: "Sched Ego",
+        type: :alter_ego,
+        code: hero_card.code <> "b",
+        side_identifier: "B",
+        is_primary_side: false
+      }
+    )
+
+    {:ok, hero} =
+      Sanctum.Heroes.find_or_create_hero(%{
+        hero_name: "Sched Hero",
+        alter_ego_name: "Sched Ego",
+        set: "sched_hero",
+        base_code: hero_card.base_code,
+        card_id: hero_card.id
+      })
+
+    slots = [%{card_id: create(Sanctum.Games.Card).id, quantity: 1}]
+
+    import_deck = fn ->
+      Sanctum.Decks.create_with_cards(%{
+        slots: slots,
+        title: "Sched",
+        mcdb_id: "98765",
+        mcdb_type: :decklist,
+        hero_id: hero.id
+      })
+    end
+
+    assert {:ok, deck} = import_deck.()
+    changed_at = ~U[2026-01-01 00:00:00Z]
+    next_at = ~U[2026-06-01 00:00:00Z]
+
+    Sanctum.Repo.update_all(
+      from(d in Deck, where: d.id == ^deck.id),
+      set: [mcdb_like_changed_at: changed_at, mcdb_social_next_check_at: next_at]
+    )
+
+    assert {:ok, _} = import_deck.()
+
+    reloaded = Ash.get!(Deck, deck.id, authorize?: false)
+    assert reloaded.mcdb_like_changed_at == changed_at
+    assert reloaded.mcdb_social_next_check_at == next_at
+  end
+
   describe "favorite_count / popularity" do
     defp valid_deck!(base_code) do
       hero_card =
