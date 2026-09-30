@@ -1,3 +1,12 @@
+# [1.92.0](https://github.com/jwstover/sanctum/compare/v1.91.1...v1.92.0) (2026-09-30)
+
+
+### Features
+
+* **marvelcdb:** add OAuth2 account linking ([e2746d5](https://github.com/jwstover/sanctum/commit/e2746d584f2c829c351062f365b12a2eb94b380b))
+
+
+
 ## [1.91.1](https://github.com/jwstover/sanctum/compare/v1.91.0...v1.91.1) (2026-09-30)
 
 
@@ -48,15 +57,6 @@
 
 * **decks:** credit MarvelCDB authors on deck tiles and deck page ([31440e8](https://github.com/jwstover/sanctum/commit/31440e8d1c840dfcf4256ea6ac5bed2f552e514e))
 * **search:** add author: deck search field ([3419030](https://github.com/jwstover/sanctum/commit/3419030559c80bb13ada1be0bfb783d0571ccf4b))
-
-
-
-# [1.88.0](https://github.com/jwstover/sanctum/compare/v1.87.0...v1.88.0) (2026-09-24)
-
-
-### Features
-
-* **decks:** combined popularity count and Popular sort ([0aa18a1](https://github.com/jwstover/sanctum/commit/0aa18a173cdb4d94b721a417e7bb0e333a262ac4))
 
 
 
