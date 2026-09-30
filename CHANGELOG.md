@@ -1,3 +1,12 @@
+## [1.91.1](https://github.com/jwstover/sanctum/compare/v1.91.0...v1.91.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **deps:** prepare for ash 3.33 / ash_authentication 4.15 ([0f0762d](https://github.com/jwstover/sanctum/commit/0f0762d163023ace3998dd657550e6c9ff7e612b)), closes [#399](https://github.com/jwstover/sanctum/issues/399)
+
+
+
 # [1.91.0](https://github.com/jwstover/sanctum/compare/v1.90.0...v1.91.0) (2026-09-30)
 
 
@@ -48,15 +57,6 @@
 ### Features
 
 * **decks:** combined popularity count and Popular sort ([0aa18a1](https://github.com/jwstover/sanctum/commit/0aa18a173cdb4d94b721a417e7bb0e333a262ac4))
-
-
-
-# [1.87.0](https://github.com/jwstover/sanctum/compare/v1.86.0...v1.87.0) (2026-09-24)
-
-
-### Features
-
-* **decks:** scrape MarvelCDB list pages for authors and like counts ([b7a569a](https://github.com/jwstover/sanctum/commit/b7a569a32404c648f60bf635bfc6ec0eb062668c))
 
 
 
