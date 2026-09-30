@@ -7,6 +7,8 @@ alias Sanctum.MarvelCdb
 # `mix sanctum.sync_cards` to load everything and point images at the bucket.
 # Official player-card aspects (data-driven lookup; idempotent).
 Sanctum.Release.seed_aspects()
+# Official set kinds (data-driven lookup; idempotent).
+Sanctum.Release.seed_set_kinds()
 
 :ok = MarvelCdb.sync_packs()
 :ok = MarvelCdb.load_pack("core")
