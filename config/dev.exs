@@ -3,6 +3,7 @@ config :ash, policies: [show_policy_breakdowns?: true]
 
 config :sanctum, google_redirect_uri: "http://localhost:4150/auth/user/google/callback"
 config :sanctum, discord_redirect_uri: "http://localhost:4150/auth/user/discord/callback"
+config :sanctum, marvelcdb_redirect_uri: "http://localhost:4150/marvelcdb/callback"
 
 # Configure your database
 config :sanctum, Sanctum.Repo,

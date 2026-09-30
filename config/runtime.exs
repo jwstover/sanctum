@@ -24,7 +24,17 @@ config :sanctum,
   google_client_id: System.get_env("GOOGLE_CLIENT_ID"),
   google_client_secret: System.get_env("GOOGLE_CLIENT_SECRET"),
   discord_client_id: System.get_env("DISCORD_CLIENT_ID"),
-  discord_client_secret: System.get_env("DISCORD_CLIENT_SECRET")
+  discord_client_secret: System.get_env("DISCORD_CLIENT_SECRET"),
+  marvelcdb_client_id: System.get_env("MARVELCDB_CLIENT_ID"),
+  marvelcdb_client_secret: System.get_env("MARVELCDB_CLIENT_SECRET")
+
+# MarvelCDB pins each client to one redirect URI at provisioning time (the site
+# admin issues credentials by hand), so this has to match what was registered
+# exactly. The per-env defaults live in dev.exs/prod.exs; override here when the
+# registered URI differs from what we'd guess.
+if marvelcdb_redirect_uri = System.get_env("MARVELCDB_REDIRECT_URI") do
+  config :sanctum, marvelcdb_redirect_uri: marvelcdb_redirect_uri
+end
 
 # Card-image field extraction (homebrew "Fill from image"). Skipped in test —
 # the suite stubs the HTTP layer via :req_options and must not pick up a real
