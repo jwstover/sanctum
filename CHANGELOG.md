@@ -1,3 +1,18 @@
+# [1.91.0](https://github.com/jwstover/sanctum/compare/v1.90.0...v1.91.0) (2026-09-30)
+
+
+### Bug Fixes
+
+* **decks:** let likes_max_pages: 0 disable the MCDB likes walk ([ba94bb4](https://github.com/jwstover/sanctum/commit/ba94bb446ea01547d9a0bb986e7572329eb545fa))
+
+
+### Features
+
+* **decks:** adaptive per-decklist MCDB like-count refresh scheduler ([6e934c3](https://github.com/jwstover/sanctum/commit/6e934c3eede0b2a9f5039031e786be563772bf39))
+* **decks:** daily MarvelCDB social refresh cron (top liked + newest pages) ([e4c2c14](https://github.com/jwstover/sanctum/commit/e4c2c141ea22127e65a48054e77e85b77709c702)), closes [#74](https://github.com/jwstover/sanctum/issues/74) [#74](https://github.com/jwstover/sanctum/issues/74) [#74](https://github.com/jwstover/sanctum/issues/74)
+
+
+
 # [1.90.0](https://github.com/jwstover/sanctum/compare/v1.89.0...v1.90.0) (2026-09-25)
 
 
@@ -42,15 +57,6 @@
 ### Features
 
 * **decks:** scrape MarvelCDB list pages for authors and like counts ([b7a569a](https://github.com/jwstover/sanctum/commit/b7a569a32404c648f60bf635bfc6ec0eb062668c))
-
-
-
-# [1.86.0](https://github.com/jwstover/sanctum/compare/v1.85.0...v1.86.0) (2026-09-18)
-
-
-### Features
-
-* **tts:** bag-name resolution layer for Hitch's TTS mod ([711a4e8](https://github.com/jwstover/sanctum/commit/711a4e8f9539bbdcb4982bb9c2a7d4bbb2d56f2d))
 
 
 
