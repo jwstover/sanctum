@@ -28,6 +28,12 @@ defmodule Sanctum.Decks.McdbSocialRefresh do
   small and configurable; an all-zero page still stops the walk early as a
   secondary exit.
 
+  The likes walk is now only a cheap refresher for the hot set (the top ~600
+  decks change often; 50 list pages beat ~200 per-deck fetches). Tail
+  coverage — and the guarantee that no decklist is permanently excluded —
+  comes from `Sanctum.Decks.McdbDeckRefresh`. Set `likes_max_pages: 0` to
+  disable this walk once the per-deck scheduler has cycled.
+
   Yields to the one-time backfill sweep (`Sanctum.Decks.McdbScrape`): if it's
   still running, `run/1` skips entirely rather than compete with it for the
   shared `:mcdb_scrape` queue slot and MarvelCDB's attention.
@@ -125,7 +131,7 @@ defmodule Sanctum.Decks.McdbSocialRefresh do
     stop_on_all_zero = Keyword.fetch!(opts, :stop_on_all_zero)
     acc = %{pages: 0, rows: 0, matched: 0, updated_users: 0}
 
-    1..max_pages
+    1..max_pages//1
     |> Enum.reduce_while(acc, fn page, acc ->
       if page > 1, do: pace_fun.()
 

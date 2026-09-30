@@ -239,6 +239,25 @@ defmodule Sanctum.Decks.McdbSocialRefreshTest do
     end
   end
 
+  describe "run/1 — likes_max_pages: 0" do
+    test "makes no likes requests, still walks dates, and doesn't raise" do
+      stub_pages(%{{:date, 1} => {[row("101", 1)], 1}})
+
+      assert {:ok, summary} =
+               McdbSocialRefresh.run(
+                 likes_max_pages: 0,
+                 date_pages: 1,
+                 pace_fun: fn -> :ok end,
+                 backfill_running_fun: not_running()
+               )
+
+      assert summary.likes.pages == 0
+      assert summary.date.pages == 1
+      assert_received {:mcdb_request, :date, 1}
+      refute_received {:mcdb_request, :likes, _}
+    end
+  end
+
   describe "backfill_running?/0" do
     defp insert_backfill_job!(state, attrs \\ %{}) do
       job_attrs =
