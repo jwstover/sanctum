@@ -40,6 +40,11 @@ defmodule Sanctum.Decks.Deck do
               "(COALESCE(mcdb_date_update, updated_at)) DESC"
             ],
             name: "decks_popularity_index"
+
+      # Backs McdbDeckRefresh's oldest-due-first selection.
+      index [:mcdb_social_next_check_at],
+        where: "mcdb_social_next_check_at IS NOT NULL",
+        name: "decks_mcdb_social_next_check_at_index"
     end
   end
 
@@ -188,8 +193,15 @@ defmodule Sanctum.Decks.Deck do
     end
 
     update :set_mcdb_social do
-      description "Records MarvelCDB social data (like count) scraped from the decklist list pages."
+      description """
+      Records MarvelCDB social data (like count) scraped from the decklist list
+      pages or a single decklist detail page. Stamps `mcdb_like_changed_at`
+      when the count changes, and optionally sets the next scheduled check
+      (`next_check_at`, see Sanctum.Decks.McdbDeckRefresh).
+      """
+
       accept [:mcdb_like_count, :mcdb_social_synced_at]
+      argument :next_check_at, :utc_datetime, allow_nil?: true
       require_atomic? false
       skip_global_validations? true
 
@@ -197,6 +209,27 @@ defmodule Sanctum.Decks.Deck do
       # updated_at untouched.
       change fn changeset, _context ->
         Ash.Changeset.atomic_update(changeset, :updated_at, Ash.Expr.ref(:updated_at))
+      end
+
+      change fn changeset, _context ->
+        changeset =
+          if Ash.Changeset.changing_attribute?(changeset, :mcdb_like_count) do
+            changed_at =
+              Ash.Changeset.get_attribute(changeset, :mcdb_social_synced_at) ||
+                DateTime.truncate(DateTime.utc_now(), :second)
+
+            Ash.Changeset.force_change_attribute(changeset, :mcdb_like_changed_at, changed_at)
+          else
+            changeset
+          end
+
+        case Ash.Changeset.get_argument(changeset, :next_check_at) do
+          nil ->
+            changeset
+
+          next ->
+            Ash.Changeset.force_change_attribute(changeset, :mcdb_social_next_check_at, next)
+        end
       end
     end
 
@@ -374,6 +407,12 @@ defmodule Sanctum.Decks.Deck do
     # DeckFavorite's custom_statements).
     attribute :mcdb_like_count, :integer, public?: true, allow_nil?: false, default: 0
     attribute :mcdb_social_synced_at, :utc_datetime, public?: true
+
+    # Adaptive per-decklist refresh schedule (Sanctum.Decks.McdbDeckRefresh).
+    # writable?: false for the same reason as favorite_count: create_with_cards
+    # accepts [:*], and a MarvelCDB re-import upsert must not reset the schedule.
+    attribute :mcdb_like_changed_at, :utc_datetime, public?: false, writable?: false
+    attribute :mcdb_social_next_check_at, :utc_datetime, public?: false, writable?: false
 
     # The public total of Sanctum favorites (DeckFavorite rows) for this deck.
     # Kept in sync by a trigger on `deck_favorites` (see DeckFavorite's

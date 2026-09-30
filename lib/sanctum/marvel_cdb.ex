@@ -480,6 +480,19 @@ defmodule Sanctum.MarvelCdb do
     |> handle_response()
   end
 
+  @doc "Fetches one decklist's HTML detail page (`/decklist/view/{id}`), for its social counts."
+  @spec get_decklist_detail(String.t()) :: {:ok, String.t()} | {:error, term()}
+  def get_decklist_detail(mcdb_id) when is_binary(mcdb_id) do
+    "#{@site_url}/decklist/view/#{mcdb_id}"
+    |> http_get(:decklist_detail,
+      headers: [user_agent: user_agent()],
+      retry: :transient,
+      max_retries: 2,
+      receive_timeout: @decklist_receive_timeout_ms
+    )
+    |> handle_response()
+  end
+
   @doc """
   The User-Agent Sanctum sends on MarvelCDB requests that scrape site (not
   API) pages, identifying the app and a contact address per MarvelCDB's
