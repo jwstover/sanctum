@@ -57,7 +57,9 @@ defmodule Sanctum.Decks.Validations.ValidateHero do
   # heroes (same card) and split-identity heroes (a sibling card) alike.
   defp set_has_alter_ego?(set) do
     Sanctum.Games.Card
-    |> Ash.Query.filter(set == ^set and exists(card_sides, type == :alter_ego))
+    |> Ash.Query.filter(
+      origin == :official and set == ^set and exists(card_sides, type == :alter_ego)
+    )
     |> Ash.Query.limit(1)
     |> Ash.read!(authorize?: false)
     |> Enum.any?()

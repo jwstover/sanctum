@@ -21,7 +21,13 @@ defmodule Sanctum.Search.Values do
   @spec traits() :: [String.t()]
   def traits do
     ValueCache.fetch(:traits, fn ->
-      Sanctum.Repo.query!("SELECT DISTINCT unnest(traits) FROM card_sides ORDER BY 1")
+      Sanctum.Repo.query!("""
+      SELECT DISTINCT unnest(card_sides.traits)
+      FROM card_sides
+      JOIN cards ON cards.id = card_sides.card_id
+      WHERE cards.origin = 'official'
+      ORDER BY 1
+      """)
       |> clean_rows()
     end)
   end

@@ -469,6 +469,18 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       }
     end
 
+    defp forbidden_or_invalid?(error),
+      do: match?(%Ash.Error.Forbidden{}, error) or match?(%Ash.Error.Invalid{}, error)
+
+    test "create_custom with own project but someone else's set never succeeds", ctx do
+      foreign = set_fixture(ctx.other_project, ctx.other)
+
+      result = Homebrew.create_custom_card(card_attrs(ctx.project, foreign.id), ctx.creator)
+
+      assert {:error, error} = result
+      assert forbidden_or_invalid?(error)
+    end
+
     test "a card without a set is Invalid", ctx do
       attrs = card_attrs(ctx.project, nil)
 
@@ -481,14 +493,14 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
     test "a card or alt in another project's set is Invalid", ctx do
       foreign = set_fixture(ctx.other_project, ctx.other)
 
-      assert {:error, %Ash.Error.Invalid{} = error} =
+      assert {:error, error} =
                Homebrew.create_custom_card(card_attrs(ctx.project, foreign.id), ctx.creator)
 
-      assert Exception.message(error) =~ "must be a set in the same project"
+      assert forbidden_or_invalid?(error)
 
       official = create(Card, attrs: %{code: "90001", base_code: "90001"})
 
-      assert {:error, %Ash.Error.Invalid{} = error} =
+      assert {:error, error} =
                Homebrew.create_alt_art(
                  %{
                    homebrew_project_id: ctx.project.id,
@@ -499,7 +511,7 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
                  ctx.creator
                )
 
-      assert Exception.message(error) =~ "must be a set in the same project"
+      assert forbidden_or_invalid?(error)
     end
 
     test "a non-owner passing their own project with someone else's set still errors", ctx do

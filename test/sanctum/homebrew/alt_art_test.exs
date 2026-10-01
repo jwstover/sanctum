@@ -300,7 +300,10 @@ defmodule Sanctum.Homebrew.AltArtTest do
 
     test "published-project custom alts are visible to everyone", ctx do
       {_source, alt} = declare!(ctx)
-      Homebrew.set_project_visibility!(ctx.project, :published, actor: ctx.creator)
+
+      ctx.project
+      |> Homebrew.ensure_project_set(ctx.creator)
+      |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
 
       for actor <- [ctx.other, nil] do
         alts =

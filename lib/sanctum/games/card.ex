@@ -236,18 +236,18 @@ defmodule Sanctum.Games.Card do
     # WRITES; any read using it must carry an explicit origin filter.
     policy action_type(:read) do
       authorize_if expr(origin == :official)
-      authorize_if expr(homebrew_project.visibility == :published)
-      authorize_if expr(homebrew_project.creator_id == ^actor(:id))
+      authorize_if expr(homebrew_set.visibility == :published)
+      authorize_if expr(homebrew_set.creator_id == ^actor(:id))
     end
 
     policy action(:create_custom) do
-      authorize_if Sanctum.Homebrew.Checks.ActorOwnsProject
+      authorize_if Sanctum.Homebrew.Checks.ActorOwnsSet
     end
 
     # Filter checks: someone else's custom (or any official card) is simply
     # not found through these actions.
     policy action([:update_custom, :destroy_custom, :pair_custom, :unpair_custom]) do
-      authorize_if expr(origin == :custom and homebrew_project.creator_id == ^actor(:id))
+      authorize_if expr(origin == :custom and homebrew_set.creator_id == ^actor(:id))
     end
 
     # Official catalog mutations are admin-only; system writes (sync, deck
