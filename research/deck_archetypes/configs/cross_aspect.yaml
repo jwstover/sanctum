@@ -1,0 +1,55 @@
+# Deliberate CROSS-aspect run: one global clustering with aspect identity
+# suppressed, to surface aspect-crossing archetypes — basic-card shells
+# (S.H.I.E.L.D. allies, big basic ally packages) and recurring structural shells
+# — that a within-aspect run can't see. Without the downweight + aspect drop
+# this just rediscovers the aspects (18/20 clusters were ~single-aspect).
+experiment: {name: cross_aspect, seed: 42, snapshot: "snap_test"}
+
+corpus:
+  state: [final]
+  visibility: [published]
+  min_deck_size: 40
+  strip_hero_cards: true
+  partition_by: null              # one global run, not per-aspect
+
+card_filter: {min_deck_count: 3}
+
+representation:
+  distributional: {enabled: true, method: ppmi_svd, dim: 64, pmi_shift_k: 1}
+  aspect_downweight: 0.15         # shrink aspect-card pull toward basic-card structure
+  text: {enabled: false}
+  card_features:
+    enabled: true
+    cost_bucket_edges: [0, 1, 2, 3, 4, 6]
+    include: {cost: true, type: true, traits: true, ownership: true, aspect: false, resource_icons: true, stats: true}
+  card_fusion: {normalize_per_channel: l2, weights: {distributional: 1.0, text: 0.5, card_features: 0.5}}
+
+deck_vector:
+  pooling: {method: weighted_mean, quantity_weight: sqrt, rarity_weight: tfidf}
+  structural:
+    enabled: true
+    normalize: both
+    features:
+      cost_by_type_crosstab: true
+      type_mix: true
+      trait_distribution: true
+      cost_curve: true
+      concentration: {cost_variance: true, cost_gini: true, high_cost_count: true, type_entropy: true}
+      ally_efficiency: {atk_per_cost: true, thw_per_cost: true}
+      resource_profile: true
+      counts: {n_allies: true, n_events: true, n_upgrades_supports: true, n_cheap_0_1: true, n_expensive_4plus: true}
+  channels: {normalize_per_channel: zscore, weights: {embedding: 1.0, structural: 1.0}, final_normalize: l2}
+
+clustering:
+  method: hdbscan
+  reduce: {method: pca, dim: 15}
+  hdbscan: {min_cluster_size: 50, min_samples: 10, metric: euclidean}
+
+evaluation:
+  held_out_prediction: {enabled: true, n_decks: 1000, k: [1, 5, 10, 25]}
+  anchor_retrieval: {enabled: true, anchors_file: anchors/archetypes.yaml, k: 10}
+  intrinsic: {silhouette: true, davies_bouldin: true}
+  projection: {umap_2d: false}
+  interpret: {top_cards_per_cluster: 20, top_card_metric: lift}
+
+output: {dir: runs/cross_aspect, save: [assignments], leaderboard: runs/leaderboard.parquet}
