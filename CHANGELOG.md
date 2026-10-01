@@ -1,3 +1,13 @@
+# [1.95.0](https://github.com/jwstover/sanctum/compare/v1.94.0...v1.95.0) (2026-10-01)
+
+
+### Features
+
+* **api:** public deck-import JSON endpoint for the TTS tile ([990f811](https://github.com/jwstover/sanctum/commit/990f811477eb7dab741b148ecd12707a09978a72)), closes [#99](https://github.com/jwstover/sanctum/issues/99)
+* **api:** rate-limit the :api pipeline ([ae857e1](https://github.com/jwstover/sanctum/commit/ae857e1393f6ff8579e40b899f5f87f5bdec48cf))
+
+
+
 # [1.94.0](https://github.com/jwstover/sanctum/compare/v1.93.0...v1.94.0) (2026-09-30)
 
 
@@ -31,21 +41,6 @@
 ### Bug Fixes
 
 * **deps:** prepare for ash 3.33 / ash_authentication 4.15 ([0f0762d](https://github.com/jwstover/sanctum/commit/0f0762d163023ace3998dd657550e6c9ff7e612b)), closes [#399](https://github.com/jwstover/sanctum/issues/399)
-
-
-
-# [1.91.0](https://github.com/jwstover/sanctum/compare/v1.90.0...v1.91.0) (2026-09-30)
-
-
-### Bug Fixes
-
-* **decks:** let likes_max_pages: 0 disable the MCDB likes walk ([ba94bb4](https://github.com/jwstover/sanctum/commit/ba94bb446ea01547d9a0bb986e7572329eb545fa))
-
-
-### Features
-
-* **decks:** adaptive per-decklist MCDB like-count refresh scheduler ([6e934c3](https://github.com/jwstover/sanctum/commit/6e934c3eede0b2a9f5039031e786be563772bf39))
-* **decks:** daily MarvelCDB social refresh cron (top liked + newest pages) ([e4c2c14](https://github.com/jwstover/sanctum/commit/e4c2c141ea22127e65a48054e77e85b77709c702)), closes [#74](https://github.com/jwstover/sanctum/issues/74) [#74](https://github.com/jwstover/sanctum/issues/74) [#74](https://github.com/jwstover/sanctum/issues/74)
 
 
 
