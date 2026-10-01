@@ -58,18 +58,16 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
     assert html =~ "Test Card"
   end
 
-  test "the Upload button opens the type chooser (Cards / Alt art)", ctx do
+  # Assumes no S3 env vars (as in CI). The configured chooser is covered by
+  # ShowUploadsTest, which sets them and so can't run async.
+  test "without image storage the chooser shows the unconfigured notice", ctx do
     {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
-
-    assert has_element?(lv, "button[phx-click='open_chooser']")
 
     html = lv |> element("button[phx-click='open_chooser']") |> render_click()
 
-    # The chooser is one surface with both upload affordances (labels wrapping
-    # the file inputs); no separate upload pages.
     assert html =~ "What are you adding?"
-    assert html =~ "Cards"
-    assert html =~ "Alt art"
+    assert html =~ "Image storage is not configured"
+    refute has_element?(lv, "#homebrew-uploads")
   end
 
   describe "alt art management" do
