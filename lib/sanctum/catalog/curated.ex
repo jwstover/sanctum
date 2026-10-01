@@ -93,6 +93,8 @@ defmodule Sanctum.Catalog.Curated do
     "hercules" => {:hero_pack, 10},
     # Wave 11 — Fear No Evil
     "fne" => {:campaign_expansion, 11},
+    "jj" => {:hero_pack, 11},
+    "luke_cage" => {:hero_pack, 11},
     # No wave — standalone organized-play modular set
     "ron" => {:promo, nil}
   }
