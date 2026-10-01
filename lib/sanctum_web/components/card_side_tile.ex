@@ -32,6 +32,8 @@ defmodule SanctumWeb.Components.CardSideTile do
   slot :actions,
     doc: "management controls (and optional caption) anchored to the tile's bottom edge"
 
+  slot :art_overlay, doc: "controls anchored over the art (e.g. an admin upload button)"
+
   def card_side_tile(assigns) do
     assigns = assign(assigns, :lg?, assigns.size == "lg")
 
@@ -46,7 +48,7 @@ defmodule SanctumWeb.Components.CardSideTile do
       <.maybe_link
         navigate={@navigate}
         class={[
-          "flex-none self-center border-2 border-neutral shadow-comic-sm sm:self-start",
+          "relative flex-none self-center border-2 border-neutral shadow-comic-sm sm:self-start",
           art_frame_class(@side.is_landscape, @size)
         ]}
       >
@@ -61,6 +63,7 @@ defmodule SanctumWeb.Components.CardSideTile do
           size={@size}
           show_cost={false}
         />
+        {render_slot(@art_overlay)}
       </.maybe_link>
 
       <div class="flex min-w-0 flex-1 flex-col">
