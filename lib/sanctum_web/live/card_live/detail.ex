@@ -11,7 +11,9 @@ defmodule SanctumWeb.CardLive.Detail do
 
   import SanctumWeb.Components.CardSideTile
 
+  alias Sanctum.CardImages
   alias Sanctum.Catalog.ProductType
+  alias SanctumWeb.CardImageUpload
 
   @impl true
   def render(assigns) do
@@ -99,7 +101,28 @@ defmodule SanctumWeb.CardLive.Detail do
              last tile grows so the column matches the panel when it's taller -->
           <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
             <div class="flex min-w-0 flex-col gap-[18px] lg:[&>*:last-child]:flex-1">
-              <.card_side_tile :for={side <- @sides} id={"side-#{side.id}"} side={side} size="lg" />
+              <.card_side_tile :for={side <- @sides} id={"side-#{side.id}"} side={side} size="lg">
+                <:art_overlay :if={@uploads_enabled?}>
+                  <form
+                    id={"image-upload-#{side.id}"}
+                    phx-change="validate_image"
+                    class="absolute bottom-2 right-2"
+                  >
+                    <label
+                      class="grid size-9 cursor-pointer place-items-center border-2 border-neutral bg-black text-base-content/80 hover:text-primary"
+                      title="Replace image"
+                    >
+                      <.live_file_input upload={@uploads["card_image_#{side.id}"]} class="sr-only" />
+                      <.icon
+                        name={
+                          (@uploading_side == side.id && "hero-arrow-path") || "hero-arrow-up-tray"
+                        }
+                        class={"size-5" <> ((@uploading_side == side.id && " animate-spin") || "")}
+                      />
+                    </label>
+                  </form>
+                </:art_overlay>
+              </.card_side_tile>
             </div>
 
             <!-- metadata side panel -->
@@ -271,6 +294,8 @@ defmodule SanctumWeb.CardLive.Detail do
       |> assign(:next, nil)
       |> assign(:owned, nil)
       |> assign(:pack_owned, false)
+      |> assign(:uploading_side, nil)
+      |> assign(:uploads_enabled?, false)
 
     actor = socket.assigns[:current_user]
 
@@ -288,6 +313,7 @@ defmodule SanctumWeb.CardLive.Detail do
   def handle_async(:load_card, {:ok, {:ok, data}}, socket) do
     {:noreply,
      socket
+     |> configure_image_uploads(data.sides)
      |> assign(:page_title, data.title)
      |> assign(:title, data.title)
      |> assign(:card, data.card)
@@ -338,7 +364,95 @@ defmodule SanctumWeb.CardLive.Detail do
      |> assign(:owned, card.owned)}
   end
 
+  def handle_event("validate_image", _params, socket), do: {:noreply, socket}
+
   def handle_event("toggle_" <> _, _params, socket), do: {:noreply, socket}
+
+  # One upload config per face (each config renders exactly one file input).
+  # Only admins get configs: `put_object` sits behind no Ash policy, so without
+  # a config a non-admin has nothing to upload against.
+  defp configure_image_uploads(socket, sides) do
+    if admin?(socket) do
+      sides
+      |> Enum.reduce(socket, fn side, acc ->
+        allow_upload(
+          acc,
+          "card_image_#{side.id}",
+          CardImageUpload.upload_opts() ++
+            [auto_upload: true, progress: &handle_image_progress/3]
+        )
+      end)
+      |> assign(:uploads_enabled?, true)
+    else
+      socket
+    end
+  end
+
+  defp admin?(socket) do
+    user = socket.assigns[:current_user]
+    !!(user && user.admin)
+  end
+
+  defp handle_image_progress("card_image_" <> side_id = name, entry, socket) do
+    cond do
+      not admin?(socket) ->
+        {:noreply, cancel_upload(socket, name, entry.ref)}
+
+      upload_errors(socket.assigns.uploads[name], entry) != [] ->
+        message =
+          socket.assigns.uploads[name]
+          |> upload_errors(entry)
+          |> List.first()
+          |> CardImageUpload.error_message()
+
+        {:noreply,
+         socket
+         |> cancel_upload(name, entry.ref)
+         |> assign(:uploading_side, nil)
+         |> put_flash(:error, message)}
+
+      entry.done? ->
+        {:noreply, replace_image(socket, name, side_id)}
+
+      true ->
+        {:noreply, assign(socket, :uploading_side, side_id)}
+    end
+  end
+
+  # Overwrites the face's bucket object with the uploaded bytes (same key, so
+  # the stored URL and future syncs are unaffected). The key comes from the
+  # freshly loaded record — the display map lacks `code`/`object_key`.
+  defp replace_image(socket, name, side_id) do
+    user = socket.assigns.current_user
+    side = Ash.get!(Sanctum.Games.CardSide, side_id, actor: user)
+    key = CardImages.replacement_key(side.image_url, side.code)
+
+    outcome =
+      consume_uploaded_entries(socket, name, fn %{path: path}, _entry ->
+        {:ok, CardImages.store_replacement(path, key)}
+      end)
+
+    case outcome do
+      [:ok] ->
+        url = CardImages.replacement_url(side.image_url, key)
+        if is_nil(side.image_url), do: CardImageUpload.persist_image_url(side.id, url, user)
+        shown = CardImageUpload.versioned_url(url, System.unique_integer([:positive]))
+
+        socket
+        |> assign(:sides, put_side_image(socket.assigns.sides, side.id, shown))
+        |> assign(:uploading_side, nil)
+        |> put_flash(:info, "Image replaced.")
+
+      _ ->
+        socket
+        |> assign(:uploading_side, nil)
+        |> put_flash(:error, "Could not save the image.")
+    end
+  end
+
+  defp put_side_image(sides, side_id, url) do
+    Enum.map(sides, fn s -> if s.id == side_id, do: %{s | image_url: url}, else: s end)
+  end
 
   # Hover copy for the tri-state toggle: removing a pack-derived card records
   # an exclusion rather than touching the pack.
