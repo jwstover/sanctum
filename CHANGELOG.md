@@ -1,3 +1,19 @@
+# [1.96.0](https://github.com/jwstover/sanctum/compare/v1.95.0...v1.96.0) (2026-10-01)
+
+
+### Bug Fixes
+
+* **catalog:** place Jessica Jones and Luke Cage packs in Wave 11 ([6f98cda](https://github.com/jwstover/sanctum/commit/6f98cda0d37986cca34b233a8e6d07dce5e30082))
+
+
+### Features
+
+* **homebrew:** alt-art wizard + one-surface typed uploads ([d2facb3](https://github.com/jwstover/sanctum/commit/d2facb38330df82a366f9623564f4c15f112cee8))
+* **homebrew:** ensure_project_set bridge for uploads ([83e3f2c](https://github.com/jwstover/sanctum/commit/83e3f2c3245c94a13891aabf1811d948b3fd3b84))
+* **homebrew:** point custom cards, alts and aspects at sets ([caade98](https://github.com/jwstover/sanctum/commit/caade9892843b2aff8c9677c188ad5f0aac2f1a3))
+
+
+
 # [1.95.0](https://github.com/jwstover/sanctum/compare/v1.94.0...v1.95.0) (2026-10-01)
 
 
@@ -32,15 +48,6 @@
 ### Features
 
 * **marvelcdb:** add OAuth2 account linking ([e2746d5](https://github.com/jwstover/sanctum/commit/e2746d584f2c829c351062f365b12a2eb94b380b))
-
-
-
-## [1.91.1](https://github.com/jwstover/sanctum/compare/v1.91.0...v1.91.1) (2026-09-30)
-
-
-### Bug Fixes
-
-* **deps:** prepare for ash 3.33 / ash_authentication 4.15 ([0f0762d](https://github.com/jwstover/sanctum/commit/0f0762d163023ace3998dd657550e6c9ff7e612b)), closes [#399](https://github.com/jwstover/sanctum/issues/399)
 
 
 
