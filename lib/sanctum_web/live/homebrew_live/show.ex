@@ -120,9 +120,12 @@ defmodule SanctumWeb.HomebrewLive.Show do
   defp store_card(path, entry, project, user) do
     with {:ok, body} <- File.read(path),
          {:ok, url} <- HomebrewImages.store(body, entry.client_type) do
+      set = Homebrew.ensure_project_set(project, user)
+
       Homebrew.create_custom_card(
         %{
           homebrew_project_id: project.id,
+          homebrew_set_id: set.id,
           card_sides: [%{image_url: url, filename: entry.client_name}]
         },
         user
@@ -195,10 +198,12 @@ defmodule SanctumWeb.HomebrewLive.Show do
 
     with %{} <- pending,
          %{} <- target,
+         set = Homebrew.ensure_project_set(project, user),
          {:ok, _alt} <-
            Homebrew.create_alt_art(
              %{
                homebrew_project_id: project.id,
+               homebrew_set_id: set.id,
                image_url: pending.image_url,
                target_card_id: target.card_id,
                side_identifier: target.side_identifier,

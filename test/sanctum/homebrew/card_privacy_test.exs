@@ -62,6 +62,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       Homebrew.create_custom_card(
         %{
           homebrew_project_id: project.id,
+          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
           card_sides: [%{image_url: "https://img.test/#{filename}", filename: filename}]
         },
         actor

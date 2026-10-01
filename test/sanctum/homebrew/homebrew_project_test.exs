@@ -107,6 +107,7 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
         Homebrew.create_custom_card(
           %{
             homebrew_project_id: ctx.project.id,
+            homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
             card_sides: [%{image_url: "https://img.test/a.png"}]
           },
           ctx.creator

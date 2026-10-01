@@ -22,7 +22,11 @@ defmodule Sanctum.Homebrew.CustomCardTest do
   defp create_card!(project, actor, sides) do
     {:ok, card} =
       Homebrew.create_custom_card(
-        %{homebrew_project_id: project.id, card_sides: sides},
+        %{
+          homebrew_project_id: project.id,
+          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
+          card_sides: sides
+        },
         actor
       )
 
@@ -72,7 +76,11 @@ defmodule Sanctum.Homebrew.CustomCardTest do
     test "a side without an image is rejected", ctx do
       assert {:error, %Ash.Error.Invalid{} = error} =
                Homebrew.create_custom_card(
-                 %{homebrew_project_id: ctx.project.id, card_sides: [%{name: "No Image"}]},
+                 %{
+                   homebrew_project_id: ctx.project.id,
+                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+                   card_sides: [%{name: "No Image"}]
+                 },
                  ctx.creator
                )
 
@@ -84,6 +92,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
                Homebrew.create_custom_card(
                  %{
                    homebrew_project_id: ctx.project.id,
+                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    card_sides: [%{image_url: "https://img.test/a.png"}]
                  },
                  ctx.other
@@ -96,6 +105,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
           Map.merge(
             %{
               homebrew_project_id: ctx.project.id,
+              homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
               card_sides: [%{image_url: "https://img.test/a.png"}]
             },
             forbidden

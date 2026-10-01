@@ -19,6 +19,7 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
       Homebrew.create_custom_card(
         %{
           homebrew_project_id: project.id,
+          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
           card_sides: [
             Map.merge(%{image_url: "https://img.test/a.png", filename: "test-card.png"}, attrs)
           ]

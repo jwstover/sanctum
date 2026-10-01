@@ -40,6 +40,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
       Homebrew.create_custom_card(
         %{
           homebrew_project_id: project.id,
+          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
           card_sides: [%{image_url: "https://img.test/#{filename}", filename: filename}]
         },
         actor
@@ -132,6 +133,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
         Homebrew.create_alt_art(
           %{
             homebrew_project_id: ctx.project.id,
+            homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan-spidey.png",
             target_card_id: ctx.official.id,
             side_identifier: "a",
@@ -156,6 +158,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
         Homebrew.create_alt_art(
           %{
             homebrew_project_id: ctx.project.id,
+            homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan.png",
             target_card_id: ctx.official.id
           },
@@ -172,6 +175,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
                Homebrew.create_alt_art(
                  %{
                    homebrew_project_id: ctx.project.id,
+                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: custom.id
                  },
@@ -186,6 +190,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
                Homebrew.create_alt_art(
                  %{
                    homebrew_project_id: ctx.project.id,
+                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: ctx.official.id
                  },
@@ -198,6 +203,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
                Homebrew.create_alt_art(
                  %{
                    homebrew_project_id: ctx.project.id,
+                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: ctx.official.id
                  },
@@ -210,6 +216,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
         Homebrew.create_alt_art(
           %{
             homebrew_project_id: ctx.project.id,
+            homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan.png",
             target_card_id: ctx.official.id
           },
