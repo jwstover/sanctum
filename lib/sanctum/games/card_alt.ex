@@ -36,6 +36,7 @@ defmodule Sanctum.Games.CardAlt do
       # mirroring cards. Indexed — the read policy joins through the project
       # FK on every alt load.
       reference :homebrew_project, on_delete: :delete, index?: true
+      reference :homebrew_set, on_delete: :delete, index?: true
       reference :creator, on_delete: :delete, index?: true
     end
 
@@ -47,6 +48,10 @@ defmodule Sanctum.Games.CardAlt do
         check:
           "(origin = 'official') = (homebrew_project_id IS NULL) AND " <>
             "(origin = 'official') = (creator_id IS NULL)"
+
+      check_constraint :origin,
+        name: "card_alts_origin_set_consistency",
+        check: "(origin = 'official') = (homebrew_set_id IS NULL)"
     end
   end
 
@@ -96,11 +101,17 @@ defmodule Sanctum.Games.CardAlt do
       # homebrew_project_id + artist are accepted attributes so the
       # ActorOwnsProject policy can resolve the project on create; everything
       # else is set by the change.
-      accept [:homebrew_project_id, :artist]
+      accept [:homebrew_project_id, :homebrew_set_id, :artist]
 
       argument :image_url, :string, allow_nil?: false
       argument :target_card_id, :uuid, allow_nil?: false
       argument :side_identifier, :string, default: "a"
+
+      validate present(:homebrew_set_id) do
+        message "must belong to a set"
+      end
+
+      validate Sanctum.Homebrew.Validations.SetInSameProject, before_action?: true
 
       change Sanctum.Games.Changes.CreateCustomAltArt
     end
@@ -230,6 +241,11 @@ defmodule Sanctum.Games.CardAlt do
     end
 
     belongs_to :homebrew_project, Sanctum.Homebrew.HomebrewProject do
+      public? true
+      allow_nil? true
+    end
+
+    belongs_to :homebrew_set, Sanctum.Homebrew.HomebrewSet do
       public? true
       allow_nil? true
     end

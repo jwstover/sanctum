@@ -229,7 +229,16 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       public? true
     end
 
-    # has_many :cards / :card_alts and the card_count / alt_count aggregates
-    # arrive with the FK re-point (Card/CardAlt.homebrew_set_id, task #3).
+    has_many :cards, Sanctum.Games.Card do
+      destination_attribute :homebrew_set_id
+    end
+
+    has_many :card_alts, Sanctum.Games.CardAlt do
+      destination_attribute :homebrew_set_id
+    end
+
+    has_many :aspects, Sanctum.Games.Aspect do
+      destination_attribute :homebrew_set_id
+    end
   end
 end

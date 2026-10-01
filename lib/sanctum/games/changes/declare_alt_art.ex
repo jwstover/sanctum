@@ -38,6 +38,7 @@ defmodule Sanctum.Games.Changes.DeclareAltArt do
         |> Changeset.force_change_attribute(:card_id, target.id)
         |> Changeset.force_change_attribute(:creator_id, context.actor.id)
         |> Changeset.force_change_attribute(:homebrew_project_id, source.homebrew_project_id)
+        |> Changeset.force_change_attribute(:homebrew_set_id, source.homebrew_set_id)
         |> Changeset.put_context(:declare_source, source)
       else
         {:error, field, message} ->
