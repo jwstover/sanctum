@@ -161,7 +161,9 @@ defmodule SanctumWeb.CardLive.DetailTest do
     end
 
     test "published fan art is visible to everyone", ctx do
-      Sanctum.Homebrew.set_project_visibility!(ctx.project, :published, actor: ctx.creator)
+      ctx.project
+      |> Sanctum.Homebrew.ensure_project_set(ctx.creator)
+      |> Sanctum.Homebrew.set_set_visibility!(:published, actor: ctx.creator)
 
       {:ok, lv, _html} = live(ctx.conn, ~p"/cards/#{ctx.card.id}")
       html = render_async(lv)

@@ -148,8 +148,8 @@ defmodule Sanctum.Games.CardSide do
     # to false wholesale under a nil actor (see Card's read policy).
     policy action_type(:read) do
       authorize_if expr(card.origin == :official)
-      authorize_if expr(card.homebrew_project.visibility == :published)
-      authorize_if expr(card.homebrew_project.creator_id == ^actor(:id))
+      authorize_if expr(card.homebrew_set.visibility == :published)
+      authorize_if expr(card.homebrew_set.creator_id == ^actor(:id))
     end
 
     # Catalog mutations are admin-only; system writes (sync, deck import)

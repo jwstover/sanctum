@@ -28,9 +28,11 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       Homebrew.create_project!(%{name: "Secret Pack", attestation: true}, actor: creator)
 
     published_project =
-      %{name: "Public Pack", attestation: true}
-      |> Homebrew.create_project!(actor: creator)
-      |> Homebrew.set_project_visibility!(:published, actor: creator)
+      Homebrew.create_project!(%{name: "Public Pack", attestation: true}, actor: creator)
+
+    published_project
+    |> Homebrew.ensure_project_set(creator)
+    |> Homebrew.set_set_visibility!(:published, actor: creator)
 
     private_card = custom_card!(private_project, creator, "secret-card.png")
     published_card = custom_card!(published_project, creator, "public-card.png")
@@ -181,6 +183,170 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
 
       refute html =~ "/cards/#{ctx.private_card.id}"
       assert html =~ "Leak Attempt"
+    end
+  end
+
+  describe "set-keyed visibility" do
+    setup ctx do
+      # Published project, private set.
+      pub_project =
+        Homebrew.create_project!(%{name: "Pub Project", attestation: true}, actor: ctx.creator)
+
+      Homebrew.set_project_visibility!(pub_project, :published, actor: ctx.creator)
+      pub_project_card = custom_card!(pub_project, ctx.creator, "pubproj.png")
+
+      # Private project, published set.
+      priv_project =
+        Homebrew.create_project!(%{name: "Priv Project", attestation: true}, actor: ctx.creator)
+
+      priv_set = Homebrew.ensure_project_set(priv_project, ctx.creator)
+      priv_project_card = custom_card!(priv_project, ctx.creator, "privproj.png")
+      Homebrew.set_set_visibility!(priv_set, :published, actor: ctx.creator)
+
+      %{pub_project_card: pub_project_card, priv_project_card: priv_project_card}
+    end
+
+    test "published project with a private set stays hidden", ctx do
+      card = ctx.pub_project_card
+      side = hd(card.card_sides)
+
+      for actor <- [ctx.other, nil] do
+        {ids, _} = browse_ids(actor)
+        refute card.id in ids
+        assert {:error, _} = Ash.get(Card, card.id, actor: actor)
+        assert {:error, _} = Ash.get(CardSide, side.id, actor: actor)
+        assert [] = Games.list_card_sides_by_codes!([side.code], actor: actor)
+      end
+
+      assert {:ok, _} = Ash.get(Card, card.id, actor: ctx.creator)
+    end
+
+    test "private project with a published set is visible to nil", ctx do
+      card = ctx.priv_project_card
+      side = hd(card.card_sides)
+
+      for actor <- [ctx.other, nil] do
+        {ids, _} = browse_ids(actor)
+        assert card.id in ids
+        assert {:ok, _} = Ash.get(Card, card.id, actor: actor)
+        assert [_] = Games.list_card_sides_by_codes!([side.code], actor: actor)
+      end
+
+      # by-set read, nil actor
+      card
+      |> Ash.Changeset.for_update(:update, %{set: "set-keyed-bait"})
+      |> Ash.update!(authorize?: false)
+
+      assert [_] = Games.get_cards_by_set!("set-keyed-bait")
+    end
+
+    test "custom alts follow the set", ctx do
+      official = create(Card, attrs: %{code: "91001", base_code: "91001"})
+      create(CardSide, attrs: %{card_id: official.id, code: "91001a", side_identifier: "a"})
+
+      {:ok, alt} =
+        Homebrew.declare_alt_art(ctx.private_card.id, official.id, [], ctx.creator)
+
+      alt_ids = fn actor ->
+        Card
+        |> Ash.get!(official.id, actor: actor, load: [:alts])
+        |> Map.fetch!(:alts)
+        |> Enum.map(& &1.id)
+      end
+
+      refute alt.id in alt_ids.(nil)
+      refute alt.id in alt_ids.(ctx.other)
+      assert alt.id in alt_ids.(ctx.creator)
+
+      Homebrew.set_set_visibility!(
+        Ash.get!(Sanctum.Homebrew.HomebrewSet, alt.homebrew_set_id, authorize?: false),
+        :published,
+        actor: ctx.creator
+      )
+
+      assert alt.id in alt_ids.(nil)
+      assert alt.id in alt_ids.(ctx.other)
+    end
+
+    test "custom aspects follow the set", ctx do
+      set =
+        Sanctum.Homebrew.HomebrewSet
+        |> Ash.get!(ctx.private_card.homebrew_set_id, authorize?: false)
+
+      aspect =
+        Ash.create!(
+          Sanctum.Games.Aspect,
+          %{
+            key: "custom_#{System.unique_integer([:positive])}",
+            label: "Custom",
+            color: "#123456",
+            origin: :custom,
+            homebrew_project_id: set.homebrew_project_id,
+            homebrew_set_id: set.id
+          },
+          authorize?: false
+        )
+
+      ids = fn actor -> actor |> then(&Games.list_aspects!(actor: &1)) |> Enum.map(& &1.key) end
+
+      refute aspect.key in ids.(ctx.other)
+      refute aspect.key in ids.(nil)
+      assert aspect.key in ids.(ctx.creator)
+
+      Homebrew.set_set_visibility!(set, :published, actor: ctx.creator)
+      assert aspect.key in ids.(nil)
+    end
+
+    test "decks hide private custom cards from other viewers", ctx do
+      deck_owner = Sanctum.AccountsFixtures.user_fixture()
+      hero_card = create(Card, attrs: %{code: "91100", base_code: "91100", set: "dk_hero"})
+
+      create(CardSide, attrs: %{card_id: hero_card.id, code: "91100a", side_identifier: "A"})
+
+      create(CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          code: "91100b",
+          side_identifier: "B",
+          type: :alter_ego,
+          is_primary_side: false
+        }
+      )
+
+      {:ok, hero} =
+        Sanctum.Heroes.find_or_create_hero(%{
+          hero_name: "Deck Hero",
+          alter_ego_name: "Deck Ego",
+          set: "dk_hero",
+          base_code: "91100",
+          card_id: hero_card.id
+        })
+
+      deck =
+        Sanctum.Decks.Deck
+        |> Ash.Changeset.for_create(:create, %{
+          title: "Leaky deck",
+          hero_id: hero.id,
+          visibility: :published,
+          owner_id: deck_owner.id
+        })
+        |> Ash.create!(authorize?: false)
+
+      Ash.create!(
+        Sanctum.Decks.DeckCard,
+        %{deck_id: deck.id, card_id: ctx.private_card.id, quantity: 1},
+        authorize?: false
+      )
+
+      for actor <- [ctx.other, nil] do
+        deck =
+          Sanctum.Decks.get_deck!(deck.id,
+            actor: actor,
+            load: [deck_cards: [card: :primary_side]]
+          )
+
+        refute Enum.any?(deck.deck_cards, &(&1.card && &1.card.id == ctx.private_card.id))
+      end
     end
   end
 end

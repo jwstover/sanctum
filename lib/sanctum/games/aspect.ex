@@ -100,11 +100,13 @@ defmodule Sanctum.Games.Aspect do
       authorize_if always()
     end
 
-    # Phase 1: only official rows exist, so reads are open. When custom
-    # (project-scoped) aspects land, this gains published-or-own filter checks
-    # mirroring Card's read policy.
+    # Official aspects are open; custom aspects follow their set's visibility
+    # (mirrors Card's read policy). Separate checks on purpose: an expr
+    # referencing ^actor(:id) collapses to false wholesale under a nil actor.
     policy action_type(:read) do
-      authorize_if always()
+      authorize_if expr(origin == :official)
+      authorize_if expr(homebrew_set.visibility == :published)
+      authorize_if expr(homebrew_set.creator_id == ^actor(:id))
     end
 
     policy action_type([:create, :update, :destroy]) do
