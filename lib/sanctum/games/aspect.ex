@@ -51,6 +51,14 @@ defmodule Sanctum.Games.Aspect do
     references do
       # A deleted homebrew project takes its custom aspects with it.
       reference :homebrew_project, on_delete: :delete, index?: true
+      reference :homebrew_set, on_delete: :delete, index?: true
+    end
+
+    check_constraints do
+      # An official aspect never belongs to a set; a custom one always does.
+      check_constraint :origin,
+        name: "aspects_origin_set_consistency",
+        check: "(origin = 'official') = (homebrew_set_id IS NULL)"
     end
   end
 
@@ -59,7 +67,26 @@ defmodule Sanctum.Games.Aspect do
 
     create :create do
       primary? true
-      accept [:key, :label, :color, :sort_order, :origin, :deck_selectable, :homebrew_project_id]
+
+      accept [
+        :key,
+        :label,
+        :color,
+        :sort_order,
+        :origin,
+        :deck_selectable,
+        :homebrew_project_id,
+        :homebrew_set_id
+      ]
+
+      validate present(:homebrew_set_id) do
+        where attribute_equals(:origin, :custom)
+        message "must belong to a set"
+      end
+
+      validate Sanctum.Homebrew.Validations.SetInSameProject,
+        where: [attribute_equals(:origin, :custom)],
+        before_action?: true
     end
 
     update :update do
@@ -108,6 +135,11 @@ defmodule Sanctum.Games.Aspect do
   relationships do
     # Set for custom (project-scoped) aspects only; nil for the official five.
     belongs_to :homebrew_project, Sanctum.Homebrew.HomebrewProject do
+      public? true
+      allow_nil? true
+    end
+
+    belongs_to :homebrew_set, Sanctum.Homebrew.HomebrewSet do
       public? true
       allow_nil? true
     end

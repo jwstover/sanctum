@@ -36,6 +36,7 @@ defmodule Sanctum.Games.CardAlt do
       # mirroring cards. Indexed — the read policy joins through the project
       # FK on every alt load.
       reference :homebrew_project, on_delete: :delete, index?: true
+      reference :homebrew_set, on_delete: :delete, index?: true
       reference :creator, on_delete: :delete, index?: true
     end
 
@@ -47,6 +48,10 @@ defmodule Sanctum.Games.CardAlt do
         check:
           "(origin = 'official') = (homebrew_project_id IS NULL) AND " <>
             "(origin = 'official') = (creator_id IS NULL)"
+
+      check_constraint :origin,
+        name: "card_alts_origin_set_consistency",
+        check: "(origin = 'official') = (homebrew_set_id IS NULL)"
     end
   end
 
@@ -88,6 +93,28 @@ defmodule Sanctum.Games.CardAlt do
     # -- Homebrew (custom) alt art ------------------------------------------
     # User-scoped through policies — never the authorize?: false system-write
     # paths used by catalog sync.
+
+    create :create_custom do
+      description "Creates custom alt art for an official card directly from an " <>
+                    "uploaded image (no source card to convert)."
+
+      # homebrew_project_id + artist are accepted attributes so the
+      # ActorOwnsProject policy can resolve the project on create; everything
+      # else is set by the change.
+      accept [:homebrew_project_id, :homebrew_set_id, :artist]
+
+      argument :image_url, :string, allow_nil?: false
+      argument :target_card_id, :uuid, allow_nil?: false
+      argument :side_identifier, :string, default: "a"
+
+      validate present(:homebrew_set_id) do
+        message "must belong to a set"
+      end
+
+      validate Sanctum.Homebrew.Validations.SetInSameProject, before_action?: true
+
+      change Sanctum.Games.Changes.CreateCustomAltArt
+    end
 
     create :declare_custom do
       description "Converts one of the actor's single-sided custom cards into " <>
@@ -131,6 +158,13 @@ defmodule Sanctum.Games.CardAlt do
       authorize_if expr(origin == :official)
       authorize_if expr(homebrew_project.visibility == :published)
       authorize_if expr(creator_id == ^actor(:id))
+    end
+
+    # Direct create: the actor must own the target homebrew project. The
+    # project id is an accepted attribute (visible to the policy); the change
+    # separately proves the target card is official via an actor-scoped read.
+    policy action(:create_custom) do
+      authorize_if Sanctum.Homebrew.Checks.ActorOwnsProject
     end
 
     # Create-time check resolving the :source_card_id ARGUMENT by hand —
@@ -207,6 +241,11 @@ defmodule Sanctum.Games.CardAlt do
     end
 
     belongs_to :homebrew_project, Sanctum.Homebrew.HomebrewProject do
+      public? true
+      allow_nil? true
+    end
+
+    belongs_to :homebrew_set, Sanctum.Homebrew.HomebrewSet do
       public? true
       allow_nil? true
     end

@@ -123,6 +123,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
         Sanctum.Homebrew.create_custom_card(
           %{
             homebrew_project_id: project.id,
+            homebrew_set_id: Sanctum.Homebrew.ensure_project_set(project, creator).id,
             card_sides: [%{image_url: "https://img.test/fan.png", filename: "fan.png"}]
           },
           creator

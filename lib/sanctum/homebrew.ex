@@ -48,9 +48,33 @@ defmodule Sanctum.Homebrew do
   require Ash.Query
 
   @doc """
+  Returns the project's oldest set, creating one (named after the project,
+  inheriting its maturity and tags) when it has none. A bridge so uploads
+  always have a set until the UI grows a set picker.
+  """
+  def ensure_project_set(%Sanctum.Homebrew.HomebrewProject{} = project, actor) do
+    case list_project_sets!(project.id, actor: actor) do
+      [] ->
+        create_set!(
+          %{
+            homebrew_project_id: project.id,
+            name: project.name,
+            maturity: project.maturity,
+            tags: project.tags
+          },
+          actor: actor
+        )
+
+      sets ->
+        Enum.min_by(sets, & &1.inserted_at, DateTime)
+    end
+  end
+
+  @doc """
   Creates a custom card (with its sides) inside one of the actor's projects.
 
-  `attrs` must include `:homebrew_project_id` and a `:card_sides` list of maps
+  `attrs` must include `:homebrew_project_id`, a `:homebrew_set_id` naming a
+  set in that same project (see `ensure_project_set/2`), and a `:card_sides` list of maps
   — each side needs at least `:image_url` (the image is the card); `:filename`
   seeds the name when none is given. Codes, side identifiers, and origin are
   generated server-side. Goes through policies with the actor — the actor must
@@ -121,6 +145,23 @@ defmodule Sanctum.Homebrew do
            |> Ash.update() do
       {:ok, {updated, updated.__metadata__.unpaired_card}}
     end
+  end
+
+  @doc """
+  Creates custom alt art for an official card directly from an uploaded image
+  — the primary alt-art entry (the creation wizard). No source card to
+  convert: the `CardAlt` is minted straight from `image_url`.
+
+  `attrs` must include `:homebrew_project_id`, `:homebrew_set_id` (a set in
+  that same project), `:image_url`, and `:target_card_id` (an official card); optional `:side_identifier`
+  (default "a", the target side the art depicts) and `:artist`. Goes through
+  policies with the actor — the actor must own the target project, and the
+  target card must be official.
+  """
+  def create_alt_art(attrs, actor) do
+    Sanctum.Games.CardAlt
+    |> Ash.Changeset.for_create(:create_custom, attrs, actor: actor)
+    |> Ash.create()
   end
 
   @doc """

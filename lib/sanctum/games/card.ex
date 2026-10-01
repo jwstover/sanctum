@@ -19,6 +19,8 @@ defmodule Sanctum.Games.Card do
       # A deleted homebrew project takes its custom cards with it. Indexed —
       # the read policy joins through this FK on every card query.
       reference :homebrew_project, on_delete: :delete, index?: true
+      # A deleted set takes its custom cards with it.
+      reference :homebrew_set, on_delete: :delete, index?: true
     end
 
     check_constraints do
@@ -27,6 +29,10 @@ defmodule Sanctum.Games.Card do
       check_constraint :origin,
         name: "cards_origin_project_consistency",
         check: "(origin = 'official') = (homebrew_project_id IS NULL)"
+
+      check_constraint :origin,
+        name: "cards_origin_set_consistency",
+        check: "(origin = 'official') = (homebrew_set_id IS NULL)"
     end
   end
 
@@ -150,11 +156,17 @@ defmodule Sanctum.Games.Card do
     create :create_custom do
       description "Creates a homebrew card inside one of the actor's projects."
 
-      accept [:homebrew_project_id, :deck_limit, :unique, :permanent]
+      accept [:homebrew_project_id, :homebrew_set_id, :deck_limit, :unique, :permanent]
 
       argument :card_sides, {:array, :map}, allow_nil?: false
 
       validate present(:homebrew_project_id)
+
+      validate present(:homebrew_set_id) do
+        message "must belong to a set"
+      end
+
+      validate Sanctum.Homebrew.Validations.SetInSameProject, before_action?: true
 
       change set_attribute(:origin, :custom)
       change Sanctum.Games.Changes.GenerateCustomCode
@@ -319,6 +331,12 @@ defmodule Sanctum.Games.Card do
 
     # Set for :custom origin only (see the origin check constraint).
     belongs_to :homebrew_project, Sanctum.Homebrew.HomebrewProject do
+      public? true
+      allow_nil? true
+    end
+
+    # Set for :custom origin only (see cards_origin_set_consistency).
+    belongs_to :homebrew_set, Sanctum.Homebrew.HomebrewSet do
       public? true
       allow_nil? true
     end

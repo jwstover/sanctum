@@ -19,6 +19,7 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
       Homebrew.create_custom_card(
         %{
           homebrew_project_id: project.id,
+          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
           card_sides: [
             Map.merge(%{image_url: "https://img.test/a.png", filename: "test-card.png"}, attrs)
           ]
@@ -56,6 +57,18 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
 
     assert html =~ ~p"/homebrew/#{ctx.project.id}/cards/#{card.id}"
     assert html =~ "Test Card"
+  end
+
+  # Assumes no S3 env vars (as in CI). The configured chooser is covered by
+  # ShowUploadsTest, which sets them and so can't run async.
+  test "without image storage the chooser shows the unconfigured notice", ctx do
+    {:ok, lv, _html} = live(ctx.conn, ~p"/homebrew/#{ctx.project.id}")
+
+    html = lv |> element("button[phx-click='open_chooser']") |> render_click()
+
+    assert html =~ "What are you adding?"
+    assert html =~ "Image storage is not configured"
+    refute has_element?(lv, "#homebrew-uploads")
   end
 
   describe "alt art management" do

@@ -29,7 +29,8 @@ defmodule Sanctum.Homebrew.Validations.ParentSetInSameProject do
     end
   end
 
-  defp same_project?(parent_id, project_id) do
+  @doc false
+  def same_project?(parent_id, project_id) do
     case Ash.get(Sanctum.Homebrew.HomebrewSet, parent_id, authorize?: false) do
       {:ok, %{homebrew_project_id: ^project_id}} -> true
       _not_found_or_other_project -> false

@@ -41,6 +41,7 @@ defmodule Sanctum.Games.Changes.UnpairCustomCard do
         |> Changeset.for_create(:create, %{
           origin: :custom,
           homebrew_project_id: card.homebrew_project_id,
+          homebrew_set_id: card.homebrew_set_id,
           code: code,
           base_code: code,
           is_multi_sided: false,

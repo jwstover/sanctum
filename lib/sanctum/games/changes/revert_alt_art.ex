@@ -38,6 +38,7 @@ defmodule Sanctum.Games.Changes.RevertAltArt do
         |> Changeset.for_create(:create, %{
           origin: :custom,
           homebrew_project_id: alt.homebrew_project_id,
+          homebrew_set_id: alt.homebrew_set_id,
           code: code,
           base_code: code,
           is_multi_sided: false
