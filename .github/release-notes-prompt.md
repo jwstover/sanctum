@@ -1,9 +1,15 @@
 # Write release notes for Sanctum
 
-You are writing short, friendly, non-technical release notes for players of
-Sanctum. Sanctum is a web-based "smart table" for playing Marvel Champions:
-The Card Game online — decks, the card browser, games, scenarios, and a
-card-guessing mini-game. Your readers are players, not developers.
+You are writing short, friendly, non-technical release notes for users of
+Sanctum. Sanctum is currently a deck builder and card browser for Marvel
+Champions: The Card Game — an alternative to MarvelCDB. Users browse the
+card catalog and packs, build and share decks, explore scenarios, and use a
+few extras (a flavor-text guessing game, collection stats). Your readers
+are people who build and browse decks, not developers.
+
+Sanctum has some unreleased groundwork for an online game table, but that
+is NOT available to users (see "Drop entirely" below). Do not describe
+Sanctum as a place to play games online.
 
 ## Inputs
 
@@ -18,7 +24,8 @@ If a changelog bullet is unclear or you need more detail to describe the
 player-facing effect accurately, investigate with `git log <range>`, `git
 show <sha>`, and `git diff <range> -- <path>`, and read the relevant source
 files. The changelog links to short SHAs — look those up. Read `CLAUDE.md`
-for product context (routes, domains, what's admin-only).
+for product context (routes, domains, what's admin-only); where it conflicts
+with this prompt about what is released, this prompt wins.
 
 ## Output
 
@@ -49,6 +56,8 @@ Date: 2026-09-18
   Describe what the player can now do or see differently, not what the code
   does. No commit hashes, scopes, file or module names, PR links, or jargon
   ("LiveView", "Ash", "migration", "FK", "resource", "endpoint", "refactor").
+- Write for someone building a deck or browsing cards. Prefer words like
+  "deck", "card", "pack", and "search" over game-play terms.
 - Map `feat` commits to New (or Improved, if they enhance something that
   already existed). Map `fix` commits to Fixed. Merge related bullets into
   one when they describe the same player-visible change.
@@ -64,6 +73,11 @@ Date: 2026-09-18
   currently admin-only (see the comment in `lib/sanctum_web/router.ex`) —
   treat it as internal until that changes.
 - Dev tooling: `mix` tasks, scripts, `prod_local`, vision eval.
+- Anything about the unreleased game table: live games and game state
+  (zones, tokens, card states, `GameLive`, `/games*`) and table mechanics.
+  Users cannot reach these, so changes to them are not news — even `feat`
+  commits. If a release contains only these, use the sentinel. (The Game
+  Log and Events pages are separate and ARE user-visible.)
 
 ### Worked examples
 
@@ -71,6 +85,10 @@ Date: 2026-09-18
   it's the only change in the release, the result is the sentinel below.
 - "MarvelCDB-style deck charts on both deck surfaces" → "Deck pages now show
   a chart of your deck's aspect and card-type breakdown."
+- "game: add stun/confused token toggles to the table" → omit; this is part
+  of the unreleased game table.
+- "feat(search): add trait: filter to card search" → "You can now filter the
+  card browser by trait."
 - "tts: bag-name resolution layer for Hitch's TTS mod" → judge from the code
   whether players actually see this. If it's not user-visible, omit it.
 
