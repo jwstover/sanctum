@@ -76,12 +76,13 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute has_element?(view, "#scenario-build")
   end
 
-  test "the owner gets a disabled Build button", ctx do
+  test "the owner gets a Build link", ctx do
     conn = log_in_user(ctx.conn, ctx.owner)
     {:ok, view, _} = live(conn, ~p"/scenarios/#{ctx.mine.id}")
     render_async(view)
 
-    assert has_element?(view, "#scenario-build[disabled]")
+    assert has_element?(view, ~s(#scenario-build[href="/scenarios/#{ctx.mine.id}/build"]))
+    refute has_element?(view, "#scenario-build[disabled]")
   end
 
   test "another signed-in user gets no Build button", ctx do
