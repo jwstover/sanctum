@@ -20,10 +20,13 @@ defmodule Sanctum.Games.GameVillainTest do
     villain_name = "Test Villain"
 
     {:ok, scenario} =
-      Games.create_scenario(%{
-        name: "Test Scenario",
-        set: set_name
-      })
+      Games.create_scenario(
+        %{
+          name: "Test Scenario",
+          villain_set_id: villain_set!(set_name).id
+        },
+        authorize?: false
+      )
 
     villain_code = "testv#{:rand.uniform(100_000)}"
 
@@ -270,10 +273,13 @@ defmodule Sanctum.Games.GameVillainTest do
 
       # Create scenario and game
       {:ok, scenario} =
-        Games.create_scenario(%{
-          name: "Multi Stage Test",
-          set: set_name
-        })
+        Games.create_scenario(
+          %{
+            name: "Multi Stage Test",
+            villain_set_id: villain_set!(set_name).id
+          },
+          authorize?: false
+        )
 
       {:ok, game} = Games.create_game(%{scenario_id: scenario.id, modular_sets: []}, actor: user)
 
