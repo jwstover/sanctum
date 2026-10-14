@@ -46,6 +46,7 @@ defmodule SanctumWeb.Layouts do
       :events,
       :homebrew,
       :stats,
+      :releases,
       :profile,
       :admin
     ],
@@ -211,6 +212,9 @@ defmodule SanctumWeb.Layouts do
             </.sidebar_link>
             <.sidebar_link navigate={~p"/stats"} active={@active_tab == :stats}>
               Stats
+            </.sidebar_link>
+            <.sidebar_link navigate={~p"/releases"} active={@active_tab == :releases}>
+              Releases
             </.sidebar_link>
             <div class="flex-1"></div>
             <.sidebar_link
