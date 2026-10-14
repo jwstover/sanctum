@@ -1,3 +1,12 @@
+# [1.97.0](https://github.com/jwstover/sanctum/compare/v1.96.0...v1.97.0) (2026-10-14)
+
+
+### Features
+
+* **decks:** take MarvelCDB like counts from the decklist API on import ([e705747](https://github.com/jwstover/sanctum/commit/e705747a9ed0897893acceec1a4eacf4af8873f0))
+
+
+
 # [1.96.0](https://github.com/jwstover/sanctum/compare/v1.95.0...v1.96.0) (2026-10-01)
 
 
@@ -39,15 +48,6 @@
 ### Features
 
 * **homebrew:** add SetKind lookup resource + seed official kinds ([ebf02e6](https://github.com/jwstover/sanctum/commit/ebf02e6cb9a6e3addcc16c1b5aea760b50cb9c20))
-
-
-
-# [1.92.0](https://github.com/jwstover/sanctum/compare/v1.91.1...v1.92.0) (2026-09-30)
-
-
-### Features
-
-* **marvelcdb:** add OAuth2 account linking ([e2746d5](https://github.com/jwstover/sanctum/commit/e2746d584f2c829c351062f365b12a2eb94b380b))
 
 
 
