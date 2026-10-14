@@ -1,3 +1,12 @@
+# [1.98.0](https://github.com/jwstover/sanctum/compare/v1.97.0...v1.98.0) (2026-10-14)
+
+
+### Features
+
+* **decks:** refresh MarvelCDB like counts from the decklist API ([1ebee48](https://github.com/jwstover/sanctum/commit/1ebee4830f348f38600726a8545b7a80beb3de85))
+
+
+
 # [1.97.0](https://github.com/jwstover/sanctum/compare/v1.96.0...v1.97.0) (2026-10-14)
 
 
@@ -39,15 +48,6 @@
 ### Features
 
 * **homebrew:** add HomebrewSet resource with policies and domain actions ([5765a89](https://github.com/jwstover/sanctum/commit/5765a892f3c7d4010db669326cb4dac4060ee372))
-
-
-
-# [1.93.0](https://github.com/jwstover/sanctum/compare/v1.92.0...v1.93.0) (2026-09-30)
-
-
-### Features
-
-* **homebrew:** add SetKind lookup resource + seed official kinds ([ebf02e6](https://github.com/jwstover/sanctum/commit/ebf02e6cb9a6e3addcc16c1b5aea760b50cb9c20))
 
 
 
