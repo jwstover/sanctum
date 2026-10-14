@@ -1,0 +1,223 @@
+name: Release
+
+# Releases are cut by hand: run this from the Actions tab (or
+# `gh workflow run release.yml`) when what's on main is ready to announce.
+# Deploys are independent — fly-deploy.yml ships every push to main — so a
+# release is the version bump, CHANGELOG entry, and user-facing notes for
+# everything merged since the last tag, bundled into one PR for review.
+# Merging that PR tags the release (release-tag.yml) and deploys the notes.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: >-
+          Leave empty to cut a new release. Set to an existing tag
+          (e.g. v1.82.0) to only regenerate its notes (prompt iteration,
+          backfills).
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  # Workload identity federation: the Claude action exchanges the GitHub OIDC
+  # token for a short-lived Anthropic access token (no static API key).
+  id-token: write
+
+# One release at a time, so two cuts can't compute the same next version.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Cut release
+    runs-on: ubuntu-latest
+    steps:
+      # Always build off main, whichever ref the run was dispatched from; the
+      # prompt step below still reads the prompt from the dispatched ref.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: main
+
+      # Bumps mix.exs and CHANGELOG.md in a local commit only. The tag is NOT
+      # pushed here — release-tag.yml creates it on the merge commit once the
+      # release PR lands, so an abandoned release PR leaves no stray tag.
+      - name: Bump version and changelog
+        if: inputs.tag == ''
+        uses: TriPSs/conventional-changelog-action@v6
+        id: changelog
+        with:
+          github-token: ${{ secrets.github_token }}
+          git-user-name: "github-actions[bot]"
+          git-user-email: "github-actions[bot]@users.noreply.github.com"
+          git-push: false
+          skip-git-pull: true
+          skip-tag: true
+          # [skip ci] only existed to stop the old per-merge release loop.
+          skip-ci: false
+          version-file: mix.exs
+          create-summary: true
+
+      - name: Stop if nothing to release
+        if: inputs.tag == '' && steps.changelog.outputs.skipped == 'true'
+        run: |
+          echo "::notice::No releasable commits since the last tag — nothing to release."
+          exit 1
+
+      - name: Build release-notes prompt
+        id: prompt
+        env:
+          RELEASE_TAG: ${{ steps.changelog.outputs.tag || inputs.tag }}
+          CHANGELOG_BODY: ${{ steps.changelog.outputs.clean_changelog }}
+          NEW_RELEASE: ${{ inputs.tag == '' }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid release tag: '$RELEASE_TAG'"; exit 1
+          fi
+          git fetch --tags --force
+          if [ "$NEW_RELEASE" = "true" ]; then
+            # Local-only tag on the bump commit so the commit range, date and
+            # Claude's git commands below resolve the same as for a backfill.
+            git tag "$RELEASE_TAG"
+          fi
+          git rev-parse -q --verify "refs/tags/$RELEASE_TAG" >/dev/null \
+            || { echo "::error::Tag $RELEASE_TAG does not exist"; exit 1; }
+          # Backfills have no changelog output — fall back to the tag's
+          # CHANGELOG.md section (minor/major headers are '#', patch '##').
+          if [ -z "$CHANGELOG_BODY" ]; then
+            CHANGELOG_BODY="$(awk -v v="${RELEASE_TAG#v}" '/^#{1,2} \[/{ if (found) exit; if (index($0, "[" v "]")) {found=1; next} } found' CHANGELOG.md)"
+          fi
+          PREV_TAG="$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || true)"
+          RANGE="${PREV_TAG:+$PREV_TAG..}$RELEASE_TAG"
+          RELEASE_DATE="$(git log -1 --format=%cs "$RELEASE_TAG")"
+          # Use the prompt from the dispatched ref so prompt tweaks can be
+          # tested from a branch; the working tree stays on main.
+          PROMPT_SRC="$(git show "$GITHUB_SHA:.github/release-notes-prompt.md" 2>/dev/null || cat .github/release-notes-prompt.md)"
+          PROMPT_FILE="$RUNNER_TEMP/release-notes-prompt.md"
+          {
+            printf '%s\n\n' "$PROMPT_SRC"
+            printf '## Release context\n\n'
+            printf -- '- Tag: %s\n- Date: %s\n- Commit range: %s\n- Output file: priv/release_notes/%s.md\n\n' \
+              "$RELEASE_TAG" "$RELEASE_DATE" "$RANGE" "$RELEASE_TAG"
+            printf '## Changelog\n\n%s\n' "${CHANGELOG_BODY:-(none — use git log on the commit range)}"
+          } > "$PROMPT_FILE"
+          {
+            echo "tag=$RELEASE_TAG"
+            echo "notes_path=priv/release_notes/$RELEASE_TAG.md"
+          } >> "$GITHUB_OUTPUT"
+
+      # NOTE: anthropics/claude-code-action (top level) throws "Unsupported
+      # event type" outside PR/issue contexts (src/github/context.ts).
+      # base-action is the same repo's thin CLI wrapper with no
+      # GitHub-context/token dependency — use it, not the mirror repo
+      # anthropics/claude-code-base-action (stale tags).
+      - name: Generate user-facing release notes with Claude Code
+        id: claude
+        uses: anthropics/claude-code-action/base-action@v1
+        with:
+          # IDs are not secrets; access is gated by the federation rule's
+          # claim match. Don't add anthropic_api_key here — a static key
+          # takes precedence and federation is skipped.
+          anthropic_federation_rule_id: fdrl_019BYfAEoiZDu6EpMmHUtDEh
+          anthropic_organization_id: 23e3587f-5c13-4a0d-ac4f-21a01e903f57
+          anthropic_service_account_id: svac_01LKbbx8YJwK4njvRuwptxGR
+          anthropic_workspace_id: wrkspc_014Dq39chVZn5Jm4wSsybVCS
+          prompt_file: ${{ runner.temp }}/release-notes-prompt.md
+          claude_args: >-
+            --model claude-sonnet-5
+            --max-turns 40
+            --allowedTools "Read,Glob,Grep,Write,Bash(git log:*),Bash(git show:*),Bash(git diff:*),Bash(git describe:*)"
+
+      - name: Validate generated notes
+        id: notes
+        env:
+          RELEASE_TAG: ${{ steps.prompt.outputs.tag }}
+          NOTES_PATH: ${{ steps.prompt.outputs.notes_path }}
+        run: |
+          set -euo pipefail
+          # Claude may only have produced the one notes file; any change to
+          # a tracked file means it went off-script.
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "::error::Claude modified tracked files:"; git status --porcelain --untracked-files=no; exit 1
+          fi
+          if [ ! -f "$NOTES_PATH" ]; then
+            echo "::error::Claude did not write $NOTES_PATH"; exit 1
+          fi
+          if [ "$(tr -d '[:space:]' < "$NOTES_PATH")" = "NO_USER_FACING_CHANGES" ]; then
+            echo "No user-facing changes in $RELEASE_TAG — no notes file."
+            rm -- "$NOTES_PATH"
+            echo "has_notes=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if ! head -n1 "$NOTES_PATH" | grep -Eq '^Date: [0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+            echo "::error::$NOTES_PATH must start with a 'Date: YYYY-MM-DD' line"; cat "$NOTES_PATH"; exit 1
+          fi
+          echo "has_notes=true" >> "$GITHUB_OUTPUT"
+
+      # The release PR: version bump + CHANGELOG + notes, reviewed and merged
+      # by hand. Merging it is what ships the release — release-tag.yml tags
+      # the merge commit and fly-deploy.yml deploys the notes.
+      - name: Open release PR
+        if: inputs.tag == ''
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+          RELEASE_TAG: ${{ steps.prompt.outputs.tag }}
+          NOTES_PATH: ${{ steps.prompt.outputs.notes_path }}
+          HAS_NOTES: ${{ steps.notes.outputs.has_notes }}
+          CHANGELOG_BODY: ${{ steps.changelog.outputs.clean_changelog }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # The local tag was only for notes generation; release-tag.yml
+          # creates the real one on merge.
+          git tag -d "$RELEASE_TAG"
+          BRANCH="release/$RELEASE_TAG"
+          git checkout -b "$BRANCH"
+          if [ "$HAS_NOTES" = "true" ]; then
+            git add -- "$NOTES_PATH"
+            git commit -m "docs(release-notes): $RELEASE_TAG"
+            NOTES_LINE="User-facing notes: \`$NOTES_PATH\` — review and edit before merging."
+          else
+            NOTES_LINE="No user-facing changes, so there is no notes file."
+          fi
+          # Force so re-cutting after closing an unmerged release PR reuses
+          # the branch name.
+          git push --force -u origin "$BRANCH"
+          BODY="$(printf 'Release %s. Merging tags the release and deploys the notes.\n\n%s\n\n## Changelog\n\n%s\n' \
+            "$RELEASE_TAG" "$NOTES_LINE" "$CHANGELOG_BODY")"
+          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            gh pr edit "$BRANCH" --body "$BODY"
+          else
+            gh pr create --base main --head "$BRANCH" --title "chore(release): $RELEASE_TAG" --body "$BODY"
+          fi
+
+      # Notes-only PR for an existing tag (regeneration/backfill).
+      - name: Open release-notes PR
+        if: inputs.tag != '' && steps.notes.outputs.has_notes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+          RELEASE_TAG: ${{ steps.prompt.outputs.tag }}
+          NOTES_PATH: ${{ steps.prompt.outputs.notes_path }}
+          PR_BODY: |
+            Regenerated user-facing release notes for ${{ inputs.tag }}.
+            Review and edit before merging. Nothing appears on the site until this is merged.
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="release-notes-$RELEASE_TAG"
+          PR_TITLE="docs(release-notes): $RELEASE_TAG"
+          git checkout -b "$BRANCH"
+          git add -- "$NOTES_PATH"
+          git commit -m "$PR_TITLE"
+          # Re-dispatching the same tag regenerates the notes: force-update
+          # the branch and reuse an already-open PR instead of failing.
+          git push --force -u origin "$BRANCH"
+          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            echo "Updated existing PR for $BRANCH"
+          else
+            gh pr create --base main --head "$BRANCH" --title "$PR_TITLE" --body "$PR_BODY"
+          fi

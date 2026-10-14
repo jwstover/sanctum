@@ -154,6 +154,31 @@ Oban queues/plugins are disabled, and `Oban.BootRescue` is skipped. To work on a
 accurate copy of prod data instead, use `scripts/pull_prod_db` — it dumps prod and
 replaces `sanctum_dev` (pg tools run inside the compose `postgres` container).
 
+## Releases & Deploys
+
+**Deploys are continuous; releases are manual.** Every push to `main` deploys to
+Fly (`fly-deploy.yml`). A *release* — version bump, `CHANGELOG.md` entry, and
+user-facing notes (`priv/release_notes/vX.Y.Z.md`, shown on the site's What's
+New / `/releases`) — is cut by hand and batches everything since the last tag.
+
+**When asked to "cut a release":**
+
+```bash
+gh workflow run release.yml          # cut a new release from main
+gh run watch                         # follow it (or: gh run list --workflow release.yml)
+```
+
+The workflow opens a `chore(release): vX.Y.Z` PR on branch `release/vX.Y.Z`
+containing the bump, changelog, and Claude-generated notes. Hand the PR link to
+the user to review/edit the notes — **don't merge it yourself** unless asked.
+Merging it (as a merge commit, not squash) tags the release (`release-tag.yml`)
+and deploys the notes. If the run fails with "No releasable commits", there are
+no `feat`/`fix`/etc. commits since the last tag, so there is nothing to release.
+
+To regenerate notes for an existing release (prompt tweaks in
+`.github/release-notes-prompt.md`, backfills):
+`gh workflow run release.yml -f tag=vX.Y.Z` — opens a notes-only PR.
+
 ## Running MarvelCDB Locally
 
 MarvelCDB's source ([zzorba/marvelsdb](https://github.com/zzorba/marvelsdb), PHP
