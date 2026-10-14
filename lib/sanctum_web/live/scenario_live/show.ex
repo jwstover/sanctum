@@ -77,8 +77,8 @@ defmodule SanctumWeb.ScenarioLive.Show do
                     {(length(@view.modular_sets) == 1 && "Modular Set") || "Modular Sets"}
                   </div>
                 </div>
-                <div :if={@view.total_cards > 0}>
-                  <div class="font-anton text-3xl leading-none">{@view.total_cards}</div>
+                <div :if={@view.overall_stats.cards > 0}>
+                  <div class="font-anton text-3xl leading-none">{@view.overall_stats.cards}</div>
                   <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
                     Encounter Cards
                   </div>
@@ -242,7 +242,8 @@ defmodule SanctumWeb.ScenarioLive.Show do
       villain_name: villain_name(s),
       villain_set_name: s.villain_set && s.villain_set.name,
       overall_stats: overall_stats,
-      total_cards: overall_stats.type_counts |> Map.values() |> Enum.sum(),
+      villain_set_stats: combined_stats([s.villain_set]),
+      modular_stats: if(s.modular_sets != [], do: combined_stats(s.modular_sets)),
       modular_sets:
         s.modular_sets
         |> Enum.sort_by(&String.downcase(&1.name || &1.code))
