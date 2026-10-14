@@ -652,6 +652,12 @@ textarea::placeholder {
   color: color-mix(in srgb, var(--color-base-content) 85%, transparent);
 }
 
+/* Release notes reuse the writeup prose styles with compact section headings
+   (## New / ## Improved / ## Fixed). */
+.deck-writeup.release-notes h2 {
+  font-size: var(--text-lg);
+}
+
 .deck-writeup > :first-child {
   margin-top: 0;
 }
