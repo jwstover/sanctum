@@ -246,6 +246,30 @@ defmodule Sanctum.Decks.Deck do
       # but MarvelCDB legitimately publishes.
       skip_global_validations? true
 
+      # The decklist API's like count. On a re-import the atomic lands in the
+      # upsert's ON CONFLICT SET, where `mcdb_like_count` is still the stored
+      # row's value, so `mcdb_like_changed_at` (McdbDeckRefresh's schedule) is
+      # stamped only when the count actually changed. A fresh insert leaves it
+      # nil; seeding falls back to `mcdb_date_creation`. Skipped when the count
+      # is only the attribute default (payload without `like_count`), which the
+      # upsert doesn't write either.
+      change fn changeset, _context ->
+        with false <- :mcdb_like_count in changeset.defaults,
+             {:ok, count} when is_integer(count) <-
+               Ash.Changeset.fetch_change(changeset, :mcdb_like_count) do
+          now = DateTime.truncate(DateTime.utc_now(), :second)
+
+          changeset
+          |> Ash.Changeset.force_change_attribute(:mcdb_social_synced_at, now)
+          |> Ash.Changeset.atomic_update(
+            :mcdb_like_changed_at,
+            expr(if mcdb_like_count == ^count, do: mcdb_like_changed_at, else: ^now)
+          )
+        else
+          _ -> changeset
+        end
+      end
+
       change fn changeset, _context ->
         slots = Ash.Changeset.get_argument(changeset, :slots) || []
 
@@ -401,10 +425,10 @@ defmodule Sanctum.Decks.Deck do
     attribute :mcdb_date_creation, :utc_datetime, public?: true
     attribute :mcdb_date_update, :utc_datetime, public?: true
 
-    # MarvelCDB social data, scraped from the decklist list pages
-    # (Sanctum.MarvelCdb.DecklistPages) — the JSON API exposes neither. Distinct
-    # from `favorite_count`, which the `deck_favorites` trigger maintains (see
-    # DeckFavorite's custom_statements).
+    # MarvelCDB social data: `like_count` from the decklist API on import, plus
+    # the list-page scrapers (Sanctum.MarvelCdb.DecklistPages) for decks sync
+    # doesn't revisit. Distinct from `favorite_count`, which the
+    # `deck_favorites` trigger maintains (see DeckFavorite's custom_statements).
     attribute :mcdb_like_count, :integer, public?: true, allow_nil?: false, default: 0
     attribute :mcdb_social_synced_at, :utc_datetime, public?: true
 
