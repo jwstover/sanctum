@@ -85,7 +85,7 @@ defmodule SanctumWeb.Components.Card do
   """
   attr :name, :string, default: "Card"
   attr :cost, :any, default: nil
-  attr :type, :any, default: "event"
+  attr :type, :any, default: "event", doc: "card type label under the title; nil hides it"
   attr :aspect, :any, default: "hero"
   attr :resources, :list, default: [], doc: "list of resource atoms/strings, one per pip"
   attr :qty, :integer, default: 0
@@ -219,7 +219,7 @@ defmodule SanctumWeb.Components.Card do
         >
           {@name}
         </div>
-        <div class="mt-1 flex items-center gap-[5px]">
+        <div :if={@type_label != ""} class="mt-1 flex items-center gap-[5px]">
           <span class={["size-[7px] rounded-[1px]", @aspect_classes.bg]}></span>
           <span
             class="font-semibold uppercase tracking-[0.16em] text-white/60"
