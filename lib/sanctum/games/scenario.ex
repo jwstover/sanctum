@@ -19,6 +19,33 @@ defmodule Sanctum.Games.Scenario do
   actions do
     defaults [:read, :destroy]
 
+    read :browse do
+      description "The scenario browser: search-language filter (ScenarioFields), sort and offset pagination."
+
+      argument :query, :string, allow_nil?: true
+      argument :sort, :string, allow_nil?: true
+
+      pagination offset?: true, default_limit: 24, countable: true, required?: false
+
+      prepare fn query, _context ->
+        require Ash.Query
+
+        query
+        |> Ash.Query.load([:modular_set_count, :owner, :villain_set])
+        |> Sanctum.Search.filter_query(
+          Ash.Query.get_argument(query, :query),
+          Sanctum.Search.ScenarioFields
+        )
+        |> then(fn query ->
+          # The id tie-breaker keeps offset pages stable (uuid_v7 is time-ordered).
+          case Ash.Query.get_argument(query, :sort) do
+            "name" -> Ash.Query.sort(query, name: :asc, id: :asc)
+            _ -> Ash.Query.sort(query, inserted_at: :desc, id: :desc)
+          end
+        end)
+      end
+    end
+
     create :create do
       primary? true
       accept [:name, :villain_set_id]
