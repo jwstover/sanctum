@@ -1,7 +1,7 @@
 defmodule SanctumWeb.HomeLive.Index do
   @moduledoc """
-  Public landing page: headline vault stats, the daily player card, and the
-  five freshest decks. The games list this page replaced lives at `/games`.
+  Public landing page: headline vault stats, the daily player card, the
+  five freshest decks, and the latest release notes. The games list this page replaced lives at `/games`.
   """
 
   use SanctumWeb, :live_view
@@ -157,6 +157,27 @@ defmodule SanctumWeb.HomeLive.Index do
         </section>
       </div>
 
+      <!-- what's new: latest player-facing release notes; hidden until one exists -->
+      <section :if={@release_notes != []} id="whats-new" class="mt-10">
+        <h2 class="font-anton text-lg uppercase tracking-[0.05em]">What's New</h2>
+
+        <div class="mt-3 flex flex-col gap-3">
+          <.panel :for={note <- @release_notes} class="px-5 py-5 sm:px-6">
+            <div class="flex items-baseline justify-between gap-3">
+              <span class="font-anton text-xl uppercase leading-none text-primary">
+                {note.tag}
+              </span>
+              <span class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
+                {Calendar.strftime(note.date, "%b %-d, %Y")}
+              </span>
+            </div>
+            <div class="deck-writeup release-notes mt-3">
+              {Sanctum.ReleaseNotes.to_html(note)}
+            </div>
+          </.panel>
+        </div>
+      </section>
+
       <!-- about: full-width band below the grid -->
       <section class="mt-10">
         <h2 class="font-anton text-lg uppercase tracking-[0.05em]">About Sanctum</h2>
@@ -247,6 +268,8 @@ defmodule SanctumWeb.HomeLive.Index do
       socket
       |> assign(:page_title, "Home")
       |> assign(:deck_count, @deck_count)
+      # A handful of small priv/ files — cheap enough to read up front.
+      |> assign(:release_notes, Sanctum.ReleaseNotes.list(3))
       # nil until loaded — drives the skeletons.
       |> assign(:home, nil)
 
