@@ -7,6 +7,12 @@ on:
   pull_request:
     branches:
       - '**'
+    # Release-notes PRs are opened by GITHUB_TOKEN, and GitHub rejects the
+    # run (0 jobs, red X) because it can't grant this workflow's write
+    # permissions. A notes-only diff has nothing to test, and the merge
+    # still runs full CI on main.
+    paths-ignore:
+      - 'priv/release_notes/**'
   # Manual (re)generation of user-facing release notes for an existing tag:
   # iterate on .github/release-notes-prompt.md or backfill past releases.
   workflow_dispatch:
