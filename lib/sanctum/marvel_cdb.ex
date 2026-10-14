@@ -159,7 +159,17 @@ defmodule Sanctum.MarvelCdb do
       mcdb_date_update: decklist["date_update"],
       slots: slots
     }
+    |> put_like_count(decklist["like_count"])
   end
+
+  # The decklist API carries `like_count` since upstream's
+  # feat/decklist-api-social-counts shipped (Oct 2026). Without it (private
+  # decks, an older upstream) the key stays out, so the upsert leaves the
+  # stored count alone.
+  defp put_like_count(attrs, count) when is_integer(count),
+    do: Map.put(attrs, :mcdb_like_count, count)
+
+  defp put_like_count(attrs, _count), do: attrs
 
   # MarvelCDB keys `slots` by side code (e.g. 01043a/b/c/d), but several codes
   # can resolve to one Sanctum `Card` (grouped by base code) — a card that ships

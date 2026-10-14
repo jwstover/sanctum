@@ -243,6 +243,41 @@ defmodule Sanctum.MarvelCdbTest do
       assert deck.mcdb_date_update == ~U[2024-01-21 16:02:07Z]
     end
 
+    test "records the decklist API's like_count and stamps when it changed" do
+      seed_like_catalog()
+
+      assert {:ok, deck} = MarvelCdb.import_decklist(like_payload(%{"like_count" => 7}))
+      assert deck.mcdb_like_count == 7
+      assert %DateTime{} = deck.mcdb_social_synced_at
+      # A fresh insert has no prior count to compare against.
+      assert reload(deck).mcdb_like_changed_at == nil
+
+      # Same count: no change stamp.
+      backdate_like_changed_at(deck)
+      assert {:ok, _} = MarvelCdb.import_decklist(like_payload(%{"like_count" => 7}))
+      assert reload(deck).mcdb_like_changed_at == ~U[2024-01-01 00:00:00Z]
+
+      # New count: restamped.
+      assert {:ok, _} = MarvelCdb.import_decklist(like_payload(%{"like_count" => 9}))
+      deck = reload(deck)
+      assert deck.mcdb_like_count == 9
+      assert DateTime.after?(deck.mcdb_like_changed_at, ~U[2024-01-01 00:00:00Z])
+    end
+
+    test "a payload without like_count leaves the stored social data alone" do
+      seed_like_catalog()
+
+      assert {:ok, deck} = MarvelCdb.import_decklist(like_payload(%{"like_count" => 12}))
+      backdate_like_changed_at(deck)
+      synced_at = reload(deck).mcdb_social_synced_at
+
+      assert {:ok, _} = MarvelCdb.import_decklist(like_payload(%{}))
+      deck = reload(deck)
+      assert deck.mcdb_like_count == 12
+      assert deck.mcdb_like_changed_at == ~U[2024-01-01 00:00:00Z]
+      assert deck.mcdb_social_synced_at == synced_at
+    end
+
     # Ironheart's shape: several hero-sided cards (suit versions) in one set.
     # Decks can be built on any version; all of them must resolve to a single
     # Hero keyed on the set's canonical (lowest base_code) card.
@@ -305,6 +340,56 @@ defmodule Sanctum.MarvelCdbTest do
       hero = Ash.get!(Sanctum.Heroes.Hero, deck_v1.hero_id, authorize?: false)
       assert hero.base_code == "91001"
     end
+  end
+
+  defp seed_like_catalog do
+    hero_card = create(Sanctum.Games.Card, attrs: %{base_code: "43001", code: "43001"})
+
+    for {code, type, primary?, id} <- [
+          {"43001a", :hero, true, "A"},
+          {"43001b", :alter_ego, false, "B"}
+        ] do
+      create(Sanctum.Games.CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          name: "Like Hero",
+          type: type,
+          code: code,
+          side_identifier: id,
+          is_primary_side: primary?
+        }
+      )
+    end
+
+    slot_card = create(Sanctum.Games.Card, attrs: %{base_code: "43002", code: "43002"})
+
+    create(Sanctum.Games.CardSide,
+      attrs: %{card_id: slot_card.id, code: "43002", side_identifier: "A"}
+    )
+  end
+
+  defp like_payload(extra) do
+    Map.merge(
+      %{
+        "id" => 43_100,
+        "name" => "Liked deck",
+        "hero_code" => "43001a",
+        "slots" => %{"43002" => 2}
+      },
+      extra
+    )
+  end
+
+  defp reload(deck), do: Ash.get!(Sanctum.Decks.Deck, deck.id, authorize?: false)
+
+  defp backdate_like_changed_at(deck) do
+    import Ecto.Query
+
+    {:ok, uuid} = Ecto.UUID.dump(deck.id)
+
+    Sanctum.Repo.update_all(from(d in "decks", where: d.id == ^uuid),
+      set: [mcdb_like_changed_at: ~U[2024-01-01 00:00:00Z]]
+    )
   end
 
   describe "helper functions" do
