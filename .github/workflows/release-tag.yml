@@ -1,0 +1,38 @@
+name: Tag release
+
+# Tags a release when its PR (opened by release.yml on a `release/vX.Y.Z`
+# branch) is merged, so a closed-unmerged release PR leaves no tag behind.
+# The tag goes on the PR head (bump + notes), not the merge commit: anything
+# merged to main while the release PR was open isn't in this release's
+# CHANGELOG/notes and must fall into the next release's range instead.
+# Assumes merge-commit merges, which keep the head commit on main.
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Tag merged release
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/v') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create tag on the release PR head
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          TAG="${HEAD_REF#release/}"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid release tag from branch '$HEAD_REF'"; exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" -f sha="$HEAD_SHA"
