@@ -6,8 +6,8 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
   plus its newest-35-pages date walk leave a coverage gap: a decklist that
   gains a few likes, never cracks the top ~600 and has aged out of the date
   window would never be refreshed. This module closes it: every locally-known
-  decklist carries its own schedule and is re-fetched from its own detail page
-  (`/decklist/view/{id}`) when due. It runs alongside the list walks.
+  decklist carries its own schedule and is re-fetched from the decklist API
+  (`/api/public/decklist/{id}`, see `MarvelCdb.get_decklist/1`) when due. It runs alongside the list walks.
 
   ## Schedule
 
@@ -55,11 +55,11 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
   alias Sanctum.Decks
   alias Sanctum.Decks.Deck
   alias Sanctum.Decks.McdbSocialRefresh
-  alias Sanctum.MarvelCdb.DecklistPages
+  alias Sanctum.MarvelCdb
   alias Sanctum.Repo
 
   @social_refresh_worker "Sanctum.Decks.McdbSocialRefreshWorker"
-  @max_parse_failures 3
+  @max_missing_counts 3
 
   @defaults [
     floor_days: 3,
@@ -71,7 +71,7 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
 
   @doc """
   Seeds unscheduled decklists, then fetches up to `batch_size` of the
-  oldest-due decks' detail pages and reschedules each.
+  oldest-due decks from the decklist API and reschedules each.
 
   Options (defaults from `Application.get_env(:sanctum, #{inspect(__MODULE__)}, [])`):
   `:floor_days`, `:ceiling_days`, `:growth_factor`, `:initial_delay_days`,
@@ -79,8 +79,8 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
 
   Returns `{:ok, summary}`, `{:skipped, reason}`, or `{:error, reason}` when a
   fetch fails outright (the failing deck's schedule is left untouched so it is
-  retried first; earlier decks are already persisted) or the markup appears to
-  have changed (#{@max_parse_failures} parse failures in one run).
+  retried first; earlier decks are already persisted) or the API stops
+  returning `like_count` (#{@max_missing_counts} payloads without it in one run).
   """
   @spec run(keyword()) :: {:ok, map()} | {:skipped, atom()} | {:error, term()}
   def run(opts \\ []) do
@@ -152,7 +152,7 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
       ])
       |> Ash.read!(authorize?: false)
 
-    acc = %{checked: 0, changed: 0, not_found: 0, parse_failures: 0}
+    acc = %{checked: 0, changed: 0, not_found: 0, missing_counts: 0}
 
     batch
     |> Enum.with_index()
@@ -169,19 +169,19 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
   end
 
   defp finish(acc, due, _config) do
-    processed = acc.checked + acc.not_found + acc.parse_failures
+    processed = acc.checked + acc.not_found + acc.missing_counts
 
     Logger.info(
       "MCDB deck refresh: #{due} due, #{acc.checked} checked, #{acc.changed} changed, " <>
-        "#{acc.not_found} not found, #{acc.parse_failures} parse failures"
+        "#{acc.not_found} not found, #{acc.missing_counts} missing like_count"
     )
 
     {:ok, Map.merge(acc, %{due: due, backlog: due - processed})}
   end
 
   defp check_deck(deck, now, config, acc) do
-    case DecklistPages.fetch_detail(deck.mcdb_id) do
-      {:ok, %{like_count: count}} ->
+    case MarvelCdb.get_decklist(deck.mcdb_id) do
+      {:ok, %{"like_count" => count}} when is_integer(count) ->
         changed? = count != deck.mcdb_like_count
         changed_at = if changed?, do: now, else: deck.mcdb_like_changed_at || now
 
@@ -204,15 +204,17 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
         reschedule(deck, DateTime.add(now, config[:ceiling_days] * 86_400, :second))
         {:cont, %{acc | not_found: acc.not_found + 1}}
 
-      {:error, :no_social_counts} ->
-        Logger.warning("MCDB deck refresh: no social counts on decklist #{deck.mcdb_id}")
+      # Never read as 0: an upstream regression would otherwise silently zero
+      # every refreshed deck's like count.
+      {:ok, _decklist} ->
+        Logger.warning("MCDB deck refresh: no like_count on decklist #{deck.mcdb_id}")
         reschedule(deck, DateTime.add(now, config[:floor_days] * 86_400, :second))
-        failures = acc.parse_failures + 1
+        failures = acc.missing_counts + 1
 
-        if failures >= @max_parse_failures do
-          {:halt, {:error, {:parse_failures, failures}}}
+        if failures >= @max_missing_counts do
+          {:halt, {:error, {:missing_counts, failures}}}
         else
-          {:cont, %{acc | parse_failures: failures}}
+          {:cont, %{acc | missing_counts: failures}}
         end
 
       {:error, reason} ->

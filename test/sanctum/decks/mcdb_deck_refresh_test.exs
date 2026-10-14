@@ -110,35 +110,22 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
     )
   end
 
-  defp detail_html(likes) do
-    """
-    <span class="social-icons">
-      <a id="social-icon-like" href="#" class="social-icon-like" title="Like">
-        <span class="fa fa-heart"></span> <span class="num">#{likes}</span>
-      </a>
-      <a id="social-icon-favorite" href="#" class="social-icon-favorite" title="Favorite">
-        <span class="fa fa-star"></span> <span class="num">0</span>
-      </a>
-      <a id="social-icon-comment" href="#comment-form" class="social-icon-comment" title="Comment">
-        <span class="fa fa-comment"></span> <span class="num">0</span>
-      </a>
-    </span>
-    """
-  end
-
-  # `responses` maps mcdb_id => integer likes | :not_found | :no_counts | :error.
-  defp stub_details(responses) do
+  # `responses` maps mcdb_id => integer likes | :not_found | :http_404 |
+  # :no_counts | :error. `:not_found` is MarvelCDB's real answer for an unknown
+  # decklist: an empty 200.
+  defp stub_decklists(responses) do
     test_pid = self()
 
     Req.Test.stub(Sanctum.MarvelCdb, fn conn ->
-      "/decklist/view/" <> id = conn.request_path
-      send(test_pid, {:mcdb_detail, id})
+      "/api/public/decklist/" <> id = conn.request_path
+      send(test_pid, {:mcdb_decklist, id})
 
       case Map.fetch!(responses, id) do
-        :not_found -> Plug.Conn.send_resp(conn, 404, "")
+        :not_found -> Plug.Conn.send_resp(conn, 200, "")
+        :http_404 -> Plug.Conn.send_resp(conn, 404, "")
         :error -> Plug.Conn.send_resp(conn, 500, "")
-        :no_counts -> Req.Test.html(conn, "<html><body>changed layout</body></html>")
-        likes -> Req.Test.html(conn, detail_html(likes))
+        :no_counts -> Req.Test.json(conn, %{"id" => String.to_integer(id), "slots" => %{}})
+        likes -> Req.Test.json(conn, %{"id" => String.to_integer(id), "like_count" => likes})
       end
     end)
   end
@@ -152,7 +139,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
   defp requested_ids do
     Stream.repeatedly(fn ->
       receive do
-        {:mcdb_detail, id} -> id
+        {:mcdb_decklist, id} -> id
       after
         0 -> nil
       end
@@ -188,7 +175,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
       scheduled = hero |> create_deck("4") |> set_cols!(mcdb_social_next_check_at: scheduled_at)
       updated_before = Enum.map([new_deck, old_deck, native, scheduled], & &1.updated_at)
 
-      stub_details(%{})
+      stub_decklists(%{})
       assert {:ok, %{due: 0}} = run()
 
       new_deck = reload(new_deck)
@@ -217,7 +204,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
       now: now
     } do
       deck = due_deck(hero, "10", now)
-      stub_details(%{"10" => 5})
+      stub_decklists(%{"10" => 5})
 
       assert {:ok, %{checked: 1, changed: 1}} = run(now: now)
 
@@ -232,7 +219,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
     test "unchanged count: keeps changed_at and backs off", %{hero: hero, now: now} do
       changed_at = ago(now, 10)
       deck = due_deck(hero, "11", now, changed_at: changed_at)
-      stub_details(%{"11" => 0})
+      stub_decklists(%{"11" => 0})
 
       assert {:ok, %{checked: 1, changed: 0}} = run(now: now)
 
@@ -242,36 +229,46 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
       assert DateTime.compare(deck.mcdb_social_next_check_at, ahead(now, 20)) == :eq
     end
 
-    test "404: leaves counts, pushes to the ceiling, and continues", %{hero: hero, now: now} do
+    test "not found (empty 200 or 404): leaves counts, pushes to the ceiling, and continues", %{
+      hero: hero,
+      now: now
+    } do
       gone = due_deck(hero, "12", now)
+      gone_404 = due_deck(hero, "41", now)
       ok = due_deck(hero, "13", now, due: ago(now, 0))
-      stub_details(%{"12" => :not_found, "13" => 2})
+      stub_decklists(%{"12" => :not_found, "41" => :http_404, "13" => 2})
 
-      assert {:ok, %{not_found: 1, checked: 1}} = run(now: now)
+      assert {:ok, %{not_found: 2, checked: 1}} = run(now: now)
 
-      gone = reload(gone)
-      assert gone.mcdb_like_count == 0
-      assert gone.mcdb_social_synced_at == nil
-      assert DateTime.compare(gone.mcdb_social_next_check_at, ahead(now, 365)) == :eq
+      for deck <- [gone, gone_404] do
+        deck = reload(deck)
+        assert deck.mcdb_like_count == 0
+        assert deck.mcdb_social_synced_at == nil
+        assert DateTime.compare(deck.mcdb_social_next_check_at, ahead(now, 365)) == :eq
+      end
+
       assert reload(ok).mcdb_like_count == 2
     end
 
-    test "a parse failure defers by the floor without touching counts", %{hero: hero, now: now} do
+    test "a payload without like_count defers by the floor without touching counts", %{
+      hero: hero,
+      now: now
+    } do
       bad = due_deck(hero, "14", now)
-      stub_details(%{"14" => :no_counts})
+      stub_decklists(%{"14" => :no_counts})
 
-      assert {:ok, %{parse_failures: 1, checked: 0}} = run(now: now)
+      assert {:ok, %{missing_counts: 1, checked: 0}} = run(now: now)
 
       bad = reload(bad)
       assert bad.mcdb_like_count == 0
       assert DateTime.compare(bad.mcdb_social_next_check_at, ahead(now, 3)) == :eq
     end
 
-    test "three parse failures halt the run", %{hero: hero, now: now} do
+    test "three payloads without like_count halt the run", %{hero: hero, now: now} do
       for id <- ~w(15 16 17), do: due_deck(hero, id, now)
-      stub_details(%{"15" => :no_counts, "16" => :no_counts, "17" => :no_counts})
+      stub_decklists(%{"15" => :no_counts, "16" => :no_counts, "17" => :no_counts})
 
-      assert run(now: now) == {:error, {:parse_failures, 3}}
+      assert run(now: now) == {:error, {:missing_counts, 3}}
     end
 
     test "a 5xx halts, leaves that deck's schedule untouched, keeps earlier decks", %{
@@ -282,7 +279,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
       failing_due = ago(now, 2)
       failing = due_deck(hero, "19", now, due: failing_due)
       third = due_deck(hero, "20", now, due: ago(now, 1))
-      stub_details(%{"18" => 4, "19" => :error, "20" => 1})
+      stub_decklists(%{"18" => 4, "19" => :error, "20" => 1})
 
       assert {:error, {"19", _}} = run(now: now)
 
@@ -301,7 +298,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
       end
 
       future = due_deck(hero, "26", now, due: ahead(now, 2))
-      stub_details(Map.new(~w(21 22 23 24 25 26), &{&1, 0}))
+      stub_decklists(Map.new(~w(21 22 23 24 25 26), &{&1, 0}))
 
       assert {:ok, %{due: 5, checked: 3, backlog: 2}} = run(now: now, batch_size: 3)
 
@@ -311,7 +308,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
 
     test "skips when the backfill is running", %{hero: hero, now: now} do
       due_deck(hero, "30", now)
-      stub_details(%{})
+      stub_decklists(%{})
 
       assert run(backfill_running_fun: fn -> true end) == {:skipped, :backfill_running}
       assert requested_ids() == []
@@ -319,7 +316,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
 
     test "skips while the social refresh is executing", %{hero: hero, now: now} do
       due_deck(hero, "31", now)
-      stub_details(%{})
+      stub_decklists(%{})
 
       %Oban.Job{}
       |> Ecto.Changeset.change(
@@ -337,7 +334,7 @@ defmodule Sanctum.Decks.McdbDeckRefreshTest do
 
   test "the worker returns :ok and is on the crontab", %{hero: hero, now: now} do
     due_deck(hero, "40", now)
-    stub_details(%{"40" => 1})
+    stub_decklists(%{"40" => 1})
 
     assert :ok = perform_job(McdbDeckRefreshWorker, %{})
 

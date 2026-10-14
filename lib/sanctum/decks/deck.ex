@@ -195,8 +195,8 @@ defmodule Sanctum.Decks.Deck do
     update :set_mcdb_social do
       description """
       Records MarvelCDB social data (like count) scraped from the decklist list
-      pages or a single decklist detail page. Stamps `mcdb_like_changed_at`
-      when the count changes, and optionally sets the next scheduled check
+      pages or fetched from the decklist API. Stamps `mcdb_like_changed_at` when
+      the count changes, and optionally sets the next scheduled check
       (`next_check_at`, see Sanctum.Decks.McdbDeckRefresh).
       """
 

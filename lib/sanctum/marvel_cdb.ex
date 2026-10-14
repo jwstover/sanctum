@@ -490,17 +490,29 @@ defmodule Sanctum.MarvelCdb do
     |> handle_response()
   end
 
-  @doc "Fetches one decklist's HTML detail page (`/decklist/view/{id}`), for its social counts."
-  @spec get_decklist_detail(String.t()) :: {:ok, String.t()} | {:error, term()}
-  def get_decklist_detail(mcdb_id) when is_binary(mcdb_id) do
-    "#{@site_url}/decklist/view/#{mcdb_id}"
-    |> http_get(:decklist_detail,
-      headers: [user_agent: user_agent()],
+  @doc """
+  Fetches one published decklist's JSON payload (`/api/public/decklist/{id}`),
+  which carries `like_count` (plus `favorite_count`/`comment_count`) since
+  upstream's feat/decklist-api-social-counts shipped. Used by the per-decklist
+  like refresh (`Sanctum.Decks.McdbDeckRefresh`).
+
+  MarvelCDB answers an unknown or deleted decklist with an empty `200` (not a
+  404; verified live 2026-10-14), so any non-object body is `:not_found`.
+  """
+  @spec get_decklist(String.t()) :: {:ok, map()} | {:error, :not_found} | {:error, term()}
+  def get_decklist(mcdb_id) when is_binary(mcdb_id) do
+    "#{@base_url}/decklist/#{mcdb_id}"
+    |> http_get(:decklist_refresh,
       retry: :transient,
       max_retries: 2,
       receive_timeout: @decklist_receive_timeout_ms
     )
     |> handle_response()
+    |> case do
+      {:ok, %{} = decklist} -> {:ok, decklist}
+      {:ok, _empty} -> {:error, :not_found}
+      error -> error
+    end
   end
 
   @doc """
