@@ -253,6 +253,28 @@ defmodule SanctumWeb.Components.ScenarioCards do
     end
   end
 
+  @doc """
+  The villain cover's caption: "Villain · Stage I" from the primary villain's
+  stage (as a Roman numeral), or just "Villain" when it has no stage.
+  """
+  def villain_caption(scenario) do
+    case primary_villain(scenario) do
+      %{primary_side: %{stage: stage}} when is_integer(stage) and stage in 1..39 ->
+        "Villain · Stage #{roman(stage)}"
+
+      _ ->
+        "Villain"
+    end
+  end
+
+  defp roman(n) do
+    [{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}]
+    |> Enum.reduce({n, ""}, fn {value, numeral}, {rest, acc} ->
+      {rem(rest, value), acc <> String.duplicate(numeral, div(rest, value))}
+    end)
+    |> elem(1)
+  end
+
   defp villain_set_name(%{villain_set: %{name: name}}) when is_binary(name), do: name
   defp villain_set_name(_), do: nil
 
@@ -275,6 +297,10 @@ defmodule SanctumWeb.Components.ScenarioCards do
     do: %{official?: false, name: "@" <> to_string(u), avatar: avatar}
 
   def author(_), do: nil
+
+  @doc "The scenario's villain-set pack name, or nil (needs `villain_set: :pack` loaded)."
+  def pack_name(%{villain_set: %{pack: %{name: name}}}) when is_binary(name), do: name
+  def pack_name(_), do: nil
 
   @doc "The 'Official' badge shown in place of an author."
   def official_badge(assigns) do
