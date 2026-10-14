@@ -583,6 +583,23 @@ textarea::placeholder {
   box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.85) !important;
 }
 
+@layer components {
+  /* Scenario page: header meta chips and encounter-deck rows */
+  .meta-chip,
+  .deck-tag {
+    font-family: var(--font-barlow-condensed, 'Barlow Condensed', sans-serif);
+  }
+  .meta-chip {
+    @apply inline-flex h-[30px] items-center gap-2 border border-line bg-base-200 px-2.5 text-sm font-semibold uppercase tracking-[0.08em];
+  }
+  .deck-row {
+    @apply flex min-h-14 items-center gap-3.5 border-l-4 bg-black/40 px-4;
+  }
+  .deck-tag {
+    @apply inline-flex h-[22px] items-center bg-neutral px-2 text-xs font-bold uppercase tracking-[0.1em] text-base-content/70;
+  }
+}
+
 @layer utilities {
   /* Hard offset drop-shadow — the signature "printed cardstock" look */
   .shadow-comic-sm {
