@@ -73,7 +73,11 @@ defmodule SanctumWeb.Components.FilterSheet do
   attr :on_change, :string, default: "filters_change"
   attr :on_toggle, :string, default: "toggle_filters"
   attr :on_clear, :string, default: "clear"
-  attr :hide, :list, default: [], doc: "field names to omit (e.g. owned/mine when signed out)"
+
+  attr :hide, :list,
+    default: [],
+    doc:
+      ~s|field names to omit (e.g. owned/mine when signed out), or "field:value" to omit one option (e.g. "is:mine")|
 
   slot :body_extra,
     doc:
@@ -331,11 +335,22 @@ defmodule SanctumWeb.Components.FilterSheet do
 
   # -- helpers ----------------------------------------------------------------
 
+  defp hide_options(%{options: options} = control, hide) when is_list(options),
+    do: %{
+      control
+      | options: Enum.reject(options, fn {v, _} -> "#{control.name}:#{v}" in hide end)
+    }
+
+  defp hide_options(control, _hide), do: control
+
   defp visible_groups(registry, hide) do
     registry
     |> FormSchema.controls()
     |> Enum.map(fn {group, controls} ->
-      {group, Enum.reject(controls, &(&1.name in hide))}
+      {group,
+       controls
+       |> Enum.reject(&(&1.name in hide))
+       |> Enum.map(&hide_options(&1, hide))}
     end)
     |> Enum.reject(fn {_group, controls} -> controls == [] end)
   end
