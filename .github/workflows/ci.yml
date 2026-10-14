@@ -259,6 +259,9 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      # Workload identity federation: the action exchanges the GitHub OIDC
+      # token for a short-lived Anthropic access token (no static API key).
+      id-token: write
     concurrency:
       group: release-notes
       cancel-in-progress: false
@@ -314,7 +317,13 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action/base-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # IDs are not secrets; access is gated by the federation rule's
+          # claim match. Don't add anthropic_api_key here — a static key
+          # takes precedence and federation is skipped.
+          anthropic_federation_rule_id: fdrl_019BYfAEoiZDu6EpMmHUtDEh
+          anthropic_organization_id: 23e3587f-5c13-4a0d-ac4f-21a01e903f57
+          anthropic_service_account_id: svac_01LKbbx8YJwK4njvRuwptxGR
+          anthropic_workspace_id: wrkspc_014Dq39chVZn5Jm4wSsybVCS
           prompt_file: ${{ runner.temp }}/release-notes-prompt.md
           claude_args: >-
             --model claude-sonnet-5
