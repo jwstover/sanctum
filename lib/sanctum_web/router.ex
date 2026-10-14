@@ -111,6 +111,9 @@ defmodule SanctumWeb.Router do
       # Public deck-collection stats.
       live "/stats", StatsLive.Index, :index
 
+      # Public archive of player-facing release notes (priv/release_notes).
+      live "/releases", ReleaseNotesLive.Index, :index
+
       # Dev playground for refining the comic stat badges.
       live "/dev/stat-badges", DevLive.StatBadges, :index
     end

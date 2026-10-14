@@ -11,6 +11,7 @@ defmodule SanctumWeb.HomeLive.Index do
   require Ash.Query
 
   import SanctumWeb.Components.CardSideTile, only: [card_side_tile: 1]
+  import SanctumWeb.Components.ReleaseNote, only: [release_note: 1]
   import SanctumWeb.Components.StatTile, only: [stat_tile: 1]
 
   alias Sanctum.Decks.Stats
@@ -159,22 +160,18 @@ defmodule SanctumWeb.HomeLive.Index do
 
       <!-- what's new: latest player-facing release notes; hidden until one exists -->
       <section :if={@release_notes != []} id="whats-new" class="mt-10">
-        <h2 class="font-anton text-lg uppercase tracking-[0.05em]">What's New</h2>
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="font-anton text-lg uppercase tracking-[0.05em]">What's New</h2>
+          <.link
+            navigate={~p"/releases"}
+            class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/55 hover:text-primary"
+          >
+            See all releases →
+          </.link>
+        </div>
 
         <div class="mt-3 flex flex-col gap-3">
-          <.panel :for={note <- @release_notes} class="px-5 py-5 sm:px-6">
-            <div class="flex items-baseline justify-between gap-3">
-              <span class="font-anton text-xl uppercase leading-none text-primary">
-                {note.tag}
-              </span>
-              <span class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/45">
-                {Calendar.strftime(note.date, "%b %-d, %Y")}
-              </span>
-            </div>
-            <div class="deck-writeup release-notes mt-3">
-              {Sanctum.ReleaseNotes.to_html(note)}
-            </div>
-          </.panel>
+          <.release_note :for={note <- @release_notes} note={note} />
         </div>
       </section>
 

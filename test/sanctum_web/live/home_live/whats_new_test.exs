@@ -35,5 +35,6 @@ defmodule SanctumWeb.HomeLive.WhatsNewTest do
     assert section =~ "Feature 10"
     refute section =~ "Feature 9<"
     assert :binary.match(section, "v1.100.0") < :binary.match(section, "v1.10.0")
+    assert has_element?(view, ~s(#whats-new a[href="/releases"]), "See all releases")
   end
 end
