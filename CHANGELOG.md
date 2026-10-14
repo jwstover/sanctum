@@ -1,3 +1,12 @@
+# [1.100.0](https://github.com/jwstover/sanctum/compare/v1.99.0...v1.100.0) (2026-10-14)
+
+
+### Features
+
+* **releases:** add /releases archive page and sidebar nav link ([484468a](https://github.com/jwstover/sanctum/commit/484468a9600b2055f7bf2e2879c0047ff92b44ab))
+
+
+
 # [1.99.0](https://github.com/jwstover/sanctum/compare/v1.98.0...v1.99.0) (2026-10-14)
 
 
@@ -38,16 +47,6 @@
 * **homebrew:** alt-art wizard + one-surface typed uploads ([d2facb3](https://github.com/jwstover/sanctum/commit/d2facb38330df82a366f9623564f4c15f112cee8))
 * **homebrew:** ensure_project_set bridge for uploads ([83e3f2c](https://github.com/jwstover/sanctum/commit/83e3f2c3245c94a13891aabf1811d948b3fd3b84))
 * **homebrew:** point custom cards, alts and aspects at sets ([caade98](https://github.com/jwstover/sanctum/commit/caade9892843b2aff8c9677c188ad5f0aac2f1a3))
-
-
-
-# [1.95.0](https://github.com/jwstover/sanctum/compare/v1.94.0...v1.95.0) (2026-10-01)
-
-
-### Features
-
-* **api:** public deck-import JSON endpoint for the TTS tile ([990f811](https://github.com/jwstover/sanctum/commit/990f811477eb7dab741b148ecd12707a09978a72)), closes [#99](https://github.com/jwstover/sanctum/issues/99)
-* **api:** rate-limit the :api pipeline ([ae857e1](https://github.com/jwstover/sanctum/commit/ae857e1393f6ff8579e40b899f5f87f5bdec48cf))
 
 
 
