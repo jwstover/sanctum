@@ -59,7 +59,7 @@ defmodule Sanctum.MixProject do
       {:picosat_elixir, "~> 0.2"},
       {:sourceror, "~> 1.8"},
       {:oban, "~> 2.0"},
-      {:ash_ai, "~> 0.2"},
+      {:ash_ai, "~> 1.2"},
       {:tidewave, "~> 0.2", only: [:dev, :prod_local]},
       {:live_debugger, "~> 1.0", only: [:dev, :prod_local]},
       {:ash_events, "~> 0.4"},
@@ -113,7 +113,7 @@ defmodule Sanctum.MixProject do
       {:jason, "~> 1.2"},
       {:nimble_parsec, "~> 1.4"},
       {:mdex, "~> 0.13"},
-      {:dns_cluster, "~> 0.2.0"},
+      {:dns_cluster, "~> 0.3.1"},
       {:bandit, "~> 1.5"},
       {:faker, "~> 0.18", only: :test}
     ]

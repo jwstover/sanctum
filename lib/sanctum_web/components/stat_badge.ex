@@ -66,6 +66,9 @@ defmodule SanctumWeb.Components.StatBadge do
   attr :class, :string, default: nil
   attr :rest, :global
 
+  # Safe raw usage: `@dots` is the compile-time constant halftone markup above;
+  # no user input reaches it.
+  # sobelow_skip ["XSS.Raw"]
   def stat_badge(assigns) do
     stat = to_stat(assigns.stat)
 
