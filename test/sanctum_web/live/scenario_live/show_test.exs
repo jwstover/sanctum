@@ -99,6 +99,14 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute html =~ ~r/>\s*EVENT\s*</
   end
 
+  test "there is no breadcrumb above the header", ctx do
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
+    html = render_async(view)
+
+    refute html =~ ~r/>\s*Scenarios\s*<\/a>\s*<span aria-hidden="true">\/<\/span>/
+    refute html =~ ~r/>\s*Scenario\s*<\/span>/
+  end
+
   test "the cover shows the scenario name as H1 and the villain name as H2", ctx do
     {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
     render_async(view)
@@ -246,8 +254,27 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     assert has_element?(view, "#scenario-stats")
     assert html =~ "Minions"
     assert html =~ "Treacheries"
-    assert html =~ "Side Schemes"
+    assert html =~ "Side schemes"
     refute html =~ "Boost curve"
+  end
+
+  test "the stats panel shows only the design's four type tiles, in order", ctx do
+    encounter_card!(ctx.modular, "88011", :attachment, %{})
+    encounter_card!(ctx.modular, "88012", :treachery, %{})
+    encounter_card!(ctx.modular, "88013", :side_scheme, %{})
+    encounter_card!(ctx.modular, "88014", :minion, %{})
+    encounter_card!(ctx.modular, "88015", :upgrade, %{})
+    encounter_card!(ctx.modular, "88016", :obligation, %{})
+
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.official.id}")
+    render_async(view)
+    stats = view |> element("#scenario-stats") |> render()
+
+    assert stats =~ ~r/Minions.*Side schemes.*Treacheries.*Attachments/s
+    refute stats =~ "Upgrades"
+    refute stats =~ "Obligations"
+    # The upgrade and obligation still count toward the total (6 cards × 2).
+    assert render(view) =~ ~r/>\s*12\s*<\/div>\s*<div[^>]*>\s*Encounter Cards/
   end
 
   test "a scenario whose set has no villain cards still renders", %{conn: conn} do

@@ -17,12 +17,6 @@ defmodule SanctumWeb.ScenarioLive.Show do
       </div>
 
       <div :if={@scenario != nil}>
-        <div class="mb-1 flex items-center gap-2 font-barlow-condensed text-sm uppercase tracking-[0.14em] text-base-content/50">
-          <.link navigate={~p"/scenarios"}>Scenarios</.link>
-          <span aria-hidden="true">/</span>
-          <span class="text-secondary">Scenario</span>
-        </div>
-
         <.header>
           {@scenario.name}
           <:actions>
