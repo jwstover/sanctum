@@ -9,6 +9,8 @@ defmodule Sanctum.CardImages do
   `AWS_ENDPOINT_URL_S3`, and `BUCKET_NAME`.
   """
 
+  alias Sanctum.CardImages.Processor
+
   @user_agent "sanctum (personal Marvel Champions smart table; one-time mirror)"
 
   @doc """
@@ -134,6 +136,47 @@ defmodule Sanctum.CardImages do
       {:error, exception} -> {:error, {:upload_failed, exception, key}}
     end
   end
+
+  @doc """
+  Object key a replacement upload overwrites: the side's existing key, or a
+  code-derived one when it has no image yet.
+  """
+  def replacement_key(image_url, code), do: key_from_url(image_url) || "cards/#{code}.png"
+
+  @doc "Public URL for `key`, or the side's existing `image_url` when it has one."
+  def replacement_url(image_url, key), do: image_url || base_url() <> "/" <> key
+
+  @doc """
+  Reads an uploaded temp file at `path`, normalizes it (converts to the key's
+  format, downscales), and overwrites the bucket object at `key`.
+
+  The content type is derived from the key, never from the client — the upload
+  may be a TIFF, but the stored object is always PNG or JPEG.
+
+  `path` is a LiveView-owned temp-upload path, not user-controlled input, so
+  Sobelow's Traversal.FileModule finding here is a false positive (the check
+  is ignored project-wide in .sobelow-conf).
+
+  Returns `:ok` or `{:error, reason}`.
+  """
+  def store_replacement(path, key) do
+    ext = target_ext(key)
+
+    with {:ok, body} <- File.read(path),
+         {:ok, converted} <- Processor.normalize(body, ext) do
+      put_object(key, converted, content_type_for(ext))
+    end
+  end
+
+  defp target_ext(key) do
+    case key |> Path.extname() |> String.downcase() do
+      ext when ext in [".jpg", ".jpeg"] -> ".jpg"
+      _ -> ".png"
+    end
+  end
+
+  defp content_type_for(".jpg"), do: "image/jpeg"
+  defp content_type_for(_ext), do: "image/png"
 
   defp content_type(key) do
     case Path.extname(key) do
