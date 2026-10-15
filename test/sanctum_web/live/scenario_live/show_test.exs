@@ -166,10 +166,11 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute has_element?(view, "#scenario-build")
   end
 
-  test "a description renders as markdown; without one the panel shows a placeholder", ctx do
+  test "scenario notes render as markdown; without any the panel shows a placeholder", ctx do
     {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
     html = render_async(view)
-    assert html =~ "No description for this scenario."
+    assert has_element?(view, "#scenario-notes", "Scenario notes")
+    assert html =~ "No notes for this scenario."
 
     Sanctum.Games.set_scenario_description!(ctx.mine, %{description_md: "**Zz bold** notes"},
       actor: ctx.owner
@@ -177,8 +178,24 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
 
     {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
     html = render_async(view)
-    assert has_element?(view, "#scenario-description")
+    assert has_element?(view, "#scenario-notes")
     assert html =~ "<strong>Zz bold</strong>"
+    refute html =~ "No notes for this scenario."
+  end
+
+  test "a user scenario's notes panel has an author byline", ctx do
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
+    render_async(view)
+
+    assert has_element?(view, "#scenario-notes-byline", ~r/by\s+@zzbuilder/)
+  end
+
+  test "an official scenario's notes panel has no byline", ctx do
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.official.id}")
+    render_async(view)
+
+    assert has_element?(view, "#scenario-notes", "Scenario notes")
+    refute has_element?(view, "#scenario-notes-byline")
   end
 
   test "the owner gets a Build link", ctx do
