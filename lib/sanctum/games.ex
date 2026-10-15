@@ -53,6 +53,7 @@ defmodule Sanctum.Games do
       define :list_scenarios, action: :read
       define :list_scenarios_for_game_setup, action: :for_game_setup
       define :build_scenario, action: :build
+      define :duplicate_scenario, action: :duplicate, args: [:source_id]
       define :rename_scenario, action: :rename
       define :set_scenario_description, action: :set_description
       define :set_scenario_modular_sets, action: :set_modular_sets

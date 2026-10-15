@@ -275,4 +275,75 @@ defmodule Sanctum.Games.ScenarioTest do
       assert {:error, %Ash.Error.Invalid{}} = Games.list_scenarios_for_game_setup()
     end
   end
+
+  describe "duplicate and destroy" do
+    defp logged_game!(scenario) do
+      villain =
+        Sanctum.Villains.find_or_create_villain!(%{villain_name: "Zz V", set: scenario.set})
+
+      Ash.Seed.seed!(Sanctum.GameLog.LoggedGame, %{
+        user_id: user_fixture().id,
+        scenario_id: scenario.id,
+        villain_id: villain.id
+      })
+    end
+
+    test "copies any scenario, official included, as the actor's own" do
+      m = create(Sanctum.Catalog.CardSet, action: :upsert)
+
+      official =
+        Games.create_scenario!(
+          %{
+            name: "Off",
+            description_md: "Notes",
+            villain_set_id: villain_set!().id,
+            modular_sets: [m.id]
+          },
+          authorize?: false
+        )
+
+      user = user_fixture()
+      copy = Games.duplicate_scenario!(official.id, actor: user, load: [:modular_sets, :mine])
+
+      assert copy.id != official.id
+      assert copy.name == "Copy of Off"
+      assert copy.owner_id == user.id
+      assert copy.mine
+      assert copy.villain_set_id == official.villain_set_id
+      assert copy.set == official.set
+      assert copy.description_md == "Notes"
+      assert Enum.map(copy.modular_sets, & &1.id) == [m.id]
+      # The source is untouched.
+      assert Ash.load!(official, :official, authorize?: false).official
+    end
+
+    test "duplicating requires a signed-in actor" do
+      s = build!(user_fixture())
+      assert {:error, error} = Games.duplicate_scenario(s.id)
+      assert error.__struct__ in [Ash.Error.Invalid, Ash.Error.Forbidden]
+    end
+
+    test "a scenario with logged games can't be destroyed" do
+      owner = user_fixture()
+      s = build!(owner)
+      logged_game!(s)
+
+      assert {:error, %Ash.Error.Invalid{} = error} = Games.destroy_scenario(s, actor: owner)
+
+      assert Exception.message(error) =~
+               "This scenario has 1 logged game, so it can't be deleted."
+
+      logged_game!(s)
+      assert {:error, error} = Games.destroy_scenario(s, actor: admin_user_fixture())
+      assert Exception.message(error) =~ "has 2 logged games"
+      assert {:ok, _} = Games.get_scenario(s.id)
+    end
+
+    test "a non-owner is forbidden before the logged-game check runs" do
+      s = build!(user_fixture())
+      logged_game!(s)
+
+      assert {:error, %Ash.Error.Forbidden{}} = Games.destroy_scenario(s, actor: user_fixture())
+    end
+  end
 end
