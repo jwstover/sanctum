@@ -675,6 +675,22 @@ textarea::placeholder {
   font-size: var(--text-lg);
 }
 
+/* Scenario notes (/scenarios/:id): larger, brighter prose with tighter
+   paragraph gaps than deck writeups. */
+.deck-writeup.scenario-notes {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #d6d5dc;
+}
+@media (min-width: 40rem) {
+  .deck-writeup.scenario-notes {
+    font-size: 17px;
+  }
+}
+.deck-writeup.scenario-notes p {
+  margin-bottom: 14px;
+}
+
 .deck-writeup > :first-child {
   margin-top: 0;
 }

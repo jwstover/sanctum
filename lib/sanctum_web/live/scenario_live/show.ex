@@ -1,6 +1,6 @@
 defmodule SanctumWeb.ScenarioLive.Show do
   @moduledoc """
-  Public scenario detail: villain art, name, villain-set pack, description (markdown), modular sets and author.
+  Public scenario detail: villain art, name, villain-set pack, scenario notes (markdown), modular sets and author.
   """
   use SanctumWeb, :live_view
 
@@ -138,16 +138,31 @@ defmodule SanctumWeb.ScenarioLive.Show do
           </.panel>
 
           <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
-            <.panel id="scenario-description" class="min-w-0 p-5">
-              <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
-                Description
+            <.panel
+              id="scenario-notes"
+              class="flex min-w-0 flex-col gap-4 p-4 sm:px-6 sm:pt-[22px] sm:pb-[26px]"
+            >
+              <div class="flex items-baseline justify-between gap-3">
+                <div class="font-barlow-condensed text-sm font-medium uppercase tracking-[0.3em] text-[#8e8d96]">
+                  Scenario notes
+                </div>
+                <div
+                  :if={@view.author && !@view.author.official?}
+                  id="scenario-notes-byline"
+                  class="font-barlow text-[13px] text-[#77767f]"
+                >
+                  by {@view.author.name}
+                </div>
               </div>
-              <div :if={@view.description} class="mt-3 space-y-4">
+              <div
+                :if={@view.description}
+                class="max-w-[68ch] space-y-3.5"
+              >
                 <div :for={seg <- @view.description}>
-                  <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
+                  <div :if={seg.kind == :inline} class="deck-writeup scenario-notes">{seg.html}</div>
                   <iframe
                     :if={seg.kind == :rich}
-                    title="Scenario description"
+                    title="Scenario notes"
                     sandbox=""
                     referrerpolicy="no-referrer"
                     loading="lazy"
@@ -158,9 +173,9 @@ defmodule SanctumWeb.ScenarioLive.Show do
               </div>
               <div
                 :if={!@view.description}
-                class="mt-3 font-barlow text-sm italic text-base-content/45"
+                class="font-barlow text-sm italic text-base-content/45"
               >
-                No description for this scenario.
+                No notes for this scenario.
               </div>
             </.panel>
 
