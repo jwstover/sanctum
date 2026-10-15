@@ -248,7 +248,173 @@ defmodule SanctumWeb.CoreComponents do
   end
 
   @doc "JS command that opens a `confirm_dialog` / `confirm_button` by id."
-  def open_confirm(id), do: JS.dispatch("sanctum:confirm-open", to: "##{id}")
+  def open_confirm(js \\ %JS{}, id), do: JS.dispatch(js, "sanctum:confirm-open", to: "##{id}")
+
+  @doc """
+  A "More actions" (⋯) overflow menu: a 44×44 trigger and a dropdown of
+  `action_menu_item`s. Toggled client-side; closes on click-away and Escape,
+  keeping the trigger's `aria-expanded` in sync.
+
+  Items close the menu themselves — compose `close_action_menu/2` into their
+  `phx-click`. A `confirm_dialog` opened from an item must be rendered outside
+  the menu (a `<dialog>` can't show inside a hidden parent).
+
+  ## Examples
+
+      <.action_menu id="scenario-menu">
+        <.action_menu_item phx-click={close_action_menu("scenario-menu") |> JS.push("duplicate")}>
+          Duplicate
+        </.action_menu_item>
+      </.action_menu>
+  """
+  attr :id, :string, required: true
+  attr :label, :string, default: "More actions"
+  attr :class, :string, default: ""
+  slot :inner_block, required: true
+
+  def action_menu(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class={["relative", @class]}
+      phx-click-away={close_action_menu(@id)}
+      phx-window-keydown={close_action_menu(@id)}
+      phx-key="Escape"
+    >
+      <button
+        id={"#{@id}-trigger"}
+        type="button"
+        aria-label={@label}
+        aria-haspopup="menu"
+        aria-controls={"#{@id}-items"}
+        aria-expanded="false"
+        phx-click={
+          JS.toggle(to: "##{@id}-items")
+          |> JS.toggle_attribute({"aria-expanded", "true", "false"})
+        }
+        class="inline-flex size-11 cursor-pointer items-center justify-center bg-[#1c1c20] text-base-content shadow-[4px_4px_0_#000] transition-colors hover:bg-[#26262c] hover:text-white"
+      >
+        <.icon name="hero-ellipsis-horizontal" class="size-6" />
+      </button>
+      <div
+        id={"#{@id}-items"}
+        role="menu"
+        class="absolute top-14 right-0 z-40 hidden w-[220px] border border-[#2b2b31] bg-[#1c1c20] py-1.5 shadow-[6px_6px_0_#000]"
+      >
+        {render_slot(@inner_block)}
+      </div>
+    </div>
+    """
+  end
+
+  @doc "A row in an `action_menu`. `danger` renders it in red (destructive actions)."
+  attr :danger, :boolean, default: false
+  attr :class, :string, default: ""
+  attr :rest, :global, include: ~w(disabled)
+  slot :inner_block, required: true
+
+  def action_menu_item(assigns) do
+    ~H"""
+    <button
+      type="button"
+      role="menuitem"
+      class={[
+        "flex h-11 w-full cursor-pointer items-center gap-2.5 px-3.5 text-left font-barlow-condensed text-[15px] font-semibold uppercase tracking-[0.08em] transition-colors hover:bg-[#26262c]",
+        (@danger && "text-[#ff6b78]") || "text-base-content hover:text-white",
+        @class
+      ]}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </button>
+    """
+  end
+
+  @doc "A 1px divider between groups of `action_menu_item`s."
+  def action_menu_divider(assigns) do
+    ~H"""
+    <div role="separator" class="my-1.5 h-px bg-[#2b2b31]"></div>
+    """
+  end
+
+  @doc """
+  An `action_menu_item` that copies `url` to the clipboard, briefly swapping its
+  label to "Link copied". Without the async Clipboard API (insecure origins,
+  older WebViews) it falls back to `execCommand("copy")`, and failing that shows
+  the URL in the label so it can be copied by hand.
+  """
+  attr :id, :string, required: true
+  attr :url, :string, required: true
+  attr :menu, :string, required: true, doc: "the id of the enclosing `action_menu`"
+
+  def copy_link_item(assigns) do
+    ~H"""
+    <.action_menu_item
+      id={@id}
+      phx-hook=".CopyLink"
+      data-url={@url}
+      data-close={close_action_menu(@menu)}
+    >
+      <.icon name="hero-link" class="size-4" />
+      <span data-copy-label class="min-w-0 truncate select-all">Copy link</span>
+    </.action_menu_item>
+    <script :type={Phoenix.LiveView.ColocatedHook} name=".CopyLink">
+      export default {
+        mounted() {
+          this.label = this.el.querySelector("[data-copy-label]")
+          this.onClick = () => this.copy(this.el.dataset.url)
+          this.el.addEventListener("click", this.onClick)
+        },
+        async copy(url) {
+          let ok = false
+          try {
+            if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(url)
+              ok = true
+            }
+          } catch (_e) {}
+          if (!ok) ok = this.legacyCopy(url)
+
+          clearTimeout(this.timer)
+          if (ok) {
+            this.label.textContent = "Link copied"
+            this.timer = setTimeout(() => {
+              this.label.textContent = "Copy link"
+              this.liveSocket.execJS(this.el, this.el.dataset.close)
+            }, 1200)
+          } else {
+            // Leave the URL visible (select-all) for a manual copy.
+            this.label.textContent = url
+          }
+        },
+        legacyCopy(url) {
+          const ta = document.createElement("textarea")
+          ta.value = url
+          ta.setAttribute("readonly", "")
+          ta.style.position = "fixed"
+          ta.style.opacity = "0"
+          document.body.appendChild(ta)
+          ta.select()
+          let ok = false
+          try { ok = document.execCommand("copy") } catch (_e) {}
+          ta.remove()
+          return ok
+        },
+        destroyed() {
+          clearTimeout(this.timer)
+          this.el.removeEventListener("click", this.onClick)
+        },
+      }
+    </script>
+    """
+  end
+
+  @doc "JS command that closes an `action_menu` by id."
+  def close_action_menu(js \\ %JS{}, id) do
+    js
+    |> JS.hide(to: "##{id}-items")
+    |> JS.set_attribute({"aria-expanded", "false"}, to: "##{id}-trigger")
+  end
 
   @doc """
   Renders a "← Back" button that returns the user to wherever they came from
