@@ -14,7 +14,7 @@ defmodule Sanctum.Games.CardAlt do
       the creator/project FKs and an artist credit; its `code` is the source
       card's synthetic `custom-<uuid>` code, outside MarvelCDB's numeric
       space, so deck-slot resolution can never match it. Visibility follows
-      the project (published → everyone, else creator-only).
+      the set (published → everyone, else creator-only).
   """
 
   use Ash.Resource,
@@ -156,15 +156,15 @@ defmodule Sanctum.Games.CardAlt do
     # alts from anonymous card pages.
     policy action_type(:read) do
       authorize_if expr(origin == :official)
-      authorize_if expr(homebrew_project.visibility == :published)
+      authorize_if expr(homebrew_set.visibility == :published)
       authorize_if expr(creator_id == ^actor(:id))
     end
 
-    # Direct create: the actor must own the target homebrew project. The
-    # project id is an accepted attribute (visible to the policy); the change
+    # Direct create: the actor must own the target homebrew set. The
+    # set id is an accepted attribute (visible to the policy); the change
     # separately proves the target card is official via an actor-scoped read.
     policy action(:create_custom) do
-      authorize_if Sanctum.Homebrew.Checks.ActorOwnsProject
+      authorize_if Sanctum.Homebrew.Checks.ActorOwnsSet
     end
 
     # Create-time check resolving the :source_card_id ARGUMENT by hand —
