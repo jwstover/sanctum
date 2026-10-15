@@ -35,8 +35,42 @@ defmodule SanctumWeb.ScenarioLive.Show do
               <.icon name="hero-pencil-square" /> Edit
             </.button>
             <.back_button fallback={~p"/scenarios"} />
+            <.action_menu id="scenario-menu">
+              <.copy_link_item
+                id="scenario-copy-link"
+                menu="scenario-menu"
+                url={url(~p"/scenarios/#{@scenario.id}")}
+              />
+              <.action_menu_item
+                :if={@current_user}
+                id="scenario-duplicate"
+                phx-click={close_action_menu("scenario-menu") |> JS.push("duplicate")}
+              >
+                <.icon name="hero-document-duplicate" class="size-4" /> Duplicate
+              </.action_menu_item>
+              <%= if can_delete?(@view, @current_user) do %>
+                <.action_menu_divider />
+                <.action_menu_item
+                  id="scenario-delete"
+                  danger
+                  phx-click={
+                    close_action_menu("scenario-menu") |> open_confirm("scenario-delete-confirm")
+                  }
+                >
+                  <.icon name="hero-trash" class="size-4" /> Delete scenario
+                </.action_menu_item>
+              <% end %>
+            </.action_menu>
           </:actions>
         </.header>
+
+        <.confirm_dialog
+          :if={can_delete?(@view, @current_user)}
+          id="scenario-delete-confirm"
+          message={"Delete “#{@scenario.name}”? This can't be undone."}
+          confirm_label="Delete"
+          phx-click="delete"
+        />
 
         <div class="space-y-5">
           <!-- cover -->
@@ -142,17 +176,8 @@ defmodule SanctumWeb.ScenarioLive.Show do
               id="scenario-notes"
               class="flex min-w-0 flex-col gap-4 p-4 sm:px-6 sm:pt-[22px] sm:pb-[26px]"
             >
-              <div class="flex items-baseline justify-between gap-3">
-                <div class="font-barlow-condensed text-sm font-medium uppercase tracking-[0.3em] text-[#8e8d96]">
-                  Scenario notes
-                </div>
-                <div
-                  :if={@view.author && !@view.author.official?}
-                  id="scenario-notes-byline"
-                  class="font-barlow text-[13px] text-[#77767f]"
-                >
-                  by {@view.author.name}
-                </div>
+              <div class="font-barlow-condensed text-sm font-medium uppercase tracking-[0.3em] text-[#8e8d96]">
+                Scenario notes
               </div>
               <div
                 :if={@view.description}
@@ -271,6 +296,45 @@ defmodule SanctumWeb.ScenarioLive.Show do
      |> put_flash(:error, "Couldn’t load scenario: #{inspect(reason)}")
      |> push_navigate(to: ~p"/scenarios")}
   end
+
+  @impl true
+  def handle_event("duplicate", _params, socket) do
+    case Sanctum.Games.duplicate_scenario(socket.assigns.scenario.id,
+           actor: socket.assigns.current_user
+         ) do
+      {:ok, copy} ->
+        {:noreply, push_navigate(socket, to: ~p"/scenarios/#{copy.id}/build")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Couldn’t duplicate this scenario.")}
+    end
+  end
+
+  def handle_event("delete", _params, socket) do
+    case Sanctum.Games.destroy_scenario(socket.assigns.scenario,
+           actor: socket.assigns.current_user
+         ) do
+      :ok ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Scenario deleted.")
+         |> push_navigate(to: ~p"/scenarios")}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, delete_error(error))}
+    end
+  end
+
+  # NoLoggedGames' message explains a blocked delete.
+  defp delete_error(%Ash.Error.Invalid{errors: [%{message: message} | _]})
+       when is_binary(message),
+       do: message
+
+  defp delete_error(%Ash.Error.Forbidden{}), do: "You can’t delete this scenario."
+  defp delete_error(_), do: "Couldn’t delete this scenario."
+
+  defp can_delete?(view, current_user),
+    do: view.mine or (current_user != nil and current_user.admin == true)
 
   # `:not_found` covers an unknown or invalid id.
   defp load_scenario(id, actor) do
