@@ -183,19 +183,12 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute html =~ "No notes for this scenario."
   end
 
-  test "a user scenario's notes panel has an author byline", ctx do
+  test "the notes panel has no author byline; the header already credits the author", ctx do
     {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
     render_async(view)
 
-    assert has_element?(view, "#scenario-notes-byline", ~r/by\s+@zzbuilder/)
-  end
-
-  test "an official scenario's notes panel has no byline", ctx do
-    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.official.id}")
-    render_async(view)
-
     assert has_element?(view, "#scenario-notes", "Scenario notes")
-    refute has_element?(view, "#scenario-notes-byline")
+    refute has_element?(view, "#scenario-notes", "@zzbuilder")
   end
 
   test "the owner gets a Build link", ctx do

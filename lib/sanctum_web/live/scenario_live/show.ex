@@ -142,17 +142,8 @@ defmodule SanctumWeb.ScenarioLive.Show do
               id="scenario-notes"
               class="flex min-w-0 flex-col gap-4 p-4 sm:px-6 sm:pt-[22px] sm:pb-[26px]"
             >
-              <div class="flex items-baseline justify-between gap-3">
-                <div class="font-barlow-condensed text-sm font-medium uppercase tracking-[0.3em] text-[#8e8d96]">
-                  Scenario notes
-                </div>
-                <div
-                  :if={@view.author && !@view.author.official?}
-                  id="scenario-notes-byline"
-                  class="font-barlow text-[13px] text-[#77767f]"
-                >
-                  by {@view.author.name}
-                </div>
+              <div class="font-barlow-condensed text-sm font-medium uppercase tracking-[0.3em] text-[#8e8d96]">
+                Scenario notes
               </div>
               <div
                 :if={@view.description}
