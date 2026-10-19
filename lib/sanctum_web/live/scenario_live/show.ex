@@ -17,6 +17,12 @@ defmodule SanctumWeb.ScenarioLive.Show do
       </div>
 
       <div :if={@scenario != nil}>
+        <div class="mb-1 flex items-center gap-2 font-barlow-condensed text-sm uppercase tracking-[0.14em] text-base-content/50">
+          <.link navigate={~p"/scenarios"}>Scenarios</.link>
+          <span aria-hidden="true">/</span>
+          <span class="text-secondary">Scenario</span>
+        </div>
+
         <.header>
           {@scenario.name}
           <:actions>
@@ -26,16 +32,17 @@ defmodule SanctumWeb.ScenarioLive.Show do
               variant="primary"
               navigate={~p"/scenarios/#{@scenario.id}/build"}
             >
-              <.icon name="hero-wrench-screwdriver" /> Build
+              <.icon name="hero-pencil-square" /> Edit
             </.button>
             <.back_button fallback={~p"/scenarios"} />
           </:actions>
         </.header>
 
         <div class="space-y-5">
-          <.panel class="relative flex flex-col gap-5 overflow-hidden p-4 sm:flex-row sm:items-start">
+          <!-- cover -->
+          <.panel class="flex flex-col gap-5 p-4 sm:flex-row sm:items-start">
             <div
-              class="h-[330px] w-[236px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start"
+              class="h-[300px] w-[214px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start"
               style="transform:rotate(-1.5deg);"
             >
               <.mc_card
@@ -48,66 +55,119 @@ defmodule SanctumWeb.ScenarioLive.Show do
             </div>
 
             <div class="flex min-w-0 flex-1 flex-col">
-              <div
-                id="scenario-villain-set"
-                class="font-ibm-mono text-xs uppercase tracking-[0.25em] text-primary"
-              >
+              <div class="font-ibm-mono text-xs uppercase tracking-[0.25em] text-primary">
                 Scenario · {@view.villain_set_name}
               </div>
               <h1 class="mt-1.5 font-anton text-4xl uppercase leading-[0.9] [text-wrap:balance] sm:text-5xl sm:leading-[0.88]">
                 {@scenario.name}
               </h1>
-              <div :if={@view.author} id="scenario-author" class="mt-4 flex items-center gap-2">
-                <.official_badge :if={@view.author.official?} />
-                <%= if !@view.author.official? do %>
+
+              <span
+                :if={@view.author && @view.author.official?}
+                class="mt-3 inline-flex w-fit"
+              >
+                <.official_badge />
+              </span>
+
+              <div class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
+                <div>
+                  <div class="font-anton text-3xl leading-none">{length(@view.modular_sets)}</div>
+                  <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
+                    {(length(@view.modular_sets) == 1 && "Modular Set") || "Modular Sets"}
+                  </div>
+                </div>
+                <div :if={@view.total_cards > 0}>
+                  <div class="font-anton text-3xl leading-none">{@view.total_cards}</div>
+                  <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
+                    Encounter Cards
+                  </div>
+                </div>
+                <div :if={@view.author && !@view.author.official?} class="flex items-center gap-2">
                   <.avatar name={@view.author.name} url={@view.author.avatar} size="md" />
                   <span class="font-barlow-condensed text-sm font-bold text-primary">
                     {@view.author.name}
                   </span>
-                <% end %>
+                </div>
+                <span class="font-barlow text-sm text-base-content/50">
+                  Updated {Calendar.strftime(@scenario.updated_at, "%b %-d, %Y")}
+                </span>
               </div>
             </div>
           </.panel>
 
-          <.panel :if={@view.description} id="scenario-description" class="min-w-0 p-4">
-            <h2 class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
-              Description
-            </h2>
-            <div class="mt-3 space-y-4">
-              <div :for={seg <- @view.description}>
-                <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
-                <iframe
-                  :if={seg.kind == :rich}
-                  title="Scenario description"
-                  sandbox=""
-                  referrerpolicy="no-referrer"
-                  loading="lazy"
-                  class="deck-writeup-frame"
-                  srcdoc={seg.srcdoc}
-                ></iframe>
+          <div class="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
+            <.panel id="scenario-description" class="min-w-0 p-5">
+              <div class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+                Description
               </div>
-            </div>
-          </.panel>
-
-          <.panel id="scenario-modular-sets" class="p-4">
-            <h2 class="font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
-              Modular Sets
-            </h2>
-            <div
-              :if={@view.modular_sets == []}
-              class="mt-3 font-barlow text-sm italic text-base-content/45"
-            >
-              No modular sets.
-            </div>
-            <div :if={@view.modular_sets != []} class="mt-3 flex flex-wrap gap-2">
-              <span
-                :for={name <- @view.modular_sets}
-                class="border-2 border-neutral bg-base-200 px-2 py-1 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em]"
+              <div :if={@view.description} class="mt-3 space-y-4">
+                <div :for={seg <- @view.description}>
+                  <div :if={seg.kind == :inline} class="deck-writeup">{seg.html}</div>
+                  <iframe
+                    :if={seg.kind == :rich}
+                    title="Scenario description"
+                    sandbox=""
+                    referrerpolicy="no-referrer"
+                    loading="lazy"
+                    class="deck-writeup-frame"
+                    srcdoc={seg.srcdoc}
+                  ></iframe>
+                </div>
+              </div>
+              <div
+                :if={!@view.description}
+                class="mt-3 font-barlow text-sm italic text-base-content/45"
               >
-                {name}
-              </span>
+                No description for this scenario.
+              </div>
+            </.panel>
+
+            <div class="min-w-0 space-y-5">
+              <.panel id="scenario-modular-sets" class="min-w-0 p-4">
+                <div class="mb-3 flex items-center gap-2 border-b-2 border-neutral pb-2">
+                  <div class="font-anton text-lg uppercase tracking-[0.05em]">In This Scenario</div>
+                  <div class="ml-auto font-ibm-mono text-xs text-base-content/45">
+                    {length(@view.modular_sets)} {(length(@view.modular_sets) == 1 && "set") ||
+                      "sets"}
+                  </div>
+                </div>
+                <div
+                  :if={@view.modular_sets == []}
+                  class="font-barlow text-sm italic text-base-content/45"
+                >
+                  No modular sets.
+                </div>
+                <div class="divide-y divide-neutral/50">
+                  <div
+                    :for={ms <- @view.modular_sets}
+                    id={"modular-set-#{ms.code}"}
+                    class="flex items-center gap-4 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div class="flex-none">
+                      <.card_fan cards={ms.fan} />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="font-barlow-condensed text-[17px] font-bold uppercase tracking-[0.05em]">
+                        {ms.name}
+                      </div>
+                      <div class="mt-1 text-xs text-base-content/50">Modular set</div>
+                    </div>
+                  </div>
+                </div>
+              </.panel>
+
+              <.panel
+                :if={stats_present?(@view.overall_stats)}
+                id="scenario-stats"
+                class="min-w-0 p-4"
+              >
+                <div class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
+                  Encounter Stats
+                </div>
+                <.encounter_stats stats={@view.overall_stats} />
+              </.panel>
             </div>
-          </.panel>
+          </div>
         </div>
       </div>
     </Layouts.app>
@@ -163,8 +223,8 @@ defmodule SanctumWeb.ScenarioLive.Show do
              :mine,
              :official,
              :owner,
-             :villain_set,
-             :modular_sets,
+             villain_set: [cards: [:primary_side]],
+             modular_sets: [cards: [:primary_side]],
              villains: [:primary_side]
            ]
          ) do
@@ -174,14 +234,18 @@ defmodule SanctumWeb.ScenarioLive.Show do
   end
 
   defp view(s) do
+    overall_stats = combined_stats([s.villain_set | s.modular_sets])
+
     %{
       villain_image: villain_image(s),
       villain_name: villain_name(s),
       villain_set_name: s.villain_set && s.villain_set.name,
+      overall_stats: overall_stats,
+      total_cards: overall_stats.type_counts |> Map.values() |> Enum.sum(),
       modular_sets:
         s.modular_sets
         |> Enum.sort_by(&String.downcase(&1.name || &1.code))
-        |> Enum.map(&(&1.name || &1.code)),
+        |> Enum.map(&encounter_set_view/1),
       description: Sanctum.Decks.Writeup.render(s.description_md),
       author: author(s),
       # :mine loads nil for a nil actor.
