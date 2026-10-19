@@ -97,7 +97,7 @@ defmodule Sanctum.MixProject do
       {:resend, "~> 1.0.0-rc.3"},
       {:req, "~> 0.5"},
       {:vix, "~> 0.31"},
-      {:sentry, "~> 13.3"},
+      {:sentry, "~> 14.0"},
       {:finch, "~> 0.21"},
       {:opentelemetry, "~> 1.7"},
       {:opentelemetry_api, "~> 1.5"},
