@@ -28,8 +28,7 @@ defmodule Sanctum.Observability do
   @doc """
   Attaches the Sentry-metrics forwarder for all `@metric_events`. Idempotent
   per handler id; called once from `Sanctum.Application.start/2`. Safe in
-  every env — without a DSN (dev) Sentry sends nothing, and test disables
-  metrics via `:enable_metrics`.
+  every env — without a DSN (dev/test) Sentry sends nothing.
   """
   def attach_metrics_handlers do
     :telemetry.attach_many(

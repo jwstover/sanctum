@@ -30,7 +30,7 @@ config :sentry,
   root_source_code_paths: [File.cwd!()],
   in_app_otp_apps: [:sanctum],
   integrations: [oban: [capture_errors: true, cron: [enabled: true]]],
-  enable_logs: true,
+  # Setting :level is what enables structured logs (sentry >= 14).
   logs: [level: :info, metadata: [:request_id, :game_id, :user_id]]
 
 # :traces_sampler is configured in config/runtime.exs, NOT here: Sentry's
