@@ -18,6 +18,9 @@ defmodule Sanctum.Games.Scenario do
       accept [:*]
       upsert? true
       upsert_identity :unique_set
+
+      argument :modular_sets, {:array, :uuid}
+      change manage_relationship(:modular_sets, type: :append_and_remove)
     end
   end
 
@@ -32,12 +35,18 @@ defmodule Sanctum.Games.Scenario do
 
     attribute :name, :string, public?: true, allow_nil?: false
     attribute :set, :string, public?: true, allow_nil?: false
-    attribute :recommended_modular_sets, {:array, :string}, public?: true, allow_nil?: false
 
     timestamps()
   end
 
   relationships do
+    many_to_many :modular_sets, Sanctum.Catalog.CardSet do
+      public? true
+      through Sanctum.Games.ScenarioModularSet
+      source_attribute_on_join_resource :scenario_id
+      destination_attribute_on_join_resource :card_set_id
+    end
+
     has_many :villains, Sanctum.Games.Card do
       source_attribute :set
       destination_attribute :set

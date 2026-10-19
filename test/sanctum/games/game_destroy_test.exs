@@ -49,8 +49,7 @@ defmodule Sanctum.Games.GameDestroyTest do
       {:ok, scenario} =
         Games.create_scenario(%{
           name: "Destroy Scenario",
-          set: "destroy_scenario",
-          recommended_modular_sets: []
+          set: "destroy_scenario"
         })
 
       # Villain card (drives game_villain creation)
