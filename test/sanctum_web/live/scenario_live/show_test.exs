@@ -84,7 +84,6 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     html = render_async(view)
 
     assert html =~ "Zz Official"
-    assert html =~ ctx.villain_set.name
     assert html =~ ctx.modular.name
     assert html =~ "Official"
     assert html =~ "https://example.test/rhino1.png"
@@ -100,11 +99,70 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute html =~ ~r/>\s*EVENT\s*</
   end
 
+  test "the cover shows the scenario name as H1 and the villain name as H2", ctx do
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
+    render_async(view)
+
+    assert has_element?(view, "h1", "Zz Mine")
+    assert has_element?(view, "h2#scenario-villain-name", "Zz Rhino 1")
+    refute has_element?(view, "#scenario-cover h1")
+  end
+
+  test "the cover shows the Villain tag, the pack tag and the stage caption", ctx do
+    pack =
+      create(Sanctum.Catalog.Pack,
+        action: :upsert_from_marvelcdb,
+        attrs: %{code: "zz_core", name: "Zz Core Set"}
+      )
+
+    Sanctum.Catalog.CardSet
+    |> Ash.Changeset.for_create(:upsert, %{
+      code: ctx.villain_set.code,
+      name: ctx.villain_set.name,
+      set_type: :villain,
+      pack_id: pack.id
+    })
+    |> Ash.create!(authorize?: false)
+
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
+    render_async(view)
+
+    assert has_element?(view, "#scenario-cover span", ~r/^\s*Villain\s*$/)
+    assert has_element?(view, "#scenario-pack-tag", "Zz Core Set")
+    assert has_element?(view, "#scenario-villain-stage", "Villain · Stage I")
+  end
+
+  test "without a pack the pack tag is hidden; without a stage the caption is just Villain",
+       %{conn: conn} do
+    bare = villain_set!()
+
+    scenario =
+      Sanctum.Games.create_scenario!(%{name: "Zz Bare", villain_set_id: bare.id},
+        authorize?: false
+      )
+
+    {:ok, view, _} = live(conn, ~p"/scenarios/#{scenario.id}")
+    render_async(view)
+
+    refute has_element?(view, "#scenario-pack-tag")
+    assert has_element?(view, "#scenario-villain-stage", ~r/^\s*Villain\s*$/)
+  end
+
+  test "an official scenario shows the Official badge in the author row", ctx do
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.official.id}")
+    render_async(view)
+
+    assert has_element?(view, "#scenario-author", "Official")
+    assert has_element?(view, "#scenario-author", "Updated")
+  end
+
   test "signed-out viewers see a user scenario's author", ctx do
     {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
     html = render_async(view)
 
     assert html =~ "@zzbuilder"
+    assert has_element?(view, "#scenario-author", "@zzbuilder")
+    refute has_element?(view, "#scenario-author", "Official")
     refute has_element?(view, "#scenario-build")
   end
 
