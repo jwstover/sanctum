@@ -232,21 +232,7 @@ defmodule SanctumWeb.DeckLive.Index do
   def mount(_params, _session, socket) do
     socket =
       socket
-      |> assign(:page_title, "Browse Decks")
-      |> assign(:query, "")
-      |> assign(:search_diagnostics, [])
-      |> assign(:sort, "new")
-      |> assign(:filters_open?, false)
-      |> assign(:filter_count, 0)
-      # nil until the first async load lands — drives the loading/skeleton UI.
-      |> assign(:total, nil)
-      |> assign(:count, nil)
-      |> assign(:sort_options, @sorts)
-      |> assign(:offset, 0)
-      |> assign(:end_of_timeline?, false)
-      |> assign(:req_id, 0)
-      |> assign(:loading?, true)
-      |> assign(:scroll_restore_pending?, false)
+      |> InfiniteScroll.init_browse("Browse Decks", @sorts)
       |> assign(:return_path, ~p"/decks")
       |> stream(:decks, [])
 
@@ -353,9 +339,14 @@ defmodule SanctumWeb.DeckLive.Index do
   # string (the sidecar sort radio rides along in the same form) and re-enter
   # the normal search path (URL → handle_params → load).
   def handle_event("filters_change", params, socket) do
-    fields = FormSync.fields_from_params(params, Sanctum.Search.DeckFields)
-    query = FormSync.update(socket.assigns.query, Sanctum.Search.DeckFields, fields)
-    sort = if params["sort"] in @sort_keys, do: params["sort"], else: socket.assigns.sort
+    {query, sort} =
+      InfiniteScroll.sheet_change(
+        params,
+        socket.assigns.query,
+        Sanctum.Search.DeckFields,
+        @sort_keys,
+        socket.assigns.sort
+      )
 
     {:noreply,
      push_patch(socket, to: decks_path(socket.assigns, query: query, sort: sort), replace: true)}
@@ -401,26 +392,8 @@ defmodule SanctumWeb.DeckLive.Index do
 
   @impl true
   def handle_async(:load_decks, {:ok, result}, socket) do
-    %{req: req, offset: offset, reset?: reset?, page: page, total: total} = result
-
-    # A newer filter/search/page request has since fired; drop these stale
-    # results so out-of-order completions can't clobber the current view.
-    if req == socket.assigns.req_id do
-      socket =
-        socket
-        |> assign(:offset, offset)
-        |> assign(:end_of_timeline?, !page.more?)
-        |> assign(:loading?, false)
-        |> InfiniteScroll.assign_total(total)
-        |> InfiniteScroll.assign_count(reset?, page.count)
-        |> stream(:decks, Enum.map(page.results, &deck_view(&1, socket.assigns.timezone)),
-          reset: reset?
-        )
-
-      {:noreply, InfiniteScroll.maybe_confirm_scroll_restore(socket)}
-    else
-      {:noreply, socket}
-    end
+    {:noreply,
+     InfiniteScroll.put_page(socket, :decks, result, &deck_view(&1, socket.assigns.timezone))}
   end
 
   def handle_async(:load_decks, {:exit, reason}, socket) do
@@ -445,9 +418,7 @@ defmodule SanctumWeb.DeckLive.Index do
   # restoration) while keeping `offset` as the logical last-page offset so
   # subsequent viewport loads continue from the right place.
   defp start_load(socket, offset, opts) do
-    reset? = Keyword.get(opts, :reset, false)
-    restore? = Keyword.get(opts, :restore, false)
-    {query_offset, limit} = if restore?, do: {0, offset + @page_size}, else: {offset, @page_size}
+    {_, _, reset?} = window = InfiniteScroll.load_opts(offset, @page_size, opts)
     req = socket.assigns.req_id + 1
     filters = filters(socket.assigns)
     actor = socket.assigns[:current_user]
@@ -460,38 +431,19 @@ defmodule SanctumWeb.DeckLive.Index do
     |> assign(:req_id, req)
     |> assign(:loading?, true)
     |> start_async(:load_decks, fn ->
-      page =
-        Sanctum.Decks.Deck
-        |> Ash.Query.for_read(:browse, filters, actor: actor)
-        |> Ash.read!(page: [limit: limit, offset: query_offset, count: reset?])
+      page = InfiniteScroll.read_page(Sanctum.Decks.Deck, filters, actor, window)
 
-      total = if fetch_total?, do: load_total(actor), else: nil
+      total = if fetch_total?, do: InfiniteScroll.count_all(Sanctum.Decks.Deck, actor), else: nil
 
       %{req: req, offset: offset, reset?: reset?, page: page, total: total}
     end)
-  end
-
-  # Full unfiltered catalog size for the "/ N decks" denominator.
-  defp load_total(actor) do
-    Sanctum.Decks.Deck
-    |> Ash.Query.for_read(:browse, %{}, actor: actor)
-    |> Ash.count!()
   end
 
   # /decks path carrying the current (or overridden) filters, omitting defaults.
   defp decks_path(assigns, overrides) do
     f = Map.merge(filters(assigns), Map.new(overrides))
 
-    params =
-      Enum.reject(
-        [query: f.query, sort: f.sort],
-        fn {k, v} ->
-          case k do
-            :query -> v == ""
-            :sort -> v == "new"
-          end
-        end
-      )
+    params = InfiniteScroll.browse_params(f.query, f.sort, "new")
 
     ~p"/decks?#{params}"
   end
