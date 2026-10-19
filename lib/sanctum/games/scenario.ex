@@ -17,7 +17,15 @@ defmodule Sanctum.Games.Scenario do
   end
 
   actions do
-    defaults [:read, :destroy]
+    defaults [:read]
+
+    destroy :destroy do
+      primary? true
+      require_atomic? false
+
+      # Runs after authorization, so only owners/admins learn the game count.
+      validate Sanctum.Games.Validations.NoLoggedGames, before_action?: true
+    end
 
     read :browse do
       description "The scenario browser: search-language filter (ScenarioFields), sort and offset pagination."
@@ -77,6 +85,15 @@ defmodule Sanctum.Games.Scenario do
       change Sanctum.Games.Changes.DefaultScenarioName
     end
 
+    create :duplicate do
+      description "Copies any scenario (official included) as a new scenario owned by the signed-in user."
+
+      argument :source_id, :uuid, allow_nil?: false
+
+      change relate_actor(:owner)
+      change Sanctum.Games.Changes.CopyScenario
+    end
+
     update :rename do
       accept [:name]
       require_atomic? false
@@ -106,7 +123,7 @@ defmodule Sanctum.Games.Scenario do
       authorize_if always()
     end
 
-    policy action(:build) do
+    policy action([:build, :duplicate]) do
       authorize_if actor_present()
     end
 
@@ -147,6 +164,8 @@ defmodule Sanctum.Games.Scenario do
       source_attribute_on_join_resource :scenario_id
       destination_attribute_on_join_resource :card_set_id
     end
+
+    has_many :logged_games, Sanctum.GameLog.LoggedGame
 
     has_many :villains, Sanctum.Games.Card do
       source_attribute :set
