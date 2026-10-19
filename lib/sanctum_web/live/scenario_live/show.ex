@@ -47,6 +47,7 @@ defmodule SanctumWeb.ScenarioLive.Show do
             >
               <.mc_card
                 name={@view.villain_name}
+                type={nil}
                 aspect="encounter"
                 image_url={@view.villain_image}
                 size="lg"

@@ -92,6 +92,14 @@ defmodule SanctumWeb.ScenarioLive.ShowTest do
     refute has_element?(view, "#scenario-build")
   end
 
+  test "the villain cover card shows no card-type label", ctx do
+    {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
+    html = render_async(view)
+
+    assert html =~ "https://example.test/rhino1.png"
+    refute html =~ ~r/>\s*EVENT\s*</
+  end
+
   test "signed-out viewers see a user scenario's author", ctx do
     {:ok, view, _} = live(ctx.conn, ~p"/scenarios/#{ctx.mine.id}")
     html = render_async(view)
