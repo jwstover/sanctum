@@ -27,12 +27,15 @@ defmodule SanctumWeb.Components.ScenarioCards do
 
   @boost_icon_types [:acceleration_icon, :amplify_icon, :crisis_icon, :hazard_icon]
 
+  # Structural side types left out of the card count and average boost.
+  @structural_types [:villain, :main_scheme]
+
   @doc """
   Computed display data for an encounter set (a scenario's villain set or one
   of its modular sets): a representative "fan" of primary-side cards for that
-  set's section. Expects `cards: [:primary_side]` loaded on the
-  `Sanctum.Catalog.CardSet`. Returns `nil` for a nil set. Content stats are
-  computed separately, combined across every set — see `combined_stats/1`.
+  set's section, plus that set's own `:stats` (see `combined_stats/1`).
+  Expects `cards: [:primary_side]` loaded on the `Sanctum.Catalog.CardSet`.
+  Returns `nil` for a nil set.
 
   ## Fan selection
 
@@ -46,7 +49,8 @@ defmodule SanctumWeb.Components.ScenarioCards do
     %{
       name: card_set.name || card_set.code,
       code: card_set.code,
-      fan: fan_cards(to_sides(cards))
+      fan: fan_cards(to_sides(cards)),
+      stats: combined_stats([card_set])
     }
   end
 
@@ -55,6 +59,12 @@ defmodule SanctumWeb.Components.ScenarioCards do
   encounter deck (villain set + every modular set) — for a single page-level
   stats panel. Expects `cards: [:primary_side]` loaded on each set; `nil`
   entries (an unset villain set) are dropped.
+
+  Returns `%{cards:, avg_boost:, type_counts:, icon_counts:}`. Every count is
+  weighted by `deck_limit` (nil counts as 1). `:cards` and `:avg_boost` cover
+  every non-villain, non-main-scheme card (not just the tile types); boost is
+  `boost` with nil as 0 (`boost_star` is ignored), and `:avg_boost` is a float,
+  or nil when there are no such cards.
   """
   def combined_stats(card_sets) do
     card_sets
@@ -98,8 +108,25 @@ defmodule SanctumWeb.Components.ScenarioCards do
           into: %{},
           do: {icon, sum_weight.(group)}
 
-    %{type_counts: type_counts, icon_counts: icon_counts}
+    deck = Enum.reject(sides, fn {_card, side} -> side.type in @structural_types end)
+    cards = sum_weight.(deck)
+
+    avg_boost =
+      if cards > 0 do
+        boost_total =
+          deck
+          |> Enum.map(fn {_card, side} = s -> (side.boost || 0) * weight.(s) end)
+          |> Enum.sum()
+
+        boost_total / cards
+      end
+
+    %{cards: cards, avg_boost: avg_boost, type_counts: type_counts, icon_counts: icon_counts}
   end
+
+  @doc "Formats an average boost (from `combined_stats/1`) to one decimal; `—` for nil."
+  def format_boost(nil), do: "—"
+  def format_boost(avg) when is_number(avg), do: :erlang.float_to_binary(avg / 1, decimals: 1)
 
   @doc "Whether `stats` (from `combined_stats/1`) has anything worth rendering."
   def stats_present?(stats), do: stats.type_counts != %{} or stats.icon_counts != %{}
