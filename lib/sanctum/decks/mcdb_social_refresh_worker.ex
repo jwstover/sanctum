@@ -5,10 +5,10 @@ defmodule Sanctum.Decks.McdbSocialRefreshWorker do
   crontab in config.
 
   Unlike the one-time backfill sweep, this is a single job that walks all of
-  its pages itself, sleeping between them: at 85 pages or fewer that's about
-  six minutes, well short of anything worth self-chaining like the backfill
+  its requests itself, sleeping between them: about 7 `by_date` requests plus a
+  handful of list pages (35 at most) — a few minutes at most, well short of anything worth self-chaining like the backfill
   does. A redeploy mid-run gets rescued by `Sanctum.Oban.BootRescue` or the
-  Lifeline plugin and simply reruns from page 1 on the next cron tick or
+  Lifeline plugin and simply reruns from the start on the next cron tick or
   rescue — the refresh is idempotent, so that's harmless.
 
   Runs on the shared `:mcdb_scrape` queue (`limit: 1`), so on a single node it

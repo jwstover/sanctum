@@ -155,8 +155,8 @@ defmodule SanctumWeb.AdminLive.Index do
         <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/50">
           MarvelCDB Social Sweep
         </h2>
-        <div :if={@mcdb_scrape == nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <.stat_skeleton :for={_ <- 1..5} />
+        <div :if={@mcdb_scrape == nil} class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <.stat_skeleton :for={_ <- 1..4} />
         </div>
         <div
           :if={@mcdb_scrape != nil}
@@ -194,7 +194,7 @@ defmodule SanctumWeb.AdminLive.Index do
               </button>
               <.confirm_button
                 id="confirm-mcdb-scrape"
-                message="Scrape every MarvelCDB decklist page (~4,500 pages, several hours)?"
+                message="Scrape every MarvelCDB decklist page for author usernames (~4,500 pages, several hours)?"
                 confirm_label="Start sweep"
                 phx-click="start_mcdb_scrape"
                 disabled={mcdb_scrape_status(@mcdb_scrape.state) == :running}
@@ -221,18 +221,13 @@ defmodule SanctumWeb.AdminLive.Index do
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             <.stat_tile label="Rows seen" value={mcdb_scrape_stat(@mcdb_scrape.state, :rows_seen)} />
             <.stat_tile label="Matched" value={mcdb_scrape_stat(@mcdb_scrape.state, :matched)} />
             <.stat_tile label="Unmatched" value={mcdb_scrape_stat(@mcdb_scrape.state, :unmatched)} />
             <.stat_tile
               label="Usernames updated"
               value={mcdb_scrape_stat(@mcdb_scrape.state, :users_updated)}
-            />
-            <.text_tile
-              label="Decklists missed"
-              value={mcdb_scrape_missing_label(@mcdb_scrape.state)}
-              accent={mcdb_scrape_missing_accent?(@mcdb_scrape.state)}
             />
           </div>
 
@@ -533,7 +528,7 @@ defmodule SanctumWeb.AdminLive.Index do
 
   # Resumes a :failed or :stalled sweep from the page after the last one
   # successfully applied. `resume: true` keeps the existing counters and
-  # started_at, so the missing-deck report still measures the whole sweep.
+  # started_at, so the progress row still describes the whole sweep.
   @impl true
   def handle_event("resume_mcdb_scrape", _params, socket) do
     case socket.assigns.mcdb_scrape && socket.assigns.mcdb_scrape.state do
@@ -787,9 +782,7 @@ defmodule SanctumWeb.AdminLive.Index do
   defp fmt_last_run(_), do: "never"
 
   # DB-backed progress for the MarvelCDB list-page sweep — see
-  # `Sanctum.Decks.McdbScrape`/`McdbScrapeState`. `missing_count` on the state
-  # comes from the last completed sweep's report rather than being recomputed
-  # on every load (a full decklist scan).
+  # `Sanctum.Decks.McdbScrape`/`McdbScrapeState`.
   defp load_mcdb_scrape do
     state =
       case Sanctum.Decks.get_mcdb_scrape_state(authorize?: false) do
@@ -861,12 +854,6 @@ defmodule SanctumWeb.AdminLive.Index do
 
   defp mcdb_scrape_stat(nil, _key), do: 0
   defp mcdb_scrape_stat(state, key), do: Map.get(state, key) || 0
-
-  defp mcdb_scrape_missing_label(%{missing_count: n}) when is_integer(n), do: to_string(n)
-  defp mcdb_scrape_missing_label(_state), do: "—"
-
-  defp mcdb_scrape_missing_accent?(%{missing_count: n}) when is_integer(n) and n > 0, do: true
-  defp mcdb_scrape_missing_accent?(_state), do: false
 
   defp fmt_coverage(with_count, total) when is_integer(total) and total > 0,
     do: "#{with_count}/#{total} (#{Float.round(with_count / total * 100, 1)}%)"

@@ -1,9 +1,11 @@
 defmodule Sanctum.MarvelCdb.DecklistPages do
   @moduledoc """
   Scrapes MarvelCDB's `/decklists/find/{page}?sort={date|likes}` HTML list
-  pages for data the JSON API doesn't expose: each decklist's author
-  (MarvelCDB has no public user endpoint) and social counts (likes,
-  favorites, comments).
+  pages for the one thing the JSON API doesn't expose: each decklist's author
+  (the API carries only `user_id`, and MarvelCDB has no public user endpoint,
+  so usernames come from here). Like counts come from the decklist API
+  instead: on import (`MarvelCdb.import_decklist`), the daily `by_date` window
+  in `Sanctum.Decks.McdbSocialRefresh`, and `Sanctum.Decks.McdbDeckRefresh`.
 
   Each page renders 12 decklists as `<div class="box">` blocks. Parsing works
   block by block so a row missing its author link can't accidentally borrow
@@ -18,9 +20,6 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
 
   @type row :: %{
           decklist_id: String.t(),
-          like_count: non_neg_integer(),
-          favorite_count: non_neg_integer(),
-          comment_count: non_neg_integer(),
           user_id: pos_integer() | nil,
           username: String.t() | nil
         }
@@ -30,9 +29,6 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
   @pagination_marker ~s(<ul class="pagination)
 
   @decklist_id_regex ~r{href="/decklist/view/(\d+)}
-  @like_count_regex ~r{class="social-icon-like".*?<span class="num">(\d+)</span>}s
-  @favorite_count_regex ~r{class="social-icon-favorite".*?<span class="num">(\d+)</span>}s
-  @comment_count_regex ~r{class="social-icon-comment".*?<span class="num">(\d+)</span>}s
   @author_regex ~r{<a href="/user/profile/(\d+)/[^"]*" class="username[^"]*">(.*?)</a>}s
   @pagination_number_regex ~r{<a href="[^"]*">\s*(\d+)}
 
@@ -65,38 +61,35 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
   @doc """
   Writes scraped rows to the database.
 
-  Decks are matched by `(mcdb_type: :decklist, mcdb_id)` and get
-  `mcdb_like_count` / `mcdb_social_synced_at` set. Rows for decklists not
-  held locally are skipped (silently — the by-date decklist sync is what
-  imports them) and counted as `:unmatched`.
+  Decks are matched by `(mcdb_type: :decklist, mcdb_id)`. Rows for decklists
+  not held locally are skipped (silently — the by-date decklist sync is what
+  imports them) and counted as `:unmatched`. Deck rows themselves are not
+  written.
 
   Usernames are upserted only for authors of *matched* rows: those authors
   already exist as `McdbUser` rows via import, so this only fills in
   usernames for authors we already hold decks for, without minting rows for
-  authors we don't.
-
-  Favorite and comment counts are parsed but intentionally not persisted —
-  only the like count is stored.
+  authors we don't. `:user_ids` lists the `mcdb_user_id`s written.
   """
   @spec apply_rows([row], keyword()) :: %{
           matched: non_neg_integer(),
           unmatched: non_neg_integer(),
-          updated_users: non_neg_integer()
+          updated_users: non_neg_integer(),
+          user_ids: [pos_integer()]
         }
   def apply_rows(rows, _opts \\ []) do
     deck_by_mcdb_id = load_decks(rows)
-    synced_at = DateTime.utc_now() |> DateTime.truncate(:second)
 
     {matched_rows, unmatched_rows} =
       Enum.split_with(rows, &Map.has_key?(deck_by_mcdb_id, &1.decklist_id))
 
-    Enum.each(matched_rows, &apply_social(&1, deck_by_mcdb_id, synced_at))
-    updated_users = matched_rows |> upsert_authors() |> length()
+    users = upsert_authors(matched_rows)
 
     %{
       matched: length(matched_rows),
       unmatched: length(unmatched_rows),
-      updated_users: updated_users
+      updated_users: length(users),
+      user_ids: Enum.map(users, & &1.mcdb_user_id)
     }
   end
 
@@ -121,19 +114,9 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
 
     Deck
     |> Ash.Query.filter(mcdb_type == :decklist and mcdb_id in ^ids)
-    |> Ash.Query.select([:id, :mcdb_id, :updated_at, :mcdb_like_count])
+    |> Ash.Query.select([:id, :mcdb_id])
     |> Ash.read!(authorize?: false)
     |> Map.new(&{&1.mcdb_id, &1})
-  end
-
-  defp apply_social(row, deck_by_mcdb_id, synced_at) do
-    deck = Map.fetch!(deck_by_mcdb_id, row.decklist_id)
-
-    Decks.set_deck_mcdb_social!(
-      deck,
-      %{mcdb_like_count: row.like_count, mcdb_social_synced_at: synced_at},
-      authorize?: false
-    )
   end
 
   defp upsert_authors(matched_rows) do
@@ -179,19 +162,9 @@ defmodule Sanctum.MarvelCdb.DecklistPages do
 
     %{
       decklist_id: decklist_id,
-      like_count: parse_count(@like_count_regex, block),
-      favorite_count: parse_count(@favorite_count_regex, block),
-      comment_count: parse_count(@comment_count_regex, block),
       user_id: user_id,
       username: username
     }
-  end
-
-  defp parse_count(regex, block) do
-    case Regex.run(regex, block) do
-      [_, count] -> String.to_integer(count)
-      nil -> 0
-    end
   end
 
   defp parse_author(block) do

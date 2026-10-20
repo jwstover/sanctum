@@ -2,12 +2,13 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
   @moduledoc """
   Adaptive per-decklist refresh of MarvelCDB like counts.
 
-  `Sanctum.Decks.McdbSocialRefresh`'s capped `sort=likes` walk (top ~600 decks)
-  plus its newest-35-pages date walk leave a coverage gap: a decklist that
-  gains a few likes, never cracks the top ~600 and has aged out of the date
-  window would never be refreshed. This module closes it: every locally-known
-  decklist carries its own schedule and is re-fetched from the decklist API
-  (`/api/public/decklist/{id}`, see `MarvelCdb.get_decklist/1`) when due. It runs alongside the list walks.
+  Like counts reach the database from three places: the hourly decklist sync
+  (today and yesterday), `Sanctum.Decks.McdbSocialRefresh`'s daily `by_date`
+  window (decks up to `initial_delay_days` old), and this module for everything
+  after. Every locally-known decklist carries its own schedule and is
+  re-fetched from the decklist API (`/api/public/decklist/{id}`, see
+  `MarvelCdb.get_decklist/1`) when due. It runs alongside the daily social
+  refresh.
 
   ## Schedule
 
@@ -24,11 +25,11 @@ defmodule Sanctum.Decks.McdbDeckRefresh do
   ## Defaults (⚠️ Decision to confirm — sized, not measured)
 
   `floor_days: 3`, `growth_factor: 2.0`, `ceiling_days: 365`,
-  `initial_delay_days: 7` (a new deck's first check, about when it leaves the
-  date walk's window), `batch_size: 25` per hourly run, a hard cap of 600
+  `initial_delay_days: 7` (a new deck's first check, when it leaves
+  `McdbSocialRefresh`'s `by_date` window, which defaults to this value), `batch_size: 25` per hourly run, a hard cap of 600
   requests/day. Sizing against ~55k decklists (2026-09-30): tail at the ceiling
   ~120/day, new-deck warm-up ~220/day, change-driven ~4/day per detected change
-  (X changes/day), so ~340 + 4X requests/day, plus the walks' 85. Rollout is
+  (X changes/day), so ~340 + 4X requests/day, plus the daily refresh's ~7 `by_date` requests and a few list pages. Rollout is
   spread by jittered seeding (~235/day), so there is no thundering herd. If the
   due backlog (logged each run) grows across days, tune the cap or constants;
   decks then slip later but are never skipped.

@@ -104,20 +104,16 @@ defmodule Sanctum.MarvelCdb.DecklistPagesTest do
 
       assert length(rows) == 12
       assert Enum.all?(rows, &(&1.decklist_id =~ ~r/^\d+$/))
-      assert Enum.all?(rows, &is_integer(&1.like_count))
-      assert Enum.all?(rows, &is_integer(&1.favorite_count))
-      assert Enum.all?(rows, &is_integer(&1.comment_count))
+
+      assert Enum.all?(
+               rows,
+               &(Map.keys(&1) |> Enum.sort() == [:decklist_id, :user_id, :username])
+             )
 
       first = hd(rows)
       assert first.decklist_id == "67151"
-      assert first.like_count == 0
-      assert first.favorite_count == 0
-      assert first.comment_count == 0
       assert first.user_id == 78_392
       assert first.username == "atom"
-
-      # The version badge ("3.0" on the first row) is never mistaken for a count.
-      refute Enum.any?(rows, &(&1.like_count == 3 or &1.favorite_count == 3))
 
       assert last_page == 4560
     end
@@ -203,30 +199,6 @@ defmodule Sanctum.MarvelCdb.DecklistPagesTest do
     end
   end
 
-  describe "apply_rows/2 like_changed_at" do
-    test "stamps mcdb_like_changed_at only when the count changes" do
-      hero = create_hero()
-      same = create_mcdb_deck(hero, "70001")
-      changed = create_mcdb_deck(hero, "70002")
-
-      row = fn id, likes ->
-        %{
-          decklist_id: id,
-          like_count: likes,
-          favorite_count: 0,
-          comment_count: 0,
-          user_id: nil,
-          username: nil
-        }
-      end
-
-      DecklistPages.apply_rows([row.("70001", 0), row.("70002", 4)])
-
-      assert Ash.get!(Deck, same.id, authorize?: false).mcdb_like_changed_at == nil
-      assert Ash.get!(Deck, changed.id, authorize?: false).mcdb_like_changed_at != nil
-    end
-  end
-
   describe "apply_rows/2" do
     test "updates matched decks and fills usernames, leaves others untouched" do
       hero = create_hero()
@@ -248,34 +220,22 @@ defmodule Sanctum.MarvelCdb.DecklistPagesTest do
       rows = [
         %{
           decklist_id: "67151",
-          like_count: 5,
-          favorite_count: 2,
-          comment_count: 1,
           user_id: 78_392,
           username: "atom"
         },
         %{
           decklist_id: "67147",
-          like_count: 3,
-          favorite_count: 0,
-          comment_count: 0,
           user_id: 19_660,
           username: "BlueRiver"
         },
         %{
           decklist_id: unmatched_id,
-          like_count: 9,
-          favorite_count: 9,
-          comment_count: 9,
           user_id: 1,
           username: "nobody"
         },
         # A no-author row must not blank an existing username or crash.
         %{
           decklist_id: "67147",
-          like_count: 3,
-          favorite_count: 0,
-          comment_count: 0,
           user_id: nil,
           username: nil
         }
@@ -283,15 +243,17 @@ defmodule Sanctum.MarvelCdb.DecklistPagesTest do
 
       summary = DecklistPages.apply_rows(rows)
 
-      assert summary == %{matched: 3, unmatched: 1, updated_users: 2}
+      assert %{matched: 3, unmatched: 1, updated_users: 2, user_ids: user_ids} = summary
+      assert Enum.sort(user_ids) == [19_660, 78_392]
 
       matched_atom = Ash.get!(Deck, matched_atom.id, authorize?: false)
-      assert matched_atom.mcdb_like_count == 5
-      assert matched_atom.mcdb_social_synced_at != nil
+      # List-page rows no longer write social data.
+      assert matched_atom.mcdb_like_count == 0
+      assert matched_atom.mcdb_social_synced_at == nil
       assert DateTime.compare(matched_atom.updated_at, aged_at) == :eq
 
       matched_bluer = Ash.get!(Deck, matched_bluer.id, authorize?: false)
-      assert matched_bluer.mcdb_like_count == 3
+      assert matched_bluer.mcdb_like_count == 0
       assert DateTime.compare(matched_bluer.updated_at, aged_at) == :eq
 
       other_space = Ash.get!(Deck, other_space.id, authorize?: false)

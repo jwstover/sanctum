@@ -197,11 +197,12 @@ Gotchas learned setting it up: the card importer needs `memory_limit=1G`; the
 `website_url` parameter is a bare i18n routing hostname (`localhost`), not a URL;
 requires Composer 1 and MySQL 8.0. `docker compose down -v` resets the database.
 
-Upstream fix branches on the fork (PRs not yet opened): `feat/decklist-api-social-counts`
-(adds `like_count`/`favorite_count`/`comment_count` to the decklist API — the public
-API doesn't expose likes otherwise), `fix/by-date-empty-500` (the `by_date` 500 on
-empty days that `decklists_endpoint_healthy?` in `lib/sanctum/marvel_cdb.ex` works
-around), `feat/dev-seed-command`, and `feat/docker-dev-setup`.
+`feat/decklist-api-social-counts` (adds `like_count`/`favorite_count`/`comment_count` to
+the decklist API) has been merged upstream; Sanctum reads like counts from the API.
+Upstream fix branches on the fork (PRs not yet opened): `fix/by-date-empty-500` (the
+`by_date` 500 on empty days that `decklists_endpoint_healthy?` in
+`lib/sanctum/marvel_cdb.ex` works around), `feat/dev-seed-command`, and
+`feat/docker-dev-setup`.
 
 ## Dev Dashboards
 

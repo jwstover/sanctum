@@ -1,19 +1,19 @@
 defmodule Sanctum.Decks.McdbScrape do
   @moduledoc """
   Drives the one-time, paced sweep of every MarvelCDB decklist list page
-  (`/decklists/find/{page}`), filling in deck authors' usernames and like
-  counts for decks that were imported before those fields existed.
+  (`/decklists/find/{page}`), filling in deck authors' usernames for decks
+  imported before usernames were tracked. (Like counts come from the decklist
+  API, not this sweep.)
 
   `Sanctum.Decks.McdbScrapeWorker` calls into this module one page at a time;
-  this module owns the termination rule, the durable progress row
-  (`Sanctum.Decks.McdbScrapeState`), and the post-sweep report.
+  this module owns the termination rule and the durable progress row
+  (`Sanctum.Decks.McdbScrapeState`).
   """
 
   require Ash.Query
   require Logger
 
   alias Sanctum.Decks
-  alias Sanctum.Decks.Deck
   alias Sanctum.Decks.McdbScrapeWorker
   alias Sanctum.Decks.McdbUser
   alias Sanctum.MarvelCdb.DecklistPages
@@ -32,8 +32,7 @@ defmodule Sanctum.Decks.McdbScrape do
     :users_updated,
     :started_at,
     :finished_at,
-    :last_error,
-    :missing_count
+    :last_error
   ]
 
   @doc """
@@ -44,8 +43,8 @@ defmodule Sanctum.Decks.McdbScrape do
   sweep. Callers must check `job.conflict?`.
 
   `resume: true` (used when resuming a `:failed` sweep from `page`) keeps the
-  existing counters and `started_at`, so the missing-deck report at the end
-  still measures the whole sweep rather than just the resumed tail.
+  existing counters and `started_at`, so the progress row still describes the
+  whole sweep rather than just the resumed tail.
   """
   @spec start(keyword()) :: {:ok, Oban.Job.t()} | {:error, term()}
   def start(opts \\ []) do
@@ -112,9 +111,9 @@ defmodule Sanctum.Decks.McdbScrape do
     end
   end
 
-  defp handle_page(:last, page, sort, started_at, rows, last_page) do
+  defp handle_page(:last, page, sort, _started_at, rows, last_page) do
     case Repo.transaction(fn -> apply_page(page, sort, rows, last_page) end) do
-      {:ok, _} -> finish(started_at)
+      {:ok, _} -> finish()
       {:error, reason} -> {:error, reason}
     end
   end
@@ -131,9 +130,9 @@ defmodule Sanctum.Decks.McdbScrape do
 
   # Pages shrank under us (decklists deleted/unlisted mid-sweep) — finish
   # without applying anything. The last successfully applied page stays
-  # recorded; anything unseen shows up in the missing report.
-  defp handle_page(:overshoot, _page, _sort, started_at, _rows, _last_page),
-    do: finish(started_at)
+  # recorded.
+  defp handle_page(:overshoot, _page, _sort, _started_at, _rows, _last_page),
+    do: finish()
 
   defp handle_page({:error, _} = error, _page, _sort, _started_at, _rows, _last_page), do: error
 
@@ -175,21 +174,9 @@ defmodule Sanctum.Decks.McdbScrape do
     :ok
   end
 
-  defp finish(started_at) do
-    missing = missing_decklists(started_at)
-
-    write_state(%{
-      status: :done,
-      finished_at: DateTime.utc_now(),
-      missing_count: length(missing)
-    })
-
-    Logger.info("MCDB sweep done: #{length(missing)} decklists not seen")
-
-    if missing != [] do
-      Logger.info("MCDB sweep missing decklists: #{Enum.map_join(missing, ", ", & &1.mcdb_id)}")
-    end
-
+  defp finish do
+    write_state(%{status: :done, finished_at: DateTime.utc_now()})
+    Logger.info("MCDB sweep done")
     :ok
   end
 
@@ -208,36 +195,6 @@ defmodule Sanctum.Decks.McdbScrape do
   end
 
   defp format_error(page, reason), do: "page #{page}: #{inspect(reason)}"
-
-  @doc """
-  Decklists this sweep (or the most recent completed one, keyed by
-  `started_at`) never saw: local `:decklist` decks imported before the sweep
-  started whose social sync timestamp predates it too.
-
-  `inserted_at < started_at` excludes decks the hourly incremental sync
-  imports *during* the sweep — those belong to the next sweep/refresh, not
-  this report. `mcdb_social_synced_at < started_at` (rather than `is_nil`
-  alone) makes re-runs correct, since earlier sweeps/manual runs may already
-  have synced some of these decks.
-  """
-  @spec missing_decklists(DateTime.t()) :: [%{id: Ash.UUID.t(), mcdb_id: String.t()}]
-  def missing_decklists(started_at) do
-    # Only the `mcdb_social_synced_at` comparison needs second-precision
-    # truncation (that column is `:utc_datetime`); truncating the
-    # `inserted_at` bound too would floor it to the top of the second and
-    # could wrongly exclude a deck inserted earlier in that same second.
-    started_at_sec = DateTime.truncate(started_at, :second)
-
-    Deck
-    |> Ash.Query.filter(
-      mcdb_type == :decklist and inserted_at < ^started_at and
-        (is_nil(mcdb_social_synced_at) or mcdb_social_synced_at < ^started_at_sec)
-    )
-    |> Ash.Query.select([:id, :mcdb_id])
-    |> Ash.Query.sort(mcdb_id: :asc)
-    |> Ash.read!(authorize?: false)
-    |> Enum.map(&%{id: &1.id, mcdb_id: &1.mcdb_id})
-  end
 
   @doc """
   Username coverage, overall and restricted to authors of at least one
@@ -282,8 +239,7 @@ defmodule Sanctum.Decks.McdbScrape do
       page: page - 1,
       started_at: started_at,
       finished_at: nil,
-      last_error: nil,
-      missing_count: nil
+      last_error: nil
     }
 
     changes =

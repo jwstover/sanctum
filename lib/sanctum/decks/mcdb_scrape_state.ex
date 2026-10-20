@@ -3,7 +3,7 @@ defmodule Sanctum.Decks.McdbScrapeState do
   Durable progress record for the one-time MarvelCDB list-page sweep (see
   `Sanctum.Decks.McdbScrape`). It outlives Oban's pruned job rows (completed
   jobs vanish within about a minute) and is visible from every machine, so it
-  is the source of truth for `/admin` and for the post-sweep report — not the
+  is the source of truth for `/admin` and the release report — not the
   in-memory per-node `Sanctum.DeckSync.Monitor`.
 
   The cursor that actually drives the sweep lives in the running job's args;
@@ -44,8 +44,7 @@ defmodule Sanctum.Decks.McdbScrapeState do
         :users_updated,
         :started_at,
         :finished_at,
-        :last_error,
-        :missing_count
+        :last_error
       ]
 
       upsert? true
@@ -62,8 +61,7 @@ defmodule Sanctum.Decks.McdbScrapeState do
         :users_updated,
         :started_at,
         :finished_at,
-        :last_error,
-        :missing_count
+        :last_error
       ]
     end
   end
@@ -96,7 +94,8 @@ defmodule Sanctum.Decks.McdbScrapeState do
     attribute :finished_at, :utc_datetime_usec, public?: true
 
     attribute :last_error, :string, public?: true
-    # Decklists this sweep never saw, computed at finish.
+    # Unused since #92 (the sweep no longer stamps social data, so "missed"
+    # can't be computed). Drop via mix ash.codegen.
     attribute :missing_count, :integer, public?: true
 
     timestamps()

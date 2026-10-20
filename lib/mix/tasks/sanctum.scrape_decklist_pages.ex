@@ -1,15 +1,15 @@
 defmodule Mix.Tasks.Sanctum.ScrapeDecklistPages do
-  @shortdoc "Scrapes MarvelCDB decklist list pages for authors and like counts"
+  @shortdoc "Scrapes MarvelCDB decklist list pages for author usernames"
 
   @moduledoc """
   Scrapes MarvelCDB's `/decklists/find/{page}?sort={date|likes}` HTML list
-  pages for decklist authors and like counts, and applies them to
+  pages for decklist author usernames, and applies them to
   already-imported decks. Skips decklists not held locally.
 
       mix sanctum.scrape_decklist_pages                          # page 1, sort=date
       mix sanctum.scrape_decklist_pages --pages 50                # pages 1..50
       mix sanctum.scrape_decklist_pages --start 20 --pages 10      # pages 20..29
-      mix sanctum.scrape_decklist_pages --sort likes --pages 5     # top-liked first
+      mix sanctum.scrape_decklist_pages --sort likes --pages 5     # most-liked first
       mix sanctum.scrape_decklist_pages --pause-ms 5000            # slower pacing
 
   Stops early if a page reports no rows, or if `--start` has walked past
