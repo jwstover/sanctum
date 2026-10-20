@@ -6,12 +6,17 @@ defmodule SanctumWeb.MarvelCdbAuthController do
   This is account *linking*, not sign-in: the user must already be signed in to
   Sanctum, and nothing here creates or authenticates a `User`. See
   `Sanctum.MarvelCdb.OAuth` for why it doesn't go through AshAuthentication.
+
+  Linking *which* MarvelCDB account is a second step handled by
+  `Sanctum.MarvelCdb.AccountLink`, since the OAuth grant alone doesn't reveal
+  it — see that module's moduledoc.
   """
 
   use SanctumWeb, :controller
 
   require Logger
 
+  alias Sanctum.MarvelCdb.AccountLink
   alias Sanctum.MarvelCdb.Credentials
   alias Sanctum.MarvelCdb.OAuth
 
@@ -80,12 +85,21 @@ defmodule SanctumWeb.MarvelCdbAuthController do
     user = conn.assigns.current_user
 
     with {:ok, token} <- OAuth.exchange_code(code),
-         {:ok, _credential} <- Credentials.connect(user, token) do
+         {:ok, result} <- AccountLink.connect(user, token) do
       conn
       |> clear_state()
-      |> put_flash(:info, "Your MarvelCDB account is connected.")
+      |> put_flash(:info, connected_message(result))
       |> redirect(to: ~p"/profile")
     else
+      {:error, :claimed_by_other} ->
+        conn
+        |> clear_state()
+        |> put_flash(
+          :error,
+          "That MarvelCDB account is already linked to another Sanctum user. Sign in to that account instead, or contact an admin if this is wrong."
+        )
+        |> redirect(to: ~p"/profile")
+
       {:error, reason} ->
         Logger.warning("MarvelCDB account linking failed: #{inspect(reason)}")
 
@@ -94,6 +108,19 @@ defmodule SanctumWeb.MarvelCdbAuthController do
         |> put_flash(:error, "Could not connect your MarvelCDB account. Please try again.")
         |> redirect(to: ~p"/profile")
     end
+  end
+
+  defp connected_message({:linked, %{username: username}}) when is_binary(username) do
+    "Your MarvelCDB account is connected and linked as @#{username}."
+  end
+
+  defp connected_message({:linked, _mcdb_user}) do
+    "Your MarvelCDB account is connected and linked."
+  end
+
+  defp connected_message({:unlinked, _reason}) do
+    "Your MarvelCDB account is connected, but we couldn't identify it yet — MarvelCDB only " <>
+      "reveals your account through your decks. Create a deck on MarvelCDB, then reconnect."
   end
 
   defp require_user(%{assigns: %{current_user: %{} = _user}} = conn), do: {:ok, conn}

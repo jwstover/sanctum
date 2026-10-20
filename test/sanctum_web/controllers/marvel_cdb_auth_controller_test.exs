@@ -5,6 +5,7 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
   # MarvelCDB client credentials.
   use SanctumWeb.ConnCase, async: false
 
+  alias Sanctum.Decks
   alias Sanctum.MarvelCdb.Credentials
 
   @state_session_key :marvel_cdb_oauth_state
@@ -31,10 +32,34 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
     %{user: user_fixture()}
   end
 
-  defp stub_token(body, status \\ 200) do
+  # Routes by request path, the way the real client hits two different
+  # MarvelCDB endpoints during a connect: the token exchange, then (once a
+  # token exists) the decks lookup used to identify the account. Decks default
+  # to an empty list — an unlinked connect — unless a test cares.
+  defp stub_marvel_cdb(opts) do
+    {token_status, token_body} = Keyword.get(opts, :token, {200, %{}})
+    {decks_status, decks_body} = Keyword.get(opts, :decks, {200, []})
+
     Req.Test.stub(Sanctum.MarvelCdb, fn conn ->
-      conn |> Plug.Conn.put_status(status) |> Req.Test.json(body)
+      case conn.request_path do
+        "/oauth/v2/token" ->
+          conn |> Plug.Conn.put_status(token_status) |> Req.Test.json(token_body)
+
+        "/api/oauth2/decks" ->
+          assert Plug.Conn.get_req_header(conn, "authorization") ==
+                   ["Bearer #{token_body["access_token"]}"]
+
+          conn |> Plug.Conn.put_status(decks_status) |> Req.Test.json(decks_body)
+      end
     end)
+  end
+
+  defp stub_token(body, status) do
+    stub_marvel_cdb(token: {status, body})
+  end
+
+  defp default_token_body do
+    %{"access_token" => "access-abc", "refresh_token" => "refresh-xyz", "expires_in" => 3600}
   end
 
   describe "GET /marvelcdb/connect" do
@@ -68,11 +93,10 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
 
   describe "GET /marvelcdb/callback" do
     test "stores the grant when the state matches", %{conn: conn, user: user} do
-      stub_token(%{
-        "access_token" => "access-abc",
-        "refresh_token" => "refresh-xyz",
-        "expires_in" => 3600
-      })
+      stub_marvel_cdb(
+        token: {200, default_token_body()},
+        decks: {200, [%{"id" => 1, "user_id" => 4242}]}
+      )
 
       conn =
         conn
@@ -86,6 +110,157 @@ defmodule SanctumWeb.MarvelCdbAuthControllerTest do
 
       # Single-use: the state must not survive for a replay.
       refute get_session(conn, @state_session_key)
+    end
+
+    test "links the McdbUser and flashes a linked message when decks reveal the owner", %{
+      conn: conn,
+      user: user
+    } do
+      stub_marvel_cdb(
+        token: {200, default_token_body()},
+        decks: {200, [%{"id" => 1, "user_id" => 4242}]}
+      )
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> init_test_session(%{@state_session_key => "the-state"})
+        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "linked"
+
+      [mcdb_user] = Decks.list_claimed_mcdb_users!(actor: user)
+      assert mcdb_user.mcdb_user_id == 4242
+    end
+
+    test "preserves an existing McdbUser's username when linking", %{conn: conn, user: user} do
+      Sanctum.Decks.McdbUser
+      |> Ash.Changeset.for_create(:create, %{mcdb_user_id: 4242, username: "atom"})
+      |> Ash.create!(authorize?: false)
+
+      stub_marvel_cdb(
+        token: {200, default_token_body()},
+        decks: {200, [%{"id" => 1, "user_id" => 4242}]}
+      )
+
+      conn
+      |> log_in_user(user)
+      |> init_test_session(%{@state_session_key => "the-state"})
+      |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+
+      [mcdb_user] = Decks.list_claimed_mcdb_users!(actor: user)
+      assert mcdb_user.username == "atom"
+    end
+
+    test "refuses to link an account already claimed by another user", %{conn: conn, user: user} do
+      other = user_fixture()
+
+      {:ok, mcdb_user} = Decks.find_or_create_mcdb_user(%{mcdb_user_id: 4242})
+      {:ok, _} = Decks.claim_mcdb_user(mcdb_user, actor: other)
+
+      stub_marvel_cdb(
+        token: {200, default_token_body()},
+        decks: {200, [%{"id" => 1, "user_id" => 4242}]}
+      )
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> init_test_session(%{@state_session_key => "the-state"})
+        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+
+      assert redirected_to(conn) == ~p"/profile"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "already linked"
+      refute Credentials.connected?(user)
+
+      reloaded = Ash.get!(Sanctum.Decks.McdbUser, mcdb_user.id, authorize?: false)
+      assert reloaded.sanctum_user_id == other.id
+    end
+
+    test "stores the grant unlinked when the account has no decks (500)", %{
+      conn: conn,
+      user: user
+    } do
+      stub_marvel_cdb(token: {200, default_token_body()}, decks: {500, %{}})
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> init_test_session(%{@state_session_key => "the-state"})
+        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+
+      assert redirected_to(conn) == ~p"/profile"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "couldn't identify"
+      assert Credentials.connected?(user)
+      assert Decks.list_claimed_mcdb_users!(actor: user) == []
+    end
+
+    test "stores the grant unlinked when the account has no decks ([])", %{
+      conn: conn,
+      user: user
+    } do
+      stub_marvel_cdb(token: {200, default_token_body()}, decks: {200, []})
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> init_test_session(%{@state_session_key => "the-state"})
+        |> get(~p"/marvelcdb/callback", %{"code" => "the-code", "state" => "the-state"})
+
+      assert redirected_to(conn) == ~p"/profile"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "couldn't identify"
+      assert Credentials.connected?(user)
+      assert Decks.list_claimed_mcdb_users!(actor: user) == []
+    end
+
+    test "reconnecting the same user is idempotent", %{conn: conn, user: user} do
+      stub_marvel_cdb(
+        token: {200, default_token_body()},
+        decks: {200, [%{"id" => 1, "user_id" => 4242}]}
+      )
+
+      conn
+      |> log_in_user(user)
+      |> init_test_session(%{@state_session_key => "state-1"})
+      |> get(~p"/marvelcdb/callback", %{"code" => "code-1", "state" => "state-1"})
+
+      conn2 =
+        conn
+        |> recycle()
+        |> log_in_user(user)
+        |> init_test_session(%{@state_session_key => "state-2"})
+        |> get(~p"/marvelcdb/callback", %{"code" => "code-2", "state" => "state-2"})
+
+      assert Phoenix.Flash.get(conn2.assigns.flash, :info) =~ "linked"
+      [mcdb_user] = Decks.list_claimed_mcdb_users!(actor: user)
+      assert mcdb_user.mcdb_user_id == 4242
+    end
+
+    test "a retry after a 500 links on the next connect", %{conn: conn, user: user} do
+      stub_marvel_cdb(token: {200, default_token_body()}, decks: {500, %{}})
+
+      conn
+      |> log_in_user(user)
+      |> init_test_session(%{@state_session_key => "state-1"})
+      |> get(~p"/marvelcdb/callback", %{"code" => "code-1", "state" => "state-1"})
+
+      assert Decks.list_claimed_mcdb_users!(actor: user) == []
+
+      stub_marvel_cdb(
+        token: {200, default_token_body()},
+        decks: {200, [%{"id" => 1, "user_id" => 4242}]}
+      )
+
+      conn2 =
+        conn
+        |> recycle()
+        |> log_in_user(user)
+        |> init_test_session(%{@state_session_key => "state-2"})
+        |> get(~p"/marvelcdb/callback", %{"code" => "code-2", "state" => "state-2"})
+
+      assert Phoenix.Flash.get(conn2.assigns.flash, :info) =~ "linked"
+      [mcdb_user] = Decks.list_claimed_mcdb_users!(actor: user)
+      assert mcdb_user.mcdb_user_id == 4242
     end
 
     # The CSRF defense for the flow — a forged callback must never spend its
