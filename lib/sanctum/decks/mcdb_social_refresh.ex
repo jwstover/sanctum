@@ -1,52 +1,47 @@
 defmodule Sanctum.Decks.McdbSocialRefresh do
   @moduledoc """
-  Drives the daily MarvelCDB social refresh: keeps like counts and author
-  usernames current for decks we already hold, at a cost of a few dozen
-  requests a day.
+  Drives the daily MarvelCDB social refresh. It does two cheap things:
 
-  Walks the top `sort=likes` pages first, then the newest `sort=date` pages.
-  `sort=date` alone would miss like-count changes on older popular decks;
-  `sort=likes` alone would miss brand-new decks, which is what the date walk
-  covers.
+    * **Recent like counts.** For each day in the last `recent_like_days`
+      (excluding today, which the hourly sync covers), fetch `by_date` and
+      write `like_count` onto decks we already hold. This closes the gap
+      between the hourly sync (which only re-imports today and yesterday) and
+      `Sanctum.Decks.McdbDeckRefresh`'s first check at creation +
+      `initial_delay_days`. About 7 API requests a day.
+    * **Author usernames.** The API returns only a `user_id`, so usernames
+      still come from the HTML list pages. The walk is driven by a pending set:
+      authors with no username who have a `:decklist` deck created within
+      `username_lookback_days`. With nothing pending, no list page is
+      requested; otherwise `sort=date` pages are walked from page 1 until every
+      pending author has been filled (or the page cap is hit). The lookback
+      keeps authors who can never be filled (private `:deck`-only authors,
+      unlisted decks) from pinning every run at the cap.
 
-  The likes walk is capped at `likes_max_pages` rather than walked to the
-  first all-zero page as a literal reading of the goal might suggest. A
-  measurement against MarvelCDB on 2026-09-24 (`sort=likes`) found:
+  The old `sort=likes` walk is gone: the decklist API carries `like_count`,
+  and the long tail is covered by `McdbDeckRefresh`.
 
-      page 1:    1980 .. 822 likes
-      page 200:  all 12s
-      page 800:  all 2s
-      page 1200: all 1s
-      page 1600: all 0s
-
-  The first all-zero page sits somewhere between page 1200 and 1600 — walking
-  there costs ~1,200-1,600 requests a day (1.5-2h at this module's pacing),
-  which contradicts the "few dozen requests" goal. The deep pages are also
-  blocks of *equal* like counts (every row tied at 12, then 2, then 1); inside
-  a tie `sort=likes` has no stable order, so a deep walk would skip and repeat
-  rows regardless. `likes_max_pages` (default 50, the top ~600 decks) is kept
-  small and configurable; an all-zero page still stops the walk early as a
-  secondary exit.
-
-  The likes walk is now only a cheap refresher for the hot set (the top ~600
-  decks change often; 50 list pages beat ~200 per-deck fetches). Tail
-  coverage — and the guarantee that no decklist is permanently excluded —
-  comes from `Sanctum.Decks.McdbDeckRefresh`. Set `likes_max_pages: 0` to
-  disable this walk once the per-deck scheduler has cycled.
+  Scraping stays out of the hourly sync path on purpose. `DecklistSyncWorker`
+  runs on `:default`, so scraping there would break the "at most one
+  MarvelCDB fetch in flight" invariant the `:mcdb_scrape` queue provides, and
+  would couple the API sync to HTML scraping. (A future Ash Signal on
+  `McdbUser` creation with a nil username is the natural trigger.)
 
   Yields to the one-time backfill sweep (`Sanctum.Decks.McdbScrape`): if it's
   still running, `run/1` skips entirely rather than compete with it for the
   shared `:mcdb_scrape` queue slot and MarvelCDB's attention.
   """
 
+  require Ash.Query
   require Logger
 
   import Ecto.Query
 
+  alias Sanctum.Decks
+  alias Sanctum.Decks.Deck
+  alias Sanctum.Decks.McdbUser
+  alias Sanctum.MarvelCdb
   alias Sanctum.MarvelCdb.DecklistPages
   alias Sanctum.Repo
-
-  @type sort :: :date | :likes
 
   # Named as a string (not aliased to the module) so this module has no
   # compile-time dependency on the backfill sweep's worker — the backfill
@@ -55,33 +50,59 @@ defmodule Sanctum.Decks.McdbSocialRefresh do
   @backfill_worker "Sanctum.Decks.McdbScrapeWorker"
   @backfill_incomplete_states ["available", "scheduled", "executing", "retryable"]
 
-  @default_likes_max_pages 50
-  @default_date_pages 35
+  @default_username_lookback_days 14
+  @default_username_max_pages 35
+
+  @type run_error ::
+          {:recent_likes, Date.t(), term()} | {:usernames, pos_integer(), term()}
 
   @doc """
-  Runs the daily refresh: the top-liked pages, then the newest pages.
+  Runs the daily refresh: recent like counts, then the username walk.
 
   Options (default from `Application.get_env(:sanctum, __MODULE__, [])`):
 
-    * `:likes_max_pages` — cap on `sort=likes` pages walked (default #{@default_likes_max_pages}).
-    * `:date_pages` — number of `sort=date` pages walked (default #{@default_date_pages}).
-    * `:pace_fun` — 0-arity function called between pages (default sleeps).
+    * `:recent_like_days` — `by_date` days to refresh, ending yesterday
+      (default `McdbDeckRefresh`'s `initial_delay_days`, else 7).
+    * `:username_lookback_days` — how recent a deck must be for its author to
+      count as pending (default #{@default_username_lookback_days}).
+    * `:username_max_pages` — safety cap on `sort=date` pages (default #{@default_username_max_pages}).
+    * `:today` — a `Date`, for tests (default `Date.utc_today/0`).
+    * `:pace_fun` — 0-arity function called between requests (default sleeps).
     * `:backfill_running_fun` — 0-arity function used in place of `backfill_running?/0` (for tests).
 
   Returns `{:ok, summary}`, `{:skipped, :backfill_running}` if the backfill
-  sweep is already running, or `{:error, {sort, page, reason}}` if a fetch
-  fails outright. A fetch failure halts the whole run, but pages already
-  applied before the failure are already persisted — a rerun is idempotent.
+  sweep is already running, or `{:error, {:recent_likes, date, reason}}` /
+  `{:error, {:usernames, page, reason}}` if a fetch fails outright. A failure
+  halts the whole run, but work applied before it is already persisted — a
+  rerun is idempotent.
   """
   @spec run(keyword()) ::
-          {:ok, map()} | {:skipped, :backfill_running} | {:error, {sort(), pos_integer(), term()}}
+          {:ok, map()} | {:skipped, :backfill_running} | {:error, run_error()}
   def run(opts \\ []) do
     config = Application.get_env(:sanctum, __MODULE__, [])
 
-    likes_max_pages =
-      Keyword.get(opts, :likes_max_pages, config[:likes_max_pages] || @default_likes_max_pages)
+    recent_like_days =
+      Keyword.get(
+        opts,
+        :recent_like_days,
+        config[:recent_like_days] || default_recent_like_days()
+      )
 
-    date_pages = Keyword.get(opts, :date_pages, config[:date_pages] || @default_date_pages)
+    lookback_days =
+      Keyword.get(
+        opts,
+        :username_lookback_days,
+        config[:username_lookback_days] || @default_username_lookback_days
+      )
+
+    max_pages =
+      Keyword.get(
+        opts,
+        :username_max_pages,
+        config[:username_max_pages] || @default_username_max_pages
+      )
+
+    today = Keyword.get(opts, :today, Date.utc_today())
     pace_fun = Keyword.get(opts, :pace_fun, &pace/0)
     backfill_running_fun = Keyword.get(opts, :backfill_running_fun, &backfill_running?/0)
 
@@ -89,99 +110,220 @@ defmodule Sanctum.Decks.McdbSocialRefresh do
       Logger.info("MCDB social refresh skipped: backfill sweep in progress")
       {:skipped, :backfill_running}
     else
-      do_run(likes_max_pages, date_pages, pace_fun, backfill_running_fun)
+      with {:ok, likes} <- refresh_recent_likes(recent_like_days, today, pace_fun),
+           {:ok, usernames} <-
+             fill_usernames(lookback_days, max_pages, today, pace_fun, backfill_running_fun) do
+        summary = %{recent_likes: likes, usernames: usernames}
+        Logger.info("MCDB social refresh done: #{inspect(summary)}")
+        {:ok, summary}
+      end
     end
   end
 
-  defp do_run(likes_max_pages, date_pages, pace_fun, backfill_running_fun) do
-    with {:ok, likes} <-
-           walk(:likes, likes_max_pages, pace_fun, backfill_running_fun, stop_on_all_zero: true),
-         {:ok, date} <-
-           maybe_walk_date(likes, :date, date_pages, pace_fun, backfill_running_fun) do
-      summary = %{
-        likes: Map.delete(likes, :stopped),
-        date: Map.delete(date, :stopped),
-        stopped: date.stopped
-      }
-
-      Logger.info("MCDB social refresh done: #{inspect(summary)}")
-      {:ok, summary}
-    end
+  # Tied to McdbDeckRefresh's first check so the two windows can't drift apart.
+  defp default_recent_like_days do
+    Application.get_env(:sanctum, Sanctum.Decks.McdbDeckRefresh, [])[:initial_delay_days] || 7
   end
 
-  # The likes walk can itself end because the backfill started mid-walk; in
-  # that case skip the date walk too rather than layering a second signal.
-  defp maybe_walk_date(
-         %{stopped: :backfill_started} = likes,
-         _sort,
-         _max_pages,
-         _pace_fun,
-         _backfill_running_fun
-       ) do
-    {:ok, %{pages: 0, rows: 0, matched: 0, updated_users: 0, stopped: likes.stopped}}
+  ## Recent like counts
+
+  defp refresh_recent_likes(days, _today, _pace_fun) when days <= 0 do
+    {:ok, %{days: 0, decklists: 0, matched: 0, missing_like_count: 0}}
   end
 
-  defp maybe_walk_date(_likes, sort, max_pages, pace_fun, backfill_running_fun) do
-    walk(sort, max_pages, pace_fun, backfill_running_fun, stop_on_all_zero: false)
-  end
+  defp refresh_recent_likes(days, today, pace_fun) do
+    acc = %{days: 0, decklists: 0, matched: 0, missing_like_count: 0}
 
-  @spec walk(sort(), non_neg_integer(), (-> any()), (-> boolean()), keyword()) ::
-          {:ok, map()} | {:error, {sort(), pos_integer(), term()}}
-  defp walk(sort, max_pages, pace_fun, backfill_running_fun, opts) do
-    stop_on_all_zero = Keyword.fetch!(opts, :stop_on_all_zero)
-    acc = %{pages: 0, rows: 0, matched: 0, updated_users: 0}
+    Date.range(Date.add(today, -days), Date.add(today, -1))
+    |> Enum.reduce_while(acc, fn date, acc ->
+      if acc.days > 0, do: pace_fun.()
 
-    1..max_pages//1
-    |> Enum.reduce_while(acc, fn page, acc ->
-      if page > 1, do: pace_fun.()
+      case fetch_day(date) do
+        {:ok, decklists} ->
+          applied = apply_like_counts(decklists)
 
-      if backfill_running_fun.() do
-        {:halt, {:ok, Map.put(acc, :stopped, :backfill_started)}}
-      else
-        step_page(sort, page, acc, stop_on_all_zero)
+          Logger.info(
+            "MCDB social refresh #{date}: #{length(decklists)} decklists, " <>
+              "#{applied.matched} matched, #{applied.missing_like_count} without like_count"
+          )
+
+          {:cont,
+           %{
+             days: acc.days + 1,
+             decklists: acc.decklists + length(decklists),
+             matched: acc.matched + applied.matched,
+             missing_like_count: acc.missing_like_count + applied.missing_like_count
+           }}
+
+        {:error, reason} ->
+          {:halt, {:error, {:recent_likes, date, reason}}}
       end
     end)
     |> case do
-      %{} = acc -> {:ok, Map.put(acc, :stopped, :exhausted_pages)}
-      {:ok, acc} -> {:ok, acc}
-      {:error, {page, reason}} -> {:error, {sort, page, reason}}
+      {:error, _} = error ->
+        error
+
+      acc ->
+        if acc.missing_like_count > 0 do
+          Logger.warning(
+            "MCDB social refresh: #{acc.missing_like_count} decklists came back without like_count"
+          )
+        end
+
+        {:ok, acc}
     end
   end
 
-  defp step_page(sort, page, acc, stop_on_all_zero) do
-    case DecklistPages.fetch(page, sort) do
-      {:error, reason} ->
-        {:halt, {:error, {page, reason}}}
+  # Same empty-day-500 disambiguation as `DeckSync.sync_date/1`: MarvelCDB
+  # 500s on days with no decklists, so only a failing canary is a real outage.
+  defp fetch_day(date) do
+    case MarvelCdb.get_decklists_by_date(date) do
+      {:ok, decklists} ->
+        {:ok, decklists}
 
-      {:ok, %{rows: [], last_page: _}} ->
-        {:halt, {:ok, Map.put(acc, :stopped, :empty_page)}}
+      {:error, :not_found} ->
+        {:ok, []}
+
+      {:error, {:server_error, _status}} = error ->
+        if MarvelCdb.decklists_endpoint_healthy?(), do: {:ok, []}, else: error
+
+      {:error, _} = error ->
+        error
+    end
+  end
+
+  # Writes only `like_count`, only onto decks we already hold; the hourly sync
+  # imports the rest. A payload without an integer `like_count` is skipped,
+  # never read as 0.
+  defp apply_like_counts(decklists) do
+    counts = Map.new(decklists, &{to_string(&1["id"]), &1["like_count"]})
+    ids = Map.keys(counts)
+
+    decks =
+      Deck
+      |> Ash.Query.filter(mcdb_type == :decklist and mcdb_id in ^ids)
+      |> Ash.Query.select([:id, :mcdb_id, :mcdb_like_count, :updated_at])
+      |> Ash.read!(authorize?: false)
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    missing =
+      Enum.count(decks, fn deck ->
+        case Map.fetch!(counts, deck.mcdb_id) do
+          count when is_integer(count) ->
+            Decks.set_deck_mcdb_social!(
+              deck,
+              %{mcdb_like_count: count, mcdb_social_synced_at: now},
+              authorize?: false
+            )
+
+            false
+
+          _ ->
+            true
+        end
+      end)
+
+    %{matched: length(decks), missing_like_count: missing}
+  end
+
+  ## Usernames
+
+  defp fill_usernames(lookback_days, max_pages, today, pace_fun, backfill_running_fun) do
+    pending = pending_user_ids(lookback_days, today)
+    initial = MapSet.size(pending)
+
+    if initial == 0 do
+      {:ok,
+       %{
+         pending: 0,
+         pages: 0,
+         rows: 0,
+         matched: 0,
+         updated_users: 0,
+         remaining: 0,
+         stopped: :nothing_pending
+       }}
+    else
+      walk_pages(initial, pending, max_pages, pace_fun, backfill_running_fun)
+    end
+  end
+
+  defp walk_pages(initial, pending, max_pages, pace_fun, backfill_running_fun) do
+    acc = %{pending: initial, pages: 0, rows: 0, matched: 0, updated_users: 0}
+
+    1..max_pages//1
+    |> Enum.reduce_while({acc, pending}, fn page, {acc, pending} ->
+      if page > 1, do: pace_fun.()
+
+      if backfill_running_fun.() do
+        {:halt, {:ok, acc, pending, :backfill_started}}
+      else
+        step_page(page, acc, pending)
+      end
+    end)
+    |> case do
+      {:ok, acc, pending, stopped} -> finish_usernames(acc, pending, stopped)
+      {:error, _} = error -> error
+      {acc, pending} -> finish_usernames(acc, pending, :exhausted_pages)
+    end
+  end
+
+  defp step_page(page, acc, pending) do
+    case DecklistPages.fetch(page, :date) do
+      {:error, reason} ->
+        {:halt, {:error, {:usernames, page, reason}}}
+
+      {:ok, %{rows: []}} ->
+        {:halt, {:ok, acc, pending, :empty_page}}
 
       {:ok, %{rows: rows, last_page: last_page}} ->
         applied = DecklistPages.apply_rows(rows)
+        pending = MapSet.difference(pending, MapSet.new(applied.user_ids))
 
         acc = %{
-          pages: acc.pages + 1,
-          rows: acc.rows + length(rows),
-          matched: acc.matched + applied.matched,
-          updated_users: acc.updated_users + applied.updated_users
+          acc
+          | pages: acc.pages + 1,
+            rows: acc.rows + length(rows),
+            matched: acc.matched + applied.matched,
+            updated_users: acc.updated_users + applied.updated_users
         }
 
         Logger.info(
-          "MCDB social refresh #{sort} page #{page}: #{length(rows)} rows, " <>
-            "#{applied.matched} matched, #{applied.updated_users} usernames"
+          "MCDB social refresh date page #{page}: #{length(rows)} rows, " <>
+            "#{applied.matched} matched, #{applied.updated_users} usernames, " <>
+            "#{MapSet.size(pending)} pending"
         )
 
         cond do
-          stop_on_all_zero and Enum.all?(rows, &(&1.like_count == 0)) ->
-            {:halt, {:ok, Map.put(acc, :stopped, :all_zero)}}
-
-          is_integer(last_page) and page >= last_page ->
-            {:halt, {:ok, Map.put(acc, :stopped, :last_page)}}
-
-          true ->
-            {:cont, acc}
+          MapSet.size(pending) == 0 -> {:halt, {:ok, acc, pending, :all_known}}
+          is_integer(last_page) and page >= last_page -> {:halt, {:ok, acc, pending, :last_page}}
+          true -> {:cont, {acc, pending}}
         end
     end
+  end
+
+  defp finish_usernames(acc, pending, stopped) do
+    if stopped == :exhausted_pages and MapSet.size(pending) > 0 do
+      Logger.warning(
+        "MCDB social refresh: hit the page cap with #{MapSet.size(pending)} authors still without a username"
+      )
+    end
+
+    {:ok, Map.merge(acc, %{remaining: MapSet.size(pending), stopped: stopped})}
+  end
+
+  defp pending_user_ids(lookback_days, today) do
+    cutoff = DateTime.new!(Date.add(today, -lookback_days), ~T[00:00:00], "Etc/UTC")
+
+    McdbUser
+    |> Ash.Query.filter(
+      is_nil(username) and
+        exists(decks, mcdb_type == :decklist and mcdb_date_creation >= ^cutoff)
+    )
+    |> Ash.Query.select([:mcdb_user_id])
+    |> Ash.read!(authorize?: false)
+    |> MapSet.new(& &1.mcdb_user_id)
   end
 
   @doc """

@@ -106,12 +106,15 @@ config :sanctum, :marvel_cdb_req_options, []
 # Identifies Sanctum to MarvelCDB on scraped site pages (contact approved 2026-09-23).
 config :sanctum, :marvel_cdb_contact, url: "https://sanctummc.com", email: "jwstover@gmail.com"
 
-# Daily MarvelCDB social refresh: how many top-liked and newest list pages to re-scrape.
-# Deep `sort=likes` pages are big like-count ties with no stable order, so the likes walk is capped.
-config :sanctum, Sanctum.Decks.McdbSocialRefresh, likes_max_pages: 50, date_pages: 35
+# Daily MarvelCDB social refresh (Sanctum.Decks.McdbSocialRefresh): like counts for the last
+# recent_like_days via by_date (defaults to McdbDeckRefresh's initial_delay_days), then a
+# sort=date list-page walk only while recent decklist authors still lack a username.
+config :sanctum, Sanctum.Decks.McdbSocialRefresh,
+  username_lookback_days: 14,
+  username_max_pages: 35
 
 # Adaptive per-decklist like-count refresh (Sanctum.Decks.McdbDeckRefresh).
-# batch_size 25 x hourly = hard cap of 600 detail-page requests/day.
+# batch_size 25 x hourly = hard cap of 600 decklist API requests/day.
 config :sanctum, Sanctum.Decks.McdbDeckRefresh,
   floor_days: 3,
   ceiling_days: 365,
