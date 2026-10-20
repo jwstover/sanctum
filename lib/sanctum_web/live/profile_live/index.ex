@@ -213,7 +213,7 @@ defmodule SanctumWeb.ProfileLive.Index do
               your Sanctum profile.
             </p>
             <.link
-              href={~p"/marvelcdb/connect"}
+              href={~p"/auth/user/marvelcdb/connect"}
               class="mt-4 inline-flex items-center gap-1 font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-primary hover:text-primary/80"
             >
               Connect MarvelCDB <.icon name="hero-arrow-right" class="size-3.5" />
@@ -238,7 +238,7 @@ defmodule SanctumWeb.ProfileLive.Index do
             <div class="mt-4 flex items-center gap-3">
               <.link
                 :if={@mcdb_accounts == []}
-                href={~p"/marvelcdb/connect"}
+                href={~p"/auth/user/marvelcdb/connect"}
                 class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.06em] text-primary hover:text-primary/80"
               >
                 Reconnect

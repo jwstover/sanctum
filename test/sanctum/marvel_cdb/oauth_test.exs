@@ -27,7 +27,7 @@ defmodule Sanctum.MarvelCdb.OAuthTest do
     Application.put_env(
       :sanctum,
       :marvelcdb_redirect_uri,
-      "http://localhost:4150/marvelcdb/callback"
+      "http://localhost:4150/auth/user/marvelcdb/callback"
     )
 
     on_exit(fn ->
@@ -58,7 +58,7 @@ defmodule Sanctum.MarvelCdb.OAuthTest do
       assert params["client_id"] == "test-client-id"
       assert params["response_type"] == "code"
       assert params["state"] == "state-123"
-      assert params["redirect_uri"] == "http://localhost:4150/marvelcdb/callback"
+      assert params["redirect_uri"] == "http://localhost:4150/auth/user/marvelcdb/callback"
     end
 
     test "never leaks the client secret into the browser-visible URL" do
@@ -92,7 +92,7 @@ defmodule Sanctum.MarvelCdb.OAuthTest do
         assert params["client_id"] == "test-client-id"
         assert params["client_secret"] == "test-client-secret"
         # Required again at exchange time and must match the authorize step.
-        assert params["redirect_uri"] == "http://localhost:4150/marvelcdb/callback"
+        assert params["redirect_uri"] == "http://localhost:4150/auth/user/marvelcdb/callback"
 
         Req.Test.json(conn, %{"access_token" => "a", "expires_in" => 60})
       end)
