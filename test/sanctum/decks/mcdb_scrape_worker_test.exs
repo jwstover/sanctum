@@ -86,18 +86,15 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
     %{
       decklist_id: to_string(id),
       user_id: Keyword.get(opts, :user_id, id + 900_000),
-      username: Keyword.get(opts, :username, "user#{id}"),
-      like_count: Keyword.get(opts, :like_count, 0)
+      username: Keyword.get(opts, :username, "user#{id}")
     }
   end
 
-  defp box_html(%{decklist_id: id, user_id: user_id, username: username} = row) do
-    like = Map.get(row, :like_count, 0)
-
+  defp box_html(%{decklist_id: id, user_id: user_id, username: username}) do
     """
     <div class="box">
       <a href="/decklist/view/#{id}/slug">Deck #{id}</a>
-      <a id="social-icon-like" class="social-icon-like"><span class="num">#{like}</span></a>
+      <a id="social-icon-like" class="social-icon-like"><span class="num">0</span></a>
       <a id="social-icon-favorite" class="social-icon-favorite"><span class="num">0</span></a>
       <a id="social-icon-comment" class="social-icon-comment"><span class="num">0</span></a>
       <a href="/user/profile/#{user_id}/#{username}" class="username">#{username}</a>
@@ -163,7 +160,7 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
       hero = create_hero()
       create_mcdb_deck(hero, "1001")
 
-      stub_page(1, page_html([row(1001, like_count: 7)], last_page: 10))
+      stub_page(1, page_html([row(1001)], last_page: 10))
 
       {:ok, _job} = McdbScrape.start()
       started_at = current_started_at()
@@ -171,7 +168,8 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
       assert :ok = McdbScrape.run_page(1, :date, started_at)
 
       deck = Deck |> Ash.Query.filter(mcdb_id == "1001") |> Ash.read_one!(authorize?: false)
-      assert deck.mcdb_like_count == 7
+      # List pages no longer carry like counts.
+      assert deck.mcdb_like_count == 0
 
       {:ok, user} = Decks.find_or_create_mcdb_user(%{mcdb_user_id: 901_001})
       assert user.username == "user1001"
@@ -190,17 +188,9 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
   end
 
   describe "run_page/3 — last page" do
-    test "finishes the sweep and reports missing decklists" do
-      hero = create_hero()
-      create_mcdb_deck(hero, "2001")
-      create_mcdb_deck(hero, "2002")
-      create_mcdb_deck(hero, "2003", %{mcdb_type: :deck})
-
+    test "finishes the sweep" do
       {:ok, _job} = McdbScrape.start()
       started_at = current_started_at()
-
-      # Imported by the hourly sync mid-sweep — must not count as missing.
-      create_mcdb_deck(hero, "2004")
 
       stub_page(9, page_html([row(2001)], last_page: 9))
 
@@ -209,9 +199,6 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
       {:ok, state} = Decks.get_mcdb_scrape_state(authorize?: false)
       assert state.status == :done
       assert state.finished_at != nil
-      # Only "2002": "2003" is a :deck (not :decklist), "2004" arrived after
-      # the sweep started, and "2001" was just seen/applied on this page.
-      assert state.missing_count == 1
 
       refute_enqueued(worker: McdbScrapeWorker, args: %{"page" => 10})
     end
@@ -332,7 +319,6 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
       assert state.matched == 38
       assert DateTime.compare(state.started_at, started_at) == :eq
       assert state.last_error == nil
-      assert state.missing_count == nil
     end
   end
 
@@ -372,7 +358,7 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
   end
 
   describe "state upsert" do
-    test "start/1 clears finished_at/missing_count/last_error from a previous completed run" do
+    test "start/1 clears finished_at/last_error from a previous completed run" do
       Decks.put_mcdb_scrape_state!(
         %{
           status: :done,
@@ -385,8 +371,7 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
           users_updated: 900,
           started_at: DateTime.add(DateTime.utc_now(), -3600, :second),
           finished_at: DateTime.utc_now(),
-          last_error: "stale error",
-          missing_count: 5
+          last_error: "stale error"
         },
         authorize?: false
       )
@@ -397,7 +382,6 @@ defmodule Sanctum.Decks.McdbScrapeWorkerTest do
       {:ok, state} = Decks.get_mcdb_scrape_state(authorize?: false)
       assert state.status == :running
       assert state.finished_at == nil
-      assert state.missing_count == nil
       assert state.last_error == nil
       assert state.rows_seen == 0
       assert state.matched == 0

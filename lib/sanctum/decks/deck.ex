@@ -194,8 +194,8 @@ defmodule Sanctum.Decks.Deck do
 
     update :set_mcdb_social do
       description """
-      Records MarvelCDB social data (like count) scraped from the decklist list
-      pages or fetched from the decklist API. Stamps `mcdb_like_changed_at` when
+      Records a MarvelCDB like count from the decklist API (`by_date` window or
+      per-decklist refresh). Stamps `mcdb_like_changed_at` when
       the count changes, and optionally sets the next scheduled check
       (`next_check_at`, see Sanctum.Decks.McdbDeckRefresh).
       """
@@ -425,9 +425,9 @@ defmodule Sanctum.Decks.Deck do
     attribute :mcdb_date_creation, :utc_datetime, public?: true
     attribute :mcdb_date_update, :utc_datetime, public?: true
 
-    # MarvelCDB social data: `like_count` from the decklist API on import, plus
-    # the list-page scrapers (Sanctum.MarvelCdb.DecklistPages) for decks sync
-    # doesn't revisit. Distinct from `favorite_count`, which the
+    # MarvelCDB social data: `like_count` from the decklist API on import, the
+    # daily `by_date` window (Sanctum.Decks.McdbSocialRefresh) and the
+    # per-decklist refresh (Sanctum.Decks.McdbDeckRefresh). Distinct from `favorite_count`, which the
     # `deck_favorites` trigger maintains (see DeckFavorite's custom_statements).
     attribute :mcdb_like_count, :integer, public?: true, allow_nil?: false, default: 0
     attribute :mcdb_social_synced_at, :utc_datetime, public?: true

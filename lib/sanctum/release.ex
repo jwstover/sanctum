@@ -169,7 +169,7 @@ defmodule Sanctum.Release do
 
   @doc """
   Starts (or resumes) the one-time MarvelCDB list-page sweep that fills deck
-  authors' usernames and like counts (see `Sanctum.Decks.McdbScrape`). Runs
+  authors' usernames (see `Sanctum.Decks.McdbScrape`). Runs
   in the `:mcdb_scrape` Oban queue; progress shows on `/admin`.
 
   Prefer the `/admin` "Start sweep" button over this function: `eval` boots a
@@ -191,8 +191,7 @@ defmodule Sanctum.Release do
   end
 
   @doc """
-  Post-sweep report: username coverage plus the decklists the latest sweep
-  didn't see (candidates for a follow-up reconcile). Same second-VM caveat as
+  Post-sweep report: the sweep's progress state plus username coverage. Same second-VM caveat as
   `start_mcdb_scrape/1` — harmless here since this only reads, but only run
   it after the sweep has actually finished (`state.status == :done`).
 
@@ -202,11 +201,10 @@ defmodule Sanctum.Release do
     {:ok, _} = Application.ensure_all_started(@app)
 
     case Sanctum.Decks.get_mcdb_scrape_state(authorize?: false) do
-      {:ok, %{started_at: %DateTime{} = started_at} = state} ->
+      {:ok, %{started_at: %DateTime{}} = state} ->
         %{
           state: state,
-          coverage: Sanctum.Decks.McdbScrape.username_coverage(),
-          missing: Sanctum.Decks.McdbScrape.missing_decklists(started_at)
+          coverage: Sanctum.Decks.McdbScrape.username_coverage()
         }
 
       _ ->
