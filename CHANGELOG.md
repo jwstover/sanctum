@@ -1,3 +1,17 @@
+# [1.101.0](https://github.com/jwstover/sanctum/compare/v1.100.0...v1.101.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **marvelcdb:** move OAuth callback under /auth/user to match registered redirect URI ([29cd3d1](https://github.com/jwstover/sanctum/commit/29cd3d13579110283ef878be2a155fe064d8a871))
+
+
+### Features
+
+* **marvelcdb:** claim the MarvelCDB account on OAuth connect ([fcf9b50](https://github.com/jwstover/sanctum/commit/fcf9b50d27e3513c0b9b897309edc715c35372ee))
+
+
+
 # [1.100.0](https://github.com/jwstover/sanctum/compare/v1.99.0...v1.100.0) (2026-10-14)
 
 
@@ -31,22 +45,6 @@
 ### Features
 
 * **decks:** take MarvelCDB like counts from the decklist API on import ([e705747](https://github.com/jwstover/sanctum/commit/e705747a9ed0897893acceec1a4eacf4af8873f0))
-
-
-
-# [1.96.0](https://github.com/jwstover/sanctum/compare/v1.95.0...v1.96.0) (2026-10-01)
-
-
-### Bug Fixes
-
-* **catalog:** place Jessica Jones and Luke Cage packs in Wave 11 ([6f98cda](https://github.com/jwstover/sanctum/commit/6f98cda0d37986cca34b233a8e6d07dce5e30082))
-
-
-### Features
-
-* **homebrew:** alt-art wizard + one-surface typed uploads ([d2facb3](https://github.com/jwstover/sanctum/commit/d2facb38330df82a366f9623564f4c15f112cee8))
-* **homebrew:** ensure_project_set bridge for uploads ([83e3f2c](https://github.com/jwstover/sanctum/commit/83e3f2c3245c94a13891aabf1811d948b3fd3b84))
-* **homebrew:** point custom cards, alts and aspects at sets ([caade98](https://github.com/jwstover/sanctum/commit/caade9892843b2aff8c9677c188ad5f0aac2f1a3))
 
 
 
