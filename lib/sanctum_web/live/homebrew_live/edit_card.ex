@@ -28,6 +28,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
       {:ok,
        socket
        |> assign(:project, project)
+       |> assign(:set, card.homebrew_set)
        |> assign(:alt_search, "")
        |> assign(:alt_results, [])
        |> assign(:alt_target, nil)
@@ -140,7 +141,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
         {:noreply,
          socket
          |> put_flash(:info, "Card split into two.")
-         |> push_navigate(to: ~p"/homebrew/#{socket.assigns.project.id}")}
+         |> push_navigate(to: set_path(socket.assigns))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Could not split the card.")}
@@ -191,7 +192,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
       {:noreply,
        socket
        |> put_flash(:info, "Declared as alt art for #{target.name}.")
-       |> push_navigate(to: ~p"/homebrew/#{socket.assigns.project.id}")}
+       |> push_navigate(to: set_path(socket.assigns))}
     else
       _missing_or_error ->
         {:noreply, put_flash(socket, :error, "Could not declare the alt art.")}
@@ -377,6 +378,11 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
   defp stat_col_label_class,
     do: "font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/60"
 
+  # The card's set page. The set is assigned once at mount: autosave reloads
+  # the card without it, and after declaring alt art the card is gone.
+  defp set_path(%{project: project, set: set}),
+    do: ~p"/homebrew/#{project.id}/sets/#{set.id}"
+
   defp enum_options(enum_module) do
     Enum.map(enum_module.values(), &{Phoenix.Naming.humanize(&1), to_string(&1)})
   end
@@ -393,10 +399,10 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:homebrew}>
       <div class="mb-3">
         <.link
-          navigate={~p"/homebrew/#{@project.id}"}
+          navigate={set_path(%{project: @project, set: @set})}
           class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-primary"
         >
-          ← {@project.name}
+          ← {@set.name}
         </.link>
       </div>
 

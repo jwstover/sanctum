@@ -82,13 +82,10 @@ defmodule Sanctum.Homebrew do
     |> Ash.create()
   end
 
-  @doc """
-  Custom cards in any of a project's sets, primary side loaded, oldest first.
-  Joins through the set — cards carry no project FK.
-  """
-  def list_project_cards(project_id, actor) do
+  @doc "Custom cards in one set, primary side loaded, oldest first."
+  def list_set_cards(set_id, actor) do
     Sanctum.Games.Card
-    |> Ash.Query.filter(homebrew_set.homebrew_project_id == ^project_id)
+    |> Ash.Query.filter(homebrew_set_id == ^set_id)
     |> Ash.Query.load(:primary_side)
     |> Ash.Query.sort(inserted_at: :asc)
     |> Ash.read!(actor: actor)
@@ -212,6 +209,18 @@ defmodule Sanctum.Homebrew do
   def list_project_alts(project_id, actor) do
     Sanctum.Games.CardAlt
     |> Ash.Query.filter(homebrew_set.homebrew_project_id == ^project_id)
+    |> Ash.Query.load(card: [:card_sides, :primary_side])
+    |> Ash.Query.sort(inserted_at: :asc)
+    |> Ash.read!(actor: actor)
+  end
+
+  @doc """
+  Custom alts in one set, oldest first, with the target card and its sides
+  loaded (the set page renders the target side's tile wearing the alt's art).
+  """
+  def list_set_alts(set_id, actor) do
+    Sanctum.Games.CardAlt
+    |> Ash.Query.filter(homebrew_set_id == ^set_id)
     |> Ash.Query.load(card: [:card_sides, :primary_side])
     |> Ash.Query.sort(inserted_at: :asc)
     |> Ash.read!(actor: actor)
