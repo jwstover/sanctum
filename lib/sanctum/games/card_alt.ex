@@ -11,7 +11,7 @@ defmodule Sanctum.Games.CardAlt do
 
     * `:custom` — user-declared homebrew alt art (`Sanctum.Homebrew`): a
       custom card CONVERTED into alternate art for an official card. Carries
-      the creator/project FKs and an artist credit; its `code` is the source
+      the creator/set FKs and an artist credit; its `code` is the source
       card's synthetic `custom-<uuid>` code, outside MarvelCDB's numeric
       space, so deck-slot resolution can never match it. Visibility follows
       the set (published → everyone, else creator-only).
@@ -32,22 +32,19 @@ defmodule Sanctum.Games.CardAlt do
     end
 
     references do
-      # A deleted homebrew project (or user) takes its custom alts with it,
-      # mirroring cards. Indexed — the read policy joins through the project
-      # FK on every alt load.
-      reference :homebrew_project, on_delete: :delete, index?: true
+      # A deleted homebrew set (and so project) or user takes its custom alts
+      # with it, mirroring cards. Indexed — the read policy joins through the
+      # set FK on every alt load.
       reference :homebrew_set, on_delete: :delete, index?: true
       reference :creator, on_delete: :delete, index?: true
     end
 
     check_constraints do
       # An official alt can never carry homebrew provenance; a custom alt can
-      # never be orphaned. Mirrors cards_origin_project_consistency.
+      # never be orphaned. Mirrors cards_origin_set_consistency.
       check_constraint :origin,
         name: "card_alts_origin_consistency",
-        check:
-          "(origin = 'official') = (homebrew_project_id IS NULL) AND " <>
-            "(origin = 'official') = (creator_id IS NULL)"
+        check: "(origin = 'official') = (creator_id IS NULL)"
 
       check_constraint :origin,
         name: "card_alts_origin_set_consistency",
@@ -98,10 +95,10 @@ defmodule Sanctum.Games.CardAlt do
       description "Creates custom alt art for an official card directly from an " <>
                     "uploaded image (no source card to convert)."
 
-      # homebrew_project_id + artist are accepted attributes so the
-      # ActorOwnsProject policy can resolve the project on create; everything
-      # else is set by the change.
-      accept [:homebrew_project_id, :homebrew_set_id, :artist]
+      # homebrew_set_id + artist are accepted attributes so the ActorOwnsSet
+      # policy can resolve the set on create; everything else is set by the
+      # change.
+      accept [:homebrew_set_id, :artist]
 
       argument :image_url, :string, allow_nil?: false
       argument :target_card_id, :uuid, allow_nil?: false
@@ -110,8 +107,6 @@ defmodule Sanctum.Games.CardAlt do
       validate present(:homebrew_set_id) do
         message "must belong to a set"
       end
-
-      validate Sanctum.Homebrew.Validations.SetInSameProject, before_action?: true
 
       change Sanctum.Games.Changes.CreateCustomAltArt
     end
@@ -132,7 +127,7 @@ defmodule Sanctum.Games.CardAlt do
 
     destroy :revert_custom do
       description "Converts a custom alt back into a plain image-only custom " <>
-                    "card in the same project."
+                    "card in the same set."
 
       require_atomic? false
 
@@ -149,7 +144,7 @@ defmodule Sanctum.Games.CardAlt do
       authorize_if always()
     end
 
-    # Filter policy — custom alts follow their project's visibility; official
+    # Filter policy — custom alts follow their set's visibility; official
     # alts are visible to everyone. Checks stay separate on purpose: an expr
     # referencing ^actor(:id) collapses to false wholesale under a nil actor
     # (see Card's read policy) — folding these into one OR would hide official
@@ -236,11 +231,6 @@ defmodule Sanctum.Games.CardAlt do
 
     # Set for :custom origin only (see the origin check constraint).
     belongs_to :creator, Sanctum.Accounts.User do
-      public? true
-      allow_nil? true
-    end
-
-    belongs_to :homebrew_project, Sanctum.Homebrew.HomebrewProject do
       public? true
       allow_nil? true
     end

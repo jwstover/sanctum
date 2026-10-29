@@ -23,7 +23,6 @@ defmodule Sanctum.Homebrew.CustomCardTest do
     {:ok, card} =
       Homebrew.create_custom_card(
         %{
-          homebrew_project_id: project.id,
           homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
           card_sides: sides
         },
@@ -41,7 +40,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
         ])
 
       assert card.origin == :custom
-      assert card.homebrew_project_id == ctx.project.id
+      assert card.homebrew_set_id == Homebrew.ensure_project_set(ctx.project, ctx.creator).id
       assert "custom-" <> _uuid = card.base_code
       assert card.code == card.base_code
       refute card.is_multi_sided
@@ -77,7 +76,6 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       assert {:error, %Ash.Error.Invalid{} = error} =
                Homebrew.create_custom_card(
                  %{
-                   homebrew_project_id: ctx.project.id,
                    homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    card_sides: [%{name: "No Image"}]
                  },
@@ -91,7 +89,6 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       assert {:error, %Ash.Error.Forbidden{}} =
                Homebrew.create_custom_card(
                  %{
-                   homebrew_project_id: ctx.project.id,
                    homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    card_sides: [%{image_url: "https://img.test/a.png"}]
                  },
@@ -104,7 +101,6 @@ defmodule Sanctum.Homebrew.CustomCardTest do
         attrs =
           Map.merge(
             %{
-              homebrew_project_id: ctx.project.id,
               homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
               card_sides: [%{image_url: "https://img.test/a.png"}]
             },
@@ -421,7 +417,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       refute updated.is_multi_sided
       refute new_card.is_multi_sided
       assert new_card.origin == :custom
-      assert new_card.homebrew_project_id == ctx.paired.homebrew_project_id
+      assert new_card.homebrew_set_id == ctx.paired.homebrew_set_id
       assert "custom-" <> _ = new_card.code
       assert new_card.base_code == new_card.code
       assert new_card.deck_limit == ctx.paired.deck_limit
