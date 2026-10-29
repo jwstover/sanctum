@@ -6,10 +6,11 @@ defmodule Sanctum.Homebrew do
 
   A homebrew card is an image plus optional, progressively-added metadata —
   stored in the same `Card`/`CardSide` tables as the official catalog with
-  `origin: :custom` and a `HomebrewProject` FK, so browse/search/deckbuilding/
-  play work downstream unchanged. Privacy is enforced by filter policies on
-  `Card`/`CardSide`/`HomebrewProject`: other users' non-published customs are
-  invisible by construction.
+  `origin: :custom` and a `HomebrewProject`/`HomebrewSet` FK, so browse/search/deckbuilding/
+  play work downstream unchanged. Privacy follows the *set*: filter policies on
+  `Card`/`CardSide`/`CardAlt`/`Aspect` hide other users' customs whose set is
+  not published, while a `HomebrewProject` is a private workspace readable
+  only by its creator.
 
   Homebrew writes are always user-scoped through policies — never the
   `authorize?: false` system-write paths used by catalog sync.

@@ -77,7 +77,7 @@ defmodule SanctumWeb.DeckLive.New do
   # stays a membership check instead of an N+1 lookup per hero.
   defp sets_with_alter_ego do
     Sanctum.Games.Card
-    |> Ash.Query.filter(exists(card_sides, type == :alter_ego))
+    |> Ash.Query.filter(origin == :official and exists(card_sides, type == :alter_ego))
     |> Ash.read!(authorize?: false)
     |> Enum.map(& &1.set)
     |> MapSet.new()

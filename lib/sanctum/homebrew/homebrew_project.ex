@@ -80,13 +80,9 @@ defmodule Sanctum.Homebrew.HomebrewProject do
       authorize_if always()
     end
 
-    # Filter checks: non-matching rows are excluded from every read, so a
-    # private/unlisted project is invisible — not "forbidden" — to everyone
-    # but its creator. Separate checks on purpose: an expr referencing
-    # ^actor(:id) collapses to false wholesale under a nil actor, which
-    # would otherwise also hide published projects from anonymous reads.
+    # A project is a private workspace: only its creator reads it. Publishing
+    # is per set — custom-content visibility follows the set, not the project.
     policy action_type(:read) do
-      authorize_if expr(visibility == :published)
       authorize_if expr(creator_id == ^actor(:id))
     end
 

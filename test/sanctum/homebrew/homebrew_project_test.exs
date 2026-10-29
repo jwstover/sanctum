@@ -61,11 +61,13 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
                Homebrew.get_project(ctx.project.id, actor: ctx.other)
     end
 
-    test "published projects are visible to everyone", ctx do
+    test "published projects are still creator-only (privacy follows the set)", ctx do
       Homebrew.set_project_visibility!(ctx.project, :published, actor: ctx.creator)
 
-      assert {:ok, _} = Homebrew.get_project(ctx.project.id, actor: ctx.other)
-      assert {:ok, _} = Homebrew.get_project(ctx.project.id)
+      assert {:error, %Ash.Error.Invalid{}} =
+               Homebrew.get_project(ctx.project.id, actor: ctx.other)
+
+      assert {:error, %Ash.Error.Invalid{}} = Homebrew.get_project(ctx.project.id)
     end
 
     test "admins see everything", ctx do
