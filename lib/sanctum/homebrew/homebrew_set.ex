@@ -241,4 +241,9 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       destination_attribute :homebrew_set_id
     end
   end
+
+  aggregates do
+    count :card_count, :cards
+    count :alt_count, :card_alts
+  end
 end

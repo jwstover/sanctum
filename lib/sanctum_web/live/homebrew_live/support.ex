@@ -1,10 +1,9 @@
 defmodule SanctumWeb.HomebrewLive.Support do
   @moduledoc """
-  Shared homebrew LiveView helpers used by both the project page
-  (`HomebrewLive.Show`) and the alt-art wizard (`HomebrewLive.AltArt`) — the
-  alt-art list/tile rendering, the official-card target search (also used by
-  `HomebrewLive.EditCard`'s declare sheet), and the alt delete handler. Kept in
-  one place so the two surfaces can't drift.
+  Shared homebrew LiveView helpers — the alt-art list/tile rendering and alt
+  delete handler (the set page, `HomebrewLive.SetShow`), and the official-card
+  target search (the set page's assign sheet and `HomebrewLive.EditCard`'s
+  declare sheet). Kept in one place so the surfaces can't drift.
   """
 
   import Phoenix.Component, only: [assign: 2]
@@ -16,14 +15,14 @@ defmodule SanctumWeb.HomebrewLive.Support do
   alias Sanctum.Homebrew
 
   @doc """
-  Loads the project's custom alts and assigns `:project_alts` + `:alt_tiles`.
-  Expects `:project`, `:current_user`, and `:hero_colors` in assigns.
+  Loads the set's custom alts and assigns `:set_alts` + `:alt_tiles`.
+  Expects `:set`, `:current_user`, and `:hero_colors` in assigns.
   """
   def assign_alts(socket) do
-    alts = Homebrew.list_project_alts(socket.assigns.project.id, socket.assigns.current_user)
+    alts = Homebrew.list_set_alts(socket.assigns.set.id, socket.assigns.current_user)
     tiles = Enum.map(alts, &{&1, alt_tile_view(&1, socket.assigns.hero_colors)})
 
-    assign(socket, project_alts: alts, alt_tiles: tiles)
+    assign(socket, set_alts: alts, alt_tiles: tiles)
   end
 
   @doc """
