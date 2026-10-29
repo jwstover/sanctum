@@ -1,3 +1,19 @@
+# [1.102.0](https://github.com/jwstover/sanctum/compare/v1.101.0...v1.102.0) (2026-10-29)
+
+
+### Bug Fixes
+
+* **marvelcdb:** point prod OAuth redirect URI at the real callback route ([cdc2645](https://github.com/jwstover/sanctum/commit/cdc2645e78584360531a01379791698b2727e449))
+
+
+### Features
+
+* **cards:** admin image upload from the public card page ([af06daa](https://github.com/jwstover/sanctum/commit/af06daaca3a7fc654b3ca6d45c55b05620f1c691))
+* **homebrew:** key custom-content read policies on sets ([e6179f8](https://github.com/jwstover/sanctum/commit/e6179f80829c79960258a05cc8aa623cd6ddfb86))
+* **mcdb:** cut the daily social refresh to a by_date like window and pending-author username walk ([9405c49](https://github.com/jwstover/sanctum/commit/9405c49e43f64ad30f7f6be9b46e72a3333f7a76))
+
+
+
 # [1.101.0](https://github.com/jwstover/sanctum/compare/v1.100.0...v1.101.0) (2026-10-20)
 
 
@@ -36,15 +52,6 @@
 ### Features
 
 * **decks:** refresh MarvelCDB like counts from the decklist API ([1ebee48](https://github.com/jwstover/sanctum/commit/1ebee4830f348f38600726a8545b7a80beb3de85))
-
-
-
-# [1.97.0](https://github.com/jwstover/sanctum/compare/v1.96.0...v1.97.0) (2026-10-14)
-
-
-### Features
-
-* **decks:** take MarvelCDB like counts from the decklist API on import ([e705747](https://github.com/jwstover/sanctum/commit/e705747a9ed0897893acceec1a4eacf4af8873f0))
 
 
 
