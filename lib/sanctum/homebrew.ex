@@ -6,7 +6,8 @@ defmodule Sanctum.Homebrew do
 
   A homebrew card is an image plus optional, progressively-added metadata —
   stored in the same `Card`/`CardSide` tables as the official catalog with
-  `origin: :custom` and a `HomebrewProject`/`HomebrewSet` FK, so browse/search/deckbuilding/
+  `origin: :custom` and a `HomebrewSet` FK (the project is reached through the
+  set), so browse/search/deckbuilding/
   play work downstream unchanged. Privacy follows the *set*: filter policies on
   `Card`/`CardSide`/`CardAlt`/`Aspect` hide other users' customs whose set is
   not published, while a `HomebrewProject` is a private workspace readable
@@ -22,7 +23,6 @@ defmodule Sanctum.Homebrew do
     resource Sanctum.Homebrew.HomebrewProject do
       define :create_project, action: :create
       define :update_project, action: :update
-      define :set_project_visibility, action: :set_visibility, args: [:visibility]
       define :destroy_project, action: :destroy
       define :get_project, action: :read, get_by: [:id]
       define :list_my_projects, action: :for_creator
@@ -49,20 +49,15 @@ defmodule Sanctum.Homebrew do
   require Ash.Query
 
   @doc """
-  Returns the project's oldest set, creating one (named after the project,
-  inheriting its maturity and tags) when it has none. A bridge so uploads
+  Returns the project's oldest set, creating one (named after the project)
+  when it has none. A bridge so uploads
   always have a set until the UI grows a set picker.
   """
   def ensure_project_set(%Sanctum.Homebrew.HomebrewProject{} = project, actor) do
     case list_project_sets!(project.id, actor: actor) do
       [] ->
         create_set!(
-          %{
-            homebrew_project_id: project.id,
-            name: project.name,
-            maturity: project.maturity,
-            tags: project.tags
-          },
+          %{homebrew_project_id: project.id, name: project.name},
           actor: actor
         )
 
@@ -72,14 +67,14 @@ defmodule Sanctum.Homebrew do
   end
 
   @doc """
-  Creates a custom card (with its sides) inside one of the actor's projects.
+  Creates a custom card (with its sides) inside one of the actor's sets.
 
-  `attrs` must include `:homebrew_project_id`, a `:homebrew_set_id` naming a
-  set in that same project (see `ensure_project_set/2`), and a `:card_sides` list of maps
+  `attrs` must include a `:homebrew_set_id` (see `ensure_project_set/2`) and a
+  `:card_sides` list of maps
   — each side needs at least `:image_url` (the image is the card); `:filename`
   seeds the name when none is given. Codes, side identifiers, and origin are
   generated server-side. Goes through policies with the actor — the actor must
-  own the target project.
+  own the target set.
   """
   def create_custom_card(attrs, actor) do
     Sanctum.Games.Card
@@ -87,10 +82,13 @@ defmodule Sanctum.Homebrew do
     |> Ash.create()
   end
 
-  @doc "Custom cards belonging to a project, primary side loaded, oldest first."
+  @doc """
+  Custom cards in any of a project's sets, primary side loaded, oldest first.
+  Joins through the set — cards carry no project FK.
+  """
   def list_project_cards(project_id, actor) do
     Sanctum.Games.Card
-    |> Ash.Query.filter(homebrew_project_id == ^project_id)
+    |> Ash.Query.filter(homebrew_set.homebrew_project_id == ^project_id)
     |> Ash.Query.load(:primary_side)
     |> Ash.Query.sort(inserted_at: :asc)
     |> Ash.read!(actor: actor)
@@ -153,10 +151,10 @@ defmodule Sanctum.Homebrew do
   — the primary alt-art entry (the creation wizard). No source card to
   convert: the `CardAlt` is minted straight from `image_url`.
 
-  `attrs` must include `:homebrew_project_id`, `:homebrew_set_id` (a set in
-  that same project), `:image_url`, and `:target_card_id` (an official card); optional `:side_identifier`
-  (default "a", the target side the art depicts) and `:artist`. Goes through
-  policies with the actor — the actor must own the target project, and the
+  `attrs` must include `:homebrew_set_id`, `:image_url`, and `:target_card_id`
+  (an official card); optional `:side_identifier` (default "a", the target side
+  the art depicts) and `:artist`. Goes through policies with the actor — the
+  actor must own the target set, and the
   target card must be official.
   """
   def create_alt_art(attrs, actor) do
@@ -207,13 +205,13 @@ defmodule Sanctum.Homebrew do
   end
 
   @doc """
-  Custom alts belonging to a project, oldest first, with the target card and
+  Custom alts in any of a project's sets, oldest first, with the target card and
   its sides loaded (the project page renders the target side's tile wearing
   the alt's art).
   """
   def list_project_alts(project_id, actor) do
     Sanctum.Games.CardAlt
-    |> Ash.Query.filter(homebrew_project_id == ^project_id)
+    |> Ash.Query.filter(homebrew_set.homebrew_project_id == ^project_id)
     |> Ash.Query.load(card: [:card_sides, :primary_side])
     |> Ash.Query.sort(inserted_at: :asc)
     |> Ash.read!(actor: actor)

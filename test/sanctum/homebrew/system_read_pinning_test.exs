@@ -29,7 +29,6 @@ defmodule Sanctum.Homebrew.SystemReadPinningTest do
     {:ok, card} =
       Homebrew.create_custom_card(
         %{
-          homebrew_project_id: project.id,
           homebrew_set_id: set.id,
           card_sides: [%{image_url: "https://img.test/p.png", filename: "p.png"}]
         },

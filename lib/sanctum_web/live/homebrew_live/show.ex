@@ -124,7 +124,6 @@ defmodule SanctumWeb.HomebrewLive.Show do
 
       Homebrew.create_custom_card(
         %{
-          homebrew_project_id: project.id,
           homebrew_set_id: set.id,
           card_sides: [%{image_url: url, filename: entry.client_name}]
         },
@@ -202,7 +201,6 @@ defmodule SanctumWeb.HomebrewLive.Show do
          {:ok, _alt} <-
            Homebrew.create_alt_art(
              %{
-               homebrew_project_id: project.id,
                homebrew_set_id: set.id,
                image_url: pending.image_url,
                target_card_id: target.card_id,
@@ -359,7 +357,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
         }> &middot; {length(@project_alts)} {if length(@project_alts) == 1,
           do: "alt",
           else: "alts"}</span>
-        &middot; {@project.visibility} &middot; unofficial fan content
+        &middot; unofficial fan content
       </p>
 
       <div :if={@pending != []} class="mb-8 border-2 border-primary/60 bg-base-200 p-4">

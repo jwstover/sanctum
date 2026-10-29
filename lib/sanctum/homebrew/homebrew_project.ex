@@ -1,12 +1,10 @@
 defmodule Sanctum.Homebrew.HomebrewProject do
   @moduledoc """
-  A creator's homebrew content project — the unit the community shares and
-  discovers ("Juri Krasko's Daredevil"), holding custom cards as
-  `Sanctum.Games.Card` rows with `origin: :custom`.
-
-  Projects start `:private`; the visibility ladder (`:private → :unlisted →
-  :published`) is walked through `:set_visibility` so the future publish flow
-  (releases, review gate) can hang off that one action.
+  A creator's homebrew workspace — a private folder of `Sanctum.Homebrew.HomebrewSet`s,
+  readable only by its creator. Nothing outward-facing reads it: the set is
+  the published unit (name, slug, kind, visibility, maturity, tags), and custom
+  content (`Card`/`CardAlt`/`Aspect` rows with `origin: :custom`) hangs off a
+  set, reaching its project only through that set.
   """
 
   use Ash.Resource,
@@ -28,15 +26,7 @@ defmodule Sanctum.Homebrew.HomebrewProject do
     defaults [:read]
 
     create :create do
-      accept [
-        :name,
-        :description,
-        :banner_url,
-        :content_types,
-        :maturity,
-        :tags,
-        :attestation
-      ]
+      accept [:name, :description, :attestation]
 
       change relate_actor(:creator)
 
@@ -49,21 +39,7 @@ defmodule Sanctum.Homebrew.HomebrewProject do
       primary? true
       require_atomic? false
 
-      accept [
-        :name,
-        :description,
-        :banner_url,
-        :content_types,
-        :maturity,
-        :tags
-      ]
-    end
-
-    # Visibility transitions are their own action so the publish flow
-    # (releases, review gate) can add changes/validations here without
-    # touching general editing.
-    update :set_visibility do
-      accept [:visibility]
+      accept [:name, :description]
     end
 
     destroy :destroy do
@@ -102,23 +78,6 @@ defmodule Sanctum.Homebrew.HomebrewProject do
 
     # Markdown, rendered on the project page.
     attribute :description, :string, public?: true
-    attribute :banner_url, :string, public?: true
-
-    attribute :content_types, {:array, Sanctum.Homebrew.ContentType},
-      public?: true,
-      default: []
-
-    attribute :maturity, Sanctum.Homebrew.Maturity,
-      public?: true,
-      allow_nil?: false,
-      default: :draft
-
-    attribute :visibility, Sanctum.Homebrew.Visibility,
-      public?: true,
-      allow_nil?: false,
-      default: :private
-
-    attribute :tags, {:array, :string}, public?: true, default: []
 
     # Upload attestation: "my own work, or shared with the creator's
     # permission". Required true at creation (IP posture).
@@ -133,19 +92,16 @@ defmodule Sanctum.Homebrew.HomebrewProject do
       allow_nil? false
     end
 
-    has_many :cards, Sanctum.Games.Card do
-      destination_attribute :homebrew_project_id
-      public? true
-    end
-
-    has_many :card_alts, Sanctum.Games.CardAlt do
+    # Content hangs off sets, never the project directly — counts reach it
+    # through them.
+    has_many :sets, Sanctum.Homebrew.HomebrewSet do
       destination_attribute :homebrew_project_id
       public? true
     end
   end
 
   aggregates do
-    count :card_count, :cards
-    count :alt_count, :card_alts
+    count :card_count, [:sets, :cards]
+    count :alt_count, [:sets, :card_alts]
   end
 end

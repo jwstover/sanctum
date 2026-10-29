@@ -22,8 +22,6 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
       project = project_fixture(user)
 
       assert project.creator_id == user.id
-      assert project.visibility == :private
-      assert project.maturity == :draft
       assert project.attestation
     end
 
@@ -54,15 +52,10 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
       assert {:error, %Ash.Error.Invalid{}} = Homebrew.get_project(ctx.project.id)
     end
 
-    test "unlisted projects stay creator-only for now", ctx do
-      Homebrew.set_project_visibility!(ctx.project, :unlisted, actor: ctx.creator)
-
-      assert {:error, %Ash.Error.Invalid{}} =
-               Homebrew.get_project(ctx.project.id, actor: ctx.other)
-    end
-
-    test "published projects are still creator-only (privacy follows the set)", ctx do
-      Homebrew.set_project_visibility!(ctx.project, :published, actor: ctx.creator)
+    test "publishing a set does not expose its project (privacy follows the set)", ctx do
+      ctx.project
+      |> Homebrew.ensure_project_set(ctx.creator)
+      |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
 
       assert {:error, %Ash.Error.Invalid{}} =
                Homebrew.get_project(ctx.project.id, actor: ctx.other)
@@ -108,7 +101,6 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
       {:ok, card} =
         Homebrew.create_custom_card(
           %{
-            homebrew_project_id: ctx.project.id,
             homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
             card_sides: [%{image_url: "https://img.test/a.png"}]
           },
@@ -121,18 +113,30 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
     end
   end
 
-  test "project visibility enum rejects unknown values" do
-    user = user_fixture()
-    project = project_fixture(user)
-
-    assert {:error, _} = Homebrew.set_project_visibility(project, :secret, actor: user)
+  test "a project carries no outward-facing fields — those live on the set" do
+    for field <- [:visibility, :maturity, :tags, :banner_url, :content_types] do
+      refute Ash.Resource.Info.attribute(HomebrewProject, field)
+    end
   end
 
-  test "resource is registered with a card_count aggregate" do
+  test "card_count counts custom cards across the project's sets" do
     user = user_fixture()
     project = project_fixture(user)
 
     assert %HomebrewProject{card_count: 0} =
+             Homebrew.get_project!(project.id, actor: user, load: [:card_count])
+
+    for _ <- 1..2 do
+      set = Homebrew.create_set!(%{name: "Set", homebrew_project_id: project.id}, actor: user)
+
+      {:ok, _card} =
+        Homebrew.create_custom_card(
+          %{homebrew_set_id: set.id, card_sides: [%{image_url: "https://img.test/a.png"}]},
+          user
+        )
+    end
+
+    assert %HomebrewProject{card_count: 2} =
              Homebrew.get_project!(project.id, actor: user, load: [:card_count])
   end
 end

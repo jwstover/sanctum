@@ -124,9 +124,6 @@ defmodule SanctumWeb.HomebrewLive.Index do
                 {project.card_count} {if project.card_count == 1, do: "card", else: "cards"}
               </div>
             </div>
-            <span class="shrink-0 border-2 border-neutral bg-base-300 px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.07em]">
-              {project.visibility}
-            </span>
           </.panel>
         </.link>
       </div>

@@ -1,7 +1,7 @@
 defmodule Sanctum.Games.Changes.RevertAltArt do
   @moduledoc """
   Reverts a custom alt into a fresh single-sided custom card in the same
-  project — the inverse of `DeclareAltArt`, minus the enrichment metadata
+  set — the inverse of `DeclareAltArt`, minus the enrichment metadata
   and artist credit destroyed at declare time (accepted loss). The new card
   rides back on the destroyed alt as `:reverted_card` metadata.
 
@@ -37,7 +37,6 @@ defmodule Sanctum.Games.Changes.RevertAltArt do
         Sanctum.Games.Card
         |> Changeset.for_create(:create, %{
           origin: :custom,
-          homebrew_project_id: alt.homebrew_project_id,
           homebrew_set_id: alt.homebrew_set_id,
           code: code,
           base_code: code,

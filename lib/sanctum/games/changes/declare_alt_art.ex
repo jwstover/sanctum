@@ -9,7 +9,7 @@ defmodule Sanctum.Games.Changes.DeclareAltArt do
 
   The internal destroy runs `authorize?: false`: the action's policy
   (`ActorOwnsSourceCard`) already proved the actor owns the source card's
-  project.
+  set.
   """
 
   use Ash.Resource.Change
@@ -37,7 +37,6 @@ defmodule Sanctum.Games.Changes.DeclareAltArt do
         |> Changeset.force_change_attribute(:origin, :custom)
         |> Changeset.force_change_attribute(:card_id, target.id)
         |> Changeset.force_change_attribute(:creator_id, context.actor.id)
-        |> Changeset.force_change_attribute(:homebrew_project_id, source.homebrew_project_id)
         |> Changeset.force_change_attribute(:homebrew_set_id, source.homebrew_set_id)
         |> Changeset.put_context(:declare_source, source)
       else

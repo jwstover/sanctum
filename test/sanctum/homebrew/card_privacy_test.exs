@@ -63,7 +63,6 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
     {:ok, card} =
       Homebrew.create_custom_card(
         %{
-          homebrew_project_id: project.id,
           homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
           card_sides: [%{image_url: "https://img.test/#{filename}", filename: filename}]
         },
@@ -188,12 +187,15 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
 
   describe "set-keyed visibility" do
     setup ctx do
-      # Published project, private set.
+      # A private set whose sibling set (same project) is published.
       pub_project =
         Homebrew.create_project!(%{name: "Pub Project", attestation: true}, actor: ctx.creator)
 
-      Homebrew.set_project_visibility!(pub_project, :published, actor: ctx.creator)
       pub_project_card = custom_card!(pub_project, ctx.creator, "pubproj.png")
+
+      %{name: "Published Sibling", homebrew_project_id: pub_project.id}
+      |> Homebrew.create_set!(actor: ctx.creator)
+      |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
 
       # Private project, published set.
       priv_project =
@@ -206,7 +208,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       %{pub_project_card: pub_project_card, priv_project_card: priv_project_card}
     end
 
-    test "published project with a private set stays hidden", ctx do
+    test "a private set stays hidden even when a sibling set is published", ctx do
       card = ctx.pub_project_card
       side = hd(card.card_sides)
 
@@ -281,7 +283,6 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
             label: "Custom",
             color: "#123456",
             origin: :custom,
-            homebrew_project_id: set.homebrew_project_id,
             homebrew_set_id: set.id
           },
           authorize?: false

@@ -12,8 +12,8 @@ defmodule Sanctum.Homebrew.SetKind do
       everyone, including anonymous readers; admin-only mutations.
 
     * `:custom` — project-scoped kinds minted by a project's creator through
-      `Sanctum.Homebrew.create_set_kind/2`. Visibility follows the project
-      (published → everyone, else creator-only).
+      `Sanctum.Homebrew.create_set_kind/2`. Visible to everyone once a
+      published set uses the kind, else creator-only.
 
   `key` is a stable machine identifier. It is unique across all official kinds
   and unique *within* a project for custom kinds — two projects can each mint
@@ -100,14 +100,15 @@ defmodule Sanctum.Homebrew.SetKind do
       authorize_if always()
     end
 
-    # Filter policy — custom kinds follow their project's visibility; official
-    # kinds are visible to everyone. Checks stay separate on purpose: an expr
+    # Filter policy — a custom kind turns public once a published set uses it
+    # (so anyone viewing that set can resolve its label); otherwise only the
+    # project's creator sees it. Official kinds are visible to everyone. Checks stay separate on purpose: an expr
     # referencing ^actor(:id) collapses to false wholesale under a nil actor
     # (see CardAlt's read policy) — folding these into one OR would hide
     # official kinds from anonymous readers.
     policy action_type(:read) do
       authorize_if expr(origin == :official)
-      authorize_if expr(homebrew_project.visibility == :published)
+      authorize_if expr(exists(sets, visibility == :published))
       authorize_if expr(homebrew_project.creator_id == ^actor(:id))
     end
 
@@ -165,6 +166,11 @@ defmodule Sanctum.Homebrew.SetKind do
     belongs_to :homebrew_project, Sanctum.Homebrew.HomebrewProject do
       public? true
       allow_nil? true
+    end
+
+    # The sets labelled with this kind — drives the read policy above.
+    has_many :sets, Sanctum.Homebrew.HomebrewSet do
+      destination_attribute :set_kind_id
     end
   end
 
