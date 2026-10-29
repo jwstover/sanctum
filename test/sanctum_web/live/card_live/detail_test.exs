@@ -180,6 +180,42 @@ defmodule SanctumWeb.CardLive.DetailTest do
     assert render_async(lv) =~ ~p"/cards/#{card.id}"
   end
 
+  describe "admin image upload" do
+    test "admins get an upload form and file input on every face", %{conn: conn} do
+      {card, hero, alter_ego} = make_card()
+      conn = log_in_user(conn, Sanctum.AccountsFixtures.admin_user_fixture())
+
+      {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+      render_async(lv)
+
+      for side <- [hero, alter_ego] do
+        assert has_element?(lv, "#image-upload-#{side.id}")
+        assert has_element?(lv, "#image-upload-#{side.id} input[type=file]")
+      end
+    end
+
+    test "non-admin users get no upload UI", %{conn: conn} do
+      {card, hero, _alter_ego} = make_card()
+      conn = log_in_user(conn, Sanctum.AccountsFixtures.user_fixture())
+
+      {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+      render_async(lv)
+
+      refute has_element?(lv, "#image-upload-#{hero.id}")
+      refute has_element?(lv, "input[type=file]")
+    end
+
+    test "anonymous visitors get no upload UI", %{conn: conn} do
+      {card, hero, _alter_ego} = make_card()
+
+      {:ok, lv, _html} = live(conn, ~p"/cards/#{card.id}")
+      render_async(lv)
+
+      refute has_element?(lv, "#image-upload-#{hero.id}")
+      refute has_element?(lv, "input[type=file]")
+    end
+  end
+
   describe "collection" do
     setup %{conn: conn} do
       user = Sanctum.AccountsFixtures.user_fixture()
