@@ -133,6 +133,7 @@ defmodule SanctumWeb.Router do
       # Resource policies stay creator-scoped, so nothing else changes then.
       live "/homebrew", HomebrewLive.Index, :index
       live "/homebrew/:id", HomebrewLive.Show, :show
+      live "/homebrew/:project_id/sets/:set_id", HomebrewLive.SetShow, :show
       live "/homebrew/:id/cards/:card_id", HomebrewLive.EditCard, :edit
 
       # Admin card catalog management (data table + CRUD + sync).
