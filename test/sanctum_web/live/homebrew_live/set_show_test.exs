@@ -6,6 +6,7 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
   import Phoenix.LiveViewTest
   import Sanctum.AccountsFixtures
 
+  alias Sanctum.Games
   alias Sanctum.Homebrew
 
   require Ash.Query
@@ -16,14 +17,14 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
 
   defp card_fixture(set, actor, attrs \\ %{}) do
     {:ok, card} =
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
           homebrew_set_id: set.id,
           card_sides: [
             Map.merge(%{image_url: "https://img.test/a.png", filename: "test-card.png"}, attrs)
           ]
         },
-        actor
+        actor: actor
       )
 
     Ash.load!(card, [:card_sides, :primary_side], authorize?: false)
@@ -122,7 +123,7 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
       card = card_fixture(ctx.set, ctx.creator, %{filename: "reverted-fan.png"})
 
       {:ok, alt} =
-        Homebrew.declare_alt_art(card.id, official.id, [artist: "Jane Doe"], ctx.creator)
+        Games.declare_custom_alt(card.id, official.id, %{artist: "Jane Doe"}, actor: ctx.creator)
 
       {:ok, lv, html} = live(ctx.conn, ctx.path)
 
@@ -143,7 +144,7 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
     test "delete removes the alt without minting a card", ctx do
       official = official_fixture()
       card = card_fixture(ctx.set, ctx.creator, %{filename: "deleted-fan.png"})
-      {:ok, alt} = Homebrew.declare_alt_art(card.id, official.id, [], ctx.creator)
+      {:ok, alt} = Games.declare_custom_alt(card.id, official.id, actor: ctx.creator)
 
       {:ok, lv, _html} = live(ctx.conn, ctx.path)
 
@@ -198,7 +199,7 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
     test "multi-sided cards are not selectable in pair mode", ctx do
       a = card_fixture(ctx.set, ctx.creator)
       b = card_fixture(ctx.set, ctx.creator)
-      {:ok, paired} = Homebrew.pair_custom_cards(a.id, b.id, ctx.creator)
+      {:ok, paired} = Games.pair_custom_cards(a.id, b.id, actor: ctx.creator)
       card_fixture(ctx.set, ctx.creator)
       card_fixture(ctx.set, ctx.creator)
 

@@ -10,6 +10,7 @@ defmodule Sanctum.Homebrew.SystemReadPinningTest do
   use Sanctum.DataCase, async: false
 
   import Sanctum.AccountsFixtures
+  import Sanctum.HomebrewFixtures
 
   alias Sanctum.Decks.Writeup
   alias Sanctum.Games
@@ -24,15 +25,15 @@ defmodule Sanctum.Homebrew.SystemReadPinningTest do
 
     creator = user_fixture()
     project = Homebrew.create_project!(%{name: "Pinned", attestation: true}, actor: creator)
-    set = Homebrew.ensure_project_set(project, creator)
+    set = project_set_fixture(project, creator)
 
     {:ok, card} =
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
           homebrew_set_id: set.id,
           card_sides: [%{image_url: "https://img.test/p.png", filename: "p.png"}]
         },
-        creator
+        actor: creator
       )
 
     Homebrew.set_set_visibility!(set, :published, actor: creator)
@@ -76,7 +77,7 @@ defmodule Sanctum.Homebrew.SystemReadPinningTest do
     official = create(Card, attrs: %{code: "92100", base_code: "92100"})
     create(CardSide, attrs: %{card_id: official.id, code: "92100a", side_identifier: "A"})
 
-    {:ok, alt} = Homebrew.declare_alt_art(ctx.card.id, official.id, [], ctx.creator)
+    {:ok, alt} = Games.declare_custom_alt(ctx.card.id, official.id, actor: ctx.creator)
 
     assert {:error, _} = Games.get_card_alt_by_code(alt.code)
     assert [] = Games.list_card_alts_by_codes!([alt.code])

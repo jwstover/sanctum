@@ -15,6 +15,11 @@ defmodule Sanctum.Homebrew do
 
   Homebrew writes are always user-scoped through policies — never the
   `authorize?: false` system-write paths used by catalog sync.
+
+  Custom cards and alt art are `Sanctum.Games.Card`/`CardAlt` rows, so their
+  code interfaces live on the `Sanctum.Games` domain
+  (`Games.create_custom_card/2`, `Games.declare_custom_alt/4`,
+  `Games.list_homebrew_set_cards/2`, ...).
   """
 
   use Ash.Domain, otp_app: :sanctum, extensions: [AshAdmin.Domain]
@@ -40,189 +45,10 @@ defmodule Sanctum.Homebrew do
 
     resource Sanctum.Homebrew.SetKind do
       define :list_set_kinds, action: :read
+      define :list_project_set_kinds, action: :for_project, args: [:homebrew_project_id]
       define :create_set_kind, action: :create_custom
       define :update_set_kind, action: :update
       define :destroy_set_kind, action: :destroy
     end
-  end
-
-  require Ash.Query
-
-  @doc """
-  Returns the project's oldest set, creating one (named after the project)
-  when it has none. A bridge so uploads
-  always have a set until the UI grows a set picker.
-  """
-  def ensure_project_set(%Sanctum.Homebrew.HomebrewProject{} = project, actor) do
-    case list_project_sets!(project.id, actor: actor) do
-      [] ->
-        create_set!(
-          %{homebrew_project_id: project.id, name: project.name},
-          actor: actor
-        )
-
-      sets ->
-        Enum.min_by(sets, & &1.inserted_at, DateTime)
-    end
-  end
-
-  @doc """
-  Creates a custom card (with its sides) inside one of the actor's sets.
-
-  `attrs` must include a `:homebrew_set_id` (see `ensure_project_set/2`) and a
-  `:card_sides` list of maps
-  — each side needs at least `:image_url` (the image is the card); `:filename`
-  seeds the name when none is given. Codes, side identifiers, and origin are
-  generated server-side. Goes through policies with the actor — the actor must
-  own the target set.
-  """
-  def create_custom_card(attrs, actor) do
-    Sanctum.Games.Card
-    |> Ash.Changeset.for_create(:create_custom, attrs, actor: actor)
-    |> Ash.create()
-  end
-
-  @doc "Custom cards in one set, primary side loaded, oldest first."
-  def list_set_cards(set_id, actor) do
-    Sanctum.Games.Card
-    |> Ash.Query.filter(homebrew_set_id == ^set_id)
-    |> Ash.Query.load(:primary_side)
-    |> Ash.Query.sort(inserted_at: :asc)
-    |> Ash.read!(actor: actor)
-  end
-
-  @doc "Destroys one of the actor's custom cards (not-found for anyone else's)."
-  def destroy_custom_card(card_id, actor) do
-    with {:ok, card} <- Ash.get(Sanctum.Games.Card, card_id, actor: actor) do
-      Ash.destroy(card, action: :destroy_custom, actor: actor)
-    end
-  end
-
-  @doc """
-  Enriches one of the actor's custom cards: card-level flags plus per-side
-  metadata. `attrs` may include `:card_sides` — a list of maps each carrying
-  the side's `:id` plus any enrichable field. Sides omitted from the list are
-  untouched; unknown ids are rejected. Nothing is ever required.
-  """
-  def enrich_custom_card(%Sanctum.Games.Card{} = card, attrs, actor) do
-    card
-    |> Ash.Changeset.for_update(:update_custom, attrs, actor: actor)
-    |> Ash.update()
-  end
-
-  def enrich_custom_card(card_id, attrs, actor) do
-    with {:ok, card} <- Ash.get(Sanctum.Games.Card, card_id, actor: actor) do
-      enrich_custom_card(card, attrs, actor)
-    end
-  end
-
-  @doc """
-  Merges `donor_card_id` into the target card as its back ("b") side — both
-  must be single-sided customs in the same project. The donor card row is
-  destroyed; its side (and image) live on under the target.
-  """
-  def pair_custom_cards(target_card_id, donor_card_id, actor) do
-    with {:ok, target} <- Ash.get(Sanctum.Games.Card, target_card_id, actor: actor) do
-      target
-      |> Ash.Changeset.for_update(:pair_custom, %{donor_card_id: donor_card_id}, actor: actor)
-      |> Ash.update()
-    end
-  end
-
-  @doc """
-  Splits a two-sided custom card. Returns `{:ok, {updated_card, new_card}}` —
-  the original keeps side "a"; side "b" becomes `new_card`'s front.
-  """
-  def unpair_custom_card(card_id, actor) do
-    with {:ok, card} <- Ash.get(Sanctum.Games.Card, card_id, actor: actor),
-         {:ok, updated} <-
-           card
-           |> Ash.Changeset.for_update(:unpair_custom, %{}, actor: actor)
-           |> Ash.update() do
-      {:ok, {updated, updated.__metadata__.unpaired_card}}
-    end
-  end
-
-  @doc """
-  Creates custom alt art for an official card directly from an uploaded image
-  — the primary alt-art entry (the creation wizard). No source card to
-  convert: the `CardAlt` is minted straight from `image_url`.
-
-  `attrs` must include `:homebrew_set_id`, `:image_url`, and `:target_card_id`
-  (an official card); optional `:side_identifier` (default "a", the target side
-  the art depicts) and `:artist`. Goes through policies with the actor — the
-  actor must own the target set, and the
-  target card must be official.
-  """
-  def create_alt_art(attrs, actor) do
-    Sanctum.Games.CardAlt
-    |> Ash.Changeset.for_create(:create_custom, attrs, actor: actor)
-    |> Ash.create()
-  end
-
-  @doc """
-  Declares one of the actor's single-sided custom cards as alternate art for
-  an official card. CONVERT semantics: the card row (and its side) is
-  destroyed and a CardAlt is minted — enrichment metadata does not survive
-  the round trip. Opts: `:artist`, `:side_identifier` (default "a", the
-  target side the art depicts).
-  """
-  def declare_alt_art(source_card_id, target_card_id, opts \\ [], actor) do
-    Sanctum.Games.CardAlt
-    |> Ash.Changeset.for_create(
-      :declare_custom,
-      %{
-        source_card_id: source_card_id,
-        target_card_id: target_card_id,
-        artist: opts[:artist],
-        side_identifier: opts[:side_identifier] || "a"
-      },
-      actor: actor
-    )
-    |> Ash.create()
-  end
-
-  @doc """
-  Converts a custom alt back into a plain image-only custom card in its
-  project. Returns `{:ok, new_card}` (not-found for anyone else's alt).
-  """
-  def revert_alt_art(alt_id, actor) do
-    with {:ok, alt} <- Ash.get(Sanctum.Games.CardAlt, alt_id, actor: actor),
-         {:ok, destroyed} <-
-           Ash.destroy(alt, action: :revert_custom, actor: actor, return_destroyed?: true) do
-      {:ok, destroyed.__metadata__.reverted_card}
-    end
-  end
-
-  @doc "Deletes one of the actor's custom alts outright (not-found for anyone else's)."
-  def destroy_alt_art(alt_id, actor) do
-    with {:ok, alt} <- Ash.get(Sanctum.Games.CardAlt, alt_id, actor: actor) do
-      Ash.destroy(alt, action: :destroy_custom, actor: actor)
-    end
-  end
-
-  @doc """
-  Custom alts in any of a project's sets, oldest first, with the target card and
-  its sides loaded (the project page renders the target side's tile wearing
-  the alt's art).
-  """
-  def list_project_alts(project_id, actor) do
-    Sanctum.Games.CardAlt
-    |> Ash.Query.filter(homebrew_set.homebrew_project_id == ^project_id)
-    |> Ash.Query.load(card: [:card_sides, :primary_side])
-    |> Ash.Query.sort(inserted_at: :asc)
-    |> Ash.read!(actor: actor)
-  end
-
-  @doc """
-  Custom alts in one set, oldest first, with the target card and its sides
-  loaded (the set page renders the target side's tile wearing the alt's art).
-  """
-  def list_set_alts(set_id, actor) do
-    Sanctum.Games.CardAlt
-    |> Ash.Query.filter(homebrew_set_id == ^set_id)
-    |> Ash.Query.load(card: [:card_sides, :primary_side])
-    |> Ash.Query.sort(inserted_at: :asc)
-    |> Ash.read!(actor: actor)
   end
 end

@@ -1,9 +1,14 @@
 # Marvel Champions Online (Sanctum)
 
-A web-based "smart table" for playing Marvel Champions: The Card Game online. It
-provides digital deck and game-state management — zones, tokens, card states —
-**without enforcing game rules**; players enforce the rules themselves. Built for
-personal use, designed with room to grow into multiplayer.
+A deck builder and card browser for Marvel Champions: The Card Game — an
+alternative to MarvelCDB. Browse the card catalog and packs, build and share
+decks, explore scenarios, and use extras like the Flavor Town guessing game and
+collection stats. Built for personal use, with room to grow.
+
+**Not a priority:** an online "smart table" for playing games was started
+(`Game*` resources, `GameLive.*` modules) but is deprecated and unrouted —
+good dedicated smart tables already exist. Don't extend it or build new
+features around it.
 
 ## Rules for Working in This Repo
 
@@ -14,6 +19,20 @@ personal use, designed with room to grow into multiplayer.
 - **Ash is the source of truth for the data layer.** Resources define attributes,
   relationships, actions, and policies. Don't hand-write Ecto schemas or raw SQL
   migrations to model domain data — change the resource and run codegen.
+- **Watch for places to use Ash Signals.** When an action in one domain needs
+  to trigger work in another (e.g. "log a game → update collection stats",
+  "publish a deck → notify followers"), use `Ash.Signals` instead of adding an
+  `after_action` hook that calls into the other domain. Signals need Ash 3.36+ /
+  AshOban 0.10+, and we're not on those yet: flag the opportunity and suggest
+  the upgrade rather than adding another cross-domain hook. Choosing a tool:
+  - direct calls when you need a return value
+  - writes within one aggregate (e.g. `Deck` → `DeckCard`) stay inline
+  - PubSub broadcasts go in notifiers
+  - signals (async via `AshOban.Signals` for email and other work that can't be
+    rolled back) when the emitter shouldn't know who's listening
+  Existing candidates: `NotifyPasswordChanged`, which sends email inside the
+  transaction, and card sync calling `Heroes`/`Villains.find_or_create_*` in
+  `lib/sanctum/marvel_cdb.ex`. See https://hexdocs.pm/ash/signals.html.
 - **Single dark theme.** The UI is a pinned dark "comic-dossier" design. There is
   no light/dark toggle — do not reintroduce daisyUI theme switching.
 - **Never use `data-confirm` for confirmations.** It calls `window.confirm`,
@@ -24,6 +43,16 @@ personal use, designed with room to grow into multiplayer.
   `SanctumWeb.CoreComponents` instead — they use a native `<dialog>` opened by a
   colocated JS hook. Put the real `phx-click` / `phx-value-*` on the component;
   it fires only after the user confirms.
+- **Every function that reads, writes or derives domain data starts as an Ash
+  action.** Filtered reads → `read` actions; writes that resolve or create
+  related rows → an action argument plus a change; multi-step writes → one
+  action (never `Ash.transact` in a function); values computed for callers →
+  generic actions or calculations; input rules → validations. Domain modules
+  expose these through `define`. A plain function on domain resources needs a
+  strong reason, written in its `@doc`. Web-layer presentation, form-input
+  parsing, fixtures and release scripts are the usual legitimate exceptions.
+  Existing plain helpers in domain modules (e.g. in `Sanctum.Homebrew`) are
+  legacy, not a pattern to copy.
 - There are often several agents making changes and working in the single shared gitbutler workspace. Make sure that when you are committing your change you FIRST STAGE THE SPECIFIC HUNK and then review the staged changes before committing. We have already gotten into situations where work got mixed up. 
 
 ## Technical Stack
@@ -39,16 +68,16 @@ personal use, designed with room to grow into multiplayer.
 ## Architecture
 
 State lives in **Postgres, modeled with Ash resources**, and is rendered/mutated
-directly by LiveViews. There is **no GenServer-per-game** — games are plain Ash
-resources. PubSub broadcasts changes to connected clients. The only long-lived
-process is `Sanctum.CardSync.Server` (drives MarvelCDB catalog sync).
+directly by LiveViews. PubSub broadcasts changes to connected clients. The only
+long-lived process is `Sanctum.CardSync.Server` (drives MarvelCDB catalog sync).
 
 ### Ash Domains
 
 | Domain | Purpose |
 |---|---|
 | `Sanctum.Accounts` | Users + tokens; auth (Google OAuth, magic link, password). `User.admin` boolean gates admin surfaces. |
-| `Sanctum.Games` | Cards, card sides, scenarios, and live game state. The core domain. |
+| `Sanctum.Games` | Cards, card sides, and scenarios. The core domain. (Also holds the deprecated smart-table `Game*` resources.) |
+| `Sanctum.GameLog` | Logged games (a record of games players have played). |
 | `Sanctum.Decks` | Player decks imported from MarvelCDB; deck cards, aspects, uniqueness. |
 | `Sanctum.Heroes` | Hero catalog (incl. `meta.colors`-derived gradient palette). |
 | `Sanctum.Villains` | Villain catalog. |
@@ -77,10 +106,9 @@ Key type/field conventions:
   :campaign`) and a separate nullable **`CardAspect`** enum (4 aspects only) —
   this replaced MarvelCDB's overloaded `faction_code`.
 
-Live game state (`Game`, `GamePlayer`, `GameCard`, `GameVillain`,
-`GameEncounterDeck`, `Scenario`, `ModularSet`): `GameCard` is the single
-representation of an in-play card in any zone (main scheme, side scheme, player
-area, etc.) — a prior separate `GameScheme` was folded into it.
+`Scenario` and `ModularSet` are live catalog resources. The deprecated
+smart-table state (`Game`, `GamePlayer`, `GameCard`, `GameVillain`,
+`GameEncounterDeck`) is retained but unrouted; leave it alone.
 
 ## Subsystems
 
@@ -109,10 +137,12 @@ area, etc.) — a prior separate `GameScheme` was folded into it.
 
 ### Routes (authenticated)
 
-- `/` — `GameLive.Index` (games list); `/games/new`, `/games/:id`
-- `/cards` — `CardLive.Pool` (card browser, public read)
-- `/decks`, `/decks/:id` — deck browser
-- `/guess` — `GuessLive.Play` (card-guessing mini-game)
+- `/` — `HomeLive.Index` (landing: stats, card of the day, newest decks)
+- `/cards`, `/cards/:id` — `CardLive.Pool` / `Detail` (card browser, public read)
+- `/browse` — packs; `/scenarios` — scenario browser/builder
+- `/decks`, `/decks/:id` — deck browser; `/decks/:id/build` — deck builder
+- `/flavor-town` — `GuessLive.Play` (flavor-text guessing mini-game)
+- `/game-log`, `/events`, `/stats` — game log, event organizer, collection stats
 - `/admin` — `AdminLive.Index` (admin landing: system-health stats + links); the
   `/admin/cards*` management routes and `/admin/oban` — **admin only**
 

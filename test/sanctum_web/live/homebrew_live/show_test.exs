@@ -6,6 +6,7 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
   import Phoenix.LiveViewTest
   import Sanctum.AccountsFixtures
 
+  alias Sanctum.Games
   alias Sanctum.Homebrew
 
   defp project_fixture(actor) do
@@ -41,12 +42,12 @@ defmodule SanctumWeb.HomebrewLive.ShowTest do
     set = set_fixture(ctx.project, ctx.creator, "Kingpin Scenario")
 
     {:ok, _card} =
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
           homebrew_set_id: set.id,
           card_sides: [%{image_url: "https://img.test/a.png", filename: "goon.png"}]
         },
-        ctx.creator
+        actor: ctx.creator
       )
 
     set_fixture(ctx.project, ctx.creator, "Daredevil Hero Pack")

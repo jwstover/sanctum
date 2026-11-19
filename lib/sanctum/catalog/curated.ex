@@ -95,6 +95,9 @@ defmodule Sanctum.Catalog.Curated do
     "fne" => {:campaign_expansion, 11},
     "jj" => {:hero_pack, 11},
     "luke_cage" => {:hero_pack, 11},
+    "elektra" => {:hero_pack, 11},
+    "iron_fist" => {:hero_pack, 11},
+    # TODO: Shadowlands — add once MarvelCDB publishes the pack (code unknown).
     # No wave — standalone organized-play modular set
     "ron" => {:promo, nil}
   }

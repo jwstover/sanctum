@@ -10,13 +10,19 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     * **Card** — each image becomes a custom `Card` in this set.
     * **Alt art** — each image lands in a "to assign" strip; assigning it to an
       official card + side mints a `CardAlt` in this set
-      (`Homebrew.create_alt_art/2`).
+      (`Games.create_custom_alt/2`).
 
   The chooser asks about card *shape*, not content type: the set carries the
   kind.
 
   Also does front/back pairing of two single-sided cards; editing a card is on
   its own page (`HomebrewLive.EditCard`).
+
+  The set's own metadata — name, markdown description, banner, tags and kind —
+  is edited inline ("Edit details"). The kind field is an *open* combobox: a
+  text input with the project's kinds as `<datalist>` suggestions. Free text
+  mints a project-scoped kind on save, blank leaves the set unclassified
+  (the `:kind` argument of `HomebrewSet :update`).
   """
 
   use SanctumWeb, :live_view
@@ -24,6 +30,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   import SanctumWeb.Components.CardSideTile
   import SanctumWeb.HomebrewComponents
 
+  alias Sanctum.Games
   alias Sanctum.Homebrew
   alias Sanctum.HomebrewImages
   alias SanctumWeb.HomebrewLive.Support
@@ -35,7 +42,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     actor = socket.assigns.current_user
 
     with {:ok, project} <- Homebrew.get_project(project_id, actor: actor),
-         {:ok, set} <- Homebrew.get_set(set_id, actor: actor),
+         {:ok, set} <- Homebrew.get_set(set_id, actor: actor, load: [:set_kind]),
          true <- set.homebrew_project_id == project.id do
       {:ok,
        socket
@@ -48,6 +55,9 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
        |> assign(:pair_selection, [])
        |> assign(:chooser_open?, false)
        |> assign(:pending, [])
+       |> assign(:editing_details?, false)
+       |> assign(:set_kinds, [])
+       |> assign_details_form()
        |> reset_assign()
        |> assign_cards()
        |> Support.assign_alts()
@@ -129,12 +139,12 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   defp store_card(path, entry, set, user) do
     with {:ok, body} <- File.read(path),
          {:ok, url} <- HomebrewImages.store(body, entry.client_type) do
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
           homebrew_set_id: set.id,
           card_sides: [%{image_url: url, filename: entry.client_name}]
         },
-        user
+        actor: user
       )
     end
   end
@@ -153,10 +163,48 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   # auto_upload still fires the form's phx-change; nothing to validate.
   def handle_event("validate", _params, socket), do: {:noreply, socket}
 
+  # -- Set details ----------------------------------------------------------
+
+  def handle_event("edit_details", _params, socket) do
+    %{project: project, current_user: user} = socket.assigns
+
+    {:noreply,
+     socket
+     |> assign(:editing_details?, true)
+     |> assign(:set_kinds, Homebrew.list_project_set_kinds!(project.id, actor: user))
+     |> assign_details_form()}
+  end
+
+  def handle_event("cancel_details", _params, socket) do
+    {:noreply, assign(socket, :editing_details?, false)}
+  end
+
+  # Validating only builds the changeset; the kind is resolved (and possibly
+  # minted) in the action's before_action, which runs on submit alone.
+  def handle_event("validate_details", %{"set" => params}, socket) do
+    {:noreply,
+     assign(socket, :details_form, AshPhoenix.Form.validate(socket.assigns.details_form, params))}
+  end
+
+  def handle_event("save_details", %{"set" => params}, socket) do
+    case AshPhoenix.Form.submit(socket.assigns.details_form, params: params) do
+      {:ok, set} ->
+        {:noreply,
+         socket
+         |> assign(:set, set)
+         |> assign(:page_title, set.name)
+         |> assign(:editing_details?, false)
+         |> put_flash(:info, "Set details saved.")}
+
+      {:error, form} ->
+        {:noreply, assign(socket, :details_form, form)}
+    end
+  end
+
   # -- Cards ------------------------------------------------------------------
 
   def handle_event("delete_card", %{"id" => id}, socket) do
-    case Homebrew.destroy_custom_card(id, socket.assigns.current_user) do
+    case Games.destroy_custom_card(id, actor: socket.assigns.current_user) do
       :ok -> {:noreply, assign_cards(socket)}
       _error -> {:noreply, put_flash(socket, :error, "Could not delete the card.")}
     end
@@ -205,7 +253,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     with %{} <- pending,
          %{} <- target,
          {:ok, _alt} <-
-           Homebrew.create_alt_art(
+           Games.create_custom_alt(
              %{
                homebrew_set_id: set.id,
                image_url: pending.image_url,
@@ -213,7 +261,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
                side_identifier: target.side_identifier,
                artist: presence(params["artist"])
              },
-             user
+             actor: user
            ) do
       {:noreply,
        socket
@@ -228,7 +276,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   end
 
   def handle_event("revert_alt", %{"id" => id}, socket) do
-    case Homebrew.revert_alt_art(id, socket.assigns.current_user) do
+    case Games.revert_custom_alt(id, actor: socket.assigns.current_user) do
       {:ok, _new_card} ->
         {:noreply,
          socket
@@ -276,7 +324,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   def handle_event("pair_cards", _params, socket) do
     case socket.assigns.pair_selection do
       [front_id, back_id] ->
-        case Homebrew.pair_custom_cards(front_id, back_id, socket.assigns.current_user) do
+        case Games.pair_custom_cards(front_id, back_id, actor: socket.assigns.current_user) do
           {:ok, _paired} ->
             {:noreply,
              socket
@@ -296,6 +344,50 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
 
   # -- Helpers ----------------------------------------------------------------
 
+  # Tags are typed comma-separated; the resource takes a plain list, so the
+  # split is a form concern (prepare_params), not domain logic.
+  defp assign_details_form(socket) do
+    set = socket.assigns.set
+
+    form =
+      AshPhoenix.Form.for_update(set, :update,
+        as: "set",
+        actor: socket.assigns.current_user,
+        load: [:set_kind],
+        params: %{
+          "kind" => set.set_kind && set.set_kind.label,
+          "tags" => Enum.join(set.tags || [], ", ")
+        },
+        prepare_params: fn params, _action ->
+          case params do
+            %{"tags" => tags} -> Map.put(params, "tags", split_tags(tags))
+            _no_tags -> params
+          end
+        end
+      )
+
+    assign(socket, :details_form, to_form(form))
+  end
+
+  defp split_tags(text) when is_binary(text) do
+    text
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq_by(&String.downcase/1)
+  end
+
+  defp split_tags(tags), do: tags
+
+  # The tags input shows comma-separated text whether the form holds the
+  # typed string (after a change) or the stored list (on open).
+  defp tags_text(form) do
+    case form[:tags].value do
+      tags when is_list(tags) -> Enum.join(tags, ", ")
+      text -> text
+    end
+  end
+
   defp reset_assign(socket) do
     socket
     |> assign(:assign_pending, nil)
@@ -306,7 +398,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
 
   defp assign_cards(socket) do
     cards =
-      Homebrew.list_set_cards(socket.assigns.set.id, socket.assigns.current_user)
+      Games.list_homebrew_set_cards!(socket.assigns.set.id, actor: socket.assigns.current_user)
 
     # The pool's dossier tile, fed the primary side. side_view/2 degrades on
     # missing metadata (nil type/ownership/stats render nothing); customs have
@@ -359,6 +451,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
       <.header>
         {@set.name}
         <:actions>
+          <.button :if={!@editing_details?} phx-click="edit_details">Edit details</.button>
           <.button variant="primary" phx-click="open_chooser">Upload</.button>
         </:actions>
       </.header>
@@ -374,6 +467,14 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
           else: "alts"}</span>
         &middot; unofficial fan content
       </p>
+
+      <.set_details_form
+        :if={@editing_details?}
+        form={@details_form}
+        set_kinds={@set_kinds}
+      />
+
+      <.set_details :if={!@editing_details?} set={@set} />
 
       <div :if={@pending != []} class="mb-8 border-2 border-primary/60 bg-base-200 p-4">
         <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-primary">
@@ -765,6 +866,130 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         </div>
       </div>
     </section>
+    """
+  end
+
+  # The set's public-facing metadata: banner, kind + tags, and the rendered
+  # markdown description. Renders nothing extra for an undescribed set.
+  attr :set, :any, required: true
+
+  defp set_details(assigns) do
+    assigns =
+      assigns
+      |> assign(:banner, Support.banner_src(assigns.set.banner_url))
+      |> assign(:description, Support.description_html(assigns.set.description))
+
+    ~H"""
+    <div
+      :if={@banner || @set.set_kind || @set.tags != [] || @description}
+      id="set-details"
+      class="mb-8 flex flex-col gap-4"
+    >
+      <div :if={@banner} class="overflow-hidden border-2 border-neutral bg-base-300 shadow-comic">
+        <img
+          src={@banner}
+          alt={"#{@set.name} banner"}
+          class="max-h-[320px] w-full object-cover"
+        />
+      </div>
+
+      <div :if={@set.set_kind || @set.tags != []} class="flex flex-wrap items-center gap-2">
+        <span
+          :if={@set.set_kind}
+          id="set-kind"
+          class="border-2 border-neutral bg-primary px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-primary-content"
+        >
+          {@set.set_kind.label}
+        </span>
+        <span
+          :for={tag <- @set.tags}
+          class="border-2 border-neutral bg-base-300 px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.06em] text-base-content/70"
+        >
+          {tag}
+        </span>
+      </div>
+
+      <div
+        :if={@description}
+        id="set-description"
+        class="deck-writeup max-w-3xl"
+      >
+        {@description}
+      </div>
+    </div>
+    """
+  end
+
+  # Inline (never modal) metadata editor. The kind input is an open
+  # combobox: <datalist> suggestions, free text allowed, blank = unclassified.
+  attr :form, :any, required: true
+  attr :set_kinds, :list, required: true
+
+  defp set_details_form(assigns) do
+    ~H"""
+    <.panel class="mb-8 p-5">
+      <.form
+        for={@form}
+        id="set-details-form"
+        phx-change="validate_details"
+        phx-submit="save_details"
+      >
+        <div class="flex flex-col gap-4">
+          <.input field={@form[:name]} type="text" label="Set name" autocomplete="off" />
+
+          <div>
+            <.input
+              field={@form[:kind]}
+              type="text"
+              label="Kind (optional)"
+              list="set-kind-options"
+              placeholder="Hero, Scenario… or type your own"
+              autocomplete="off"
+            />
+            <datalist id="set-kind-options">
+              <option :for={kind <- @set_kinds} value={kind.label} />
+            </datalist>
+            <p class="mt-1 font-barlow-condensed text-xs text-base-content/50">
+              Pick a suggestion or type a new kind; leave blank for unclassified.
+            </p>
+          </div>
+
+          <.input
+            field={@form[:tags]}
+            value={tags_text(@form)}
+            type="text"
+            label="Tags (comma-separated)"
+            autocomplete="off"
+          />
+
+          <.input
+            field={@form[:banner_url]}
+            type="url"
+            label="Banner image URL"
+            placeholder="https://…"
+            autocomplete="off"
+          />
+
+          <.input
+            field={@form[:description]}
+            type="textarea"
+            label="Description (markdown)"
+            rows="6"
+          />
+
+          <div class="flex items-center gap-3">
+            <.button variant="primary" type="submit">Save details</.button>
+            <button
+              type="button"
+              phx-click="cancel_details"
+              class="cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </.form>
+    </.panel>
     """
   end
 

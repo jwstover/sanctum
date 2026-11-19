@@ -4,6 +4,7 @@ defmodule Sanctum.Homebrew.SetKindTest do
   use Sanctum.DataCase, async: true
 
   import Sanctum.AccountsFixtures
+  import Sanctum.HomebrewFixtures
 
   alias Sanctum.Homebrew
   alias Sanctum.Homebrew.SetKind
@@ -277,7 +278,7 @@ defmodule Sanctum.Homebrew.SetKindTest do
       kind = custom_kind!(ctx.project, ctx.creator)
 
       ctx.project
-      |> Homebrew.ensure_project_set(ctx.creator)
+      |> project_set_fixture(ctx.creator)
       |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
 
       refute kind.id in Enum.map(Homebrew.list_set_kinds!(actor: nil), & &1.id)

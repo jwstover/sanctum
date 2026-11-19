@@ -4,6 +4,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
   use Sanctum.DataCase, async: true
 
   import Sanctum.AccountsFixtures
+  import Sanctum.HomebrewFixtures
 
   alias Sanctum.Decks.Writeup
   alias Sanctum.Games
@@ -37,12 +38,12 @@ defmodule Sanctum.Homebrew.AltArtTest do
 
   defp custom_card!(project, actor, filename \\ "fan-art.png") do
     {:ok, card} =
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
-          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
+          homebrew_set_id: project_set_fixture(project, actor).id,
           card_sides: [%{image_url: "https://img.test/#{filename}", filename: filename}]
         },
-        actor
+        actor: actor
       )
 
     Ash.load!(card, :card_sides, authorize?: false)
@@ -52,7 +53,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
     source = custom_card!(ctx.project, ctx.creator)
 
     {:ok, alt} =
-      Homebrew.declare_alt_art(source.id, ctx.official.id, opts, ctx.creator)
+      Games.declare_custom_alt(source.id, ctx.official.id, Map.new(opts), actor: ctx.creator)
 
     {source, alt}
   end
@@ -63,11 +64,11 @@ defmodule Sanctum.Homebrew.AltArtTest do
       [side] = source.card_sides
 
       {:ok, alt} =
-        Homebrew.declare_alt_art(
+        Games.declare_custom_alt(
           source.id,
           ctx.official.id,
-          [artist: "Jane Doe", side_identifier: "a"],
-          ctx.creator
+          %{artist: "Jane Doe", side_identifier: "a"},
+          actor: ctx.creator
         )
 
       assert alt.origin == :custom
@@ -78,7 +79,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
       assert alt.artist == "Jane Doe"
       assert alt.card_id == ctx.official.id
       assert alt.creator_id == ctx.creator.id
-      assert alt.homebrew_set_id == Homebrew.ensure_project_set(ctx.project, ctx.creator).id
+      assert alt.homebrew_set_id == project_set_fixture(ctx.project, ctx.creator).id
 
       # Source card and its side are gone.
       assert {:error, _} = Ash.get(Card, source.id, authorize?: false)
@@ -87,7 +88,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
 
     test "an official source card is rejected", ctx do
       assert {:error, %Ash.Error.Forbidden{}} =
-               Homebrew.declare_alt_art(ctx.official.id, ctx.official.id, [], ctx.creator)
+               Games.declare_custom_alt(ctx.official.id, ctx.official.id, actor: ctx.creator)
     end
 
     test "targeting another custom card is rejected", ctx do
@@ -95,7 +96,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
       target = custom_card!(ctx.project, ctx.creator, "other.png")
 
       assert {:error, error} =
-               Homebrew.declare_alt_art(source.id, target.id, [], ctx.creator)
+               Games.declare_custom_alt(source.id, target.id, actor: ctx.creator)
 
       assert Exception.message(error) =~ "official card"
     end
@@ -103,10 +104,10 @@ defmodule Sanctum.Homebrew.AltArtTest do
     test "a multi-sided source is rejected", ctx do
       front = custom_card!(ctx.project, ctx.creator, "front.png")
       back = custom_card!(ctx.project, ctx.creator, "back.png")
-      {:ok, paired} = Homebrew.pair_custom_cards(front.id, back.id, ctx.creator)
+      {:ok, paired} = Games.pair_custom_cards(front.id, back.id, actor: ctx.creator)
 
       assert {:error, error} =
-               Homebrew.declare_alt_art(paired.id, ctx.official.id, [], ctx.creator)
+               Games.declare_custom_alt(paired.id, ctx.official.id, actor: ctx.creator)
 
       assert Exception.message(error) =~ "single-sided"
     end
@@ -115,29 +116,29 @@ defmodule Sanctum.Homebrew.AltArtTest do
       source = custom_card!(ctx.project, ctx.creator)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-               Homebrew.declare_alt_art(source.id, ctx.official.id, [], ctx.other)
+               Games.declare_custom_alt(source.id, ctx.official.id, actor: ctx.other)
     end
 
     test "a nil actor is forbidden", ctx do
       source = custom_card!(ctx.project, ctx.creator)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-               Homebrew.declare_alt_art(source.id, ctx.official.id, [], nil)
+               Games.declare_custom_alt(source.id, ctx.official.id, actor: nil)
     end
   end
 
   describe "create_alt_art (direct, from an uploaded image)" do
     test "mints a CardAlt on the official card straight from the image", ctx do
       {:ok, alt} =
-        Homebrew.create_alt_art(
+        Games.create_custom_alt(
           %{
-            homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+            homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan-spidey.png",
             target_card_id: ctx.official.id,
             side_identifier: "a",
             artist: "Jane Doe"
           },
-          ctx.creator
+          actor: ctx.creator
         )
 
       assert alt.origin == :custom
@@ -148,18 +149,18 @@ defmodule Sanctum.Homebrew.AltArtTest do
       assert alt.artist == "Jane Doe"
       assert alt.card_id == ctx.official.id
       assert alt.creator_id == ctx.creator.id
-      assert alt.homebrew_set_id == Homebrew.ensure_project_set(ctx.project, ctx.creator).id
+      assert alt.homebrew_set_id == project_set_fixture(ctx.project, ctx.creator).id
     end
 
     test "side_identifier defaults to \"a\"", ctx do
       {:ok, alt} =
-        Homebrew.create_alt_art(
+        Games.create_custom_alt(
           %{
-            homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+            homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan.png",
             target_card_id: ctx.official.id
           },
-          ctx.creator
+          actor: ctx.creator
         )
 
       assert alt.side_identifier == "a"
@@ -169,13 +170,13 @@ defmodule Sanctum.Homebrew.AltArtTest do
       custom = custom_card!(ctx.project, ctx.creator)
 
       assert {:error, error} =
-               Homebrew.create_alt_art(
+               Games.create_custom_alt(
                  %{
-                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+                   homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: custom.id
                  },
-                 ctx.creator
+                 actor: ctx.creator
                )
 
       assert Exception.message(error) =~ "official card"
@@ -183,40 +184,40 @@ defmodule Sanctum.Homebrew.AltArtTest do
 
     test "another user cannot create alt art in the project", ctx do
       assert {:error, %Ash.Error.Forbidden{}} =
-               Homebrew.create_alt_art(
+               Games.create_custom_alt(
                  %{
-                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+                   homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: ctx.official.id
                  },
-                 ctx.other
+                 actor: ctx.other
                )
     end
 
     test "a nil actor is forbidden", ctx do
       assert {:error, %Ash.Error.Forbidden{}} =
-               Homebrew.create_alt_art(
+               Games.create_custom_alt(
                  %{
-                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+                   homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: ctx.official.id
                  },
-                 nil
+                 actor: nil
                )
     end
 
     test "the alt shows up in list_project_alts and alt_count", ctx do
       {:ok, alt} =
-        Homebrew.create_alt_art(
+        Games.create_custom_alt(
           %{
-            homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+            homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan.png",
             target_card_id: ctx.official.id
           },
-          ctx.creator
+          actor: ctx.creator
         )
 
-      assert [listed] = Homebrew.list_project_alts(ctx.project.id, ctx.creator)
+      assert [listed] = Games.list_homebrew_project_alts!(ctx.project.id, actor: ctx.creator)
       assert listed.id == alt.id
       assert listed.card.primary_side.name == "Official Hero"
 
@@ -229,10 +230,11 @@ defmodule Sanctum.Homebrew.AltArtTest do
     test "mints a fresh custom card named after the target", ctx do
       {source, alt} = declare!(ctx, artist: "Jane Doe")
 
-      {:ok, new_card} = Homebrew.revert_alt_art(alt.id, ctx.creator)
+      {:ok, reverted} = Games.revert_custom_alt(alt.id, actor: ctx.creator)
+      new_card = reverted.__metadata__.reverted_card
 
       assert new_card.origin == :custom
-      assert new_card.homebrew_set_id == Homebrew.ensure_project_set(ctx.project, ctx.creator).id
+      assert new_card.homebrew_set_id == project_set_fixture(ctx.project, ctx.creator).id
       # Identity is stable across the round trip: the alt's code is reused.
       assert new_card.code == source.code
       refute new_card.is_multi_sided
@@ -252,8 +254,8 @@ defmodule Sanctum.Homebrew.AltArtTest do
     test "cross-user revert and destroy are not found", ctx do
       {_source, alt} = declare!(ctx)
 
-      assert {:error, _} = Homebrew.revert_alt_art(alt.id, ctx.other)
-      assert {:error, _} = Homebrew.destroy_alt_art(alt.id, ctx.other)
+      assert {:error, _} = Games.revert_custom_alt(alt.id, actor: ctx.other)
+      assert {:error, _} = Games.destroy_custom_alt(alt.id, actor: ctx.other)
     end
   end
 
@@ -261,7 +263,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
     test "deletes the alt without minting a card", ctx do
       {source, alt} = declare!(ctx)
 
-      assert :ok = Homebrew.destroy_alt_art(alt.id, ctx.creator)
+      assert :ok = Games.destroy_custom_alt(alt.id, actor: ctx.creator)
       assert {:error, _} = Ash.get(CardAlt, alt.id, authorize?: false)
       assert {:error, _} = Ash.get(Card, source.id, authorize?: false)
     end
@@ -295,7 +297,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
       {_source, alt} = declare!(ctx)
 
       ctx.project
-      |> Homebrew.ensure_project_set(ctx.creator)
+      |> project_set_fixture(ctx.creator)
       |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
 
       for actor <- [ctx.other, nil] do
@@ -337,7 +339,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
     test "list_project_alts and alt_count; project destroy cascades", ctx do
       {_source, alt} = declare!(ctx, artist: "Jane Doe")
 
-      assert [listed] = Homebrew.list_project_alts(ctx.project.id, ctx.creator)
+      assert [listed] = Games.list_homebrew_project_alts!(ctx.project.id, actor: ctx.creator)
       assert listed.id == alt.id
       assert listed.card.primary_side.name == "Official Hero"
 
@@ -345,7 +347,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
                Homebrew.get_project!(ctx.project.id, actor: ctx.creator, load: [:alt_count])
 
       # Other users see no private alts through the list.
-      assert [] = Homebrew.list_project_alts(ctx.project.id, ctx.other)
+      assert [] = Games.list_homebrew_project_alts!(ctx.project.id, actor: ctx.other)
 
       :ok = Homebrew.destroy_project(ctx.project, actor: ctx.creator)
       assert {:error, _} = Ash.get(CardAlt, alt.id, authorize?: false)
