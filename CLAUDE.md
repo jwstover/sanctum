@@ -24,6 +24,16 @@ personal use, designed with room to grow into multiplayer.
   `SanctumWeb.CoreComponents` instead — they use a native `<dialog>` opened by a
   colocated JS hook. Put the real `phx-click` / `phx-value-*` on the component;
   it fires only after the user confirms.
+- **Every function that reads, writes or derives domain data starts as an Ash
+  action.** Filtered reads → `read` actions; writes that resolve or create
+  related rows → an action argument plus a change; multi-step writes → one
+  action (never `Ash.transact` in a function); values computed for callers →
+  generic actions or calculations; input rules → validations. Domain modules
+  expose these through `define`. A plain function on domain resources needs a
+  strong reason, written in its `@doc`. Web-layer presentation, form-input
+  parsing, fixtures and release scripts are the usual legitimate exceptions.
+  Existing plain helpers in domain modules (e.g. in `Sanctum.Homebrew`) are
+  legacy, not a pattern to copy.
 - There are often several agents making changes and working in the single shared gitbutler workspace. Make sure that when you are committing your change you FIRST STAGE THE SPECIFIC HUNK and then review the staged changes before committing. We have already gotten into situations where work got mixed up. 
 
 ## Technical Stack
