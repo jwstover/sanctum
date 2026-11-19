@@ -74,10 +74,6 @@ defmodule SanctumWeb.Router do
       # Public landing page: vault stats, card of the day, newest decks.
       live "/", HomeLive.Index, :index
 
-      live "/games", GameLive.Index, :index
-      live "/games/new", GameLive.New, :new
-      live "/games/:id", GameLive.Show, :show
-
       live "/game-log", GameLogLive.Index, :index
       live "/game-log/new", GameLogLive.New, :new
       live "/game-log/:id", GameLogLive.Show, :show
