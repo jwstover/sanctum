@@ -19,6 +19,20 @@ features around it.
 - **Ash is the source of truth for the data layer.** Resources define attributes,
   relationships, actions, and policies. Don't hand-write Ecto schemas or raw SQL
   migrations to model domain data — change the resource and run codegen.
+- **Watch for places to use Ash Signals.** When an action in one domain needs
+  to trigger work in another (e.g. "log a game → update collection stats",
+  "publish a deck → notify followers"), use `Ash.Signals` instead of adding an
+  `after_action` hook that calls into the other domain. Signals need Ash 3.36+ /
+  AshOban 0.10+, and we're not on those yet: flag the opportunity and suggest
+  the upgrade rather than adding another cross-domain hook. Choosing a tool:
+  - direct calls when you need a return value
+  - writes within one aggregate (e.g. `Deck` → `DeckCard`) stay inline
+  - PubSub broadcasts go in notifiers
+  - signals (async via `AshOban.Signals` for email and other work that can't be
+    rolled back) when the emitter shouldn't know who's listening
+  Existing candidates: `NotifyPasswordChanged`, which sends email inside the
+  transaction, and card sync calling `Heroes`/`Villains.find_or_create_*` in
+  `lib/sanctum/marvel_cdb.ex`. See https://hexdocs.pm/ash/signals.html.
 - **Single dark theme.** The UI is a pinned dark "comic-dossier" design. There is
   no light/dark toggle — do not reintroduce daisyUI theme switching.
 - **Never use `data-confirm` for confirmations.** It calls `window.confirm`,
