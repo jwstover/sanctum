@@ -5,6 +5,9 @@ defmodule SanctumWeb.CardLive.DetailTest do
 
   import Phoenix.LiveViewTest
   import Sanctum.Factory
+  import Sanctum.HomebrewFixtures
+
+  alias Sanctum.Games
 
   # Deliberately outside the "01001"/"core" namespace the async sync tests
   # upsert — colliding unique keys across sandboxed transactions deadlock.
@@ -120,16 +123,16 @@ defmodule SanctumWeb.CardLive.DetailTest do
         Sanctum.Homebrew.create_project!(%{name: "Fan Pack", attestation: true}, actor: creator)
 
       {:ok, source} =
-        Sanctum.Homebrew.create_custom_card(
+        Games.create_custom_card(
           %{
-            homebrew_set_id: Sanctum.Homebrew.ensure_project_set(project, creator).id,
+            homebrew_set_id: project_set_fixture(project, creator).id,
             card_sides: [%{image_url: "https://img.test/fan.png", filename: "fan.png"}]
           },
-          creator
+          actor: creator
         )
 
       {:ok, alt} =
-        Sanctum.Homebrew.declare_alt_art(source.id, card.id, [artist: "Jane Doe"], creator)
+        Games.declare_custom_alt(source.id, card.id, %{artist: "Jane Doe"}, actor: creator)
 
       %{conn: conn, card: card, creator: creator, project: project, alt: alt}
     end
@@ -161,7 +164,7 @@ defmodule SanctumWeb.CardLive.DetailTest do
 
     test "published fan art is visible to everyone", ctx do
       ctx.project
-      |> Sanctum.Homebrew.ensure_project_set(ctx.creator)
+      |> project_set_fixture(ctx.creator)
       |> Sanctum.Homebrew.set_set_visibility!(:published, actor: ctx.creator)
 
       {:ok, lv, _html} = live(ctx.conn, ~p"/cards/#{ctx.card.id}")

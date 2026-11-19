@@ -1,6 +1,12 @@
 defmodule Sanctum.Games do
   use Ash.Domain, otp_app: :sanctum, extensions: [AshAdmin.Domain, AshPhoenix]
 
+  # By-id update/destroy interfaces (`get_by: [:id]`) run as a bulk action
+  # over a query. The homebrew actions aren't atomic, so allow a full read of
+  # the (single) row, and authorize by filter so someone else's record is
+  # not-found rather than forbidden — the same as an actor-scoped `Ash.get`.
+  @by_id_stream [bulk_options: [allow_stream_with: :full_read, authorize_with: :filter]]
+
   admin do
     show? true
   end
@@ -13,6 +19,33 @@ defmodule Sanctum.Games do
       define :get_cards_by_set, args: [:set], action: :by_set
       define :canonical_hero_card, args: [:set], get?: true, action: :canonical_hero
       define :list_cards, action: :read
+
+      # Homebrew (custom) cards — user-scoped through policies; pass the actor.
+      define :create_custom_card, action: :create_custom
+
+      define :update_custom_card,
+        action: :update_custom,
+        get_by: [:id],
+        default_options: @by_id_stream
+
+      define :destroy_custom_card,
+        action: :destroy_custom,
+        get_by: [:id],
+        default_options: @by_id_stream
+
+      define :pair_custom_cards,
+        action: :pair_custom,
+        get_by: [:id],
+        args: [:donor_card_id],
+        default_options: @by_id_stream
+
+      # The split-off card is on the result's `__metadata__.unpaired_card`.
+      define :unpair_custom_card,
+        action: :unpair_custom,
+        get_by: [:id],
+        default_options: @by_id_stream
+
+      define :list_homebrew_set_cards, action: :for_homebrew_set, args: [:homebrew_set_id]
     end
 
     resource Sanctum.Games.CardSide do
@@ -32,6 +65,30 @@ defmodule Sanctum.Games do
       define :create_card_alt, action: :create
       define :get_card_alt_by_code, args: [:code], get?: true, action: :by_code
       define :list_card_alts_by_codes, args: [:codes], action: :by_codes
+
+      # Homebrew (custom) alt art — user-scoped through policies; pass the actor.
+      define :create_custom_alt, action: :create_custom
+
+      define :declare_custom_alt,
+        action: :declare_custom,
+        args: [:source_card_id, :target_card_id]
+
+      # The re-created card is on the result's `__metadata__.reverted_card`.
+      define :revert_custom_alt,
+        action: :revert_custom,
+        get_by: [:id],
+        default_options: [return_destroyed?: true] ++ @by_id_stream
+
+      define :destroy_custom_alt,
+        action: :destroy_custom,
+        get_by: [:id],
+        default_options: @by_id_stream
+
+      define :list_homebrew_set_alts, action: :for_homebrew_set, args: [:homebrew_set_id]
+
+      define :list_homebrew_project_alts,
+        action: :for_homebrew_project,
+        args: [:homebrew_project_id]
     end
 
     resource Sanctum.Games.Aspect do

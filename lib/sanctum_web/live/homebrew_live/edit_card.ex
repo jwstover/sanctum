@@ -14,6 +14,7 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
 
   require Logger
 
+  alias Sanctum.Games
   alias Sanctum.Games.Stat
   alias Sanctum.Homebrew
   alias SanctumWeb.Components.Card, as: CardComponents
@@ -136,8 +137,8 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
   end
 
   def handle_event("unpair_card", _params, socket) do
-    case Homebrew.unpair_custom_card(socket.assigns.card.id, socket.assigns.current_user) do
-      {:ok, {_updated, _new_card}} ->
+    case Games.unpair_custom_card(socket.assigns.card.id, actor: socket.assigns.current_user) do
+      {:ok, _updated} ->
         {:noreply,
          socket
          |> put_flash(:info, "Card split into two.")
@@ -183,11 +184,11 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
 
     with %{} <- target,
          {:ok, _alt} <-
-           Homebrew.declare_alt_art(
+           Games.declare_custom_alt(
              card.id,
              target.card_id,
-             [artist: presence(params["artist"]), side_identifier: target.side_identifier],
-             user
+             %{artist: presence(params["artist"]), side_identifier: target.side_identifier},
+             actor: user
            ) do
       {:noreply,
        socket

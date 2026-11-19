@@ -4,7 +4,9 @@ defmodule Sanctum.Homebrew.CustomCardTest do
   use Sanctum.DataCase, async: true
 
   import Sanctum.AccountsFixtures
+  import Sanctum.HomebrewFixtures
 
+  alias Sanctum.Games
   alias Sanctum.Games.Card
   alias Sanctum.Homebrew
 
@@ -21,12 +23,12 @@ defmodule Sanctum.Homebrew.CustomCardTest do
 
   defp create_card!(project, actor, sides) do
     {:ok, card} =
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
-          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
+          homebrew_set_id: project_set_fixture(project, actor).id,
           card_sides: sides
         },
-        actor
+        actor: actor
       )
 
     Ash.load!(card, :card_sides, authorize?: false)
@@ -40,7 +42,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
         ])
 
       assert card.origin == :custom
-      assert card.homebrew_set_id == Homebrew.ensure_project_set(ctx.project, ctx.creator).id
+      assert card.homebrew_set_id == project_set_fixture(ctx.project, ctx.creator).id
       assert "custom-" <> _uuid = card.base_code
       assert card.code == card.base_code
       refute card.is_multi_sided
@@ -74,12 +76,12 @@ defmodule Sanctum.Homebrew.CustomCardTest do
 
     test "a side without an image is rejected", ctx do
       assert {:error, %Ash.Error.Invalid{} = error} =
-               Homebrew.create_custom_card(
+               Games.create_custom_card(
                  %{
-                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+                   homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
                    card_sides: [%{name: "No Image"}]
                  },
-                 ctx.creator
+                 actor: ctx.creator
                )
 
       assert Exception.message(error) =~ "missing an image"
@@ -87,12 +89,12 @@ defmodule Sanctum.Homebrew.CustomCardTest do
 
     test "cannot create into another user's project", ctx do
       assert {:error, %Ash.Error.Forbidden{}} =
-               Homebrew.create_custom_card(
+               Games.create_custom_card(
                  %{
-                   homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+                   homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
                    card_sides: [%{image_url: "https://img.test/a.png"}]
                  },
-                 ctx.other
+                 actor: ctx.other
                )
     end
 
@@ -101,13 +103,13 @@ defmodule Sanctum.Homebrew.CustomCardTest do
         attrs =
           Map.merge(
             %{
-              homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+              homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
               card_sides: [%{image_url: "https://img.test/a.png"}]
             },
             forbidden
           )
 
-        assert {:error, _} = Homebrew.create_custom_card(attrs, ctx.creator)
+        assert {:error, _} = Games.create_custom_card(attrs, actor: ctx.creator)
       end
     end
   end
@@ -135,13 +137,13 @@ defmodule Sanctum.Homebrew.CustomCardTest do
                |> Ash.Changeset.for_update(:update_custom, %{deck_limit: 1}, actor: ctx.other)
                |> Ash.update()
 
-      assert {:error, _} = Homebrew.destroy_custom_card(ctx.card.id, ctx.other)
+      assert {:error, _} = Games.destroy_custom_card(ctx.card.id, actor: ctx.other)
     end
 
     test "creator can destroy; sides cascade", ctx do
       [side] = ctx.card.card_sides
 
-      assert :ok = Homebrew.destroy_custom_card(ctx.card.id, ctx.creator)
+      assert :ok = Games.destroy_custom_card(ctx.card.id, actor: ctx.creator)
       assert {:error, _} = Ash.get(Card, ctx.card.id, authorize?: false)
       assert {:error, _} = Ash.get(Sanctum.Games.CardSide, side.id, authorize?: false)
     end
@@ -165,8 +167,8 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       [side] = ctx.card.card_sides
 
       {:ok, updated} =
-        Homebrew.enrich_custom_card(
-          ctx.card,
+        Games.update_custom_card(
+          ctx.card.id,
           %{
             deck_limit: 1,
             unique: true,
@@ -183,7 +185,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
               }
             ]
           },
-          ctx.creator
+          actor: ctx.creator
         )
 
       assert updated.deck_limit == 1
@@ -212,10 +214,10 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       [side_a, side_b] = Enum.sort_by(two_sided.card_sides, & &1.side_identifier)
 
       {:ok, _} =
-        Homebrew.enrich_custom_card(
-          two_sided,
+        Games.update_custom_card(
+          two_sided.id,
           %{card_sides: [%{id: side_a.id, name: "Front Enriched"}]},
-          ctx.creator
+          actor: ctx.creator
         )
 
       assert {:ok, _} = Ash.get(Sanctum.Games.CardSide, side_b.id, authorize?: false)
@@ -233,10 +235,10 @@ defmodule Sanctum.Homebrew.CustomCardTest do
             %{image_url: "https://evil.test/x.png"}
           ] do
         {:ok, _} =
-          Homebrew.enrich_custom_card(
-            ctx.card,
+          Games.update_custom_card(
+            ctx.card.id,
             %{card_sides: [Map.put(forbidden, :id, side.id)]},
-            ctx.creator
+            actor: ctx.creator
           )
       end
 
@@ -254,10 +256,10 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       [foreign_side] = other_card.card_sides
 
       assert {:error, _} =
-               Homebrew.enrich_custom_card(
-                 ctx.card,
+               Games.update_custom_card(
+                 ctx.card.id,
                  %{card_sides: [%{id: foreign_side.id, name: "Hijack"}]},
-                 ctx.creator
+                 actor: ctx.creator
                )
     end
 
@@ -265,10 +267,10 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       [side] = ctx.card.card_sides
 
       assert {:error, _} =
-               Homebrew.enrich_custom_card(
+               Games.update_custom_card(
                  ctx.card.id,
                  %{card_sides: [%{id: side.id, name: "Hijack"}]},
-                 ctx.other
+                 actor: ctx.other
                )
 
       assert {:error, %Ash.Error.Forbidden{}} =
@@ -281,8 +283,8 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       [side] = ctx.card.card_sides
 
       {:ok, _} =
-        Homebrew.enrich_custom_card(
-          ctx.card,
+        Games.update_custom_card(
+          ctx.card.id,
           %{
             card_sides: [
               %{
@@ -292,7 +294,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
               }
             ]
           },
-          ctx.creator
+          actor: ctx.creator
         )
 
       side = Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false)
@@ -304,14 +306,14 @@ defmodule Sanctum.Homebrew.CustomCardTest do
 
       # An all-blank stat map (an untouched form row) collapses back to absent.
       {:ok, _} =
-        Homebrew.enrich_custom_card(
-          ctx.card,
+        Games.update_custom_card(
+          ctx.card.id,
           %{
             card_sides: [
               %{id: side.id, attack: %{"value" => "", "star" => "false", "consequential" => ""}}
             ]
           },
-          ctx.creator
+          actor: ctx.creator
         )
 
       assert is_nil(Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false).attack)
@@ -321,10 +323,10 @@ defmodule Sanctum.Homebrew.CustomCardTest do
       [side] = ctx.card.card_sides
 
       {:ok, _} =
-        Homebrew.enrich_custom_card(
-          ctx.card,
+        Games.update_custom_card(
+          ctx.card.id,
           %{card_sides: [%{id: side.id, cost: "", attack: "", aspect: nil}]},
-          ctx.creator
+          actor: ctx.creator
         )
 
       side = Ash.get!(Sanctum.Games.CardSide, side.id, authorize?: false)
@@ -344,7 +346,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
     test "merges the donor as side b and destroys its card row", ctx do
       [donor_side] = ctx.back.card_sides
 
-      {:ok, paired} = Homebrew.pair_custom_cards(ctx.front.id, ctx.back.id, ctx.creator)
+      {:ok, paired} = Games.pair_custom_cards(ctx.front.id, ctx.back.id, actor: ctx.creator)
 
       assert paired.is_multi_sided
 
@@ -372,7 +374,7 @@ defmodule Sanctum.Homebrew.CustomCardTest do
 
       donor = create_card!(other_project, ctx.other, [%{image_url: "https://img.test/x.png"}])
 
-      assert {:error, _} = Homebrew.pair_custom_cards(ctx.front.id, donor.id, ctx.creator)
+      assert {:error, _} = Games.pair_custom_cards(ctx.front.id, donor.id, actor: ctx.creator)
     end
 
     test "donor from the actor's other project is rejected", ctx do
@@ -381,25 +383,25 @@ defmodule Sanctum.Homebrew.CustomCardTest do
 
       donor = create_card!(second_project, ctx.creator, [%{image_url: "https://img.test/x.png"}])
 
-      assert {:error, error} = Homebrew.pair_custom_cards(ctx.front.id, donor.id, ctx.creator)
+      assert {:error, error} = Games.pair_custom_cards(ctx.front.id, donor.id, actor: ctx.creator)
       assert Exception.message(error) =~ "same project"
     end
 
     test "multi-sided cards and self-pairs are rejected", ctx do
-      {:ok, paired} = Homebrew.pair_custom_cards(ctx.front.id, ctx.back.id, ctx.creator)
+      {:ok, paired} = Games.pair_custom_cards(ctx.front.id, ctx.back.id, actor: ctx.creator)
 
       extra = create_card!(ctx.project, ctx.creator, [%{image_url: "https://img.test/e.png"}])
 
       # Multi-sided target
-      assert {:error, _} = Homebrew.pair_custom_cards(paired.id, extra.id, ctx.creator)
+      assert {:error, _} = Games.pair_custom_cards(paired.id, extra.id, actor: ctx.creator)
       # Multi-sided donor
-      assert {:error, _} = Homebrew.pair_custom_cards(extra.id, paired.id, ctx.creator)
+      assert {:error, _} = Games.pair_custom_cards(extra.id, paired.id, actor: ctx.creator)
       # Self
-      assert {:error, _} = Homebrew.pair_custom_cards(extra.id, extra.id, ctx.creator)
+      assert {:error, _} = Games.pair_custom_cards(extra.id, extra.id, actor: ctx.creator)
     end
 
     test "another user cannot pair the creator's cards", ctx do
-      assert {:error, _} = Homebrew.pair_custom_cards(ctx.front.id, ctx.back.id, ctx.other)
+      assert {:error, _} = Games.pair_custom_cards(ctx.front.id, ctx.back.id, actor: ctx.other)
     end
   end
 
@@ -407,12 +409,13 @@ defmodule Sanctum.Homebrew.CustomCardTest do
     setup ctx do
       front = create_card!(ctx.project, ctx.creator, [%{image_url: "https://img.test/f.png"}])
       back = create_card!(ctx.project, ctx.creator, [%{image_url: "https://img.test/b.png"}])
-      {:ok, paired} = Homebrew.pair_custom_cards(front.id, back.id, ctx.creator)
+      {:ok, paired} = Games.pair_custom_cards(front.id, back.id, actor: ctx.creator)
       %{paired: paired}
     end
 
     test "splits side b into a fresh single-sided card", ctx do
-      {:ok, {updated, new_card}} = Homebrew.unpair_custom_card(ctx.paired.id, ctx.creator)
+      {:ok, updated} = Games.unpair_custom_card(ctx.paired.id, actor: ctx.creator)
+      new_card = updated.__metadata__.unpaired_card
 
       refute updated.is_multi_sided
       refute new_card.is_multi_sided
@@ -440,12 +443,13 @@ defmodule Sanctum.Homebrew.CustomCardTest do
     test "single-sided cards cannot be unpaired; other users get not-found", ctx do
       single = create_card!(ctx.project, ctx.creator, [%{image_url: "https://img.test/s.png"}])
 
-      assert {:error, _} = Homebrew.unpair_custom_card(single.id, ctx.creator)
-      assert {:error, _} = Homebrew.unpair_custom_card(ctx.paired.id, ctx.other)
+      assert {:error, _} = Games.unpair_custom_card(single.id, actor: ctx.creator)
+      assert {:error, _} = Games.unpair_custom_card(ctx.paired.id, actor: ctx.other)
     end
 
     test "privacy is unaffected after pair/unpair", ctx do
-      {:ok, {updated, new_card}} = Homebrew.unpair_custom_card(ctx.paired.id, ctx.creator)
+      {:ok, updated} = Games.unpair_custom_card(ctx.paired.id, actor: ctx.creator)
+      new_card = updated.__metadata__.unpaired_card
 
       assert {:error, _} = Ash.get(Sanctum.Games.Card, updated.id, actor: ctx.other)
       assert {:error, _} = Ash.get(Sanctum.Games.Card, new_card.id, actor: ctx.other)

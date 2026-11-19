@@ -10,7 +10,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     * **Card** — each image becomes a custom `Card` in this set.
     * **Alt art** — each image lands in a "to assign" strip; assigning it to an
       official card + side mints a `CardAlt` in this set
-      (`Homebrew.create_alt_art/2`).
+      (`Games.create_custom_alt/2`).
 
   The chooser asks about card *shape*, not content type: the set carries the
   kind.
@@ -30,6 +30,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   import SanctumWeb.Components.CardSideTile
   import SanctumWeb.HomebrewComponents
 
+  alias Sanctum.Games
   alias Sanctum.Homebrew
   alias Sanctum.HomebrewImages
   alias SanctumWeb.HomebrewLive.Support
@@ -138,12 +139,12 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   defp store_card(path, entry, set, user) do
     with {:ok, body} <- File.read(path),
          {:ok, url} <- HomebrewImages.store(body, entry.client_type) do
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
           homebrew_set_id: set.id,
           card_sides: [%{image_url: url, filename: entry.client_name}]
         },
-        user
+        actor: user
       )
     end
   end
@@ -203,7 +204,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   # -- Cards ------------------------------------------------------------------
 
   def handle_event("delete_card", %{"id" => id}, socket) do
-    case Homebrew.destroy_custom_card(id, socket.assigns.current_user) do
+    case Games.destroy_custom_card(id, actor: socket.assigns.current_user) do
       :ok -> {:noreply, assign_cards(socket)}
       _error -> {:noreply, put_flash(socket, :error, "Could not delete the card.")}
     end
@@ -252,7 +253,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     with %{} <- pending,
          %{} <- target,
          {:ok, _alt} <-
-           Homebrew.create_alt_art(
+           Games.create_custom_alt(
              %{
                homebrew_set_id: set.id,
                image_url: pending.image_url,
@@ -260,7 +261,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
                side_identifier: target.side_identifier,
                artist: presence(params["artist"])
              },
-             user
+             actor: user
            ) do
       {:noreply,
        socket
@@ -275,7 +276,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   end
 
   def handle_event("revert_alt", %{"id" => id}, socket) do
-    case Homebrew.revert_alt_art(id, socket.assigns.current_user) do
+    case Games.revert_custom_alt(id, actor: socket.assigns.current_user) do
       {:ok, _new_card} ->
         {:noreply,
          socket
@@ -323,7 +324,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   def handle_event("pair_cards", _params, socket) do
     case socket.assigns.pair_selection do
       [front_id, back_id] ->
-        case Homebrew.pair_custom_cards(front_id, back_id, socket.assigns.current_user) do
+        case Games.pair_custom_cards(front_id, back_id, actor: socket.assigns.current_user) do
           {:ok, _paired} ->
             {:noreply,
              socket
@@ -397,7 +398,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
 
   defp assign_cards(socket) do
     cards =
-      Homebrew.list_set_cards(socket.assigns.set.id, socket.assigns.current_user)
+      Games.list_homebrew_set_cards!(socket.assigns.set.id, actor: socket.assigns.current_user)
 
     # The pool's dossier tile, fed the primary side. side_view/2 degrades on
     # missing metadata (nil type/ownership/stats render nothing); customs have

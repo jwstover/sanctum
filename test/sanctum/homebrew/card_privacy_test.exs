@@ -9,6 +9,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
   use Sanctum.DataCase, async: true
 
   import Sanctum.AccountsFixtures
+  import Sanctum.HomebrewFixtures
 
   alias Sanctum.Decks.Writeup
   alias Sanctum.Games
@@ -31,7 +32,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       Homebrew.create_project!(%{name: "Public Pack", attestation: true}, actor: creator)
 
     published_project
-    |> Homebrew.ensure_project_set(creator)
+    |> project_set_fixture(creator)
     |> Homebrew.set_set_visibility!(:published, actor: creator)
 
     private_card = custom_card!(private_project, creator, "secret-card.png")
@@ -61,12 +62,12 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
 
   defp custom_card!(project, actor, filename) do
     {:ok, card} =
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
-          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
+          homebrew_set_id: project_set_fixture(project, actor).id,
           card_sides: [%{image_url: "https://img.test/#{filename}", filename: filename}]
         },
-        actor
+        actor: actor
       )
 
     Ash.load!(card, :card_sides, authorize?: false)
@@ -201,7 +202,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       priv_project =
         Homebrew.create_project!(%{name: "Priv Project", attestation: true}, actor: ctx.creator)
 
-      priv_set = Homebrew.ensure_project_set(priv_project, ctx.creator)
+      priv_set = project_set_fixture(priv_project, ctx.creator)
       priv_project_card = custom_card!(priv_project, ctx.creator, "privproj.png")
       Homebrew.set_set_visibility!(priv_set, :published, actor: ctx.creator)
 
@@ -247,7 +248,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       create(CardSide, attrs: %{card_id: official.id, code: "91001a", side_identifier: "a"})
 
       {:ok, alt} =
-        Homebrew.declare_alt_art(ctx.private_card.id, official.id, [], ctx.creator)
+        Games.declare_custom_alt(ctx.private_card.id, official.id, actor: ctx.creator)
 
       alt_ids = fn actor ->
         Card
