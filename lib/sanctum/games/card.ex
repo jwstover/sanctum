@@ -207,6 +207,23 @@ defmodule Sanctum.Games.Card do
       change Sanctum.Games.Changes.UnpairCustomCard
     end
 
+    update :move_to_set do
+      description "Moves a custom card to another homebrew set in the same project. " <>
+                    "Only homebrew_set_id changes — sides, codes and alts stay put."
+
+      accept [:homebrew_set_id]
+      # TargetSetInSameProject reads other rows.
+      require_atomic? false
+
+      validate present(:homebrew_set_id) do
+        message "must belong to a set"
+      end
+
+      # before_action? so a target the actor doesn't own fails the
+      # ActorOwnsSet policy (Forbidden) before this lookup can answer.
+      validate Sanctum.Homebrew.Validations.TargetSetInSameProject, before_action?: true
+    end
+
     destroy :destroy_custom do
       require_atomic? false
     end
@@ -245,8 +262,14 @@ defmodule Sanctum.Games.Card do
 
     # Filter checks: someone else's custom (or any official card) is simply
     # not found through these actions.
-    policy action([:update_custom, :destroy_custom, :pair_custom, :unpair_custom]) do
+    policy action([:update_custom, :destroy_custom, :pair_custom, :unpair_custom, :move_to_set]) do
       authorize_if expr(origin == :custom and homebrew_set.creator_id == ^actor(:id))
+    end
+
+    # A separate policy, so it ANDs with the one above: the actor must own
+    # the card being moved AND the set it moves into.
+    policy action(:move_to_set) do
+      authorize_if Sanctum.Homebrew.Checks.ActorOwnsSet
     end
 
     # Official catalog mutations are admin-only; system writes (sync, deck

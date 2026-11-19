@@ -45,6 +45,27 @@ defmodule Sanctum.Games do
         get_by: [:id],
         default_options: @by_id_stream
 
+      define :move_custom_card,
+        action: :move_to_set,
+        get_by: [:id],
+        args: [:homebrew_set_id],
+        default_options: @by_id_stream
+
+      # Pass a list of cards: one transaction, all or nothing — returns an
+      # Ash.BulkResult whose status is :success or :error.
+      define :move_custom_cards,
+        action: :move_to_set,
+        args: [:homebrew_set_id],
+        default_options: [
+          bulk_options: [
+            transaction: :all,
+            stop_on_error?: true,
+            return_errors?: true,
+            allow_stream_with: :full_read,
+            authorize_with: :filter
+          ]
+        ]
+
       define :list_homebrew_set_cards, action: :for_homebrew_set, args: [:homebrew_set_id]
     end
 
