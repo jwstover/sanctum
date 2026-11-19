@@ -68,9 +68,26 @@ defmodule SanctumWeb.HomebrewLive.SetShowDetailsTest do
     refute html =~ "Set details saved."
   end
 
-  test "non-https banners are not rendered", ctx do
-    Homebrew.update_set!(ctx.set, %{banner_url: "javascript:alert(1)"}, actor: ctx.creator)
-    {:ok, _lv, html} = live(ctx.conn, ctx.path)
-    refute html =~ "javascript:alert(1)\""
+  test "a non-https banner is rejected with an error", ctx do
+    {:ok, lv, _html} = live(ctx.conn, ctx.path)
+    lv |> element("button", "Edit details") |> render_click()
+
+    html =
+      lv
+      |> form("#set-details-form", set: %{banner_url: "http://img.test/banner.png"})
+      |> render_submit()
+
+    assert html =~ "must be an https:// URL"
+    refute html =~ "Set details saved."
+  end
+
+  test "the editor opens prefilled with the current kind and tags", ctx do
+    Homebrew.update_set!(ctx.set, %{kind: "Hero", tags: ["street", "noir"]}, actor: ctx.creator)
+    {:ok, lv, _html} = live(ctx.conn, ctx.path)
+
+    lv |> element("button", "Edit details") |> render_click()
+
+    assert has_element?(lv, ~s(#set-details-form input[name="set[kind]"][value="Hero"]))
+    assert has_element?(lv, ~s(#set-details-form input[name="set[tags]"][value="street, noir"]))
   end
 end

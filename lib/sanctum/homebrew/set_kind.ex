@@ -85,6 +85,15 @@ defmodule Sanctum.Homebrew.SetKind do
       change set_attribute(:origin, :custom)
     end
 
+    read :for_project do
+      description "The kinds a set in the project may use: every official kind plus the project's own custom kinds."
+
+      # The plain read would also return other projects' kinds used by
+      # published sets, which a set here may not use.
+      argument :homebrew_project_id, :uuid, allow_nil?: false
+      filter expr(origin == :official or homebrew_project_id == ^arg(:homebrew_project_id))
+    end
+
     update :update do
       primary? true
       accept [:label, :sort_order]

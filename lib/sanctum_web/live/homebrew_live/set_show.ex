@@ -22,7 +22,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   is edited inline ("Edit details"). The kind field is an *open* combobox: a
   text input with the project's kinds as `<datalist>` suggestions. Free text
   mints a project-scoped kind on save, blank leaves the set unclassified
-  (`Homebrew.update_set_metadata/3`).
+  (the `:kind` argument of `HomebrewSet :update`).
   """
 
   use SanctumWeb, :live_view
@@ -170,7 +170,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     {:noreply,
      socket
      |> assign(:editing_details?, true)
-     |> assign(:set_kinds, Homebrew.list_project_set_kinds(project.id, user))
+     |> assign(:set_kinds, Homebrew.list_project_set_kinds!(project.id, actor: user))
      |> assign_details_form()}
   end
 
@@ -178,14 +178,15 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     {:noreply, assign(socket, :editing_details?, false)}
   end
 
-  # Kind text is only resolved on save — resolving on change would mint a
-  # kind per keystroke.
+  # Validating only builds the changeset; the kind is resolved (and possibly
+  # minted) in the action's before_action, which runs on submit alone.
   def handle_event("validate_details", %{"set" => params}, socket) do
-    {:noreply, assign(socket, :details_form, to_form(params, as: "set"))}
+    {:noreply,
+     assign(socket, :details_form, AshPhoenix.Form.validate(socket.assigns.details_form, params))}
   end
 
   def handle_event("save_details", %{"set" => params}, socket) do
-    case Homebrew.update_set_metadata(socket.assigns.set, params, socket.assigns.current_user) do
+    case AshPhoenix.Form.submit(socket.assigns.details_form, params: params) do
       {:ok, set} ->
         {:noreply,
          socket
@@ -194,9 +195,8 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
          |> assign(:editing_details?, false)
          |> put_flash(:info, "Set details saved.")}
 
-      {:error, error} ->
-        {:noreply,
-         assign(socket, :details_form, to_form(params, as: "set", errors: form_errors(error)))}
+      {:error, form} ->
+        {:noreply, assign(socket, :details_form, form)}
     end
   end
 
@@ -343,27 +343,49 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
 
   # -- Helpers ----------------------------------------------------------------
 
+  # Tags are typed comma-separated; the resource takes a plain list, so the
+  # split is a form concern (prepare_params), not domain logic.
   defp assign_details_form(socket) do
     set = socket.assigns.set
 
-    params = %{
-      "name" => set.name,
-      "description" => set.description,
-      "banner_url" => set.banner_url,
-      "tags" => Enum.join(set.tags || [], ", "),
-      "kind" => set.set_kind && set.set_kind.label
-    }
+    form =
+      AshPhoenix.Form.for_update(set, :update,
+        as: "set",
+        actor: socket.assigns.current_user,
+        load: [:set_kind],
+        params: %{
+          "kind" => set.set_kind && set.set_kind.label,
+          "tags" => Enum.join(set.tags || [], ", ")
+        },
+        prepare_params: fn params, _action ->
+          case params do
+            %{"tags" => tags} -> Map.put(params, "tags", split_tags(tags))
+            _no_tags -> params
+          end
+        end
+      )
 
-    assign(socket, :details_form, to_form(params, as: "set"))
+    assign(socket, :details_form, to_form(form))
   end
 
-  defp form_errors(%{errors: errors}) when is_list(errors) do
-    for %{field: field} = error <- errors, not is_nil(field) do
-      {field, {Map.get(error, :message) || "is required", []}}
+  defp split_tags(text) when is_binary(text) do
+    text
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq_by(&String.downcase/1)
+  end
+
+  defp split_tags(tags), do: tags
+
+  # The tags input shows comma-separated text whether the form holds the
+  # typed string (after a change) or the stored list (on open).
+  defp tags_text(form) do
+    case form[:tags].value do
+      tags when is_list(tags) -> Enum.join(tags, ", ")
+      text -> text
     end
   end
-
-  defp form_errors(_error), do: []
 
   defp reset_assign(socket) do
     socket
@@ -933,6 +955,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
 
           <.input
             field={@form[:tags]}
+            value={tags_text(@form)}
             type="text"
             label="Tags (comma-separated)"
             autocomplete="off"
