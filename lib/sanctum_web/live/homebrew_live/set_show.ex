@@ -57,6 +57,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
        |> assign(:pending, [])
        |> assign(:editing_details?, false)
        |> assign(:set_kinds, [])
+       |> assign(:delete_impact, nil)
        |> assign_details_form()
        |> reset_assign()
        |> assign_cards()
@@ -198,6 +199,39 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
 
       {:error, form} ->
         {:noreply, assign(socket, :details_form, form)}
+    end
+  end
+
+  # -- Delete set -------------------------------------------------------------
+
+  # Count first, then open: the dialog states what this click would take
+  # with it right now, not as of mount.
+  def handle_event("prepare_delete_set", _params, socket) do
+    case assign_delete_impact(socket) do
+      {:ok, socket} -> {:noreply, push_open_confirm(socket, "confirm-del-set")}
+      :error -> {:noreply, put_flash(socket, :error, "Could not delete the set.")}
+    end
+  end
+
+  # The DB cascades the whole subtree (child sets, cards, alts, aspects).
+  # Card images stay in the bucket — they are content-addressed and shared.
+  def handle_event("delete_set", _params, socket) do
+    %{set: set, project: project, current_user: user} = socket.assigns
+
+    case Homebrew.destroy_set(set, actor: user) do
+      :ok ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Deleted #{set.name}.")
+         |> push_navigate(to: ~p"/homebrew/#{project.id}")}
+
+      {:error, _error} ->
+        message =
+          if match?(%{deck_count: n} when n > 0, socket.assigns.delete_impact),
+            do: "Could not delete the set: its cards are used in decks.",
+            else: "Could not delete the set."
+
+        {:noreply, put_flash(socket, :error, message)}
     end
   end
 
@@ -388,6 +422,18 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     end
   end
 
+  defp assign_delete_impact(socket) do
+    %{set: set, current_user: user} = socket.assigns
+
+    case Homebrew.set_deletion_impact(set.id, actor: user) do
+      {:ok, impact} -> {:ok, assign(socket, :delete_impact, impact)}
+      {:error, _error} -> :error
+    end
+  end
+
+  defp plural(1, word), do: "1 #{word}"
+  defp plural(n, word), do: "#{n} #{word}s"
+
   defp reset_assign(socket) do
     socket
     |> assign(:assign_pending, nil)
@@ -453,8 +499,46 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         <:actions>
           <.button :if={!@editing_details?} phx-click="edit_details">Edit details</.button>
           <.button variant="primary" phx-click="open_chooser">Upload</.button>
+          <.button
+            variant="ghost"
+            phx-click="prepare_delete_set"
+            class="text-error hover:text-error"
+          >
+            Delete set
+          </.button>
         </:actions>
       </.header>
+
+      <.confirm_dialog
+        id="confirm-del-set"
+        message={"Delete #{@set.name} and everything in it?"}
+        confirm_label="Delete set"
+        phx-click="delete_set"
+      >
+        <ul :if={@delete_impact} class="flex flex-col gap-1 font-barlow-condensed text-sm">
+          <li>
+            {plural(@delete_impact.descendant_set_count, "child set")}
+            <span :if={@delete_impact.descendant_set_count > 0} class="text-base-content/60">
+              (at every level)
+            </span>
+          </li>
+          <li>
+            {plural(@delete_impact.card_count, "card")} and {plural(@delete_impact.alt_count, "alt")} across them
+          </li>
+          <li
+            :if={@delete_impact.published_sets != []}
+            class="border-2 border-error/70 p-2 text-error"
+          >
+            <span class="font-bold uppercase">Published:</span>
+            {Enum.join(@delete_impact.published_sets, ", ")} — public links will stop working.
+          </li>
+          <li :if={@delete_impact.deck_count > 0} class="border-2 border-warning/70 p-2 text-warning">
+            Cards here are used in {plural(@delete_impact.deck_count, "deck")}, which blocks
+            deleting until they are removed.
+          </li>
+          <li class="text-base-content/60">This can't be undone.</li>
+        </ul>
+      </.confirm_dialog>
 
       <%!-- Not a header subtitle (that slot was dropped): the meta line is page
            content, and the "unofficial fan content" labeling is required on all

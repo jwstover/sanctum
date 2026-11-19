@@ -41,6 +41,8 @@ defmodule Sanctum.Homebrew do
       define :get_set, action: :read, get_by: [:id]
       define :list_my_sets, action: :for_creator
       define :list_project_sets, action: :by_project, args: [:homebrew_project_id]
+      define :list_set_subtree, action: :subtree, args: [:set_id]
+      define :set_deletion_impact, action: :deletion_impact, args: [:set_id]
     end
 
     resource Sanctum.Homebrew.SetKind do

@@ -214,4 +214,71 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
              )
     end
   end
+
+  describe "delete set" do
+    setup ctx do
+      child =
+        Homebrew.create_set!(
+          %{homebrew_project_id: ctx.project.id, name: "Nemesis", parent_set_id: ctx.set.id},
+          actor: ctx.creator
+        )
+
+      grandchild =
+        Homebrew.create_set!(
+          %{homebrew_project_id: ctx.project.id, name: "Deep Scheme", parent_set_id: child.id},
+          actor: ctx.creator
+        )
+
+      Homebrew.set_set_visibility!(grandchild, :published, actor: ctx.creator)
+      card_fixture(ctx.set, ctx.creator)
+      card_fixture(grandchild, ctx.creator)
+      %{child: child, grandchild: grandchild}
+    end
+
+    test "the dialog states the blast radius, counted on click", ctx do
+      {:ok, lv, _html} = live(ctx.conn, ctx.path)
+
+      # Content added after mount is still counted: the count runs on the click.
+      card_fixture(ctx.child, ctx.creator)
+
+      html = lv |> element("button[phx-click='prepare_delete_set']") |> render_click()
+      assert_push_event(lv, "sanctum:confirm-open", %{id: "confirm-del-set"})
+
+      dialog =
+        html |> LazyHTML.from_fragment() |> LazyHTML.query("#confirm-del-set") |> LazyHTML.text()
+
+      assert dialog =~ "Delete Kingpin and everything in it?"
+      assert dialog =~ "2 child sets"
+      assert dialog =~ "3 cards and 0 alts"
+      assert dialog =~ "Deep Scheme"
+      assert dialog =~ "public links will stop working"
+      refute html =~ "data-confirm="
+    end
+
+    test "confirming deletes the whole subtree and returns to the project", ctx do
+      {:ok, lv, _html} = live(ctx.conn, ctx.path)
+      lv |> element("button[phx-click='prepare_delete_set']") |> render_click()
+
+      assert {:error, {:live_redirect, %{to: to}}} =
+               lv |> element("#confirm-del-set button[phx-click='delete_set']") |> render_click()
+
+      assert to == ~p"/homebrew/#{ctx.project.id}"
+
+      for set <- [ctx.set, ctx.child, ctx.grandchild] do
+        assert {:error, _} = Ash.get(Sanctum.Homebrew.HomebrewSet, set.id, authorize?: false)
+      end
+    end
+
+    test "opening and cancelling deletes nothing", ctx do
+      {:ok, lv, _html} = live(ctx.conn, ctx.path)
+      lv |> element("button[phx-click='prepare_delete_set']") |> render_click()
+
+      # Cancel is client-only (closes the <dialog>); it pushes no event.
+      assert has_element?(lv, "#confirm-del-set button[data-confirm-cancel]:not([phx-click])")
+
+      for set <- [ctx.set, ctx.child, ctx.grandchild] do
+        assert {:ok, _} = Ash.get(Sanctum.Homebrew.HomebrewSet, set.id, authorize?: false)
+      end
+    end
+  end
 end
