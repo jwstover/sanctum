@@ -456,6 +456,106 @@ defmodule Sanctum.Homebrew.CustomCardTest do
     end
   end
 
+  describe "move_to_set" do
+    setup ctx do
+      card =
+        create_card!(ctx.project, ctx.creator, [
+          %{image_url: "https://img.test/a.png", filename: "a.png"},
+          %{image_url: "https://img.test/b.png", filename: "b.png"}
+        ])
+
+      target =
+        Homebrew.create_set!(%{homebrew_project_id: ctx.project.id, name: "Nemesis"},
+          actor: ctx.creator
+        )
+
+      %{card: card, target: target}
+    end
+
+    defp move_fields(card) do
+      card = Ash.get!(Card, card.id, authorize?: false, load: [:card_sides])
+
+      {Map.take(card, [:code, :base_code, :origin, :is_multi_sided, :deck_limit]),
+       card.card_sides |> Enum.map(&Map.take(&1, [:id, :code, :image_url])) |> Enum.sort()}
+    end
+
+    test "moving a card updates only homebrew_set_id", ctx do
+      before = move_fields(ctx.card)
+
+      assert {:ok, moved} =
+               Games.move_custom_card(ctx.card.id, ctx.target.id, actor: ctx.creator)
+
+      assert moved.homebrew_set_id == ctx.target.id
+      assert move_fields(ctx.card) == before
+    end
+
+    test "moving to a set in another project is rejected", ctx do
+      elsewhere =
+        Homebrew.create_project!(%{name: "Second", attestation: true}, actor: ctx.creator)
+
+      other_set = project_set_fixture(elsewhere, ctx.creator)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Games.move_custom_card(ctx.card.id, other_set.id, actor: ctx.creator)
+
+      assert Ash.get!(Card, ctx.card.id, authorize?: false).homebrew_set_id ==
+               ctx.card.homebrew_set_id
+    end
+
+    test "the actor must own both the card and the target set", ctx do
+      their_project =
+        Homebrew.create_project!(%{name: "Theirs", attestation: true}, actor: ctx.other)
+
+      their_set = project_set_fixture(their_project, ctx.other)
+
+      # Owns the card, not the target.
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Games.move_custom_card(ctx.card.id, their_set.id, actor: ctx.creator)
+
+      # Owns neither: someone else's card is not even reachable.
+      assert {:error, _} =
+               Games.move_custom_card(ctx.card.id, ctx.target.id, actor: ctx.other)
+
+      assert Ash.get!(Card, ctx.card.id, authorize?: false).homebrew_set_id ==
+               ctx.card.homebrew_set_id
+    end
+
+    test "moves many cards at once", ctx do
+      second = create_card!(ctx.project, ctx.creator, [%{image_url: "https://img.test/c.png"}])
+
+      assert %Ash.BulkResult{status: :success} =
+               Games.move_custom_cards([ctx.card, second], ctx.target.id, actor: ctx.creator)
+
+      assert Games.list_homebrew_set_cards!(ctx.target.id, actor: ctx.creator)
+             |> Enum.map(& &1.id)
+             |> Enum.sort() == Enum.sort([ctx.card.id, second.id])
+    end
+
+    test "a bulk move is all or nothing", ctx do
+      their_project =
+        Homebrew.create_project!(%{name: "Theirs", attestation: true}, actor: ctx.other)
+
+      their_set = project_set_fixture(their_project, ctx.other)
+
+      assert %Ash.BulkResult{status: :error} =
+               Games.move_custom_cards([ctx.card], their_set.id, actor: ctx.creator)
+
+      # One card from another project poisons the batch: nothing moves.
+      elsewhere =
+        Homebrew.create_project!(%{name: "Second", attestation: true}, actor: ctx.creator)
+
+      stray = create_card!(elsewhere, ctx.creator, [%{image_url: "https://img.test/d.png"}])
+
+      assert %Ash.BulkResult{status: :error} =
+               Games.move_custom_cards([ctx.card, stray], ctx.target.id, actor: ctx.creator)
+
+      assert Ash.get!(Card, ctx.card.id, authorize?: false).homebrew_set_id ==
+               ctx.card.homebrew_set_id
+
+      assert Ash.get!(Card, stray.id, authorize?: false).homebrew_set_id == stray.homebrew_set_id
+    end
+  end
+
   describe "official catalog boundaries" do
     test "non-admins cannot use the official mutations", ctx do
       assert {:error, %Ash.Error.Forbidden{}} =

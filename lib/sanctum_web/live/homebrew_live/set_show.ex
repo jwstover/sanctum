@@ -15,8 +15,15 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   The chooser asks about card *shape*, not content type: the set carries the
   kind.
 
-  Also does front/back pairing of two single-sided cards; editing a card is on
-  its own page (`HomebrewLive.EditCard`).
+  Also does front/back pairing of two single-sided cards, and moving one or
+  many cards to another set of the project ("Move cards" mode,
+  `Games.move_custom_cards/3`); editing a card is on its own page
+  (`HomebrewLive.EditCard`).
+
+  Sets nest to any depth within a project: the page shows ancestor
+  breadcrumbs, lists its child sets, and has a parent picker
+  (`Homebrew.set_set_parent/3`) that only offers sets outside this set's own
+  subtree — the server rejects a cycle regardless.
 
   The set's own metadata — name, markdown description, banner, tags and kind —
   is edited inline ("Edit details"). The kind field is an *open* combobox: a
@@ -53,12 +60,15 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
        |> assign(:uploads_configured?, HomebrewImages.configured?())
        |> assign(:pair_mode?, false)
        |> assign(:pair_selection, [])
+       |> assign(:move_mode?, false)
+       |> assign(:move_selection, [])
        |> assign(:chooser_open?, false)
        |> assign(:pending, [])
        |> assign(:editing_details?, false)
        |> assign(:set_kinds, [])
        |> assign(:delete_impact, nil)
        |> assign_details_form()
+       |> assign_structure()
        |> reset_assign()
        |> assign_cards()
        |> Support.assign_alts()
@@ -327,13 +337,88 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     {:noreply, Support.delete_alt(socket, id)}
   end
 
+  # -- Nesting --------------------------------------------------------------
+
+  def handle_event("set_parent", %{"parent_set_id" => parent_id}, socket) do
+    %{set: set, current_user: user} = socket.assigns
+
+    case Homebrew.set_set_parent(set, presence(parent_id), actor: user) do
+      {:ok, updated} ->
+        message = if updated.parent_set_id, do: "Parent set saved.", else: "Moved to top level."
+
+        {:noreply,
+         socket
+         |> assign(:set, %{set | parent_set_id: updated.parent_set_id})
+         |> assign_structure()
+         |> put_flash(:info, message)}
+
+      {:error, error} ->
+        {:noreply,
+         socket
+         |> assign_structure()
+         |> put_flash(:error, "Could not nest the set: #{reason(error)}")}
+    end
+  end
+
+  # -- Moving cards -----------------------------------------------------------
+
+  def handle_event("toggle_move_mode", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:move_mode?, !socket.assigns.move_mode?)
+     |> assign(:move_selection, [])
+     |> assign(:pair_mode?, false)
+     |> assign(:pair_selection, [])}
+  end
+
+  def handle_event("toggle_move_select", %{"id" => id}, socket) do
+    selection = socket.assigns.move_selection
+
+    selection =
+      cond do
+        !Enum.any?(socket.assigns.cards, &(&1.id == id)) -> selection
+        id in selection -> List.delete(selection, id)
+        true -> selection ++ [id]
+      end
+
+    {:noreply, assign(socket, :move_selection, selection)}
+  end
+
+  def handle_event("move_cards", %{"homebrew_set_id" => target_id}, socket) do
+    %{cards: cards, move_selection: selection, current_user: user} = socket.assigns
+    selected = Enum.filter(cards, &(&1.id in selection))
+    target = Enum.find(socket.assigns.move_targets, &(&1.id == target_id))
+
+    cond do
+      selected == [] or is_nil(target) ->
+        {:noreply, put_flash(socket, :error, "Pick cards and a set to move them to.")}
+
+      match?(
+        %Ash.BulkResult{status: :success},
+        Games.move_custom_cards(selected, target.id, actor: user)
+      ) ->
+        {:noreply,
+         socket
+         |> assign(:move_mode?, false)
+         |> assign(:move_selection, [])
+         |> assign_cards()
+         |> assign_structure()
+         |> put_flash(:info, "Moved #{plural(length(selected), "card")} to #{target.name}.")}
+
+      true ->
+        {:noreply, put_flash(socket, :error, "Could not move the cards.")}
+    end
+  end
+
   # -- Pairing --------------------------------------------------------------
 
   def handle_event("toggle_pair_mode", _params, socket) do
     {:noreply,
      socket
      |> assign(:pair_mode?, !socket.assigns.pair_mode?)
-     |> assign(:pair_selection, [])}
+     |> assign(:pair_selection, [])
+     |> assign(:move_mode?, false)
+     |> assign(:move_selection, [])}
   end
 
   def handle_event("toggle_pair_select", %{"id" => id}, socket) do
@@ -431,6 +516,40 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     end
   end
 
+  # The set's place in the project tree: root-first ancestor breadcrumbs, its
+  # direct children (with counts), the parent picker's options (every set of
+  # the project outside this set's own subtree — nesting under one of those
+  # would close a cycle) and the move-cards targets (every other set).
+  defp assign_structure(socket) do
+    %{set: set, project: project, current_user: user} = socket.assigns
+
+    project_sets =
+      project.id
+      |> Homebrew.list_project_sets!(actor: user, load: [:card_count])
+      |> Enum.sort_by(& &1.inserted_at, DateTime)
+
+    subtree_ids =
+      set.id |> Homebrew.list_set_subtree!(actor: user) |> MapSet.new(& &1.id)
+
+    ancestors = Homebrew.list_set_ancestors!(set.id, actor: user)
+
+    socket
+    |> assign(:ancestors, Support.ancestor_chain(set, ancestors))
+    |> assign(:child_sets, Enum.filter(project_sets, &(&1.parent_set_id == set.id)))
+    |> assign(
+      :parent_options,
+      for(
+        {option, depth} <- Support.set_tree(project_sets),
+        option.id not in subtree_ids,
+        do: {String.duplicate("— ", depth) <> option.name, option.id}
+      )
+    )
+    |> assign(:move_targets, Enum.reject(project_sets, &(&1.id == set.id)))
+  end
+
+  defp reason(%{errors: [%{message: message} | _]}) when is_binary(message), do: message
+  defp reason(_error), do: "please try again."
+
   defp plural(1, word), do: "1 #{word}"
   defp plural(n, word), do: "#{n} #{word}s"
 
@@ -485,14 +604,24 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash} active_tab={:homebrew}>
-      <div class="mb-3">
-        <.link
-          navigate={~p"/homebrew/#{@project.id}"}
-          class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-primary"
-        >
+      <nav
+        id="set-breadcrumbs"
+        aria-label="Breadcrumb"
+        class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60"
+      >
+        <.link navigate={~p"/homebrew/#{@project.id}"} class="hover:text-primary">
           ← {@project.name}
         </.link>
-      </div>
+        <%= for ancestor <- @ancestors do %>
+          <span aria-hidden="true" class="text-base-content/30">/</span>
+          <.link
+            navigate={~p"/homebrew/#{@project.id}/sets/#{ancestor.id}"}
+            class="hover:text-primary"
+          >
+            {ancestor.name}
+          </.link>
+        <% end %>
+      </nav>
 
       <.header>
         {@set.name}
@@ -560,6 +689,13 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
 
       <.set_details :if={!@editing_details?} set={@set} />
 
+      <.set_nesting
+        set={@set}
+        project={@project}
+        child_sets={@child_sets}
+        parent_options={@parent_options}
+      />
+
       <div :if={@pending != []} class="mb-8 border-2 border-primary/60 bg-base-200 p-4">
         <h2 class="mb-3 font-ibm-mono text-xs uppercase tracking-[0.2em] text-primary">
           To assign ({length(@pending)}) — pick the official card each re-imagines
@@ -592,12 +728,24 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         </div>
       </div>
 
-      <div :if={single_sided_count(@cards) >= 2} class="mb-3 flex items-center gap-3">
-        <.button phx-click="toggle_pair_mode">
+      <div
+        :if={single_sided_count(@cards) >= 2 or (@cards != [] and @move_targets != [])}
+        class="mb-3 flex flex-wrap items-center gap-3"
+      >
+        <.button :if={!@move_mode? and single_sided_count(@cards) >= 2} phx-click="toggle_pair_mode">
           {(@pair_mode? && "Cancel pairing") || "Pair fronts & backs"}
+        </.button>
+        <.button
+          :if={!@pair_mode? and @cards != [] and @move_targets != []}
+          phx-click="toggle_move_mode"
+        >
+          {(@move_mode? && "Cancel moving") || "Move cards"}
         </.button>
         <span :if={@pair_mode?} class="font-barlow-condensed text-sm text-base-content/60">
           Tap two cards to pair them as one two-sided card.
+        </span>
+        <span :if={@move_mode?} class="font-barlow-condensed text-sm text-base-content/60">
+          Tap the cards to move, then pick a set.
         </span>
       </div>
 
@@ -617,14 +765,14 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
       >
         <div :for={{card, side} <- @card_tiles} class="relative">
           <div class={[
-            pair_role(card.id, @pair_selection) &&
+            (pair_role(card.id, @pair_selection) || card.id in @move_selection) &&
               "outline outline-[3px] outline-primary -translate-y-0.5",
             @pair_mode? && card.is_multi_sided && "opacity-40"
           ]}>
             <.card_side_tile side={side} size="md">
               <:actions>
                 <.button
-                  :if={!@pair_mode?}
+                  :if={!@pair_mode? and !@move_mode?}
                   variant="ghost"
                   navigate={~p"/homebrew/#{@project.id}/cards/#{card.id}"}
                   class="px-3 py-1.5"
@@ -632,7 +780,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
                   Edit
                 </.button>
                 <.button
-                  :if={!@pair_mode?}
+                  :if={!@pair_mode? and !@move_mode?}
                   variant="ghost"
                   phx-click={open_confirm("confirm-del-card-#{card.id}")}
                   class="px-3 py-1.5 text-error hover:text-error"
@@ -640,7 +788,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
                   Delete
                 </.button>
                 <.confirm_dialog
-                  :if={!@pair_mode?}
+                  :if={!@pair_mode? and !@move_mode?}
                   id={"confirm-del-card-#{card.id}"}
                   message="Delete this card?"
                   confirm_label="Delete card"
@@ -659,6 +807,23 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
             aria-label={"Select #{side.name} for pairing"}
             class="absolute inset-0 z-[3] cursor-pointer"
           ></button>
+
+          <button
+            :if={@move_mode?}
+            type="button"
+            phx-click="toggle_move_select"
+            phx-value-id={card.id}
+            aria-label={"Select #{side.name} to move"}
+            aria-pressed={to_string(card.id in @move_selection)}
+            class="absolute inset-0 z-[3] cursor-pointer"
+          ></button>
+
+          <span
+            :if={card.id in @move_selection}
+            class="absolute left-1 top-1 z-[4] border-2 border-neutral bg-primary px-1.5 font-barlow-condensed text-xs font-bold text-primary-content"
+          >
+            MOVE
+          </span>
 
           <span
             :if={role = pair_role(card.id, @pair_selection)}
@@ -686,6 +851,12 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         :if={@pair_mode? && length(@pair_selection) == 2}
         pair_selection={@pair_selection}
         cards={@cards}
+      />
+
+      <.move_strip
+        :if={@move_mode? && @move_selection != []}
+        count={length(@move_selection)}
+        move_targets={@move_targets}
       />
 
       <.upload_chooser
@@ -1074,6 +1245,97 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         </div>
       </.form>
     </.panel>
+    """
+  end
+
+  # Where the set sits in its project's tree: its child sets (each a link with
+  # its card count) and the parent picker. The picker only lists sets outside
+  # this set's subtree; "Top level" clears the link.
+  attr :set, :any, required: true
+  attr :project, :any, required: true
+  attr :child_sets, :list, required: true
+  attr :parent_options, :list, required: true
+
+  defp set_nesting(assigns) do
+    ~H"""
+    <div class="mb-8 flex flex-col gap-4">
+      <section :if={@child_sets != []} id="child-sets">
+        <h2 class="mb-2 font-ibm-mono text-xs uppercase tracking-[0.2em] text-base-content/60">
+          Child sets ({length(@child_sets)})
+        </h2>
+        <div class="flex flex-wrap gap-3">
+          <.link
+            :for={child <- @child_sets}
+            id={"child-set-#{child.id}"}
+            navigate={~p"/homebrew/#{@project.id}/sets/#{child.id}"}
+          >
+            <.panel class="px-4 py-2 transition-transform hover:-translate-y-0.5">
+              <div class="font-anton text-sm uppercase tracking-[0.05em]">{child.name}</div>
+              <div class="font-barlow-condensed text-xs text-base-content/60">
+                {plural(child.card_count, "card")}
+              </div>
+            </.panel>
+          </.link>
+        </div>
+      </section>
+
+      <form
+        id="set-parent-form"
+        phx-submit="set_parent"
+        class="flex flex-wrap items-end gap-2 font-barlow-condensed text-sm"
+      >
+        <label class="flex flex-col gap-1">
+          <span class="font-bold uppercase tracking-[0.08em] text-base-content/60">
+            Parent set
+          </span>
+          <select
+            name="parent_set_id"
+            class="select select-sm min-w-56 border-2 border-neutral bg-base-200"
+          >
+            <option value="" selected={is_nil(@set.parent_set_id)}>Top level (no parent)</option>
+            <option
+              :for={{label, id} <- @parent_options}
+              value={id}
+              selected={id == @set.parent_set_id}
+            >
+              {label}
+            </option>
+          </select>
+        </label>
+        <.button type="submit" class="px-3 py-1.5">Save parent</.button>
+      </form>
+    </div>
+    """
+  end
+
+  # Bottom action strip once cards are selected for moving: the target is
+  # any other set of this project (cross-project moves are not offered).
+  attr :count, :integer, required: true
+  attr :move_targets, :list, required: true
+
+  defp move_strip(assigns) do
+    ~H"""
+    <div class="fixed inset-x-0 bottom-0 z-20 border-t-2 border-neutral bg-base-100/95 px-4 py-3 backdrop-blur sm:sticky sm:bottom-4 sm:border-2 sm:bg-base-200 sm:px-5 sm:py-4 sm:shadow-comic">
+      <form
+        id="move-cards-form"
+        phx-submit="move_cards"
+        class="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <span class="font-barlow-condensed text-sm font-bold uppercase tracking-[0.05em]">
+          Move {plural(@count, "card")} to
+        </span>
+        <div class="flex items-center gap-2">
+          <select
+            name="homebrew_set_id"
+            aria-label="Target set"
+            class="select select-sm min-w-48 border-2 border-neutral bg-base-100"
+          >
+            <option :for={target <- @move_targets} value={target.id}>{target.name}</option>
+          </select>
+          <.button variant="primary" type="submit">Move</.button>
+        </div>
+      </form>
+    </div>
     """
   end
 

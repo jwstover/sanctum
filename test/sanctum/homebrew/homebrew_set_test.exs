@@ -356,12 +356,10 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
                )
 
       assert {:error, %Ash.Error.Invalid{}} =
-               Homebrew.update_set(set, %{parent_set_id: theirs.id}, actor: ctx.creator)
+               Homebrew.set_set_parent(set, theirs.id, actor: ctx.creator)
 
       assert {:error, %Ash.Error.Invalid{}} =
-               Homebrew.update_set(set, %{parent_set_id: Ash.UUIDv7.generate()},
-                 actor: ctx.creator
-               )
+               Homebrew.set_set_parent(set, Ash.UUIDv7.generate(), actor: ctx.creator)
 
       assert is_nil(reload!(set).parent_set_id)
     end
@@ -370,9 +368,89 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       set = set_fixture(ctx.project, ctx.creator)
 
       assert {:error, %Ash.Error.Invalid{}} =
-               Homebrew.update_set(set, %{parent_set_id: set.id}, actor: ctx.creator)
+               Homebrew.set_set_parent(set, set.id, actor: ctx.creator)
 
       assert is_nil(reload!(set).parent_set_id)
+    end
+
+    test "the general :update no longer re-parents", ctx do
+      parent = set_fixture(ctx.project, ctx.creator, %{name: "Parent"})
+      set = set_fixture(ctx.project, ctx.creator)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Homebrew.update_set(set, %{parent_set_id: parent.id}, actor: ctx.creator)
+
+      assert is_nil(reload!(set).parent_set_id)
+    end
+
+    test "a parent link can be set and cleared", ctx do
+      parent = set_fixture(ctx.project, ctx.creator, %{name: "Parent"})
+      set = set_fixture(ctx.project, ctx.creator)
+
+      assert {:ok, %{parent_set_id: parent_id}} =
+               Homebrew.set_set_parent(set, parent.id, actor: ctx.creator)
+
+      assert parent_id == parent.id
+
+      assert {:ok, %{parent_set_id: nil}} =
+               Homebrew.set_set_parent(reload!(set), nil, actor: ctx.creator)
+
+      assert is_nil(reload!(set).parent_set_id)
+    end
+
+    test "only the set's owner can re-parent it", ctx do
+      parent = set_fixture(ctx.project, ctx.creator, %{name: "Parent"})
+      set = set_fixture(ctx.project, ctx.creator)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Homebrew.set_set_parent(set, parent.id, actor: ctx.other)
+
+      assert is_nil(reload!(set).parent_set_id)
+    end
+
+    test "a set can't be nested under one of its own descendants", ctx do
+      root = set_fixture(ctx.project, ctx.creator, %{name: "Root"})
+      child = set_fixture(ctx.project, ctx.creator, %{name: "Child", parent_set_id: root.id})
+
+      grandchild =
+        set_fixture(ctx.project, ctx.creator, %{name: "Grandchild", parent_set_id: child.id})
+
+      for descendant <- [child, grandchild] do
+        assert {:error, %Ash.Error.Invalid{} = error} =
+                 Homebrew.set_set_parent(root, descendant.id, actor: ctx.creator)
+
+        assert Exception.message(error) =~ "can't be nested under one of its own child sets"
+      end
+
+      assert is_nil(reload!(root).parent_set_id)
+    end
+
+    test "re-parenting moves the whole subtree; only the moved set's link changes", ctx do
+      root = set_fixture(ctx.project, ctx.creator, %{name: "Root"})
+      branch = set_fixture(ctx.project, ctx.creator, %{name: "Branch"})
+      leaf = set_fixture(ctx.project, ctx.creator, %{name: "Leaf", parent_set_id: branch.id})
+
+      assert {:ok, _} = Homebrew.set_set_parent(branch, root.id, actor: ctx.creator)
+
+      assert reload!(branch).parent_set_id == root.id
+      assert reload!(leaf).parent_set_id == branch.id
+
+      assert ids(Homebrew.list_set_subtree!(root.id, actor: ctx.creator)) ==
+               ids([root, branch, leaf])
+    end
+
+    test "ancestors walk up every level and exclude the set itself", ctx do
+      root = set_fixture(ctx.project, ctx.creator, %{name: "Root"})
+      child = set_fixture(ctx.project, ctx.creator, %{name: "Child", parent_set_id: root.id})
+
+      grandchild =
+        set_fixture(ctx.project, ctx.creator, %{name: "Grandchild", parent_set_id: child.id})
+
+      assert ids(Homebrew.list_set_ancestors!(grandchild.id, actor: ctx.creator)) ==
+               ids([root, child])
+
+      assert [] = Homebrew.list_set_ancestors!(root.id, actor: ctx.creator)
+      assert [] = Homebrew.list_set_ancestors!(grandchild.id, actor: ctx.other)
     end
 
     test "destroying the parent cascades to its children", ctx do

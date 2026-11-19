@@ -1,7 +1,8 @@
 defmodule SanctumWeb.HomebrewLive.Show do
   @moduledoc """
   A homebrew project page — a light index of the project's sets, each with its
-  card/alt counts, plus an inline (never modal) create-set form. Content is
+  card/alt counts, laid out as an indented tree (child sets under their
+  parent), plus an inline (never modal) create-set form. Content is
   uploaded on the set page (`HomebrewLive.SetShow`), so this page has no
   upload affordance.
   """
@@ -10,6 +11,7 @@ defmodule SanctumWeb.HomebrewLive.Show do
 
   alias Sanctum.Homebrew
   alias Sanctum.Homebrew.HomebrewSet
+  alias SanctumWeb.HomebrewLive.Support
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_required}
 
@@ -154,7 +156,12 @@ defmodule SanctumWeb.HomebrewLive.Show do
       </div>
 
       <div class="flex flex-col gap-3">
-        <.link :for={set <- @sets} navigate={~p"/homebrew/#{@project.id}/sets/#{set.id}"}>
+        <.link
+          :for={{set, depth} <- Support.set_tree(@sets)}
+          id={"set-#{set.id}"}
+          navigate={~p"/homebrew/#{@project.id}/sets/#{set.id}"}
+          style={"margin-left: #{min(depth, 6) * 1.5}rem"}
+        >
           <.panel class="flex items-center justify-between gap-4 p-4 transition-transform hover:-translate-y-0.5">
             <div class="min-w-0">
               <div class="truncate font-anton text-base uppercase tracking-[0.05em]">

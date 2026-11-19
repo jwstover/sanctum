@@ -37,11 +37,13 @@ defmodule Sanctum.Homebrew do
       define :create_set, action: :create
       define :update_set, action: :update
       define :set_set_visibility, action: :set_visibility, args: [:visibility]
+      define :set_set_parent, action: :set_parent, args: [:parent_set_id]
       define :destroy_set, action: :destroy
       define :get_set, action: :read, get_by: [:id]
       define :list_my_sets, action: :for_creator
       define :list_project_sets, action: :by_project, args: [:homebrew_project_id]
       define :list_set_subtree, action: :subtree, args: [:set_id]
+      define :list_set_ancestors, action: :ancestors, args: [:set_id]
       define :set_deletion_impact, action: :deletion_impact, args: [:set_id]
     end
 

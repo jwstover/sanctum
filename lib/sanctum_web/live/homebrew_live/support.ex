@@ -89,4 +89,44 @@ defmodule SanctumWeb.HomebrewLive.Support do
       []
     end
   end
+
+  @doc """
+  Orders a project's sets as a depth-first tree: `[{set, depth}]`, roots at
+  depth 0, siblings oldest first. Presentation only — the sets are already
+  loaded; this just lays them out for an indented list. A set whose parent
+  isn't in the list (unreadable) is shown as a root.
+  """
+  def set_tree(sets) do
+    ids = MapSet.new(sets, & &1.id)
+
+    children =
+      sets
+      |> Enum.sort_by(& &1.inserted_at, DateTime)
+      |> Enum.group_by(fn set ->
+        if set.parent_set_id in ids, do: set.parent_set_id, else: nil
+      end)
+
+    walk_tree(children, nil, 0)
+  end
+
+  defp walk_tree(children, parent_id, depth) do
+    children
+    |> Map.get(parent_id, [])
+    |> Enum.flat_map(&[{&1, depth} | walk_tree(children, &1.id, depth + 1)])
+  end
+
+  @doc """
+  Orders the unordered `HomebrewSet :ancestors` rows into a root-first
+  breadcrumb chain, following `parent_set_id` up from `set`.
+  """
+  def ancestor_chain(set, ancestors) do
+    by_id = Map.new(ancestors, &{&1.id, &1})
+
+    set.parent_set_id
+    |> Stream.unfold(fn
+      nil -> nil
+      id -> with %{} = parent <- by_id[id], do: {parent, parent.parent_set_id}
+    end)
+    |> Enum.reverse()
+  end
 end

@@ -4,7 +4,7 @@ defmodule Sanctum.Homebrew.Validations.ParentSetInSameProject do
   `homebrew_project` and must not be the set itself. Resolved with
   `authorize?: false` (the parent may be someone else's private set — the
   lookup only feeds the boolean and never leaks data). Attached at the action
-  level to :create and :update with `where: [changing(:parent_set_id)]` and
+  level to :create (with `where: [changing(:parent_set_id)]`) and :set_parent, with
   `before_action?: true`, so it only runs after the action's policy has
   passed: an actor who does not own the target project gets Forbidden, never
   this validation's Invalid, so the error class cannot be used to probe which

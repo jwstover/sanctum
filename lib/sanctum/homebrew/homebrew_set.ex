@@ -16,7 +16,10 @@ defmodule Sanctum.Homebrew.HomebrewSet do
   (`Validations.SetKindInSameProject`).
 
   `parent_set` nests sets within one project (a hero pack owning its nemesis
-  set); a parent's destruction cascades to its children.
+  set, a campaign owning its scenarios) to any depth; a parent's destruction
+  cascades to its children. Re-parenting goes through `:set_parent`, which
+  guards against cycles; `:subtree` and `:ancestors` are the shared tree
+  walks.
 
   Sets start `:private`; visibility is walked through `:set_visibility` so
   the publish flow (attestation gate, slug, review) can hang off that action.
@@ -96,7 +99,9 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       require_atomic? false
 
       # No homebrew_project_id (a set never moves projects), no creator_id,
-      # no visibility (that is :set_visibility's job), no slug.
+      # no visibility (that is :set_visibility's job), no slug, and no
+      # parent_set_id (re-parenting is :set_parent's job — the one place the
+      # cycle guard lives).
       accept [
         :name,
         :description,
@@ -104,13 +109,8 @@ defmodule Sanctum.Homebrew.HomebrewSet do
         :set_kind_id,
         :maturity,
         :tags,
-        :parent_set_id,
         :attestation
       ]
-
-      validate Sanctum.Homebrew.Validations.ParentSetInSameProject,
-        where: [changing(:parent_set_id)],
-        before_action?: true
 
       validate Sanctum.Homebrew.Validations.SetKindInSameProject,
         where: [changing(:set_kind_id)],
@@ -130,6 +130,20 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     # here without touching general editing. Mirrors HomebrewProject.
     update :set_visibility do
       accept [:visibility]
+    end
+
+    # Nest the set under another set of its project, or clear the link
+    # (nil → top level). Depth is unbounded; the set's whole subtree comes
+    # along because only this row's parent_set_id changes.
+    update :set_parent do
+      accept [:parent_set_id]
+      # Both validations read other rows (and NoParentCycle locks the project).
+      require_atomic? false
+
+      # before_action? so they run after the update policy, inside the
+      # action's transaction (see ParentSetInSameProject's moduledoc).
+      validate Sanctum.Homebrew.Validations.ParentSetInSameProject, before_action?: true
+      validate Sanctum.Homebrew.Validations.NoParentCycle, before_action?: true
     end
 
     destroy :destroy do
@@ -155,6 +169,24 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       filter expr(
                fragment(
                  "? IN (WITH RECURSIVE subtree(id) AS (SELECT id FROM homebrew_sets WHERE id = ? UNION SELECT s.id FROM homebrew_sets s JOIN subtree ON s.parent_set_id = subtree.id) SELECT id FROM subtree)",
+                 id,
+                 type(^arg(:set_id), :uuid)
+               )
+             )
+    end
+
+    # The set's ancestors (parent, grandparent, ... root), excluding the set
+    # itself — the upward counterpart of :subtree. Rows come back unordered;
+    # rebuild the chain by following parent_set_id (see ancestor_chain/2 in
+    # HomebrewLive.SetShow). Read policies still apply on top.
+    read :ancestors do
+      argument :set_id, :uuid, allow_nil?: false
+
+      filter expr(
+               fragment(
+                 "? IN (WITH RECURSIVE ancestors(id, parent_set_id) AS (SELECT id, parent_set_id FROM homebrew_sets WHERE id = ? UNION SELECT s.id, s.parent_set_id FROM homebrew_sets s JOIN ancestors ON s.id = ancestors.parent_set_id) SELECT id FROM ancestors) AND ? != ?",
+                 id,
+                 type(^arg(:set_id), :uuid),
                  id,
                  type(^arg(:set_id), :uuid)
                )
