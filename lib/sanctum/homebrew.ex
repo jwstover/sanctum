@@ -40,6 +40,8 @@ defmodule Sanctum.Homebrew do
       define :set_set_parent, action: :set_parent, args: [:parent_set_id]
       define :destroy_set, action: :destroy
       define :get_set, action: :read, get_by: [:id]
+      define :get_set_by_creator_slug, action: :by_creator_slug, args: [:username, :slug]
+      define :regenerate_set_slug, action: :regenerate_slug
       define :list_my_sets, action: :for_creator
       define :list_project_sets, action: :by_project, args: [:homebrew_project_id]
       define :list_set_subtree, action: :subtree, args: [:set_id]

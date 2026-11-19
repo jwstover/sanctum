@@ -60,7 +60,7 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert set.visibility == :private
       assert set.attestation == false
       assert set.tags == []
-      assert is_nil(set.slug)
+      assert set.slug == "daredevil-hero-pack"
       assert is_nil(set.set_kind_id)
       assert is_nil(set.parent_set_id)
     end
