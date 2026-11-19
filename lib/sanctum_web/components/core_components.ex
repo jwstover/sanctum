@@ -198,6 +198,9 @@ defmodule SanctumWeb.CoreComponents do
   attr :cancel_label, :string, default: "Cancel"
   attr :rest, :global, doc: "phx-click / phx-value-* for the confirmed action"
 
+  slot :inner_block,
+    doc: "optional details under the message, e.g. what a destructive action takes with it"
+
   def confirm_dialog(assigns) do
     ~H"""
     <dialog
@@ -209,6 +212,7 @@ defmodule SanctumWeb.CoreComponents do
         <p class="font-barlow-condensed text-base font-bold uppercase tracking-[0.04em]">
           {@message}
         </p>
+        {render_slot(@inner_block)}
         <div class="flex justify-end gap-2">
           <button
             type="button"
@@ -239,13 +243,28 @@ defmodule SanctumWeb.CoreComponents do
             )
             // Click on the backdrop (outside the inner box) dismisses.
             this.el.addEventListener("click", (e) => { if (e.target === this.el) this.el.close() })
+            // Server-side opener (`push_open_confirm/2`): lets a LiveView
+            // refresh the dialog's content first, then open it in the same reply.
+            this.handleEvent("sanctum:confirm-open", ({id}) => { if (id === this.el.id) this.open() })
           },
+          // showModal() sets `open` client-side only; a patch from the server
+          // (whose HTML has no `open`) would strip it and close the dialog.
+          beforeUpdate() { this.wasOpen = this.el.open },
+          updated() { if (this.wasOpen && !this.el.open) this.open() },
           destroyed() { this.el.removeEventListener("sanctum:confirm-open", this.open) },
         }
       </script>
     </dialog>
     """
   end
+
+  @doc """
+  Opens a `confirm_dialog` by id from the server, after the reply's patch has
+  landed — for dialogs whose content (e.g. a blast-radius count) is computed
+  on the click rather than at render.
+  """
+  def push_open_confirm(socket, id),
+    do: Phoenix.LiveView.push_event(socket, "sanctum:confirm-open", %{id: id})
 
   @doc "JS command that opens a `confirm_dialog` / `confirm_button` by id."
   def open_confirm(id), do: JS.dispatch("sanctum:confirm-open", to: "##{id}")
