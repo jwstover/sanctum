@@ -40,6 +40,7 @@ defmodule Sanctum.Homebrew do
 
     resource Sanctum.Homebrew.SetKind do
       define :list_set_kinds, action: :read
+      define :list_project_set_kinds, action: :for_project, args: [:homebrew_project_id]
       define :create_set_kind, action: :create_custom
       define :update_set_kind, action: :update
       define :destroy_set_kind, action: :destroy

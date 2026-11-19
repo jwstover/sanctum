@@ -28,6 +28,8 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
+  @https_url ~r/\Ahttps:\/\/\S+\z/
+
   postgres do
     table "homebrew_sets"
     repo Sanctum.Repo
@@ -83,6 +85,8 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       validate Sanctum.Homebrew.Validations.SetKindInSameProject,
         where: [changing(:set_kind_id)],
         before_action?: true
+
+      validate match(:banner_url, @https_url), message: "must be an https:// URL"
     end
 
     update :update do
@@ -111,6 +115,14 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       validate Sanctum.Homebrew.Validations.SetKindInSameProject,
         where: [changing(:set_kind_id)],
         before_action?: true
+
+      validate match(:banner_url, @https_url), message: "must be an https:// URL"
+
+      # Free kind text from the set page's open combobox: resolves to an
+      # existing kind or mints a project-scoped one (blank → unclassified).
+      # An alternative to passing set_kind_id directly.
+      argument :kind, :string, allow_nil?: true
+      change Sanctum.Homebrew.Changes.ResolveSetKind
     end
 
     # Visibility transitions are their own action so the publish flow

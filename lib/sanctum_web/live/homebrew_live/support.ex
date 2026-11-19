@@ -15,6 +15,30 @@ defmodule SanctumWeb.HomebrewLive.Support do
   alias Sanctum.Homebrew
 
   @doc """
+  Renders a set's markdown description to sanitized HTML (MDEx + ammonia,
+  as `Sanctum.ReleaseNotes.to_html/1`), or `nil` when blank.
+  """
+  # sobelow_skip ["XSS.Raw"] — sanitized by MDEx (ammonia) before marking safe.
+  def description_html(md) when is_binary(md) do
+    if String.trim(md) == "" do
+      nil
+    else
+      md
+      |> MDEx.to_html!(
+        extension: [strikethrough: true, autolink: true],
+        sanitize: MDEx.Document.default_sanitize_options()
+      )
+      |> Phoenix.HTML.raw()
+    end
+  end
+
+  def description_html(_md), do: nil
+
+  @doc "A banner URL safe to render as an image source (https only), else nil."
+  def banner_src("https://" <> _rest = url), do: url
+  def banner_src(_url), do: nil
+
+  @doc """
   Loads the set's custom alts and assigns `:set_alts` + `:alt_tiles`.
   Expects `:set`, `:current_user`, and `:hero_colors` in assigns.
   """
