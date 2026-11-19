@@ -67,6 +67,134 @@ defmodule Sanctum.Homebrew do
   end
 
   @doc """
+  The kinds a set in `project_id` may use: every official kind plus the
+  project's own custom kinds, in display order. (A plain `list_set_kinds`
+  read would also surface other projects' kinds used by published sets.)
+  """
+  def list_project_set_kinds(project_id, actor) do
+    Sanctum.Homebrew.SetKind
+    |> Ash.Query.filter(origin == :official or homebrew_project_id == ^project_id)
+    |> Ash.read!(actor: actor)
+  end
+
+  @doc """
+  Resolves free kind text — the set page's open kind combobox — to a kind for
+  a set in `project_id`. The list only *suggests*, it never constrains:
+
+    * blank → `{:ok, nil}` (unclassified is a valid state);
+    * text matching a usable kind's label (case-insensitively) or key →
+      that existing kind, so picking a suggestion never duplicates a row;
+    * anything else → a newly minted project-scoped custom kind labelled
+      with the text. No kind string is rejected: the key is derived from the
+      label and falls back to a generated one when the text has no usable
+      characters.
+  """
+  def resolve_set_kind(project_id, text, actor) do
+    label = text |> to_string() |> String.trim()
+
+    if label == "" do
+      {:ok, nil}
+    else
+      key = kind_key(label)
+
+      case find_kind(project_id, label, key, actor) do
+        %Sanctum.Homebrew.SetKind{} = kind -> {:ok, kind}
+        nil -> mint_kind(project_id, label, key, actor)
+      end
+    end
+  end
+
+  defp find_kind(project_id, label, key, actor) do
+    kinds = list_project_set_kinds(project_id, actor)
+    downcased = String.downcase(label)
+
+    # A project's own kind wins over an official one with the same name.
+    Enum.find(kinds, &(&1.origin == :custom and String.downcase(&1.label) == downcased)) ||
+      Enum.find(kinds, &(String.downcase(&1.label) == downcased)) ||
+      Enum.find(kinds, &(&1.origin == :custom and &1.key == key)) ||
+      Enum.find(kinds, &(&1.key == key))
+  end
+
+  defp mint_kind(project_id, label, key, actor) do
+    case create_set_kind(%{homebrew_project_id: project_id, key: key, label: label},
+           actor: actor
+         ) do
+      {:ok, kind} ->
+        {:ok, kind}
+
+      # Lost a race (a double submit) on the per-project key identity: the
+      # row now exists, so select it instead of failing.
+      {:error, error} ->
+        case find_kind(project_id, label, key, actor) do
+          nil -> {:error, error}
+          kind -> {:ok, kind}
+        end
+    end
+  end
+
+  # SetKind keys must match ~r/\A[a-z0-9][a-z0-9_-]*\z/. Labels like "!!!" or
+  # "Ωmega" slugify to nothing; those get a generated key so the text is
+  # still accepted as a label.
+  defp kind_key(label) do
+    slug =
+      label
+      |> String.normalize(:nfd)
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9]+/, "_")
+      |> String.trim("_")
+      |> String.slice(0, 60)
+      |> String.trim("_")
+
+    if slug == "", do: "kind_#{System.unique_integer([:positive])}", else: slug
+  end
+
+  @doc """
+  Edits a set's metadata from the set page form. `params` carries string
+  keys: `"name"`, `"description"`, `"banner_url"`, `"tags"` (comma-separated)
+  and `"kind"` (free text, see `resolve_set_kind/3`). Runs in one transaction
+  so a failed update never leaves a freshly minted kind behind.
+  """
+  def update_set_metadata(%Sanctum.Homebrew.HomebrewSet{} = set, params, actor) do
+    # Ash.transact rolls back on an {:error, _} return and wraps any other
+    # return in {:ok, _} — so the success branch yields the bare set.
+    Ash.transact([Sanctum.Homebrew.HomebrewSet, Sanctum.Homebrew.SetKind], fn ->
+      with {:ok, kind} <- resolve_set_kind(set.homebrew_project_id, params["kind"], actor),
+           {:ok, updated} <-
+             update_set(
+               set,
+               %{
+                 name: params["name"],
+                 description: blank_to_nil(params["description"]),
+                 banner_url: blank_to_nil(params["banner_url"]),
+                 tags: parse_tags(params["tags"]),
+                 set_kind_id: kind && kind.id
+               },
+               actor: actor,
+               load: [:set_kind]
+             ) do
+        updated
+      end
+    end)
+  end
+
+  @doc "Splits comma-separated tag text into trimmed, unique, non-blank tags."
+  def parse_tags(text) when is_binary(text) do
+    text
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq_by(&String.downcase/1)
+  end
+
+  def parse_tags(_text), do: []
+
+  defp blank_to_nil(value) when is_binary(value) do
+    if String.trim(value) == "", do: nil, else: value
+  end
+
+  defp blank_to_nil(_value), do: nil
+
+  @doc """
   Creates a custom card (with its sides) inside one of the actor's sets.
 
   `attrs` must include a `:homebrew_set_id` (see `ensure_project_set/2`) and a
