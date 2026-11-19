@@ -558,4 +558,166 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert unpaired.__metadata__.unpaired_card.homebrew_set_id == set.id
     end
   end
+
+  describe "subtree and deletion impact" do
+    alias Sanctum.Games.{Card, CardAlt, CardSide}
+
+    defp custom_card!(set, actor) do
+      {:ok, card} =
+        Games.create_custom_card(
+          %{
+            homebrew_set_id: set.id,
+            card_sides: [%{image_url: "https://img.test/a.png", filename: "a.png"}]
+          },
+          actor: actor
+        )
+
+      card
+    end
+
+    # root → child → grandchild, plus an unrelated sibling root.
+    setup ctx do
+      root = set_fixture(ctx.project, ctx.creator, %{name: "Root"})
+      child = set_fixture(ctx.project, ctx.creator, %{name: "Child", parent_set_id: root.id})
+
+      grandchild =
+        set_fixture(ctx.project, ctx.creator, %{name: "Grandchild", parent_set_id: child.id})
+
+      sibling = set_fixture(ctx.project, ctx.creator, %{name: "Sibling"})
+      %{root: root, child: child, grandchild: grandchild, sibling: sibling}
+    end
+
+    test "the subtree walks every depth and nothing else", ctx do
+      assert ids(Homebrew.list_set_subtree!(ctx.root.id, actor: ctx.creator)) ==
+               ids([ctx.root, ctx.child, ctx.grandchild])
+
+      assert ids(Homebrew.list_set_subtree!(ctx.child.id, actor: ctx.creator)) ==
+               ids([ctx.child, ctx.grandchild])
+
+      assert ids(Homebrew.list_set_subtree!(ctx.sibling.id, actor: ctx.creator)) ==
+               [ctx.sibling.id]
+
+      # Read policies still apply: another user sees none of a private tree.
+      assert [] = Homebrew.list_set_subtree!(ctx.root.id, actor: ctx.other)
+    end
+
+    test "impact counts descendants, cards and alts at every depth", ctx do
+      official = create(Card, attrs: %{code: "90002", base_code: "90002"})
+      create(CardSide, attrs: %{card_id: official.id, code: "90002a", side_identifier: "a"})
+
+      custom_card!(ctx.root, ctx.creator)
+      custom_card!(ctx.grandchild, ctx.creator)
+      custom_card!(ctx.grandchild, ctx.creator)
+      custom_card!(ctx.sibling, ctx.creator)
+      source = custom_card!(ctx.child, ctx.creator)
+      {:ok, _alt} = Games.declare_custom_alt(source.id, official.id, actor: ctx.creator)
+
+      impact = Homebrew.set_deletion_impact!(ctx.root.id, actor: ctx.creator)
+      assert impact.descendant_set_count == 2
+      assert impact.alt_count == 1
+      # The declared source card is converted into the alt.
+      assert impact.card_count == 3
+      assert impact.published_sets == []
+      assert impact.deck_count == 0
+
+      leaf = Homebrew.set_deletion_impact!(ctx.grandchild.id, actor: ctx.creator)
+      assert leaf.descendant_set_count == 0
+      assert leaf.card_count == 2
+    end
+
+    test "impact names published sets at any depth", ctx do
+      publish!(ctx.grandchild, ctx.creator)
+
+      assert %{published_sets: ["Grandchild"]} =
+               Homebrew.set_deletion_impact!(ctx.root.id, actor: ctx.creator)
+    end
+
+    test "only the set's owner sees its impact, even through a published descendant", ctx do
+      publish!(ctx.grandchild, ctx.creator)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Homebrew.set_deletion_impact(ctx.root.id, actor: ctx.other)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Homebrew.set_deletion_impact(ctx.grandchild.id, actor: ctx.other)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Homebrew.set_deletion_impact(ctx.root.id, actor: nil)
+    end
+
+    test "destroying cascades the whole subtree but leaves alt targets and siblings", ctx do
+      official = create(Card, attrs: %{code: "90003", base_code: "90003"})
+      create(CardSide, attrs: %{card_id: official.id, code: "90003a", side_identifier: "a"})
+
+      deep = custom_card!(ctx.grandchild, ctx.creator)
+      kept = custom_card!(ctx.sibling, ctx.creator)
+      source = custom_card!(ctx.grandchild, ctx.creator)
+      {:ok, alt} = Games.declare_custom_alt(source.id, official.id, actor: ctx.creator)
+
+      assert :ok = Homebrew.destroy_set(ctx.root, actor: ctx.creator)
+
+      for set <- [ctx.root, ctx.child, ctx.grandchild] do
+        assert {:error, _} = Ash.get(HomebrewSet, set.id, authorize?: false)
+      end
+
+      assert [] = Ash.read!(Ash.Query.filter(Card, id == ^deep.id), authorize?: false)
+      assert [] = Ash.read!(Ash.Query.filter(CardSide, card_id == ^deep.id), authorize?: false)
+      assert [] = Ash.read!(Ash.Query.filter(CardAlt, id == ^alt.id), authorize?: false)
+
+      assert %Card{} = Ash.get!(Card, official.id, authorize?: false)
+
+      assert [_side] =
+               Ash.read!(Ash.Query.filter(CardSide, card_id == ^official.id), authorize?: false)
+
+      assert %HomebrewSet{} = reload!(ctx.sibling)
+      assert %Card{} = Ash.get!(Card, kept.id, authorize?: false)
+    end
+
+    test "a card in someone's deck is counted and blocks the destroy, deleting nothing", ctx do
+      card = custom_card!(ctx.grandchild, ctx.creator)
+      publish!(ctx.grandchild, ctx.creator)
+
+      hero_card = create(Card, attrs: %{code: "91200", base_code: "91200", set: "dk2_hero"})
+      create(CardSide, attrs: %{card_id: hero_card.id, code: "91200a", side_identifier: "A"})
+
+      create(CardSide,
+        attrs: %{
+          card_id: hero_card.id,
+          code: "91200b",
+          side_identifier: "B",
+          type: :alter_ego,
+          is_primary_side: false
+        }
+      )
+
+      {:ok, hero} =
+        Sanctum.Heroes.find_or_create_hero(%{
+          hero_name: "Deck Hero",
+          alter_ego_name: "Deck Ego",
+          set: "dk2_hero",
+          base_code: "91200",
+          card_id: hero_card.id
+        })
+
+      deck =
+        Sanctum.Decks.Deck
+        |> Ash.Changeset.for_create(:create, %{
+          title: "Uses it",
+          hero_id: hero.id,
+          owner_id: ctx.other.id
+        })
+        |> Ash.create!(authorize?: false)
+
+      Ash.create!(Sanctum.Decks.DeckCard, %{deck_id: deck.id, card_id: card.id, quantity: 1},
+        authorize?: false
+      )
+
+      assert %{deck_count: 1} = Homebrew.set_deletion_impact!(ctx.root.id, actor: ctx.creator)
+
+      assert {:error, _} = Homebrew.destroy_set(ctx.root, actor: ctx.creator)
+      assert %HomebrewSet{} = reload!(ctx.root)
+      assert %HomebrewSet{} = reload!(ctx.grandchild)
+      assert %Card{} = Ash.get!(Card, card.id, authorize?: false)
+    end
+  end
 end

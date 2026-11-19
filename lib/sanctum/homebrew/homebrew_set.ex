@@ -144,6 +144,41 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       argument :homebrew_project_id, :uuid, allow_nil?: false
       filter expr(homebrew_project_id == ^arg(:homebrew_project_id))
     end
+
+    # The set and every descendant at any depth — the one shared tree walk
+    # (deletion blast radius, cycle checks, subtree moves). A recursive CTE
+    # over parent_set_id, so depth costs one query, not one per level. Read
+    # policies still apply on top.
+    read :subtree do
+      argument :set_id, :uuid, allow_nil?: false
+
+      filter expr(
+               fragment(
+                 "? IN (WITH RECURSIVE subtree(id) AS (SELECT id FROM homebrew_sets WHERE id = ? UNION SELECT s.id FROM homebrew_sets s JOIN subtree ON s.parent_set_id = subtree.id) SELECT id FROM subtree)",
+                 id,
+                 type(^arg(:set_id), :uuid)
+               )
+             )
+    end
+
+    # What destroying a set takes with it: its whole subtree (the DB cascade
+    # on parent_set_id and the content FKs). Counted before the confirmation
+    # dialog opens. Published sets are named because a lost public link is
+    # the regret nobody can see from the parent. deck_count is the decks
+    # (anyone's) holding one of the subtree's cards: deck slots don't
+    # cascade, so those block the destroy.
+    action :deletion_impact, :map do
+      constraints fields: [
+                    descendant_set_count: [type: :integer, allow_nil?: false],
+                    card_count: [type: :integer, allow_nil?: false],
+                    alt_count: [type: :integer, allow_nil?: false],
+                    published_sets: [type: {:array, :string}, allow_nil?: false],
+                    deck_count: [type: :integer, allow_nil?: false]
+                  ]
+
+      argument :set_id, :uuid, allow_nil?: false
+      run Sanctum.Homebrew.Actions.DeletionImpact
+    end
   end
 
   policies do
@@ -175,6 +210,11 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     # set is simply not reachable through these actions.
     policy action_type([:update, :destroy]) do
       authorize_if expr(creator_id == ^actor(:id))
+    end
+
+    # Only whoever may destroy the set sees its blast radius.
+    policy action(:deletion_impact) do
+      authorize_if Sanctum.Homebrew.Checks.ActorOwnsSetArgument
     end
   end
 
