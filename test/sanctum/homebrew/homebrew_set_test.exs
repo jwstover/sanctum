@@ -58,10 +58,9 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert set.creator_id == ctx.creator.id
       assert set.homebrew_project_id == ctx.project.id
       assert set.visibility == :private
-      assert set.maturity == :draft
       assert set.attestation == false
       assert set.tags == []
-      assert is_nil(set.slug)
+      assert set.slug == "daredevil-hero-pack"
       assert is_nil(set.set_kind_id)
       assert is_nil(set.parent_set_id)
     end
@@ -74,7 +73,6 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
           description: "Street-level justice",
           banner_url: "https://example.com/banner.png",
           tags: ["street-level"],
-          maturity: :beta,
           attestation: true,
           set_kind_id: hero.id
         })
@@ -82,7 +80,6 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert set.description == "Street-level justice"
       assert set.banner_url == "https://example.com/banner.png"
       assert set.tags == ["street-level"]
-      assert set.maturity == :beta
       assert set.attestation == true
       assert set.set_kind_id == hero.id
 

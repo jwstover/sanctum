@@ -2,7 +2,7 @@ defmodule Sanctum.Homebrew.HomebrewProject do
   @moduledoc """
   A creator's homebrew workspace — a private folder of `Sanctum.Homebrew.HomebrewSet`s,
   readable only by its creator. Nothing outward-facing reads it: the set is
-  the published unit (name, slug, kind, visibility, maturity, tags), and custom
+  the published unit (name, slug, kind, visibility, tags), and custom
   content (`Card`/`CardAlt`/`Aspect` rows with `origin: :custom`) hangs off a
   set, reaching its project only through that set.
   """

@@ -3,7 +3,7 @@ defmodule Sanctum.Homebrew.HomebrewSet do
   A publishable homebrew *set* — the public artifact of the custom-content
   model ("Daredevil hero pack", "Kingpin scenario"). Sets live inside a
   `HomebrewProject`, which is the creator's private workspace; the set
-  carries its own visibility/maturity so it can be published independently.
+  carries its own visibility so it can be published independently.
 
   `creator_id` is DENORMALIZED from the project and stamped server-side on
   create (`Changes.SetCreatorFromProject`); it is never user input. Content
@@ -22,7 +22,15 @@ defmodule Sanctum.Homebrew.HomebrewSet do
   walks.
 
   Sets start `:private`; visibility is walked through `:set_visibility` so
-  the publish flow (attestation gate, slug, review) can hang off that action.
+  the publish flow (attestation gate, review) can hang off that action.
+
+  `slug` is unique per *creator* (`(creator_id, slug)` identity), not
+  globally: the public URL is `/custom/@username/slug`, so two creators can
+  both publish a `daredevil` and attribution lives in the URL. It is derived
+  from the name on create (`Changes.GenerateSlug`, disambiguated only among
+  the creator's own sets) and never follows a rename — `:regenerate_slug` is
+  the explicit way to re-derive it. A username change breaks the creator's
+  URLs by design (old links 404).
   """
 
   use Ash.Resource,
@@ -58,20 +66,22 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       # homebrew_project_id MUST be an accepted attribute: the ActorOwnsProject
       # policy resolves it off the changeset. creator_id is deliberately NOT
       # accepted — SetCreatorFromProject stamps it from the project. slug is
-      # not accepted either (generation is a later task).
+      # not accepted either: GenerateSlug derives it from the name.
       accept [
         :homebrew_project_id,
         :name,
         :description,
         :banner_url,
         :set_kind_id,
-        :maturity,
         :tags,
         :parent_set_id,
         :attestation
       ]
 
       change Sanctum.Homebrew.Changes.SetCreatorFromProject
+      # After SetCreatorFromProject: both are before_action hooks, run in
+      # order, and the slug is disambiguated against the stamped creator.
+      change Sanctum.Homebrew.Changes.GenerateSlug
 
       # Action-level (not a global `validations do`): a global `on [:update]`
       # validation would also attach to the atomic :set_visibility action and
@@ -107,7 +117,6 @@ defmodule Sanctum.Homebrew.HomebrewSet do
         :description,
         :banner_url,
         :set_kind_id,
-        :maturity,
         :tags,
         :attestation
       ]
@@ -126,10 +135,24 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     end
 
     # Visibility transitions are their own action so the publish flow
-    # (attestation gate, slug generation, review) can add changes/validations
-    # here without touching general editing. Mirrors HomebrewProject.
+    # (attestation gate, review) can add changes/validations here without
+    # touching general editing. Mirrors HomebrewProject.
     update :set_visibility do
       accept [:visibility]
+      # GenerateSlug reads the creator's other sets.
+      require_atomic? false
+
+      # Sets created before slugs existed get one on their way out; an
+      # existing slug (and so a shared URL) is never touched here.
+      change {Sanctum.Homebrew.Changes.GenerateSlug, only_if_missing?: true}
+    end
+
+    # Re-derive the slug from the current name — the one way a rename moves
+    # the public URL. A slug that already matches the name is kept.
+    update :regenerate_slug do
+      accept []
+      require_atomic? false
+      change Sanctum.Homebrew.Changes.GenerateSlug
     end
 
     # Nest the set under another set of its project, or clear the link
@@ -152,6 +175,17 @@ defmodule Sanctum.Homebrew.HomebrewSet do
 
     read :for_creator do
       filter expr(creator_id == ^actor(:id))
+    end
+
+    # The public URL lookup: creator handle + slug → at most one set (the
+    # (creator_id, slug) identity plus unique usernames). Read policies still
+    # apply, so a private set resolves only for its creator; a renamed or
+    # unknown username simply finds nothing.
+    read :by_creator_slug do
+      get? true
+      argument :username, :ci_string, allow_nil?: false
+      argument :slug, :string, allow_nil?: false
+      filter expr(creator.username == ^arg(:username) and slug == ^arg(:slug))
     end
 
     read :by_project do
@@ -237,7 +271,7 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       authorize_if Sanctum.Homebrew.Checks.ActorOwnsProject
     end
 
-    # Covers :update, :set_visibility and :destroy. Filter check on the
+    # Covers :update, :set_visibility, :regenerate_slug and :destroy. Filter check on the
     # denormalized column — no join through the project — so someone else's
     # set is simply not reachable through these actions.
     policy action_type([:update, :destroy]) do
@@ -255,8 +289,8 @@ defmodule Sanctum.Homebrew.HomebrewSet do
 
     attribute :name, :string, public?: true, allow_nil?: false
 
-    # Nullable placeholder; slug generation (and its uniqueness identity)
-    # land with the publish flow. Not accepted by any action yet.
+    # Creator-scoped URL slug (see moduledoc). Written only by GenerateSlug;
+    # nullable because sets predating slugs get one when published.
     attribute :slug, :string, public?: true
 
     # Markdown, rendered on the set page.
@@ -267,11 +301,6 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       public?: true,
       allow_nil?: false,
       default: :private
-
-    attribute :maturity, Sanctum.Homebrew.Maturity,
-      public?: true,
-      allow_nil?: false,
-      default: :draft
 
     attribute :tags, {:array, :string}, public?: true, default: []
 
@@ -329,5 +358,11 @@ defmodule Sanctum.Homebrew.HomebrewSet do
   aggregates do
     count :card_count, :cards
     count :alt_count, :card_alts
+  end
+
+  identities do
+    # Slugs are unique per creator, not globally. Postgres treats NULLs as
+    # distinct, so legacy slug-less sets don't collide.
+    identity :unique_creator_slug, [:creator_id, :slug]
   end
 end

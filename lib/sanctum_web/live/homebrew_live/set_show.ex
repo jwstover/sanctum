@@ -49,13 +49,14 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     actor = socket.assigns.current_user
 
     with {:ok, project} <- Homebrew.get_project(project_id, actor: actor),
-         {:ok, set} <- Homebrew.get_set(set_id, actor: actor, load: [:set_kind]),
+         {:ok, set} <- Homebrew.get_set(set_id, actor: actor, load: [:set_kind, :creator]),
          true <- set.homebrew_project_id == project.id do
       {:ok,
        socket
        |> assign(:page_title, set.name)
        |> assign(:project, project)
        |> assign(:set, set)
+       |> assign(:public_path, public_path(set))
        |> assign(:hero_colors, Sanctum.Heroes.hero_color_map())
        |> assign(:uploads_configured?, HomebrewImages.configured?())
        |> assign(:pair_mode?, false)
@@ -578,6 +579,15 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     |> assign(:card_tiles, tiles)
   end
 
+  # The shareable /custom/@username/slug URL — only for a published set whose
+  # creator has claimed a handle. Computed once: neither the creator, the
+  # slug nor (on this page) the visibility changes while it is open.
+  defp public_path(%{visibility: :published, slug: slug, creator: %{username: username}})
+       when is_binary(slug) and not is_nil(username),
+       do: ~p"/custom/@#{to_string(username)}/#{slug}"
+
+  defp public_path(_set), do: nil
+
   defp presence(value) when is_binary(value) do
     case String.trim(value) do
       "" -> nil
@@ -626,6 +636,9 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
       <.header>
         {@set.name}
         <:actions>
+          <.button :if={@public_path} id="set-public-link" variant="ghost" navigate={@public_path}>
+            Public page
+          </.button>
           <.button :if={!@editing_details?} phx-click="edit_details">Edit details</.button>
           <.button variant="primary" phx-click="open_chooser">Upload</.button>
           <.button
@@ -1121,57 +1134,6 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         </div>
       </div>
     </section>
-    """
-  end
-
-  # The set's public-facing metadata: banner, kind + tags, and the rendered
-  # markdown description. Renders nothing extra for an undescribed set.
-  attr :set, :any, required: true
-
-  defp set_details(assigns) do
-    assigns =
-      assigns
-      |> assign(:banner, Support.banner_src(assigns.set.banner_url))
-      |> assign(:description, Support.description_html(assigns.set.description))
-
-    ~H"""
-    <div
-      :if={@banner || @set.set_kind || @set.tags != [] || @description}
-      id="set-details"
-      class="mb-8 flex flex-col gap-4"
-    >
-      <div :if={@banner} class="overflow-hidden border-2 border-neutral bg-base-300 shadow-comic">
-        <img
-          src={@banner}
-          alt={"#{@set.name} banner"}
-          class="max-h-[320px] w-full object-cover"
-        />
-      </div>
-
-      <div :if={@set.set_kind || @set.tags != []} class="flex flex-wrap items-center gap-2">
-        <span
-          :if={@set.set_kind}
-          id="set-kind"
-          class="border-2 border-neutral bg-primary px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-primary-content"
-        >
-          {@set.set_kind.label}
-        </span>
-        <span
-          :for={tag <- @set.tags}
-          class="border-2 border-neutral bg-base-300 px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.06em] text-base-content/70"
-        >
-          {tag}
-        </span>
-      </div>
-
-      <div
-        :if={@description}
-        id="set-description"
-        class="deck-writeup max-w-3xl"
-      >
-        {@description}
-      </div>
-    </div>
     """
   end
 

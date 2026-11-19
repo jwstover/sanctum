@@ -111,6 +111,10 @@ defmodule SanctumWeb.Router do
       # Public deck-collection stats.
       live "/stats", StatsLive.Index, :index
 
+      # Public homebrew set pages. Slugs are unique per creator, so the
+      # handle is part of the address; a renamed handle just 404s.
+      live "/custom/@:username/:slug", HomebrewLive.PublicSet, :show
+
       # Public archive of player-facing release notes (priv/release_notes).
       live "/releases", ReleaseNotesLive.Index, :index
 

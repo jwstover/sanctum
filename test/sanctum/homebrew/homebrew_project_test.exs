@@ -116,7 +116,7 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
   end
 
   test "a project carries no outward-facing fields — those live on the set" do
-    for field <- [:visibility, :maturity, :tags, :banner_url, :content_types] do
+    for field <- [:visibility, :tags, :banner_url, :content_types] do
       refute Ash.Resource.Info.attribute(HomebrewProject, field)
     end
   end
