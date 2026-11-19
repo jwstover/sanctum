@@ -2,8 +2,9 @@ defmodule Sanctum.Homebrew.Validations.SetKindInSameProject do
   @moduledoc """
   A `set_kind_id`, when set, must point at an *official* kind or at a custom
   kind minted in the set's own `homebrew_project`. Custom kinds are
-  project-scoped (their visibility follows the project), so without this a
-  set could be classified by another creator's private kind — a row its own
+  project-scoped (creator-only until a published set uses them), so without
+  this a set could be classified by — and publish — another creator's private
+  kind — a row its own
   creator can never read, and one that creator could rename or delete out
   from under the set (`on_delete: :nilify`).
 

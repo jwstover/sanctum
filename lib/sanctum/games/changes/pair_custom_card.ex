@@ -5,9 +5,10 @@ defmodule Sanctum.Games.Changes.PairCustomCard do
   The donor's side is re-parented BEFORE the donor row is destroyed — the
   `card_sides.card_id` FK cascades on card delete. Internal writes run with
   `authorize?: false`: the action's policy already proved the actor owns the
-  target's project, and the same-project validation below makes the donor the
-  same creator's (projects have a single creator; the origin check constraint
-  guarantees a same-project donor is custom).
+  target's set, and the same-project validation below makes the donor the
+  same creator's (projects have a single creator; an official donor has no
+  set, so it never passes). The project is reached through each card's set —
+  cards carry no project FK of their own.
   """
 
   use Ash.Resource.Change
@@ -55,18 +56,22 @@ defmodule Sanctum.Games.Changes.PairCustomCard do
 
   defp fetch_donor(donor_id, actor) do
     # Actor-scoped read: someone else's private custom is simply not found.
-    case Ash.get(Sanctum.Games.Card, donor_id, actor: actor, load: :card_sides) do
+    case Ash.get(Sanctum.Games.Card, donor_id, actor: actor, load: [:card_sides, :homebrew_set]) do
       {:ok, donor} -> {:ok, donor}
       {:error, _not_found} -> {:error, :donor_card_id, "card not found"}
     end
   end
 
   defp validate_pairable(target, donor) do
+    # authorize?: false is safe: the policy already proved the actor owns the
+    # target's set, and only its project id is read.
+    target = Ash.load!(target, :homebrew_set, authorize?: false)
+
     cond do
       donor.id == target.id ->
         {:error, :donor_card_id, "a card cannot be paired with itself"}
 
-      donor.homebrew_project_id != target.homebrew_project_id ->
+      project_id(donor) != project_id(target) or is_nil(project_id(donor)) ->
         # Covers cross-project, cross-user, and official donors in one check.
         {:error, :donor_card_id, "both cards must belong to the same project"}
 
@@ -80,4 +85,7 @@ defmodule Sanctum.Games.Changes.PairCustomCard do
         :ok
     end
   end
+
+  defp project_id(%{homebrew_set: %{homebrew_project_id: id}}), do: id
+  defp project_id(_official), do: nil
 end

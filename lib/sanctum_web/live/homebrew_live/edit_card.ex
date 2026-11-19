@@ -46,8 +46,12 @@ defmodule SanctumWeb.HomebrewLive.EditCard do
   end
 
   defp fetch_card(card_id, project, actor) do
-    case Ash.get(Sanctum.Games.Card, card_id, actor: actor, load: [:card_sides, :primary_side]) do
-      {:ok, %{homebrew_project_id: project_id} = card} when project_id == project.id ->
+    case Ash.get(Sanctum.Games.Card, card_id,
+           actor: actor,
+           load: [:card_sides, :primary_side, :homebrew_set]
+         ) do
+      {:ok, %{homebrew_set: %{homebrew_project_id: project_id}} = card}
+      when project_id == project.id ->
         {:ok, card}
 
       _other_project_or_error ->

@@ -10,8 +10,8 @@ defmodule Sanctum.Games.Changes.CreateCustomAltArt do
   can never resolve a deck slot) with `base_code` equal to the code, mirroring
   a fresh custom card. The target card is fetched actor-scoped and must be
   `:official` — someone else's private custom is simply not found, and a custom
-  target is rejected. `homebrew_project_id` and `artist` are accepted attributes
-  (the `ActorOwnsProject` policy proves ownership of the project on create).
+  target is rejected. `homebrew_set_id` and `artist` are accepted attributes
+  (the `ActorOwnsSet` policy proves ownership of the set on create).
   """
 
   use Ash.Resource.Change

@@ -39,7 +39,6 @@ defmodule Sanctum.Homebrew.AltArtTest do
     {:ok, card} =
       Homebrew.create_custom_card(
         %{
-          homebrew_project_id: project.id,
           homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
           card_sides: [%{image_url: "https://img.test/#{filename}", filename: filename}]
         },
@@ -79,7 +78,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
       assert alt.artist == "Jane Doe"
       assert alt.card_id == ctx.official.id
       assert alt.creator_id == ctx.creator.id
-      assert alt.homebrew_project_id == ctx.project.id
+      assert alt.homebrew_set_id == Homebrew.ensure_project_set(ctx.project, ctx.creator).id
 
       # Source card and its side are gone.
       assert {:error, _} = Ash.get(Card, source.id, authorize?: false)
@@ -132,7 +131,6 @@ defmodule Sanctum.Homebrew.AltArtTest do
       {:ok, alt} =
         Homebrew.create_alt_art(
           %{
-            homebrew_project_id: ctx.project.id,
             homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan-spidey.png",
             target_card_id: ctx.official.id,
@@ -150,14 +148,13 @@ defmodule Sanctum.Homebrew.AltArtTest do
       assert alt.artist == "Jane Doe"
       assert alt.card_id == ctx.official.id
       assert alt.creator_id == ctx.creator.id
-      assert alt.homebrew_project_id == ctx.project.id
+      assert alt.homebrew_set_id == Homebrew.ensure_project_set(ctx.project, ctx.creator).id
     end
 
     test "side_identifier defaults to \"a\"", ctx do
       {:ok, alt} =
         Homebrew.create_alt_art(
           %{
-            homebrew_project_id: ctx.project.id,
             homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan.png",
             target_card_id: ctx.official.id
@@ -174,7 +171,6 @@ defmodule Sanctum.Homebrew.AltArtTest do
       assert {:error, error} =
                Homebrew.create_alt_art(
                  %{
-                   homebrew_project_id: ctx.project.id,
                    homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: custom.id
@@ -189,7 +185,6 @@ defmodule Sanctum.Homebrew.AltArtTest do
       assert {:error, %Ash.Error.Forbidden{}} =
                Homebrew.create_alt_art(
                  %{
-                   homebrew_project_id: ctx.project.id,
                    homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: ctx.official.id
@@ -202,7 +197,6 @@ defmodule Sanctum.Homebrew.AltArtTest do
       assert {:error, %Ash.Error.Forbidden{}} =
                Homebrew.create_alt_art(
                  %{
-                   homebrew_project_id: ctx.project.id,
                    homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
                    image_url: "https://img.test/fan.png",
                    target_card_id: ctx.official.id
@@ -215,7 +209,6 @@ defmodule Sanctum.Homebrew.AltArtTest do
       {:ok, alt} =
         Homebrew.create_alt_art(
           %{
-            homebrew_project_id: ctx.project.id,
             homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
             image_url: "https://img.test/fan.png",
             target_card_id: ctx.official.id
@@ -239,7 +232,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
       {:ok, new_card} = Homebrew.revert_alt_art(alt.id, ctx.creator)
 
       assert new_card.origin == :custom
-      assert new_card.homebrew_project_id == ctx.project.id
+      assert new_card.homebrew_set_id == Homebrew.ensure_project_set(ctx.project, ctx.creator).id
       # Identity is stable across the round trip: the alt's code is reused.
       assert new_card.code == source.code
       refute new_card.is_multi_sided

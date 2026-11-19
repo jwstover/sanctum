@@ -461,28 +461,15 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
   describe "custom content belongs to a set" do
     alias Sanctum.Games.{Aspect, Card, CardAlt, CardSide}
 
-    defp card_attrs(project, set_id) do
+    defp card_attrs(set_id) do
       %{
-        homebrew_project_id: project.id,
         homebrew_set_id: set_id,
         card_sides: [%{image_url: "https://img.test/a.png", filename: "a.png"}]
       }
     end
 
-    defp forbidden_or_invalid?(error),
-      do: match?(%Ash.Error.Forbidden{}, error) or match?(%Ash.Error.Invalid{}, error)
-
-    test "create_custom with own project but someone else's set never succeeds", ctx do
-      foreign = set_fixture(ctx.other_project, ctx.other)
-
-      result = Homebrew.create_custom_card(card_attrs(ctx.project, foreign.id), ctx.creator)
-
-      assert {:error, error} = result
-      assert forbidden_or_invalid?(error)
-    end
-
     test "a card without a set is Invalid", ctx do
-      attrs = card_attrs(ctx.project, nil)
+      attrs = card_attrs(nil)
 
       assert {:error, %Ash.Error.Invalid{} = error} =
                Homebrew.create_custom_card(attrs, ctx.creator)
@@ -490,35 +477,33 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert Exception.message(error) =~ "must belong to a set"
     end
 
-    test "a card or alt in another project's set is Invalid", ctx do
+    test "a card or alt in someone else's set is Forbidden", ctx do
       foreign = set_fixture(ctx.other_project, ctx.other)
 
-      assert {:error, error} =
-               Homebrew.create_custom_card(card_attrs(ctx.project, foreign.id), ctx.creator)
-
-      assert forbidden_or_invalid?(error)
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Homebrew.create_custom_card(card_attrs(foreign.id), ctx.creator)
 
       official = create(Card, attrs: %{code: "90001", base_code: "90001"})
 
-      assert {:error, error} =
+      assert {:error, %Ash.Error.Forbidden{}} =
                Homebrew.create_alt_art(
                  %{
-                   homebrew_project_id: ctx.project.id,
                    homebrew_set_id: foreign.id,
                    image_url: "https://img.test/x.png",
                    target_card_id: official.id
                  },
                  ctx.creator
                )
-
-      assert forbidden_or_invalid?(error)
     end
 
-    test "a non-owner passing their own project with someone else's set still errors", ctx do
-      theirs = set_fixture(ctx.project, ctx.creator)
+    test "project ids are not accepted on custom content", ctx do
+      set = set_fixture(ctx.project, ctx.creator)
 
-      assert {:error, _} =
-               Homebrew.create_custom_card(card_attrs(ctx.other_project, theirs.id), ctx.other)
+      assert {:error, %Ash.Error.Invalid{}} =
+               Homebrew.create_custom_card(
+                 Map.put(card_attrs(set.id), :homebrew_project_id, ctx.project.id),
+                 ctx.creator
+               )
     end
 
     test "ensure_project_set reuses the oldest set and creates one when none exist", ctx do
@@ -533,8 +518,8 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       official = create(Card, attrs: %{code: "90001", base_code: "90001"})
       create(CardSide, attrs: %{card_id: official.id, code: "90001a", side_identifier: "a"})
 
-      {:ok, card} = Homebrew.create_custom_card(card_attrs(ctx.project, set.id), ctx.creator)
-      {:ok, source} = Homebrew.create_custom_card(card_attrs(ctx.project, set.id), ctx.creator)
+      {:ok, card} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
+      {:ok, source} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
       {:ok, alt} = Homebrew.declare_alt_art(source.id, official.id, [], ctx.creator)
       assert alt.homebrew_set_id == set.id
 
@@ -546,7 +531,6 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
             label: "Custom",
             color: "#123456",
             origin: :custom,
-            homebrew_project_id: ctx.project.id,
             homebrew_set_id: set.id
           },
           authorize?: false
@@ -565,15 +549,15 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       official = create(Card, attrs: %{code: "90001", base_code: "90001"})
       create(CardSide, attrs: %{card_id: official.id, code: "90001a", side_identifier: "a"})
 
-      {:ok, source} = Homebrew.create_custom_card(card_attrs(ctx.project, set.id), ctx.creator)
+      {:ok, source} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
       {:ok, alt} = Homebrew.declare_alt_art(source.id, official.id, [], ctx.creator)
       assert alt.homebrew_set_id == set.id
 
       assert {:ok, reverted} = Homebrew.revert_alt_art(alt.id, ctx.creator)
       assert reverted.homebrew_set_id == set.id
 
-      {:ok, donor} = Homebrew.create_custom_card(card_attrs(ctx.project, set.id), ctx.creator)
-      {:ok, target} = Homebrew.create_custom_card(card_attrs(ctx.project, set.id), ctx.creator)
+      {:ok, donor} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
+      {:ok, target} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
       {:ok, _} = Homebrew.pair_custom_cards(target.id, donor.id, ctx.creator)
       assert {:ok, {unpaired, split}} = Homebrew.unpair_custom_card(target.id, ctx.creator)
       assert unpaired.homebrew_set_id == set.id

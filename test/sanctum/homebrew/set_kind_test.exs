@@ -240,20 +240,47 @@ defmodule Sanctum.Homebrew.SetKindTest do
       end
     end
 
-    test "publishing the project makes its kinds visible to everyone", ctx do
+    test "a kind turns public once a published set uses it", ctx do
       kind = custom_kind!(ctx.project, ctx.creator)
-      Homebrew.set_project_visibility!(ctx.project, :published, actor: ctx.creator)
+
+      set =
+        Homebrew.create_set!(
+          %{name: "Hazards", homebrew_project_id: ctx.project.id, set_kind_id: kind.id},
+          actor: ctx.creator
+        )
+
+      # Used only by a private set: still creator-only.
+      for actor <- [ctx.other, nil] do
+        refute kind.id in Enum.map(Homebrew.list_set_kinds!(actor: actor), & &1.id)
+      end
+
+      Homebrew.set_set_visibility!(set, :published, actor: ctx.creator)
 
       for actor <- [ctx.other, nil] do
         assert kind.id in Enum.map(Homebrew.list_set_kinds!(actor: actor), & &1.id)
       end
     end
 
-    test "unlisted projects keep their kinds creator-only", ctx do
+    test "an unlisted set keeps its kind creator-only", ctx do
       kind = custom_kind!(ctx.project, ctx.creator)
-      Homebrew.set_project_visibility!(ctx.project, :unlisted, actor: ctx.creator)
 
-      refute kind.id in Enum.map(Homebrew.list_set_kinds!(actor: ctx.other), & &1.id)
+      %{name: "Hazards", homebrew_project_id: ctx.project.id, set_kind_id: kind.id}
+      |> Homebrew.create_set!(actor: ctx.creator)
+      |> Homebrew.set_set_visibility!(:unlisted, actor: ctx.creator)
+
+      for actor <- [ctx.other, nil] do
+        refute kind.id in Enum.map(Homebrew.list_set_kinds!(actor: actor), & &1.id)
+      end
+    end
+
+    test "a published set without the kind does not expose it", ctx do
+      kind = custom_kind!(ctx.project, ctx.creator)
+
+      ctx.project
+      |> Homebrew.ensure_project_set(ctx.creator)
+      |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
+
+      refute kind.id in Enum.map(Homebrew.list_set_kinds!(actor: nil), & &1.id)
     end
 
     test "default ordering is sort_order then label", ctx do

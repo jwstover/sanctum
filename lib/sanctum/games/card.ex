@@ -16,20 +16,15 @@ defmodule Sanctum.Games.Card do
     end
 
     references do
-      # A deleted homebrew project takes its custom cards with it. Indexed —
-      # the read policy joins through this FK on every card query.
-      reference :homebrew_project, on_delete: :delete, index?: true
-      # A deleted set takes its custom cards with it.
+      # A deleted set (and so a deleted project) takes its custom cards with
+      # it. Indexed — the read policy joins through this FK on every card query.
       reference :homebrew_set, on_delete: :delete, index?: true
     end
 
     check_constraints do
-      # An official row can never point at a project; a custom row can never
-      # be orphaned.
-      check_constraint :origin,
-        name: "cards_origin_project_consistency",
-        check: "(origin = 'official') = (homebrew_project_id IS NULL)"
-
+      # An official row can never point at a set; a custom row can never be
+      # orphaned. The set is the only provenance edge — the project is
+      # reached through it.
       check_constraint :origin,
         name: "cards_origin_set_consistency",
         check: "(origin = 'official') = (homebrew_set_id IS NULL)"
@@ -154,19 +149,15 @@ defmodule Sanctum.Games.Card do
     # set-string relationships by construction.
 
     create :create_custom do
-      description "Creates a homebrew card inside one of the actor's projects."
+      description "Creates a homebrew card inside one of the actor's sets."
 
-      accept [:homebrew_project_id, :homebrew_set_id, :deck_limit, :unique, :permanent]
+      accept [:homebrew_set_id, :deck_limit, :unique, :permanent]
 
       argument :card_sides, {:array, :map}, allow_nil?: false
-
-      validate present(:homebrew_project_id)
 
       validate present(:homebrew_set_id) do
         message "must belong to a set"
       end
-
-      validate Sanctum.Homebrew.Validations.SetInSameProject, before_action?: true
 
       change set_attribute(:origin, :custom)
       change Sanctum.Games.Changes.GenerateCustomCode
@@ -327,12 +318,6 @@ defmodule Sanctum.Games.Card do
     # only referenced through the actor-scoped :owned calculations.
     has_many :collection_cards, Sanctum.Collections.CollectionCard do
       destination_attribute :card_id
-    end
-
-    # Set for :custom origin only (see the origin check constraint).
-    belongs_to :homebrew_project, Sanctum.Homebrew.HomebrewProject do
-      public? true
-      allow_nil? true
     end
 
     # Set for :custom origin only (see cards_origin_set_consistency).

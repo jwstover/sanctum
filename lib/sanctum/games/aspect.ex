@@ -9,7 +9,7 @@ defmodule Sanctum.Games.Aspect do
   (`"aggression"`, `"justice"`, `"leadership"`, `"protection"`, `"pool"`), so
   `CardSide.aspect` and `Deck.aspects` keep storing those exact strings and only
   the *type* changed (enum → string). Custom aspects (a later phase) get
-  synthetic keys outside that space and hang off a `homebrew_project`.
+  synthetic keys outside that space and hang off a `homebrew_set`.
 
   The canonical official definitions live in code (`official/0`) — that is the
   single source of truth the seed inserts and the search registries read their
@@ -49,8 +49,7 @@ defmodule Sanctum.Games.Aspect do
     repo Sanctum.Repo
 
     references do
-      # A deleted homebrew project takes its custom aspects with it.
-      reference :homebrew_project, on_delete: :delete, index?: true
+      # A deleted homebrew set (and so project) takes its custom aspects with it.
       reference :homebrew_set, on_delete: :delete, index?: true
     end
 
@@ -75,7 +74,6 @@ defmodule Sanctum.Games.Aspect do
         :sort_order,
         :origin,
         :deck_selectable,
-        :homebrew_project_id,
         :homebrew_set_id
       ]
 
@@ -83,10 +81,6 @@ defmodule Sanctum.Games.Aspect do
         where attribute_equals(:origin, :custom)
         message "must belong to a set"
       end
-
-      validate Sanctum.Homebrew.Validations.SetInSameProject,
-        where: [attribute_equals(:origin, :custom)],
-        before_action?: true
     end
 
     update :update do
@@ -135,12 +129,7 @@ defmodule Sanctum.Games.Aspect do
   end
 
   relationships do
-    # Set for custom (project-scoped) aspects only; nil for the official five.
-    belongs_to :homebrew_project, Sanctum.Homebrew.HomebrewProject do
-      public? true
-      allow_nil? true
-    end
-
+    # Set for custom (set-scoped) aspects only; nil for the official five.
     belongs_to :homebrew_set, Sanctum.Homebrew.HomebrewSet do
       public? true
       allow_nil? true

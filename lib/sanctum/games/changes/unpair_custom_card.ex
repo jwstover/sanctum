@@ -1,10 +1,10 @@
 defmodule Sanctum.Games.Changes.UnpairCustomCard do
   @moduledoc """
   Splits a two-sided custom card: side "b" moves onto a fresh single-sided
-  card in the same project (re-lettered as its "a"/primary side, code
+  card in the same set (re-lettered as its "a"/primary side, code
   re-minted). The new card rides back to the caller as the `:unpaired_card`
   record metadata. Internal writes are `authorize?: false` — the action's
-  policy already proved the actor owns this project.
+  policy already proved the actor owns this card's set.
   """
 
   use Ash.Resource.Change
@@ -40,7 +40,6 @@ defmodule Sanctum.Games.Changes.UnpairCustomCard do
         Sanctum.Games.Card
         |> Changeset.for_create(:create, %{
           origin: :custom,
-          homebrew_project_id: card.homebrew_project_id,
           homebrew_set_id: card.homebrew_set_id,
           code: code,
           base_code: code,
