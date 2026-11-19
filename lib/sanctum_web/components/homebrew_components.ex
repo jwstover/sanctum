@@ -1,12 +1,15 @@
 defmodule SanctumWeb.HomebrewComponents do
   @moduledoc """
   Shared HEEx components for the homebrew surfaces — the "storage not
-  configured" notice and the alt-art grid — used by `HomebrewLive.Show`.
+  configured" notice, the alt-art grid and the set details block — shared by
+  the workspace pages and the public set page.
   """
 
   use SanctumWeb, :html
 
   import SanctumWeb.Components.CardSideTile
+
+  alias SanctumWeb.HomebrewLive.Support
 
   @doc "Notice shown when the S3 image storage env vars are absent."
   def upload_unconfigured_notice(assigns) do
@@ -80,6 +83,60 @@ defmodule SanctumWeb.HomebrewComponents do
             />
           </:actions>
         </.card_side_tile>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  The set's public-facing metadata: banner, kind + tags, and the rendered
+  markdown description. Renders nothing for an undescribed set. Expects
+  `set_kind` loaded.
+  """
+  attr :set, :any, required: true
+
+  def set_details(assigns) do
+    assigns =
+      assigns
+      |> assign(:banner, Support.banner_src(assigns.set.banner_url))
+      |> assign(:description, Support.description_html(assigns.set.description))
+
+    ~H"""
+    <div
+      :if={@banner || @set.set_kind || @set.tags != [] || @description}
+      id="set-details"
+      class="mb-8 flex flex-col gap-4"
+    >
+      <div :if={@banner} class="overflow-hidden border-2 border-neutral bg-base-300 shadow-comic">
+        <img
+          src={@banner}
+          alt={"#{@set.name} banner"}
+          class="max-h-[320px] w-full object-cover"
+        />
+      </div>
+
+      <div :if={@set.set_kind || @set.tags != []} class="flex flex-wrap items-center gap-2">
+        <span
+          :if={@set.set_kind}
+          id="set-kind"
+          class="border-2 border-neutral bg-primary px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.08em] text-primary-content"
+        >
+          {@set.set_kind.label}
+        </span>
+        <span
+          :for={tag <- @set.tags}
+          class="border-2 border-neutral bg-base-300 px-2 py-0.5 font-barlow-condensed text-xs font-bold uppercase tracking-[0.06em] text-base-content/70"
+        >
+          {tag}
+        </span>
+      </div>
+
+      <div
+        :if={@description}
+        id="set-description"
+        class="deck-writeup max-w-3xl"
+      >
+        {@description}
       </div>
     </div>
     """
