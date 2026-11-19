@@ -5,6 +5,7 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
 
   import Sanctum.AccountsFixtures
 
+  alias Sanctum.Games
   alias Sanctum.Homebrew
   alias Sanctum.Homebrew.{HomebrewSet, SetKind}
 
@@ -472,7 +473,7 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       attrs = card_attrs(nil)
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-               Homebrew.create_custom_card(attrs, ctx.creator)
+               Games.create_custom_card(attrs, actor: ctx.creator)
 
       assert Exception.message(error) =~ "must belong to a set"
     end
@@ -481,18 +482,18 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       foreign = set_fixture(ctx.other_project, ctx.other)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-               Homebrew.create_custom_card(card_attrs(foreign.id), ctx.creator)
+               Games.create_custom_card(card_attrs(foreign.id), actor: ctx.creator)
 
       official = create(Card, attrs: %{code: "90001", base_code: "90001"})
 
       assert {:error, %Ash.Error.Forbidden{}} =
-               Homebrew.create_alt_art(
+               Games.create_custom_alt(
                  %{
                    homebrew_set_id: foreign.id,
                    image_url: "https://img.test/x.png",
                    target_card_id: official.id
                  },
-                 ctx.creator
+                 actor: ctx.creator
                )
     end
 
@@ -500,17 +501,10 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       set = set_fixture(ctx.project, ctx.creator)
 
       assert {:error, %Ash.Error.Invalid{}} =
-               Homebrew.create_custom_card(
+               Games.create_custom_card(
                  Map.put(card_attrs(set.id), :homebrew_project_id, ctx.project.id),
-                 ctx.creator
+                 actor: ctx.creator
                )
-    end
-
-    test "ensure_project_set reuses the oldest set and creates one when none exist", ctx do
-      assert [] = Homebrew.list_project_sets!(ctx.project.id, actor: ctx.creator)
-      first = Homebrew.ensure_project_set(ctx.project, ctx.creator)
-      assert first.name == ctx.project.name
-      assert Homebrew.ensure_project_set(ctx.project, ctx.creator).id == first.id
     end
 
     test "destroying a set removes its cards, alts and aspects", ctx do
@@ -518,9 +512,9 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       official = create(Card, attrs: %{code: "90001", base_code: "90001"})
       create(CardSide, attrs: %{card_id: official.id, code: "90001a", side_identifier: "a"})
 
-      {:ok, card} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
-      {:ok, source} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
-      {:ok, alt} = Homebrew.declare_alt_art(source.id, official.id, [], ctx.creator)
+      {:ok, card} = Games.create_custom_card(card_attrs(set.id), actor: ctx.creator)
+      {:ok, source} = Games.create_custom_card(card_attrs(set.id), actor: ctx.creator)
+      {:ok, alt} = Games.declare_custom_alt(source.id, official.id, actor: ctx.creator)
       assert alt.homebrew_set_id == set.id
 
       aspect =
@@ -549,19 +543,19 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       official = create(Card, attrs: %{code: "90001", base_code: "90001"})
       create(CardSide, attrs: %{card_id: official.id, code: "90001a", side_identifier: "a"})
 
-      {:ok, source} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
-      {:ok, alt} = Homebrew.declare_alt_art(source.id, official.id, [], ctx.creator)
+      {:ok, source} = Games.create_custom_card(card_attrs(set.id), actor: ctx.creator)
+      {:ok, alt} = Games.declare_custom_alt(source.id, official.id, actor: ctx.creator)
       assert alt.homebrew_set_id == set.id
 
-      assert {:ok, reverted} = Homebrew.revert_alt_art(alt.id, ctx.creator)
-      assert reverted.homebrew_set_id == set.id
+      assert {:ok, reverted} = Games.revert_custom_alt(alt.id, actor: ctx.creator)
+      assert reverted.__metadata__.reverted_card.homebrew_set_id == set.id
 
-      {:ok, donor} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
-      {:ok, target} = Homebrew.create_custom_card(card_attrs(set.id), ctx.creator)
-      {:ok, _} = Homebrew.pair_custom_cards(target.id, donor.id, ctx.creator)
-      assert {:ok, {unpaired, split}} = Homebrew.unpair_custom_card(target.id, ctx.creator)
+      {:ok, donor} = Games.create_custom_card(card_attrs(set.id), actor: ctx.creator)
+      {:ok, target} = Games.create_custom_card(card_attrs(set.id), actor: ctx.creator)
+      {:ok, _} = Games.pair_custom_cards(target.id, donor.id, actor: ctx.creator)
+      assert {:ok, unpaired} = Games.unpair_custom_card(target.id, actor: ctx.creator)
       assert unpaired.homebrew_set_id == set.id
-      assert split.homebrew_set_id == set.id
+      assert unpaired.__metadata__.unpaired_card.homebrew_set_id == set.id
     end
   end
 end

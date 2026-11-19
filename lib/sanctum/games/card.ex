@@ -210,6 +210,14 @@ defmodule Sanctum.Games.Card do
     destroy :destroy_custom do
       require_atomic? false
     end
+
+    read :for_homebrew_set do
+      description "Custom cards in one homebrew set, primary side loaded, oldest first."
+
+      argument :homebrew_set_id, :uuid, allow_nil?: false
+      filter expr(homebrew_set_id == ^arg(:homebrew_set_id))
+      prepare build(load: [:primary_side], sort: [inserted_at: :asc])
+    end
   end
 
   policies do

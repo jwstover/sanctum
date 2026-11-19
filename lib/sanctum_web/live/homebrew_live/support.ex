@@ -12,7 +12,7 @@ defmodule SanctumWeb.HomebrewLive.Support do
 
   require Ash.Query
 
-  alias Sanctum.Homebrew
+  alias Sanctum.Games
 
   @doc """
   Renders a set's markdown description to sanitized HTML (MDEx + ammonia,
@@ -43,7 +43,9 @@ defmodule SanctumWeb.HomebrewLive.Support do
   Expects `:set`, `:current_user`, and `:hero_colors` in assigns.
   """
   def assign_alts(socket) do
-    alts = Homebrew.list_set_alts(socket.assigns.set.id, socket.assigns.current_user)
+    alts =
+      Games.list_homebrew_set_alts!(socket.assigns.set.id, actor: socket.assigns.current_user)
+
     tiles = Enum.map(alts, &{&1, alt_tile_view(&1, socket.assigns.hero_colors)})
 
     assign(socket, set_alts: alts, alt_tiles: tiles)
@@ -65,7 +67,7 @@ defmodule SanctumWeb.HomebrewLive.Support do
 
   @doc "Deletes an alt and refreshes the list; flashes the outcome."
   def delete_alt(socket, id) do
-    case Homebrew.destroy_alt_art(id, socket.assigns.current_user) do
+    case Games.destroy_custom_alt(id, actor: socket.assigns.current_user) do
       :ok -> socket |> assign_alts() |> put_flash(:info, "Alt art deleted.")
       _error -> put_flash(socket, :error, "Could not delete the alt art.")
     end

@@ -4,7 +4,9 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
   use Sanctum.DataCase, async: true
 
   import Sanctum.AccountsFixtures
+  import Sanctum.HomebrewFixtures
 
+  alias Sanctum.Games
   alias Sanctum.Homebrew
   alias Sanctum.Homebrew.HomebrewProject
 
@@ -54,7 +56,7 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
 
     test "publishing a set does not expose its project (privacy follows the set)", ctx do
       ctx.project
-      |> Homebrew.ensure_project_set(ctx.creator)
+      |> project_set_fixture(ctx.creator)
       |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
 
       assert {:error, %Ash.Error.Invalid{}} =
@@ -99,12 +101,12 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
 
     test "destroying a project takes its custom cards with it", ctx do
       {:ok, card} =
-        Homebrew.create_custom_card(
+        Games.create_custom_card(
           %{
-            homebrew_set_id: Homebrew.ensure_project_set(ctx.project, ctx.creator).id,
+            homebrew_set_id: project_set_fixture(ctx.project, ctx.creator).id,
             card_sides: [%{image_url: "https://img.test/a.png"}]
           },
-          ctx.creator
+          actor: ctx.creator
         )
 
       :ok = Homebrew.destroy_project(ctx.project, actor: ctx.creator)
@@ -130,9 +132,9 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
       set = Homebrew.create_set!(%{name: "Set", homebrew_project_id: project.id}, actor: user)
 
       {:ok, _card} =
-        Homebrew.create_custom_card(
+        Games.create_custom_card(
           %{homebrew_set_id: set.id, card_sides: [%{image_url: "https://img.test/a.png"}]},
-          user
+          actor: user
         )
     end
 

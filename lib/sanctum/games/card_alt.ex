@@ -137,6 +137,24 @@ defmodule Sanctum.Games.CardAlt do
     destroy :destroy_custom do
       description "Deletes a custom alt outright."
     end
+
+    # The set/project pages render the target side's tile wearing the alt's
+    # art, so both reads load the target card and its sides.
+    read :for_homebrew_set do
+      description "Custom alts in one homebrew set, oldest first."
+
+      argument :homebrew_set_id, :uuid, allow_nil?: false
+      filter expr(homebrew_set_id == ^arg(:homebrew_set_id))
+      prepare build(load: [card: [:card_sides, :primary_side]], sort: [inserted_at: :asc])
+    end
+
+    read :for_homebrew_project do
+      description "Custom alts in any of a homebrew project's sets, oldest first."
+
+      argument :homebrew_project_id, :uuid, allow_nil?: false
+      filter expr(homebrew_set.homebrew_project_id == ^arg(:homebrew_project_id))
+      prepare build(load: [card: [:card_sides, :primary_side]], sort: [inserted_at: :asc])
+    end
   end
 
   policies do

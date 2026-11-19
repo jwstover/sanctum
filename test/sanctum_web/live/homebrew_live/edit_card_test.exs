@@ -5,8 +5,10 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
 
   import Phoenix.LiveViewTest
   import Sanctum.AccountsFixtures
+  import Sanctum.HomebrewFixtures
   import Sanctum.Factory
 
+  alias Sanctum.Games
   alias Sanctum.Homebrew
 
   require Ash.Query
@@ -17,14 +19,14 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
 
   defp card_fixture(project, actor, attrs \\ %{}) do
     {:ok, card} =
-      Homebrew.create_custom_card(
+      Games.create_custom_card(
         %{
-          homebrew_set_id: Homebrew.ensure_project_set(project, actor).id,
+          homebrew_set_id: project_set_fixture(project, actor).id,
           card_sides: [
             Map.merge(%{image_url: "https://img.test/a.png", filename: "test-card.png"}, attrs)
           ]
         },
-        actor
+        actor: actor
       )
 
     Ash.load!(card, [:card_sides, :primary_side], authorize?: false)
@@ -33,7 +35,7 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
   defp edit_path(project, card), do: ~p"/homebrew/#{project.id}/cards/#{card.id}"
 
   defp set_path(ctx) do
-    set = Homebrew.ensure_project_set(ctx.project, ctx.creator)
+    set = project_set_fixture(ctx.project, ctx.creator)
     ~p"/homebrew/#{ctx.project.id}/sets/#{set.id}"
   end
 
@@ -184,7 +186,7 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
     test "two-sided cards show both fieldsets and can be split", ctx do
       front = card_fixture(ctx.project, ctx.creator, %{filename: "front.png"})
       back = card_fixture(ctx.project, ctx.creator, %{filename: "back.png"})
-      {:ok, paired} = Homebrew.pair_custom_cards(front.id, back.id, ctx.creator)
+      {:ok, paired} = Games.pair_custom_cards(front.id, back.id, actor: ctx.creator)
 
       {:ok, lv, html} = live(ctx.conn, edit_path(ctx.project, paired))
 
