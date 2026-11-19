@@ -3,7 +3,7 @@ defmodule Sanctum.Homebrew.HomebrewSet do
   A publishable homebrew *set* — the public artifact of the custom-content
   model ("Daredevil hero pack", "Kingpin scenario"). Sets live inside a
   `HomebrewProject`, which is the creator's private workspace; the set
-  carries its own visibility/maturity so it can be published independently.
+  carries its own visibility so it can be published independently.
 
   `creator_id` is DENORMALIZED from the project and stamped server-side on
   create (`Changes.SetCreatorFromProject`); it is never user input. Content
@@ -65,7 +65,6 @@ defmodule Sanctum.Homebrew.HomebrewSet do
         :description,
         :banner_url,
         :set_kind_id,
-        :maturity,
         :tags,
         :parent_set_id,
         :attestation
@@ -107,7 +106,6 @@ defmodule Sanctum.Homebrew.HomebrewSet do
         :description,
         :banner_url,
         :set_kind_id,
-        :maturity,
         :tags,
         :attestation
       ]
@@ -267,11 +265,6 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       public?: true,
       allow_nil?: false,
       default: :private
-
-    attribute :maturity, Sanctum.Homebrew.Maturity,
-      public?: true,
-      allow_nil?: false,
-      default: :draft
 
     attribute :tags, {:array, :string}, public?: true, default: []
 
