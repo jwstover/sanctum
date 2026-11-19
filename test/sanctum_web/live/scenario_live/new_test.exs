@@ -66,11 +66,21 @@ defmodule SanctumWeb.ScenarioLive.NewTest do
     refute has_element?(view, "#villain-set-#{ctx.set_b.id}")
   end
 
-  test "picking a set builds a scenario and opens the builder", ctx do
+  test "continue is disabled until a villain is picked", ctx do
     {:ok, view, _html} = live(log_in_user(ctx.conn, ctx.user), ~p"/scenarios/new")
 
+    assert has_element?(view, "#continue-scenario[disabled]")
+    view |> element("#villain-set-#{ctx.set_a.id}") |> render_click()
+    refute has_element?(view, "#continue-scenario[disabled]")
+  end
+
+  test "continuing builds a scenario and opens the builder", ctx do
+    {:ok, view, _html} = live(log_in_user(ctx.conn, ctx.user), ~p"/scenarios/new")
+
+    view |> element("#villain-set-#{ctx.set_a.id}") |> render_click()
+
     assert {:error, {:live_redirect, %{to: to}}} =
-             view |> element("#villain-set-#{ctx.set_a.id}") |> render_click()
+             view |> element("#continue-scenario") |> render_click()
 
     [scenario] =
       Sanctum.Games.Scenario
