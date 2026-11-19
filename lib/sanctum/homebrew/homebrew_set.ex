@@ -21,8 +21,11 @@ defmodule Sanctum.Homebrew.HomebrewSet do
   guards against cycles; `:subtree` and `:ancestors` are the shared tree
   walks.
 
-  Sets start `:private`; visibility is walked through `:set_visibility` so
-  the publish flow (attestation gate, review) can hang off that action.
+  Sets start `:private`; visibility is walked only through `:set_visibility`.
+  Publishing there requires the creator to have claimed a username and, the
+  first time, a publish attestation, which is recorded as
+  `attestation`/`attested_at`. The general `:update` can write neither
+  visibility nor the attestation.
 
   `slug` is unique per *creator* (`(creator_id, slug)` identity), not
   globally: the public URL is `/custom/@username/slug`, so two creators can
@@ -74,8 +77,7 @@ defmodule Sanctum.Homebrew.HomebrewSet do
         :banner_url,
         :set_kind_id,
         :tags,
-        :parent_set_id,
-        :attestation
+        :parent_set_id
       ]
 
       change Sanctum.Homebrew.Changes.SetCreatorFromProject
@@ -109,7 +111,8 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       require_atomic? false
 
       # No homebrew_project_id (a set never moves projects), no creator_id,
-      # no visibility (that is :set_visibility's job), no slug, and no
+      # no visibility or publish attestation (both are :set_visibility's
+      # job), no slug, and no
       # parent_set_id (re-parenting is :set_parent's job — the one place the
       # cycle guard lives).
       accept [
@@ -117,8 +120,7 @@ defmodule Sanctum.Homebrew.HomebrewSet do
         :description,
         :banner_url,
         :set_kind_id,
-        :tags,
-        :attestation
+        :tags
       ]
 
       validate Sanctum.Homebrew.Validations.SetKindInSameProject,
@@ -134,13 +136,21 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       change Sanctum.Homebrew.Changes.ResolveSetKind
     end
 
-    # Visibility transitions are their own action so the publish flow
-    # (attestation gate, review) can add changes/validations here without
-    # touching general editing. Mirrors HomebrewProject.
+    # The visibility ladder (:private → :unlisted → :published, and back
+    # down to unpublish), kept apart from general editing so the publish gates
+    # live in one place. Moving to :published needs a claimed username on the
+    # creator every time, and the first time also needs the publish
+    # attestation (`attest: true`), which is stamped with a timestamp.
     update :set_visibility do
       accept [:visibility]
-      # GenerateSlug reads the creator's other sets.
+      # GenerateSlug, the username check and the attestation all read state.
       require_atomic? false
+
+      argument :attest, :boolean, default: false
+
+      # before_action? so these run after the update policy.
+      validate Sanctum.Homebrew.Validations.CreatorHasUsername, before_action?: true
+      change Sanctum.Homebrew.Changes.RecordPublishAttestation
 
       # Sets created before slugs existed get one on their way out; an
       # existing slug (and so a shared URL) is never touched here.
@@ -304,10 +314,11 @@ defmodule Sanctum.Homebrew.HomebrewSet do
 
     attribute :tags, {:array, :string}, public?: true, default: []
 
-    # Publish-time claim: "my own work, or shared with the creator's
-    # permission". Accepted on create/update but NOT required true here —
-    # the publish flow (set_visibility → :published) will gate on it later.
+    # Publish-time claim: "I'm allowed to distribute this, publicly, under my
+    # name." Written only by :set_visibility (RecordPublishAttestation) on the
+    # first publish, together with when it was made.
     attribute :attestation, :boolean, public?: true, allow_nil?: false, default: false
+    attribute :attested_at, :utc_datetime_usec, public?: true
 
     timestamps()
   end

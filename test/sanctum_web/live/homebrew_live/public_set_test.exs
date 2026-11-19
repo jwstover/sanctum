@@ -3,6 +3,8 @@ defmodule SanctumWeb.HomebrewLive.PublicSetTest do
 
   use SanctumWeb.ConnCase, async: true
 
+  import Sanctum.HomebrewFixtures
+
   import Phoenix.LiveViewTest
   import Sanctum.AccountsFixtures
 
@@ -18,7 +20,7 @@ defmodule SanctumWeb.HomebrewLive.PublicSetTest do
     set =
       %{homebrew_project_id: project.id, name: "Daredevil", description: "**Fearless**"}
       |> Homebrew.create_set!(actor: creator)
-      |> Homebrew.set_set_visibility!(:published, actor: creator)
+      |> publish_set!(creator)
 
     Games.create_custom_card!(
       %{
@@ -47,7 +49,7 @@ defmodule SanctumWeb.HomebrewLive.PublicSetTest do
 
     %{homebrew_project_id: project.id, name: "Daredevil"}
     |> Homebrew.create_set!(actor: other)
-    |> Homebrew.set_set_visibility!(:published, actor: other)
+    |> publish_set!(other)
 
     {:ok, lv, _html} = live(conn, ~p"/custom/@foggy/daredevil")
     assert has_element?(lv, "#set-creator", "@foggy")
@@ -100,7 +102,7 @@ defmodule SanctumWeb.HomebrewLive.PublicSetTest do
       {:ok, lv, _html} = live(conn, path)
       refute has_element?(lv, "#set-public-link")
 
-      Homebrew.set_set_visibility!(set, :published, actor: admin)
+      publish_set!(set, admin)
       {:ok, lv, _html} = live(conn, path)
       assert has_element?(lv, ~s(#set-public-link[href="/custom/@stick/stick"]))
     end

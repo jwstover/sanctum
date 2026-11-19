@@ -18,4 +18,28 @@ defmodule Sanctum.HomebrewFixtures do
         Enum.min_by(sets, & &1.inserted_at, DateTime)
     end
   end
+
+  @doc """
+  Publishes `set` as `actor` through `:set_visibility`, clearing both publish
+  gates: the set's creator gets a username if they have none, and the first
+  publish attests.
+  """
+  def publish_set!(%Homebrew.HomebrewSet{} = set, actor) do
+    ensure_username!(set.creator_id)
+    Homebrew.set_set_visibility!(set, :published, %{attest: true}, actor: actor)
+  end
+
+  defp ensure_username!(creator_id) do
+    case Ash.get!(Sanctum.Accounts.User, creator_id, authorize?: false) do
+      %{username: nil} = user ->
+        user
+        |> Ash.Changeset.for_update(:update_profile, %{
+          username: "creator_#{System.unique_integer([:positive])}"
+        })
+        |> Ash.update!(authorize?: false)
+
+      user ->
+        user
+    end
+  end
 end

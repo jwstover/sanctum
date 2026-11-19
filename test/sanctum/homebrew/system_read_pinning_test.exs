@@ -36,7 +36,7 @@ defmodule Sanctum.Homebrew.SystemReadPinningTest do
         actor: creator
       )
 
-    Homebrew.set_set_visibility!(set, :published, actor: creator)
+    publish_set!(set, creator)
 
     %{creator: creator, project: project, card: Ash.load!(card, :card_sides, authorize?: false)}
   end

@@ -36,6 +36,7 @@ defmodule Sanctum.Homebrew do
     resource Sanctum.Homebrew.HomebrewSet do
       define :create_set, action: :create
       define :update_set, action: :update
+      # Publishing for the first time also needs `%{attest: true}` as input.
       define :set_set_visibility, action: :set_visibility, args: [:visibility]
       define :set_set_parent, action: :set_parent, args: [:parent_set_id]
       define :destroy_set, action: :destroy

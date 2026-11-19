@@ -298,7 +298,7 @@ defmodule Sanctum.Homebrew.AltArtTest do
 
       ctx.project
       |> project_set_fixture(ctx.creator)
-      |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
+      |> publish_set!(ctx.creator)
 
       for actor <- [ctx.other, nil] do
         alts =

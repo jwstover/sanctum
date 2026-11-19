@@ -30,6 +30,14 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   text input with the project's kinds as `<datalist>` suggestions. Free text
   mints a project-scoped kind on save, blank leaves the set unclassified
   (the `:kind` argument of `HomebrewSet :update`).
+
+  Publishing happens here, per set: the visibility panel walks the ladder
+  (private → unlisted → published, and back down) through
+  `Homebrew.set_set_visibility/3`, never the general update. Publishing needs
+  a claimed username. Without one, the panel says why and links to `/profile`
+  instead of offering Publish. The first publish also asks for the publish
+  attestation, an inline checkbox recorded on the set with a timestamp.
+  Unpublishing breaks public links, so it goes through a confirm dialog.
   """
 
   use SanctumWeb, :live_view
@@ -66,6 +74,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
        |> assign(:chooser_open?, false)
        |> assign(:pending, [])
        |> assign(:editing_details?, false)
+       |> assign(:publishing?, false)
        |> assign(:set_kinds, [])
        |> assign(:delete_impact, nil)
        |> assign_details_form()
@@ -211,6 +220,35 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
       {:error, form} ->
         {:noreply, assign(socket, :details_form, form)}
     end
+  end
+
+  # -- Visibility ladder ------------------------------------------------------
+
+  def handle_event("start_publish", _params, socket) do
+    {:noreply, assign(socket, :publishing?, true)}
+  end
+
+  def handle_event("cancel_publish", _params, socket) do
+    {:noreply, assign(socket, :publishing?, false)}
+  end
+
+  def handle_event("publish", params, socket) do
+    attest? = params["attest"] == "true"
+
+    change_visibility(
+      socket,
+      :published,
+      %{attest: attest?},
+      "Published #{socket.assigns.set.name}."
+    )
+  end
+
+  def handle_event("set_visibility", %{"visibility" => "unlisted"}, socket) do
+    change_visibility(socket, :unlisted, %{}, "Set is now unlisted.")
+  end
+
+  def handle_event("set_visibility", %{"visibility" => "private"}, socket) do
+    change_visibility(socket, :private, %{}, "Set is now private.")
   end
 
   # -- Delete set -------------------------------------------------------------
@@ -464,6 +502,30 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
 
   # -- Helpers ----------------------------------------------------------------
 
+  defp change_visibility(socket, visibility, input, message) do
+    %{set: set, current_user: user} = socket.assigns
+
+    case Homebrew.set_set_visibility(set, visibility, input, actor: user) do
+      {:ok, updated} ->
+        # Keep the loaded :creator/:set_kind; take the fields the action writes.
+        set =
+          Map.merge(
+            set,
+            Map.take(updated, [:visibility, :slug, :attestation, :attested_at, :updated_at])
+          )
+
+        {:noreply,
+         socket
+         |> assign(:set, set)
+         |> assign(:public_path, public_path(set))
+         |> assign(:publishing?, false)
+         |> put_flash(:info, message)}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, "Could not change visibility: #{reason(error)}")}
+    end
+  end
+
   # Tags are typed comma-separated; the resource takes a plain list, so the
   # split is a form concern (prepare_params), not domain logic.
   defp assign_details_form(socket) do
@@ -580,8 +642,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   end
 
   # The shareable /custom/@username/slug URL — only for a published set whose
-  # creator has claimed a handle. Computed once: neither the creator, the
-  # slug nor (on this page) the visibility changes while it is open.
+  # creator has claimed a handle. Recomputed whenever the visibility changes.
   defp public_path(%{visibility: :published, slug: slug, creator: %{username: username}})
        when is_binary(slug) and not is_nil(username),
        do: ~p"/custom/@#{to_string(username)}/#{slug}"
@@ -693,6 +754,8 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
           else: "alts"}</span>
         &middot; unofficial fan content
       </p>
+
+      <.visibility_panel set={@set} publishing?={@publishing?} public_path={@public_path} />
 
       <.set_details_form
         :if={@editing_details?}
@@ -1134,6 +1197,141 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         </div>
       </div>
     </section>
+    """
+  end
+
+  # The publish ladder. Publishing is inline (a checkbox can't ride the
+  # confirm dialog's button), and the attestation is asked only the first time.
+  # Without a creator username, the Publish button is replaced by the reason
+  # and a link to claim one. Unpublishing breaks public links, so it confirms.
+  attr :set, :any, required: true
+  attr :publishing?, :boolean, required: true
+  attr :public_path, :string, default: nil
+
+  defp visibility_panel(assigns) do
+    assigns = assign(assigns, :username?, not is_nil(assigns.set.creator.username))
+
+    ~H"""
+    <.panel id="set-visibility" class="mb-8 p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2 font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em]">
+          <span
+            :for={rung <- [:private, :unlisted, :published]}
+            id={"visibility-rung-#{rung}"}
+            aria-current={rung == @set.visibility && "true"}
+            class={[
+              "border-2 px-2 py-0.5",
+              (rung == @set.visibility && "border-primary bg-primary text-primary-content") ||
+                "border-neutral text-base-content/50"
+            ]}
+          >
+            {rung}
+          </span>
+        </div>
+
+        <div :if={!@publishing?} class="flex flex-wrap items-center gap-2">
+          <.button
+            :if={@set.visibility == :private}
+            id="make-unlisted"
+            variant="ghost"
+            phx-click="set_visibility"
+            phx-value-visibility="unlisted"
+          >
+            Make unlisted
+          </.button>
+          <.button
+            :if={@set.visibility == :unlisted}
+            id="make-private"
+            variant="ghost"
+            phx-click="set_visibility"
+            phx-value-visibility="private"
+          >
+            Make private
+          </.button>
+          <.button
+            :if={@set.visibility != :published and @username?}
+            id="start-publish"
+            variant="primary"
+            phx-click="start_publish"
+          >
+            Publish
+          </.button>
+          <.button
+            :if={@set.visibility == :published}
+            id="unpublish"
+            variant="ghost"
+            phx-click={open_confirm("confirm-unpublish")}
+            class="text-error hover:text-error"
+          >
+            Unpublish
+          </.button>
+        </div>
+      </div>
+
+      <p class="mt-2 font-barlow-condensed text-sm text-base-content/60">
+        <%= case @set.visibility do %>
+          <% :private -> %>
+            Only you can see this set.
+          <% :unlisted -> %>
+            Hidden from browsing — only you can see it until share links arrive.
+          <% :published -> %>
+            Anyone can see this set and its cards<span :if={@public_path}> at
+              <.link navigate={@public_path} class="underline hover:text-primary">{@public_path}</.link></span>.
+        <% end %>
+      </p>
+
+      <p
+        :if={@set.visibility != :published and !@username?}
+        id="publish-needs-username"
+        class="mt-3 border-2 border-warning/70 p-3 font-barlow-condensed text-sm text-warning"
+      >
+        To publish, claim a username first. Published sets are credited to your
+        username, and it forms their public link.
+        <.link navigate={~p"/profile"} class="font-bold underline">Claim a username</.link>
+      </p>
+
+      <form
+        :if={@publishing?}
+        id="publish-form"
+        phx-submit="publish"
+        class="mt-4 flex flex-col gap-4 border-t-2 border-neutral pt-4"
+      >
+        <.input
+          :if={is_nil(@set.attested_at)}
+          type="checkbox"
+          name="attest"
+          id="publish-attest"
+          value={false}
+          label="I'm allowed to distribute this set publicly, under my username: it is my own work, or shared with its creator's permission."
+        />
+        <p :if={@set.attested_at} class="font-barlow-condensed text-sm text-base-content/60">
+          You attested to publishing this set on {Calendar.strftime(@set.attested_at, "%b %-d, %Y")}.
+        </p>
+        <div class="flex items-center gap-3">
+          <.button variant="primary" type="submit">Publish set</.button>
+          <button
+            type="button"
+            phx-click="cancel_publish"
+            class="cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+
+      <.confirm_dialog
+        id="confirm-unpublish"
+        message={"Unpublish #{@set.name}?"}
+        confirm_label="Unpublish"
+        phx-click="set_visibility"
+        phx-value-visibility="private"
+      >
+        <p class="font-barlow-condensed text-sm text-base-content/70">
+          It goes back to private: its public link stops working and its cards
+          disappear for everyone else.
+        </p>
+      </.confirm_dialog>
+    </.panel>
     """
   end
 
