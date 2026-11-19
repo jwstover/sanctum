@@ -32,6 +32,11 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
 
   defp edit_path(project, card), do: ~p"/homebrew/#{project.id}/cards/#{card.id}"
 
+  defp set_path(ctx) do
+    set = Homebrew.ensure_project_set(ctx.project, ctx.creator)
+    ~p"/homebrew/#{ctx.project.id}/sets/#{set.id}"
+  end
+
   # Homebrew is TEMPORARILY admin-gated at the router (see router.ex), so the
   # page tests act as an admin. Cross-user privacy semantics stay covered by
   # the data-layer tests, which use plain users.
@@ -62,6 +67,13 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
 
     assert {:error, {:live_redirect, %{to: "/homebrew"}}} =
              live(ctx.conn, edit_path(ctx.project, card))
+  end
+
+  test "the back link points at the card's set", ctx do
+    card = card_fixture(ctx.project, ctx.creator)
+    {:ok, _lv, html} = live(ctx.conn, edit_path(ctx.project, card))
+
+    assert html =~ ~s(href="#{set_path(ctx)}")
   end
 
   describe "editing" do
@@ -183,7 +195,7 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
 
       lv |> element("button[phx-click='unpair_card']") |> render_click()
 
-      flash = assert_redirect(lv, ~p"/homebrew/#{ctx.project.id}")
+      flash = assert_redirect(lv, set_path(ctx))
       assert flash["info"] == "Card split into two."
     end
   end
@@ -362,7 +374,7 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
       |> element("#declare-alt-sheet form[phx-submit='declare_alt']")
       |> render_submit(%{"artist" => "Jane Doe"})
 
-      flash = assert_redirect(lv, ~p"/homebrew/#{ctx.project.id}")
+      flash = assert_redirect(lv, set_path(ctx))
       assert flash["info"] == "Declared as alt art for Official Target."
 
       alt =
