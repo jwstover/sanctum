@@ -38,6 +38,12 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
   instead of offering Publish. The first publish also asks for the publish
   attestation, an inline checkbox recorded on the set with a timestamp.
   Unpublishing breaks public links, so it goes through a confirm dialog.
+
+  An unlisted or published set shows its share link (the absolute
+  `/custom/@username/slug` URL) with a Copy button. Unlisted is how a
+  creator shares work-in-progress: anyone with the link sees it, but it stays
+  out of every listing and of card search. Without a username there is no
+  link yet, so the panel asks the creator to claim one.
   """
 
   use SanctumWeb, :live_view
@@ -641,10 +647,11 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
     |> assign(:card_tiles, tiles)
   end
 
-  # The shareable /custom/@username/slug URL — only for a published set whose
-  # creator has claimed a handle. Recomputed whenever the visibility changes.
-  defp public_path(%{visibility: :published, slug: slug, creator: %{username: username}})
-       when is_binary(slug) and not is_nil(username),
+  # The shareable /custom/@username/slug path — for a published or unlisted
+  # set whose creator has claimed a handle (a private set has no share link).
+  # Recomputed whenever the visibility changes.
+  defp public_path(%{visibility: visibility, slug: slug, creator: %{username: username}})
+       when visibility in [:published, :unlisted] and is_binary(slug) and not is_nil(username),
        do: ~p"/custom/@#{to_string(username)}/#{slug}"
 
   defp public_path(_set), do: nil
@@ -698,7 +705,7 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         {@set.name}
         <:actions>
           <.button :if={@public_path} id="set-public-link" variant="ghost" navigate={@public_path}>
-            Public page
+            {if @set.visibility == :unlisted, do: "Shared page", else: "Public page"}
           </.button>
           <.button :if={!@editing_details?} phx-click="edit_details">Edit details</.button>
           <.button variant="primary" phx-click="open_chooser">Upload</.button>
@@ -1273,11 +1280,22 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
           <% :private -> %>
             Only you can see this set.
           <% :unlisted -> %>
-            Hidden from browsing — only you can see it until share links arrive.
+            Anyone with the link can see this set and its cards, but it stays out of
+            browsing and card search. Share it for feedback before you publish.
           <% :published -> %>
-            Anyone can see this set and its cards<span :if={@public_path}> at
-              <.link navigate={@public_path} class="underline hover:text-primary">{@public_path}</.link></span>.
+            Anyone can see this set and its cards.
         <% end %>
+      </p>
+
+      <.share_link :if={@public_path} url={SanctumWeb.Endpoint.url() <> @public_path} />
+
+      <p
+        :if={@set.visibility == :unlisted and !@username?}
+        id="share-needs-username"
+        class="mt-3 border-2 border-warning/70 p-3 font-barlow-condensed text-sm text-warning"
+      >
+        Claim a username to get a share link: the link is built from it.
+        <.link navigate={~p"/profile"} class="font-bold underline">Claim a username</.link>
       </p>
 
       <p
@@ -1332,6 +1350,75 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
         </p>
       </.confirm_dialog>
     </.panel>
+    """
+  end
+
+  # The set's absolute share URL in a read-only field plus a
+  # Copy button. Without the async Clipboard API (insecure origins, older
+  # WebViews) the hook selects the field so it can be copied by hand.
+  attr :url, :string, required: true
+
+  defp share_link(assigns) do
+    ~H"""
+    <div id="set-share-link" class="mt-3 flex flex-wrap items-center gap-2">
+      <input
+        id="set-share-url"
+        type="text"
+        readonly
+        value={@url}
+        aria-label="Share link"
+        class="min-w-0 flex-1 border-2 border-neutral bg-base-300 px-3 py-1.5 font-mono text-sm text-base-content"
+      />
+      <.button
+        id="copy-share-link"
+        type="button"
+        variant="ghost"
+        phx-hook=".CopyShareLink"
+        data-url={@url}
+      >
+        <.icon name="hero-link" class="size-4" />
+        <span data-copy-label>Copy link</span>
+      </.button>
+      <.link
+        href={@url}
+        target="_blank"
+        rel="noopener"
+        class="font-barlow-condensed text-sm underline hover:text-primary"
+      >
+        Open
+      </.link>
+    </div>
+    <script :type={Phoenix.LiveView.ColocatedHook} name=".CopyShareLink">
+      export default {
+        mounted() {
+          this.label = this.el.querySelector("[data-copy-label]")
+          this.onClick = () => this.copy(this.el.dataset.url)
+          this.el.addEventListener("click", this.onClick)
+        },
+        destroyed() {
+          clearTimeout(this.timer)
+        },
+        async copy(url) {
+          let ok = false
+          try {
+            if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(url)
+              ok = true
+            }
+          } catch (_e) {}
+
+          if (!ok) {
+            const input = document.getElementById("set-share-url")
+            if (input) { input.focus(); input.select() }
+            try { ok = document.execCommand("copy") } catch (_e) {}
+          }
+
+          clearTimeout(this.timer)
+          this.label.textContent = ok ? "Copied" : "Select and copy"
+          this.timer = setTimeout(() => { this.label.textContent = "Copy link" }, 1500)
+        }
+      }
+    </script>
     """
   end
 
