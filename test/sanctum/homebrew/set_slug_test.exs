@@ -3,6 +3,8 @@ defmodule Sanctum.Homebrew.SetSlugTest do
 
   use Sanctum.DataCase, async: true
 
+  import Sanctum.HomebrewFixtures
+
   import Sanctum.AccountsFixtures
 
   alias Sanctum.Homebrew
@@ -27,7 +29,7 @@ defmodule Sanctum.Homebrew.SetSlugTest do
   defp set_fixture(project, actor, name),
     do: Homebrew.create_set!(%{homebrew_project_id: project.id, name: name}, actor: actor)
 
-  defp publish!(set, actor), do: Homebrew.set_set_visibility!(set, :published, actor: actor)
+  defp publish!(set, actor), do: publish_set!(set, actor)
 
   describe "slugify/1" do
     test "folds, lowercases, hyphenates and caps names" do

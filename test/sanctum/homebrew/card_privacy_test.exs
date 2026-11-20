@@ -33,7 +33,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
 
     published_project
     |> project_set_fixture(creator)
-    |> Homebrew.set_set_visibility!(:published, actor: creator)
+    |> publish_set!(creator)
 
     private_card = custom_card!(private_project, creator, "secret-card.png")
     published_card = custom_card!(published_project, creator, "public-card.png")
@@ -102,6 +102,20 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
 
       assert ctx.published_card.id in anon_ids
       assert ctx.published_card.id in other_ids
+    end
+
+    test "unpublishing hides the set's cards again", ctx do
+      set = Ash.get!(Homebrew.HomebrewSet, ctx.published_card.homebrew_set_id, authorize?: false)
+      Homebrew.set_set_visibility!(set, :private, actor: ctx.creator)
+
+      {anon_ids, _} = browse_ids(nil)
+      {other_ids, _} = browse_ids(ctx.other)
+      {creator_ids, _} = browse_ids(ctx.creator)
+
+      refute ctx.published_card.id in anon_ids
+      refute ctx.published_card.id in other_ids
+      assert ctx.published_card.id in creator_ids
+      assert {:error, _} = Ash.get(Card, ctx.published_card.id, actor: nil)
     end
   end
 
@@ -196,7 +210,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
 
       %{name: "Published Sibling", homebrew_project_id: pub_project.id}
       |> Homebrew.create_set!(actor: ctx.creator)
-      |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
+      |> publish_set!(ctx.creator)
 
       # Private project, published set.
       priv_project =
@@ -204,7 +218,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
 
       priv_set = project_set_fixture(priv_project, ctx.creator)
       priv_project_card = custom_card!(priv_project, ctx.creator, "privproj.png")
-      Homebrew.set_set_visibility!(priv_set, :published, actor: ctx.creator)
+      publish_set!(priv_set, ctx.creator)
 
       %{pub_project_card: pub_project_card, priv_project_card: priv_project_card}
     end
@@ -261,10 +275,9 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       refute alt.id in alt_ids.(ctx.other)
       assert alt.id in alt_ids.(ctx.creator)
 
-      Homebrew.set_set_visibility!(
+      publish_set!(
         Ash.get!(Sanctum.Homebrew.HomebrewSet, alt.homebrew_set_id, authorize?: false),
-        :published,
-        actor: ctx.creator
+        ctx.creator
       )
 
       assert alt.id in alt_ids.(nil)
@@ -295,7 +308,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       refute aspect.key in ids.(nil)
       assert aspect.key in ids.(ctx.creator)
 
-      Homebrew.set_set_visibility!(set, :published, actor: ctx.creator)
+      publish_set!(set, ctx.creator)
       assert aspect.key in ids.(nil)
     end
 

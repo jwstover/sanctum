@@ -3,6 +3,8 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
 
   use Sanctum.DataCase, async: true
 
+  import Sanctum.HomebrewFixtures
+
   import Sanctum.AccountsFixtures
 
   alias Sanctum.Games
@@ -33,7 +35,7 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
     )
   end
 
-  defp publish!(set, actor), do: Homebrew.set_set_visibility!(set, :published, actor: actor)
+  defp publish!(set, actor), do: publish_set!(set, actor)
 
   defp reload!(set), do: Ash.get!(HomebrewSet, set.id, authorize?: false)
   defp ids(sets), do: sets |> Enum.map(& &1.id) |> Enum.sort()
@@ -59,6 +61,7 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert set.homebrew_project_id == ctx.project.id
       assert set.visibility == :private
       assert set.attestation == false
+      assert is_nil(set.attested_at)
       assert set.tags == []
       assert set.slug == "daredevil-hero-pack"
       assert is_nil(set.set_kind_id)
@@ -73,14 +76,12 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
           description: "Street-level justice",
           banner_url: "https://example.com/banner.png",
           tags: ["street-level"],
-          attestation: true,
           set_kind_id: hero.id
         })
 
       assert set.description == "Street-level justice"
       assert set.banner_url == "https://example.com/banner.png"
       assert set.tags == ["street-level"]
-      assert set.attestation == true
       assert set.set_kind_id == hero.id
 
       loaded = Homebrew.get_set!(set.id, actor: ctx.creator, load: [:set_kind])
@@ -255,12 +256,8 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
     end
 
     test "creator can update; others cannot even see it", ctx do
-      assert {:ok, %HomebrewSet{name: "Renamed", tags: ["x"], attestation: true}} =
-               Homebrew.update_set(
-                 ctx.set,
-                 %{name: "Renamed", tags: ["x"], attestation: true},
-                 actor: ctx.creator
-               )
+      assert {:ok, %HomebrewSet{name: "Renamed", tags: ["x"]}} =
+               Homebrew.update_set(ctx.set, %{name: "Renamed", tags: ["x"]}, actor: ctx.creator)
 
       assert {:error, _} = Homebrew.update_set(ctx.set, %{name: "Hijacked"}, actor: ctx.other)
       assert {:error, _} = Homebrew.update_set(ctx.set, %{name: "Hijacked"}, actor: nil)
@@ -298,6 +295,29 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert {:error, _} = Homebrew.set_set_visibility(ctx.set, :private, actor: nil)
 
       assert reload!(ctx.set).visibility == :published
+    end
+
+    test "the publish attestation is only writable through set_visibility", ctx do
+      assert {:error, %Ash.Error.Invalid{}} =
+               Homebrew.update_set(ctx.set, %{attestation: true}, actor: ctx.creator)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Homebrew.create_set(
+                 %{name: "Sneaky", homebrew_project_id: ctx.project.id, attestation: true},
+                 actor: ctx.creator
+               )
+
+      refute reload!(ctx.set).attestation
+    end
+
+    test "unpublishing walks back down to private", ctx do
+      publish!(ctx.set, ctx.creator)
+
+      assert %HomebrewSet{visibility: :private} =
+               Homebrew.set_set_visibility!(reload!(ctx.set), :private, actor: ctx.creator)
+
+      assert {:error, %Ash.Error.Invalid{}} = Homebrew.get_set(ctx.set.id, actor: nil)
+      assert {:error, %Ash.Error.Invalid{}} = Homebrew.get_set(ctx.set.id, actor: ctx.other)
     end
 
     test "visibility enum rejects unknown values", ctx do
@@ -793,6 +813,86 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert %HomebrewSet{} = reload!(ctx.root)
       assert %HomebrewSet{} = reload!(ctx.grandchild)
       assert %Card{} = Ash.get!(Card, card.id, authorize?: false)
+    end
+  end
+
+  describe "publish gates" do
+    setup ctx do
+      %{set: set_fixture(ctx.project, ctx.creator)}
+    end
+
+    defp claim_username!(user, username) do
+      user
+      |> Ash.Changeset.for_update(:update_profile, %{username: username})
+      |> Ash.update!(authorize?: false)
+    end
+
+    defp field_errors(%{errors: errors}), do: Enum.map(errors, &Map.get(&1, :field))
+
+    test "publishing without a claimed username is blocked", ctx do
+      assert {:error, %Ash.Error.Invalid{} = err} =
+               Homebrew.set_set_visibility(ctx.set, :published, %{attest: true},
+                 actor: ctx.creator
+               )
+
+      assert :visibility in field_errors(err)
+
+      reloaded = reload!(ctx.set)
+      assert reloaded.visibility == :private
+      assert is_nil(reloaded.attested_at)
+    end
+
+    test "the first publish requires the attestation", ctx do
+      claim_username!(ctx.creator, "matt_murdock")
+
+      assert {:error, %Ash.Error.Invalid{} = err} =
+               Homebrew.set_set_visibility(ctx.set, :published, actor: ctx.creator)
+
+      assert :attest in field_errors(err)
+      assert reload!(ctx.set).visibility == :private
+    end
+
+    test "publishing records the attestation with a timestamp", ctx do
+      claim_username!(ctx.creator, "matt_murdock")
+      before = DateTime.utc_now()
+
+      published =
+        Homebrew.set_set_visibility!(ctx.set, :published, %{attest: true}, actor: ctx.creator)
+
+      assert published.visibility == :published
+      assert published.attestation
+      assert DateTime.compare(published.attested_at, before) in [:gt, :eq]
+    end
+
+    test "re-publishing after an unpublish keeps the original attestation", ctx do
+      claim_username!(ctx.creator, "matt_murdock")
+
+      first =
+        Homebrew.set_set_visibility!(ctx.set, :published, %{attest: true}, actor: ctx.creator)
+
+      private = Homebrew.set_set_visibility!(first, :private, actor: ctx.creator)
+      assert private.attested_at == first.attested_at
+
+      republished = Homebrew.set_set_visibility!(private, :published, actor: ctx.creator)
+      assert republished.visibility == :published
+      assert republished.attested_at == first.attested_at
+    end
+
+    test "the username checked is the creator's, not an admin actor's", ctx do
+      admin = admin_user_fixture(%{username: "the_admin"})
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Homebrew.set_set_visibility(ctx.set, :published, %{attest: true}, actor: admin)
+
+      claim_username!(ctx.creator, "matt_murdock")
+
+      assert %HomebrewSet{visibility: :published} =
+               Homebrew.set_set_visibility!(ctx.set, :published, %{attest: true}, actor: admin)
+    end
+
+    test "unlisted needs neither gate", ctx do
+      assert %HomebrewSet{visibility: :unlisted, attested_at: nil} =
+               Homebrew.set_set_visibility!(ctx.set, :unlisted, actor: ctx.creator)
     end
   end
 end

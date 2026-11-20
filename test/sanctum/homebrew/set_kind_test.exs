@@ -255,7 +255,7 @@ defmodule Sanctum.Homebrew.SetKindTest do
         refute kind.id in Enum.map(Homebrew.list_set_kinds!(actor: actor), & &1.id)
       end
 
-      Homebrew.set_set_visibility!(set, :published, actor: ctx.creator)
+      publish_set!(set, ctx.creator)
 
       for actor <- [ctx.other, nil] do
         assert kind.id in Enum.map(Homebrew.list_set_kinds!(actor: actor), & &1.id)
@@ -279,7 +279,7 @@ defmodule Sanctum.Homebrew.SetKindTest do
 
       ctx.project
       |> project_set_fixture(ctx.creator)
-      |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
+      |> publish_set!(ctx.creator)
 
       refute kind.id in Enum.map(Homebrew.list_set_kinds!(actor: nil), & &1.id)
     end

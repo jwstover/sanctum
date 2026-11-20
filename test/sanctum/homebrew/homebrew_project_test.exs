@@ -57,7 +57,7 @@ defmodule Sanctum.Homebrew.HomebrewProjectTest do
     test "publishing a set does not expose its project (privacy follows the set)", ctx do
       ctx.project
       |> project_set_fixture(ctx.creator)
-      |> Homebrew.set_set_visibility!(:published, actor: ctx.creator)
+      |> publish_set!(ctx.creator)
 
       assert {:error, %Ash.Error.Invalid{}} =
                Homebrew.get_project(ctx.project.id, actor: ctx.other)

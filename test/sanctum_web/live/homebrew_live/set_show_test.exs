@@ -3,6 +3,8 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
 
   use SanctumWeb.ConnCase, async: true
 
+  import Sanctum.HomebrewFixtures
+
   import Phoenix.LiveViewTest
   import Sanctum.AccountsFixtures
 
@@ -229,7 +231,7 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
           actor: ctx.creator
         )
 
-      Homebrew.set_set_visibility!(grandchild, :published, actor: ctx.creator)
+      publish_set!(grandchild, ctx.creator)
       card_fixture(ctx.set, ctx.creator)
       card_fixture(grandchild, ctx.creator)
       %{child: child, grandchild: grandchild}
