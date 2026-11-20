@@ -142,4 +142,18 @@ defmodule SanctumWeb.HomebrewLive.SetShowPublishTest do
       assert has_element?(lv, ~s(#share-needs-username a[href="/profile"]))
     end
   end
+
+  test "a taken-down set says so and offers no way to share it", %{conn: conn} do
+    ctx = setup_set(conn, %{username: "wilson_fisk"})
+
+    ctx.set
+    |> Homebrew.set_set_visibility!(:published, %{attest: true}, authorize?: false)
+    |> Homebrew.take_down_set!(authorize?: false)
+
+    {:ok, lv, _html} = live(ctx.conn, ctx.path)
+
+    assert has_element?(lv, "#set-taken-down", "moderator took this set down")
+    refute has_element?(lv, "#start-publish")
+    refute has_element?(lv, "#make-unlisted")
+  end
 end

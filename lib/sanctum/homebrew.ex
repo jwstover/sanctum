@@ -13,6 +13,9 @@ defmodule Sanctum.Homebrew do
   not published, while a `HomebrewProject` is a private workspace readable
   only by its creator.
 
+  Public sets can be reported (`SetReport`); admins work the queue and can
+  take a set down (an unpublish, not a delete) or dismiss the report.
+
   Homebrew writes are always user-scoped through policies — never the
   `authorize?: false` system-write paths used by catalog sync.
 
@@ -51,6 +54,15 @@ defmodule Sanctum.Homebrew do
       define :list_published_descendants, action: :published_descendants, args: [:set_id]
       define :directory_facets, action: :directory_facets
       define :set_deletion_impact, action: :deletion_impact, args: [:set_id]
+      define :take_down_set, action: :take_down
+      define :restore_set, action: :restore
+      define :list_taken_down_sets, action: :taken_down
+    end
+
+    resource Sanctum.Homebrew.SetReport do
+      define :report_set, action: :create
+      define :list_open_set_reports, action: :open_queue
+      define :dismiss_set_report, action: :dismiss
     end
 
     resource Sanctum.Homebrew.SetKind do

@@ -151,6 +151,9 @@ defmodule SanctumWeb.Router do
 
       live "/admin/cards/:id", CardLive.Show, :show
       live "/admin/cards/:id/show/edit", CardLive.Show, :edit
+
+      # Homebrew moderation queue: open set reports, takedowns, restores.
+      live "/admin/reports", AdminLive.Reports, :index
     end
   end
 

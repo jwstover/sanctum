@@ -60,7 +60,60 @@ defmodule SanctumWeb.HomebrewLive.PublicSetTest do
     {:ok, lv, _html} = live(conn, ~p"/custom/@matt_murdock/daredevil")
 
     assert has_element?(lv, "#fan-content-notice", "Unofficial fan content")
+    assert has_element?(lv, "#fan-content-notice", "© Fantasy Flight Games")
+    assert has_element?(lv, "#fan-content-notice", "© MARVEL")
     assert has_element?(lv, "#report-set")
+  end
+
+  describe "reporting" do
+    test "anonymous visitors are sent to sign in", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/custom/@matt_murdock/daredevil")
+      assert has_element?(lv, "a#report-set[href='/sign-in']")
+    end
+
+    test "a signed-in user files a report into the admin queue", %{conn: conn} = ctx do
+      reporter = user_fixture()
+      {:ok, lv, _html} = live(log_in_user(conn, reporter), ~p"/custom/@matt_murdock/daredevil")
+
+      lv |> element("#report-set") |> render_click()
+      assert has_element?(lv, "#report-form")
+
+      lv
+      |> form("#report-form", %{"reason" => "copyright", "details" => "Scanned official art"})
+      |> render_submit()
+
+      refute has_element?(lv, "#report-form")
+      refute has_element?(lv, "#report-set")
+      assert render(lv) =~ "a moderator will review this set"
+
+      assert [report] = Homebrew.list_open_set_reports!(actor: admin_user_fixture())
+      assert report.homebrew_set_id == ctx.set.id
+      assert report.reporter_id == reporter.id
+      assert report.reason == :copyright
+      assert report.details == "Scanned official art"
+    end
+
+    test "a report needs a reason", %{conn: conn} do
+      {:ok, lv, _html} =
+        live(log_in_user(conn, user_fixture()), ~p"/custom/@matt_murdock/daredevil")
+
+      lv |> element("#report-set") |> render_click()
+      html = lv |> form("#report-form", %{"reason" => ""}) |> render_submit()
+
+      assert html =~ "Pick a reason"
+      assert Homebrew.list_open_set_reports!(actor: admin_user_fixture()) == []
+    end
+
+    test "reporting the same set twice is refused", %{conn: conn} = ctx do
+      reporter = user_fixture()
+      Homebrew.report_set!(%{homebrew_set_id: ctx.set.id, reason: :spam}, actor: reporter)
+
+      {:ok, lv, _html} = live(log_in_user(conn, reporter), ~p"/custom/@matt_murdock/daredevil")
+      lv |> element("#report-set") |> render_click()
+      html = lv |> form("#report-form", %{"reason" => "spam"}) |> render_submit()
+
+      assert html =~ "already reported"
+    end
   end
 
   test "contents are grouped by published child set", %{conn: conn} = ctx do

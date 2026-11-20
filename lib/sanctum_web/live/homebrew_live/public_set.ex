@@ -16,6 +16,10 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
   per *published* descendant set (`:published_descendants`) in tree order.
   A published grandchild under a non-published child is listed flat rather
   than dropped. The page carries the unofficial-fan-content label.
+
+  Signed-in visitors can report the set (`Homebrew.report_set/2`), which
+  files it into the admin moderation queue (`AdminLive.Reports`); anonymous
+  visitors are sent to sign in first.
   """
 
   use SanctumWeb, :live_view
@@ -52,7 +56,70 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
      |> assign(:page_title, set.name)
      |> assign(:set, set)
      |> assign(:card_tiles, own_cards)
-     |> assign(:child_groups, child_groups(set, actor, hero_colors))}
+     |> assign(:child_groups, child_groups(set, actor, hero_colors))
+     |> assign(:reporting?, false)
+     |> assign(:reported?, false)}
+  end
+
+  @impl true
+  def handle_event("open_report", _params, socket),
+    do: {:noreply, assign(socket, :reporting?, true)}
+
+  def handle_event("cancel_report", _params, socket),
+    do: {:noreply, assign(socket, :reporting?, false)}
+
+  def handle_event("submit_report", params, %{assigns: %{current_user: user}} = socket)
+      when not is_nil(user) do
+    attrs = %{
+      homebrew_set_id: socket.assigns.set.id,
+      reason: params["reason"],
+      details: blank_to_nil(params["details"])
+    }
+
+    case Homebrew.report_set(attrs, actor: user) do
+      {:ok, _report} ->
+        {:noreply,
+         socket
+         |> assign(reporting?: false, reported?: true)
+         |> put_flash(:info, "Thanks — a moderator will review this set.")}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, report_error_message(error))}
+    end
+  end
+
+  def handle_event("submit_report", _params, socket),
+    do: {:noreply, put_flash(socket, :error, "Sign in to report a set.")}
+
+  defp report_error_message(%Ash.Error.Invalid{errors: errors}) do
+    cond do
+      Enum.any?(errors, &match?(%{field: :reason}, &1)) ->
+        "Pick a reason for the report."
+
+      # The (homebrew_set_id, reporter_id) identity: one report per user.
+      Enum.any?(errors, &(Exception.message(&1) =~ "already been taken")) ->
+        "You've already reported this set."
+
+      true ->
+        "Could not send the report — try again."
+    end
+  end
+
+  defp report_error_message(_error), do: "Could not send the report — try again."
+
+  defp blank_to_nil(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp blank_to_nil(_value), do: nil
+
+  defp reason_options do
+    for value <- Sanctum.Homebrew.SetReportReason.values() do
+      {Sanctum.Homebrew.SetReportReason.description(value), value}
+    end
   end
 
   # One group per published descendant, in tree order, each with its cards.
@@ -123,18 +190,66 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
       <.header>
         {@set.name}
         <:actions>
-          <%!-- Wired to the moderation queue in #14. --%>
           <.button
+            :if={@current_user && !@reported?}
             id="report-set"
             variant="ghost"
-            disabled
-            title="Reporting is coming soon"
+            phx-click="open_report"
+            class="px-3 py-1.5"
+          >
+            <.icon name="hero-flag" class="size-4" /> Report
+          </.button>
+          <.button
+            :if={is_nil(@current_user)}
+            id="report-set"
+            variant="ghost"
+            navigate={~p"/sign-in"}
+            title="Sign in to report this set"
             class="px-3 py-1.5"
           >
             <.icon name="hero-flag" class="size-4" /> Report
           </.button>
         </:actions>
       </.header>
+
+      <form
+        :if={@reporting?}
+        id="report-form"
+        phx-submit="submit_report"
+        class="mb-6 flex max-w-xl flex-col gap-4 border-2 border-neutral bg-base-200 p-4"
+      >
+        <p class="font-barlow-condensed text-sm text-base-content/70">
+          Report this set to the moderators — for example if it uses art or text
+          without permission. Reports are private.
+        </p>
+        <.input
+          type="select"
+          name="reason"
+          id="report-reason"
+          label="Reason"
+          value={nil}
+          prompt="Pick a reason"
+          options={reason_options()}
+        />
+        <.input
+          type="textarea"
+          name="details"
+          id="report-details"
+          label="Details (optional)"
+          value=""
+          maxlength="2000"
+        />
+        <div class="flex items-center gap-3">
+          <.button variant="primary" type="submit">Send report</.button>
+          <button
+            type="button"
+            phx-click="cancel_report"
+            class="cursor-pointer font-barlow-condensed text-sm font-bold uppercase tracking-[0.08em] text-base-content/60 hover:text-base-content"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
 
       <p class="-mt-3 mb-4 font-barlow-condensed text-base-content/70">
         by

@@ -311,6 +311,9 @@ defmodule SanctumWeb.AdminLive.Index do
           <.admin_link navigate={~p"/admin/cards/sync"} icon="hero-arrow-path" title="Sync Cards">
             Pull the latest catalog from MarvelCDB.
           </.admin_link>
+          <.admin_link navigate={~p"/admin/reports"} icon="hero-flag" title="Homebrew Reports">
+            Review reported homebrew sets; take down or dismiss.
+          </.admin_link>
           <.admin_link href={~p"/admin/oban"} icon="hero-queue-list" title="Job Monitor">
             Inspect and retry background jobs (Oban).
           </.admin_link>

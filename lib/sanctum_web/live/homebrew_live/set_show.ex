@@ -1236,7 +1236,10 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
           </span>
         </div>
 
-        <div :if={!@publishing?} class="flex flex-wrap items-center gap-2">
+        <div
+          :if={!@publishing? and is_nil(@set.taken_down_at)}
+          class="flex flex-wrap items-center gap-2"
+        >
           <.button
             :if={@set.visibility == :private}
             id="make-unlisted"
@@ -1285,6 +1288,15 @@ defmodule SanctumWeb.HomebrewLive.SetShow do
           <% :published -> %>
             Anyone can see this set and its cards.
         <% end %>
+      </p>
+
+      <p
+        :if={@set.taken_down_at}
+        id="set-taken-down"
+        class="mt-3 border-2 border-error/70 p-3 font-barlow-condensed text-sm text-error"
+      >
+        A moderator took this set down after a report, so it can't be shared or
+        published for now. Your cards are untouched and still yours to edit.
       </p>
 
       <.share_link :if={@public_path} url={SanctumWeb.Endpoint.url() <> @public_path} />
