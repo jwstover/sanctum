@@ -179,12 +179,21 @@ defmodule Sanctum.Homebrew.HomebrewSetTest do
       assert {:ok, %HomebrewSet{}} = Homebrew.get_set(ctx.set.id, actor: ctx.creator)
     end
 
-    test "unlisted sets stay creator-only for now", ctx do
+    # Unlisted sets are reachable only through their share link
+    # (:by_creator_slug — see SetSlugTest); every other read, and so every
+    # listing the directory can build on, must keep excluding them.
+    test "the default read never admits an unlisted set", ctx do
       Homebrew.set_set_visibility!(ctx.set, :unlisted, actor: ctx.creator)
 
       assert {:error, %Ash.Error.Invalid{}} = Homebrew.get_set(ctx.set.id, actor: ctx.other)
       assert {:error, %Ash.Error.Invalid{}} = Homebrew.get_set(ctx.set.id, actor: nil)
       assert {:ok, %HomebrewSet{}} = Homebrew.get_set(ctx.set.id, actor: ctx.creator)
+
+      for actor <- [nil, ctx.other] do
+        refute ctx.set.id in ids(Ash.read!(HomebrewSet, actor: actor))
+        refute ctx.set.id in ids(Homebrew.list_project_sets!(ctx.project.id, actor: actor))
+        refute ctx.set.id in ids(Homebrew.list_set_subtree!(ctx.set.id, actor: actor))
+      end
     end
 
     test "published sets are visible to everyone", ctx do

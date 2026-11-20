@@ -100,4 +100,46 @@ defmodule SanctumWeb.HomebrewLive.SetShowPublishTest do
     lv |> element("#make-private") |> render_click()
     assert reload!(ctx.set).visibility == :private
   end
+
+  describe "share link" do
+    test "making a set unlisted shows its absolute share link", %{conn: conn} do
+      ctx = setup_set(conn, %{username: "wilson_fisk"})
+      {:ok, lv, _html} = live(ctx.conn, ctx.path)
+
+      refute has_element?(lv, "#set-share-link")
+
+      lv |> element("#make-unlisted") |> render_click()
+
+      url = SanctumWeb.Endpoint.url() <> "/custom/@wilson_fisk/kingpin"
+      assert has_element?(lv, ~s(#set-share-url[value="#{url}"]))
+      assert has_element?(lv, ~s(#copy-share-link[data-url="#{url}"]))
+      assert has_element?(lv, ~s(#set-public-link[href="/custom/@wilson_fisk/kingpin"]))
+
+      lv |> element("#make-private") |> render_click()
+      refute has_element?(lv, "#set-share-link")
+      refute has_element?(lv, "#set-public-link")
+    end
+
+    test "a published set shows its share link too", %{conn: conn} do
+      ctx = setup_set(conn, %{username: "wilson_fisk"})
+
+      Homebrew.set_set_visibility!(ctx.set, :published, %{attest: true},
+        actor: nil,
+        authorize?: false
+      )
+
+      {:ok, lv, _html} = live(ctx.conn, ctx.path)
+      assert has_element?(lv, "#set-share-url")
+    end
+
+    test "an unlisted set without a username asks for one instead", %{conn: conn} do
+      ctx = setup_set(conn, %{})
+      {:ok, lv, _html} = live(ctx.conn, ctx.path)
+
+      lv |> element("#make-unlisted") |> render_click()
+
+      refute has_element?(lv, "#set-share-link")
+      assert has_element?(lv, ~s(#share-needs-username a[href="/profile"]))
+    end
+  end
 end

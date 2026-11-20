@@ -67,6 +67,7 @@ defmodule Sanctum.Games do
         ]
 
       define :list_homebrew_set_cards, action: :for_homebrew_set, args: [:homebrew_set_id]
+      define :list_shared_set_cards, action: :for_shared_set, args: [:username, :slug]
     end
 
     resource Sanctum.Games.CardSide do
