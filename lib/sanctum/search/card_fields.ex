@@ -12,7 +12,7 @@ defmodule Sanctum.Search.CardFields do
 
   import Ash.Expr
 
-  alias Sanctum.Games.{Aspect, CardOwnership, CardType}
+  alias Sanctum.Games.{Aspect, CardOrigin, CardOwnership, CardType}
   alias Sanctum.Search.{Builders, Field, FormSchema}
 
   # `aspect` accepts the ownership pools too ("hero"/"basic"/…), matching the
@@ -206,6 +206,31 @@ defmodule Sanctum.Search.CardFields do
         hint: "in your collection (empty when signed out)",
         form: %{group: "Properties", order: 51},
         build: bool_build(fn bool, op -> Builders.cmp(expr(card.owned), op, bool) end)
+      },
+      %Field{
+        name: "origin",
+        aliases: [],
+        kind: :enum,
+        values: enum_strings(CardOrigin),
+        example: "origin:custom",
+        hint: "official catalog or homebrew (only customs you can see)",
+        form: %{group: "Properties", order: 53, label: "Origin"},
+        build:
+          enum_build(CardOrigin, fn atom, op ->
+            Builders.cmp(expr(card.origin), op, atom)
+          end)
+      },
+      %Field{
+        name: "official",
+        aliases: [],
+        kind: :boolean,
+        values: ["true", "false"],
+        example: "official:false",
+        hint: "official catalog card (false = homebrew)",
+        build:
+          bool_build(fn bool, op ->
+            Builders.cmp(expr(card.origin), op, if(bool, do: :official, else: :custom))
+          end)
       },
       %Field{
         name: "is",
