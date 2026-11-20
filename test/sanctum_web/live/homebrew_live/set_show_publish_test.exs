@@ -9,10 +9,9 @@ defmodule SanctumWeb.HomebrewLive.SetShowPublishTest do
   alias Sanctum.Homebrew
   alias Sanctum.Homebrew.HomebrewSet
 
-  # Homebrew is admin-gated at the router, so the creator is an admin. The
-  # publish gates check the set's creator, so that is who these exercise.
+  # The publish gates check the set's creator, so that is who these exercise.
   defp setup_set(conn, user_attrs) do
-    creator = admin_user_fixture(user_attrs)
+    creator = user_fixture(user_attrs)
     project = Homebrew.create_project!(%{name: "Test Pack", attestation: true}, actor: creator)
 
     set =

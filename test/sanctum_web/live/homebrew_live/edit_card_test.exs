@@ -39,11 +39,8 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
     ~p"/homebrew/#{ctx.project.id}/sets/#{set.id}"
   end
 
-  # Homebrew is TEMPORARILY admin-gated at the router (see router.ex), so the
-  # page tests act as an admin. Cross-user privacy semantics stay covered by
-  # the data-layer tests, which use plain users.
   setup %{conn: conn} do
-    creator = admin_user_fixture()
+    creator = user_fixture()
     project = project_fixture(creator)
     %{conn: log_in_user(conn, creator), creator: creator, project: project}
   end
@@ -56,11 +53,12 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
              live(conn, edit_path(ctx.project, card))
   end
 
-  test "non-admins are redirected away", ctx do
+  test "another user can't edit someone else's card", ctx do
     card = card_fixture(ctx.project, ctx.creator)
     conn = Phoenix.ConnTest.build_conn() |> log_in_user(user_fixture())
 
-    assert {:error, {:redirect, %{to: "/"}}} = live(conn, edit_path(ctx.project, card))
+    assert {:error, {:live_redirect, %{to: "/homebrew"}}} =
+             live(conn, edit_path(ctx.project, card))
   end
 
   test "a card from a different project is not found", ctx do
@@ -247,7 +245,17 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
       assert_receive {:x_api_key, ["sk-ant-USER-OWN-KEY"]}
     end
 
+    # The creator is a plain user, so extraction runs on their own key (the
+    # server-key fallback is admin-only).
+    defp give_own_key(creator) do
+      Sanctum.Accounts.upsert_api_key!(
+        %{provider: :anthropic, key: "sk-ant-USER-OWN-KEY", key_hint: "-KEY"},
+        actor: creator
+      )
+    end
+
     test "reads fields off the art and fills the side", ctx do
+      give_own_key(ctx.creator)
       card = card_fixture(ctx.project, ctx.creator)
       [side] = card.card_sides
 
@@ -297,6 +305,7 @@ defmodule SanctumWeb.HomebrewLive.EditCardTest do
     # The failure is logged (asserted in CardVisionTest) — silence it here.
     @tag :capture_log
     test "an API failure surfaces a flash and leaves the side untouched", ctx do
+      give_own_key(ctx.creator)
       card = card_fixture(ctx.project, ctx.creator)
       [side] = card.card_sides
 

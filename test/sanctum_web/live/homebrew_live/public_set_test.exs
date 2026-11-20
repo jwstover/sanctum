@@ -258,16 +258,16 @@ defmodule SanctumWeb.HomebrewLive.PublicSetTest do
 
   describe "set workspace link" do
     test "a published set with a claimed handle links to its public page", ctx do
-      admin = admin_user_fixture(%{username: "stick"})
-      project = Homebrew.create_project!(%{name: "The Chaste", attestation: true}, actor: admin)
-      set = Homebrew.create_set!(%{homebrew_project_id: project.id, name: "Stick"}, actor: admin)
+      stick = user_fixture(%{username: "stick"})
+      project = Homebrew.create_project!(%{name: "The Chaste", attestation: true}, actor: stick)
+      set = Homebrew.create_set!(%{homebrew_project_id: project.id, name: "Stick"}, actor: stick)
       path = ~p"/homebrew/#{project.id}/sets/#{set.id}"
-      conn = log_in_user(ctx.conn, admin)
+      conn = log_in_user(ctx.conn, stick)
 
       {:ok, lv, _html} = live(conn, path)
       refute has_element?(lv, "#set-public-link")
 
-      publish_set!(set, admin)
+      publish_set!(set, stick)
       {:ok, lv, _html} = live(conn, path)
       assert has_element?(lv, ~s(#set-public-link[href="/custom/@stick/stick"]))
     end

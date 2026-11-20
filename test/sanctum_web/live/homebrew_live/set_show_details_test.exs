@@ -8,10 +8,8 @@ defmodule SanctumWeb.HomebrewLive.SetShowDetailsTest do
 
   alias Sanctum.Homebrew
 
-  # Homebrew is admin-gated at the router, so these act as an admin (who
-  # bypasses policies) — authorization is covered by SetMetadataTest.
   setup %{conn: conn} do
-    creator = admin_user_fixture()
+    creator = user_fixture()
     project = Homebrew.create_project!(%{name: "Test Pack", attestation: true}, actor: creator)
 
     set =
