@@ -53,7 +53,7 @@ defmodule Sanctum.Search.FormSchemaTest do
       {"Properties", controls} =
         CardFields |> FormSchema.controls() |> List.keyfind!("Properties", 0)
 
-      assert Enum.map(controls, & &1.name) == ["unique", "owned", "is"]
+      assert Enum.map(controls, & &1.name) == ["unique", "owned", "is", "origin"]
 
       is_control = Enum.find(controls, &(&1.name == "is"))
       assert is_control.control == :checks

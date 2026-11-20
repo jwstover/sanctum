@@ -20,7 +20,8 @@ defmodule SanctumWeb.SearchHelpLive do
     {"t:ally atk>=2 -trait:avenger", "hard-hitting allies that aren't Avengers"},
     {~s(x:"draw a card" a:justice|leadership), "card draw in Justice or Leadership"},
     {"is:unique hp>=10", "unique characters with 10+ health"},
-    {"(t:minion or t:treachery) boost>=2", "encounter cards with big boost"}
+    {"(t:minion or t:treachery) boost>=2", "encounter cards with big boost"},
+    {"origin:custom t:ally", "homebrew allies — published sets, plus your own private ones"}
   ]
 
   @deck_examples [

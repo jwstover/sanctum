@@ -9,6 +9,7 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
   use Sanctum.DataCase, async: true
 
   import Sanctum.AccountsFixtures
+  import Sanctum.Factory
   import Sanctum.HomebrewFixtures
 
   alias Sanctum.Decks.Writeup
@@ -73,9 +74,9 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
     Ash.load!(card, :card_sides, authorize?: false)
   end
 
-  defp browse_ids(actor) do
+  defp browse_ids(actor, query \\ nil) do
     CardSide
-    |> Ash.Query.for_read(:browse, %{}, actor: actor)
+    |> Ash.Query.for_read(:browse, %{query: query}, actor: actor)
     |> Ash.read!(actor: actor, page: [limit: 100, count: true])
     |> then(fn page -> {Enum.map(page.results, & &1.card_id), page.count} end)
   end
@@ -116,6 +117,58 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       refute ctx.published_card.id in other_ids
       assert ctx.published_card.id in creator_ids
       assert {:error, _} = Ash.get(Card, ctx.published_card.id, actor: nil)
+    end
+  end
+
+  describe "origin: / official: search fields" do
+    setup do
+      official = create(Card, attrs: %{})
+
+      CardSide
+      |> Ash.Changeset.for_create(
+        :create,
+        Map.merge(card_side_factory(), %{
+          card_id: official.id,
+          code: "99999a",
+          side_identifier: "A",
+          is_primary_side: true
+        })
+      )
+      |> Ash.create!(authorize?: false)
+
+      %{official_card: official}
+    end
+
+    test "origin:custom / official:false return only visible customs", ctx do
+      for query <- ["origin:custom", "official:false", "-origin:official"] do
+        {creator_ids, _} = browse_ids(ctx.creator, query)
+        {other_ids, _} = browse_ids(ctx.other, query)
+        {anon_ids, _} = browse_ids(nil, query)
+
+        assert Enum.sort(Enum.uniq(creator_ids)) ==
+                 Enum.sort([ctx.private_card.id, ctx.published_card.id]),
+               query
+
+        assert Enum.uniq(other_ids) == [ctx.published_card.id], query
+        assert Enum.uniq(anon_ids) == [ctx.published_card.id], query
+      end
+    end
+
+    test "origin:official / official:true exclude every custom", ctx do
+      for query <- ["origin:official", "official:true", "origin:o"] do
+        {ids, _} = browse_ids(ctx.creator, query)
+
+        assert ctx.official_card.id in ids, query
+        refute ctx.private_card.id in ids, query
+        refute ctx.published_card.id in ids, query
+      end
+    end
+
+    test "another user's private customs never match, whatever the query", ctx do
+      for query <- ["origin:custom", "official:false", "origin:custom or origin:official"] do
+        {ids, _} = browse_ids(ctx.other, query)
+        refute ctx.private_card.id in ids, query
+      end
     end
   end
 
