@@ -7,6 +7,8 @@ defmodule SanctumWeb.BrowseLive.Show do
   """
   use SanctumWeb, :live_view
 
+  import SanctumWeb.Components.CardSection
+
   require Ash.Query
 
   alias Sanctum.Catalog
@@ -316,79 +318,6 @@ defmodule SanctumWeb.BrowseLive.Show do
           anchor={group[:code]}
           owned_ids={@owned_ids}
         />
-      </div>
-    </section>
-    """
-  end
-
-  attr :title, :string, required: true
-  attr :subtitle, :string, default: nil
-  attr :cards, :list, required: true
-  attr :level, :atom, default: :top
-  attr :owned_ids, :any, default: nil, doc: "MapSet of owned card ids; nil hides collection UI"
-
-  attr :anchor, :string,
-    default: nil,
-    doc: "card-set code used as the section's DOM id, so /browse/:pack#<code> can land here"
-
-  defp card_section(assigns) do
-    ~H"""
-    <section id={@anchor} class="scroll-mt-24 lg:scroll-mt-6">
-      <div class="mb-3.5 flex flex-wrap items-baseline gap-x-3 border-b-2 border-neutral pb-2">
-        <h2 class={[
-          "font-anton uppercase leading-none tracking-[0.03em]",
-          @level == :top && "text-2xl text-primary",
-          @level == :sub && "text-lg text-base-content/85"
-        ]}>
-          {@title}
-        </h2>
-        <span :if={@subtitle} class="font-barlow-condensed text-base uppercase text-base-content/45">
-          {@subtitle}
-        </span>
-        <span class="ml-auto font-ibm-mono text-xs text-base-content/40">
-          {Enum.sum_by(@cards, & &1.quantity)} cards
-        </span>
-      </div>
-
-      <div class="flex flex-wrap gap-2.5">
-        <div
-          :for={card <- @cards}
-          class={
-            [
-              "relative h-[210px] flex-none",
-              # Fixed height keeps every card's baseline aligned; the width follows
-              # the card's real aspect (7/5 landscape vs 5/7 portrait) so mc_card's
-              # object-cover image shows the full scan without cropping.
-              (card.is_landscape && "w-[294px]") || "w-[150px]"
-            ]
-          }
-        >
-          <.link
-            navigate={~p"/cards/#{card.card_id}"}
-            class="block h-full w-full border-2 border-neutral shadow-comic-sm"
-          >
-            <.mc_card
-              name={card.name}
-              type={card.type}
-              aspect={card.aspect_key}
-              resources={card.resources}
-              qty={card.quantity}
-              image_url={card.image_url}
-              gradient_from={card.gradient_from}
-              gradient_to={card.gradient_to}
-              size="md"
-              show_cost={false}
-            />
-          </.link>
-          <.collection_toggle
-            :if={@owned_ids && card.quantity > 0}
-            compact
-            owned={MapSet.member?(@owned_ids, card.card_id)}
-            event="toggle_card_owned"
-            id={card.card_id}
-            class="absolute bottom-1.5 right-1.5 z-10"
-          />
-        </div>
       </div>
     </section>
     """
