@@ -1,8 +1,9 @@
 defmodule SanctumWeb.HomebrewComponents do
   @moduledoc """
   Shared HEEx components for the homebrew surfaces — the "storage not
-  configured" notice, the alt-art grid and the set details block — shared by
-  the workspace pages and the public set page.
+  configured" notice, the alt-art grid, the set details block and the
+  unofficial-fan-content label — shared by the workspace pages and the
+  public set pages.
   """
 
   use SanctumWeb, :html
@@ -84,6 +85,50 @@ defmodule SanctumWeb.HomebrewComponents do
           </:actions>
         </.card_side_tile>
       </div>
+    </div>
+    """
+  end
+
+  @doc """
+  The "unofficial fan content" label every public homebrew surface carries:
+  community-made, not affiliated with or endorsed by the game's publishers.
+  `compact` renders the one-line badge form for tiles and headers.
+  """
+  attr :id, :string, default: nil
+  attr :compact, :boolean, default: false
+  attr :class, :any, default: nil
+
+  def fan_content_notice(%{compact: true} = assigns) do
+    ~H"""
+    <span
+      id={@id}
+      class={[
+        "inline-flex items-center border-2 border-neutral bg-base-300 px-1.5 py-0.5 font-ibm-mono text-[10px] uppercase tracking-[0.14em] text-warning",
+        @class
+      ]}
+    >
+      Unofficial fan content
+    </span>
+    """
+  end
+
+  def fan_content_notice(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class={[
+        "flex items-start gap-2.5 border-2 border-dashed border-warning/60 bg-base-200 px-4 py-3",
+        @class
+      ]}
+    >
+      <.icon name="hero-exclamation-triangle" class="mt-0.5 size-4 flex-none text-warning" />
+      <p class="font-barlow-condensed text-sm text-base-content/70">
+        <span class="font-bold uppercase tracking-[0.08em] text-warning">
+          Unofficial fan content.
+        </span>
+        Made by the community — not affiliated with, endorsed by or produced by
+        Fantasy Flight Games or Marvel. Card images and text belong to their creators.
+      </p>
     </div>
     """
   end

@@ -47,6 +47,9 @@ defmodule Sanctum.Homebrew do
       define :list_project_sets, action: :by_project, args: [:homebrew_project_id]
       define :list_set_subtree, action: :subtree, args: [:set_id]
       define :list_set_ancestors, action: :ancestors, args: [:set_id]
+      define :list_directory_sets, action: :directory
+      define :list_published_descendants, action: :published_descendants, args: [:set_id]
+      define :directory_facets, action: :directory_facets
       define :set_deletion_impact, action: :deletion_impact, args: [:set_id]
     end
 

@@ -11,15 +11,22 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
   them. Anything that doesn't resolve — unknown or
   renamed username, unknown slug, a set the viewer may not see — raises the
   Ash not-found error, which ash_phoenix maps to an ordinary 404.
+
+  Contents are grouped by set: the set's own cards first, then one section
+  per *published* descendant set (`:published_descendants`) in tree order.
+  A published grandchild under a non-published child is listed flat rather
+  than dropped. The page carries the unofficial-fan-content label.
   """
 
   use SanctumWeb, :live_view
 
-  import SanctumWeb.Components.CardSideTile
+  import SanctumWeb.Components.CardSection
+  import SanctumWeb.Components.CardSideTile, only: [side_view: 2]
   import SanctumWeb.HomebrewComponents
 
   alias Sanctum.Games
   alias Sanctum.Homebrew
+  alias SanctumWeb.HomebrewLive.Support
 
   on_mount {SanctumWeb.LiveUserAuth, :live_user_optional}
 
@@ -35,26 +42,109 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
 
     hero_colors = Sanctum.Heroes.hero_color_map()
 
-    tiles =
+    own_cards =
       username
       |> Games.list_shared_set_cards!(slug, actor: actor)
-      |> Enum.map(&side_view(%{&1.shared_primary_side | card: &1}, hero_colors))
+      |> Enum.map(&card_view(&1, &1.shared_primary_side, hero_colors))
 
     {:ok,
      socket
      |> assign(:page_title, set.name)
      |> assign(:set, set)
-     |> assign(:card_tiles, tiles)}
+     |> assign(:card_tiles, own_cards)
+     |> assign(:child_groups, child_groups(set, actor, hero_colors))}
+  end
+
+  # One group per published descendant, in tree order, each with its cards.
+  # Descendants whose parent isn't visible are hoisted to the top level
+  # (Support.set_tree treats an unknown parent as a root).
+  defp child_groups(set, actor, hero_colors) do
+    descendants = Homebrew.list_published_descendants!(set.id, actor: actor, load: [:set_kind])
+
+    cards_by_set =
+      case descendants do
+        [] ->
+          %{}
+
+        sets ->
+          sets
+          |> Enum.map(& &1.id)
+          |> Games.list_homebrew_sets_cards!(actor: actor)
+          |> Enum.group_by(& &1.homebrew_set_id)
+      end
+
+    # Children of the page's own set have a parent outside the list, so they
+    # (and any orphaned descendant) come back at depth 0.
+    for {child, depth} <- Support.set_tree(descendants) do
+      %{
+        set: child,
+        depth: depth,
+        cards:
+          cards_by_set
+          |> Map.get(child.id, [])
+          |> Enum.map(&card_view(&1, &1.primary_side, hero_colors))
+      }
+    end
+  end
+
+  # The compact image-card map card_section renders. An unenriched card (just
+  # an image, no name or type) still gets a usable map.
+  defp card_view(card, nil, _hero_colors) do
+    %{
+      card_id: card.id,
+      name: "Untitled card",
+      type: nil,
+      aspect_key: "encounter",
+      resources: [],
+      quantity: 0,
+      image_url: nil,
+      gradient_from: nil,
+      gradient_to: nil,
+      is_landscape: false
+    }
+  end
+
+  defp card_view(card, side, hero_colors) do
+    view = side_view(%{side | card: card}, hero_colors)
+    %{view | name: view.name || "Untitled card"} |> Map.put(:quantity, 0)
   end
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash}>
-      <.header>{@set.name}</.header>
+      <.link
+        navigate={~p"/custom"}
+        class="mb-3 inline-flex items-center gap-1 font-ibm-mono text-xs uppercase tracking-[0.16em] text-base-content/50 hover:text-primary"
+      >
+        <.icon name="hero-arrow-left" class="size-3.5" /> Custom content
+      </.link>
 
-      <p class="-mt-3 mb-6 font-barlow-condensed text-base-content/70">
-        by <span id="set-creator" class="font-bold">@{to_string(@set.creator.username)}</span>
+      <.header>
+        {@set.name}
+        <:actions>
+          <%!-- Wired to the moderation queue in #14. --%>
+          <.button
+            id="report-set"
+            variant="ghost"
+            disabled
+            title="Reporting is coming soon"
+            class="px-3 py-1.5"
+          >
+            <.icon name="hero-flag" class="size-4" /> Report
+          </.button>
+        </:actions>
+      </.header>
+
+      <p class="-mt-3 mb-4 font-barlow-condensed text-base-content/70">
+        by
+        <.link
+          id="set-creator"
+          navigate={~p"/custom?#{%{creator: to_string(@set.creator.username)}}"}
+          class="font-bold text-primary hover:underline"
+        >
+          @{to_string(@set.creator.username)}
+        </.link>
         <span :if={@set.visibility == :private} id="set-unpublished" class="ml-2 uppercase">
           · private — only you can see this
         </span>
@@ -63,22 +153,49 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
         </span>
       </p>
 
+      <.fan_content_notice id="fan-content-notice" class="mb-6 max-w-3xl" />
+
       <.set_details set={@set} />
 
       <p
-        :if={@card_tiles == []}
+        :if={@card_tiles == [] and @child_groups == []}
         id="public-set-empty"
         class="font-barlow-condensed text-base-content/60"
       >
         No cards in this set yet.
       </p>
 
-      <div
-        :if={@card_tiles != []}
-        id="public-set-cards"
-        class="grid grid-cols-1 items-start gap-[18px] pb-28 sm:grid-cols-[repeat(auto-fill,minmax(452px,1fr))]"
-      >
-        <.card_side_tile :for={side <- @card_tiles} side={side} size="md" />
+      <div id="public-set-contents" class="flex flex-col gap-8 pb-28">
+        <div :if={@card_tiles != []} id="public-set-cards">
+          <.card_section
+            title={(@child_groups != [] && "In this set") || "Cards"}
+            cards={@card_tiles}
+            count={length(@card_tiles)}
+            link?={@set.visibility == :published}
+          />
+        </div>
+
+        <div
+          :for={group <- @child_groups}
+          id={"child-set-#{group.set.id}"}
+          class={["child-set", group.depth > 0 && "border-l-2 border-neutral pl-4"]}
+          style={group.depth > 1 && "margin-left: #{(group.depth - 1) * 1}rem"}
+        >
+          <.card_section
+            title={group.set.name}
+            subtitle={group.set.set_kind && group.set.set_kind.label}
+            cards={group.cards}
+            count={length(group.cards)}
+            level={:sub}
+          />
+          <.link
+            :if={group.set.slug}
+            navigate={~p"/custom/@#{to_string(@set.creator.username)}/#{group.set.slug}"}
+            class="mt-2 inline-block font-ibm-mono text-xs uppercase tracking-[0.16em] text-base-content/50 hover:text-primary"
+          >
+            Open set →
+          </.link>
+        </div>
       </div>
     </Layouts.app>
     """

@@ -56,6 +56,80 @@ defmodule SanctumWeb.HomebrewLive.PublicSetTest do
     assert has_element?(lv, "#public-set-empty")
   end
 
+  test "the page carries the fan-content label and a report button", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, ~p"/custom/@matt_murdock/daredevil")
+
+    assert has_element?(lv, "#fan-content-notice", "Unofficial fan content")
+    assert has_element?(lv, "#report-set")
+  end
+
+  test "contents are grouped by published child set", %{conn: conn} = ctx do
+    nemesis =
+      %{homebrew_project_id: ctx.project.id, name: "Bullseye"}
+      |> Homebrew.create_set!(actor: ctx.creator)
+      |> then(&Homebrew.set_set_parent!(&1, ctx.set.id, actor: ctx.creator))
+      |> then(&Homebrew.update_set!(&1, %{kind: "Modular"}, actor: ctx.creator))
+      |> publish_set!(ctx.creator)
+
+    Games.create_custom_card!(
+      %{
+        homebrew_set_id: nemesis.id,
+        card_sides: [%{name: "Playing Card", image_url: "https://img.test/card.png"}]
+      },
+      actor: ctx.creator
+    )
+
+    draft =
+      %{homebrew_project_id: ctx.project.id, name: "Draft Ideas"}
+      |> Homebrew.create_set!(actor: ctx.creator)
+      |> then(&Homebrew.set_set_parent!(&1, ctx.set.id, actor: ctx.creator))
+
+    {:ok, lv, _html} = live(conn, ~p"/custom/@matt_murdock/daredevil")
+
+    assert has_element?(lv, "#public-set-cards", "Billy Club")
+    refute has_element?(lv, "#public-set-cards", "Playing Card")
+    assert has_element?(lv, "#child-set-#{nemesis.id}", "Bullseye")
+    assert has_element?(lv, "#child-set-#{nemesis.id}", "Modular")
+    assert has_element?(lv, "#child-set-#{nemesis.id}", "Playing Card")
+    refute has_element?(lv, "#child-set-#{draft.id}")
+    refute render(lv) =~ "Draft Ideas"
+
+    # The creator's public page shows the public view too.
+    {:ok, lv, _html} =
+      live(log_in_user(build_conn(), ctx.creator), ~p"/custom/@matt_murdock/daredevil")
+
+    refute has_element?(lv, "#child-set-#{draft.id}")
+  end
+
+  test "a set of 200 loose, unenriched images still renders and is shareable",
+       %{conn: conn} = ctx do
+    set =
+      %{homebrew_project_id: ctx.project.id, name: "!!!"}
+      |> Homebrew.create_set!(actor: ctx.creator)
+      |> publish_set!(ctx.creator)
+
+    assert set.slug == "set"
+
+    for n <- 1..200 do
+      Games.create_custom_card!(
+        %{homebrew_set_id: set.id, card_sides: [%{image_url: "https://img.test/#{n}.png"}]},
+        actor: ctx.creator
+      )
+    end
+
+    {:ok, dir, _html} = live(conn, ~p"/custom")
+    assert has_element?(dir, "#directory-set-#{set.id} .set-card-count", "200 cards")
+
+    {:ok, lv, html} =
+      dir
+      |> element(~s(#directory-set-#{set.id} a[href="/custom/@matt_murdock/set"]))
+      |> render_click()
+      |> follow_redirect(conn)
+
+    assert has_element?(lv, "#public-set-cards", "200 cards")
+    assert html |> String.split("https://img.test/") |> length() == 201
+  end
+
   describe "unlisted sets" do
     setup ctx do
       set =

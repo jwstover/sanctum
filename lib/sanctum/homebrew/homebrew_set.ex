@@ -204,6 +204,60 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       filter expr(creator.username == ^arg(:username) and slug == ^arg(:slug))
     end
 
+    # The public set directory (/custom). Pins visibility to :published
+    # explicitly — the read policy would also admit the actor's own private
+    # sets (and admins bypass it entirely), and a directory must never list
+    # those. Facets are optional and combine (Preparations.DirectoryFilters).
+    # Newest first by first-publish time (attested_at).
+    read :directory do
+      argument :kind, :string, allow_nil?: true
+      argument :creator, :ci_string, allow_nil?: true
+      argument :tag, :string, allow_nil?: true
+
+      argument :recency, :string,
+        allow_nil?: true,
+        constraints: [match: ~r/\A(week|month|year)\z/]
+
+      filter expr(visibility == :published and not is_nil(slug))
+
+      prepare Sanctum.Homebrew.Preparations.DirectoryFilters
+
+      prepare build(
+                load: [:set_kind, :card_count, creator: [:username]],
+                sort: [attested_at: :desc_nils_last, inserted_at: :desc, id: :desc]
+              )
+
+      pagination offset?: true, default_limit: 48, countable: true, required?: false
+    end
+
+    # A set's published descendants at any depth (the set itself excluded) —
+    # the grouped sections of its public page. Pinned to :published so the
+    # public page never shows a private or unlisted child, whoever is
+    # looking (admins bypass the read policy).
+    read :published_descendants do
+      argument :set_id, :uuid, allow_nil?: false
+
+      filter expr(
+               visibility == :published and id != ^arg(:set_id) and
+                 fragment(
+                   "? IN (WITH RECURSIVE subtree(id) AS (SELECT id FROM homebrew_sets WHERE id = ? UNION SELECT s.id FROM homebrew_sets s JOIN subtree ON s.parent_set_id = subtree.id) SELECT id FROM subtree)",
+                   id,
+                   type(^arg(:set_id), :uuid)
+                 )
+             )
+    end
+
+    # Creators and tags that occur on published sets — the directory's
+    # facet options.
+    action :directory_facets, :map do
+      constraints fields: [
+                    creators: [type: {:array, :string}, allow_nil?: false],
+                    tags: [type: {:array, :string}, allow_nil?: false]
+                  ]
+
+      run Sanctum.Homebrew.Actions.DirectoryFacets
+    end
+
     read :by_project do
       argument :homebrew_project_id, :uuid, allow_nil?: false
       filter expr(homebrew_project_id == ^arg(:homebrew_project_id))
@@ -306,6 +360,11 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     # set is simply not reachable through these actions.
     policy action_type([:update, :destroy]) do
       authorize_if expr(creator_id == ^actor(:id))
+    end
+
+    # Public: it reads through :directory, which only ever sees published sets.
+    policy action(:directory_facets) do
+      authorize_if always()
     end
 
     # Only whoever may destroy the set sees its blast radius.
