@@ -113,6 +113,31 @@ defmodule SanctumWeb.CardLive.DetailTest do
     assert html =~ "no scan"
   end
 
+  test "a custom card's page is labelled unofficial fan content; official cards aren't",
+       %{conn: conn} do
+    {official, _hero, _alter_ego} = make_card()
+    creator = Sanctum.AccountsFixtures.user_fixture()
+
+    project =
+      Sanctum.Homebrew.create_project!(%{name: "Fan Pack", attestation: true}, actor: creator)
+
+    set = project |> project_set_fixture(creator) |> publish_set!(creator)
+
+    custom =
+      Games.create_custom_card!(
+        %{homebrew_set_id: set.id, card_sides: [%{image_url: "https://img.test/fan.png"}]},
+        actor: creator
+      )
+
+    {:ok, lv, _html} = live(conn, ~p"/cards/#{custom.id}")
+    render_async(lv)
+    assert has_element?(lv, "#fan-content-notice", "Unofficial fan content")
+
+    {:ok, lv, _html} = live(conn, ~p"/cards/#{official.id}")
+    render_async(lv)
+    refute has_element?(lv, "#fan-content-notice")
+  end
+
   describe "custom alt art in the printings strip" do
     setup %{conn: conn} do
       {card, _hero, _alter_ego} = make_card()
