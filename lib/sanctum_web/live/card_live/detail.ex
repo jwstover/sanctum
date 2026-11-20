@@ -10,6 +10,7 @@ defmodule SanctumWeb.CardLive.Detail do
   require Ash.Query
 
   import SanctumWeb.Components.CardSideTile
+  import SanctumWeb.HomebrewComponents, only: [fan_content_notice: 1]
 
   alias Sanctum.CardImages
   alias Sanctum.Catalog.ProductType
@@ -95,6 +96,12 @@ defmodule SanctumWeb.CardLive.Detail do
             </.button>
           </:actions>
         </.header>
+
+        <.fan_content_notice
+          :if={@card.origin == :custom}
+          id="fan-content-notice"
+          class="mx-auto mb-5 max-w-[1240px]"
+        />
 
         <div class="mx-auto flex max-w-[1240px] flex-col gap-5">
           <!-- card faces + metadata: equal-height columns (grid stretch); the

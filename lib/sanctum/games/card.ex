@@ -236,6 +236,16 @@ defmodule Sanctum.Games.Card do
       prepare build(load: [:primary_side], sort: [inserted_at: :asc])
     end
 
+    # The cards of several homebrew sets in one read — a public set page's
+    # published descendant sections. Ordinary read policy applies.
+    read :for_homebrew_sets do
+      description "Custom cards in any of the given homebrew sets, primary side loaded, oldest first."
+
+      argument :homebrew_set_ids, {:array, :uuid}, allow_nil?: false
+      filter expr(origin == :custom and homebrew_set_id in ^arg(:homebrew_set_ids))
+      prepare build(load: [:primary_side], sort: [inserted_at: :asc])
+    end
+
     # The share-link counterpart of :for_homebrew_set, keyed on the same
     # creator handle + slug as HomebrewSet :by_creator_slug. The one Card
     # read that admits an :unlisted set's cards (see its policy) — so an
