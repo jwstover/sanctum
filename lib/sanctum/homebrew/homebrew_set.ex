@@ -22,6 +22,9 @@ defmodule Sanctum.Homebrew.HomebrewSet do
   walks.
 
   Sets start `:private`; visibility is walked only through `:set_visibility`.
+  An `:unlisted` set is reachable only through `:by_creator_slug` (its share
+  link); the default read filter admits `:published` and the creator's own
+  sets, never `:unlisted`, so unlisted sets stay out of every listing.
   Publishing there requires the creator to have claimed a username and, the
   first time, a publish attestation, which is recorded as
   `attestation`/`attested_at`. The general `:update` can write neither
@@ -188,9 +191,12 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     end
 
     # The public URL lookup: creator handle + slug → at most one set (the
-    # (creator_id, slug) identity plus unique usernames). Read policies still
-    # apply, so a private set resolves only for its creator; a renamed or
-    # unknown username simply finds nothing.
+    # (creator_id, slug) identity plus unique usernames). This is the ONE read
+    # path that resolves :unlisted sets for anyone — knowing the link is the
+    # access (see the action's own policy below). The default read filter
+    # never admits :unlisted, so unlisted sets stay out of every listing. A
+    # private set resolves only for its creator; a renamed or unknown
+    # username simply finds nothing.
     read :by_creator_slug do
       get? true
       argument :username, :ci_string, allow_nil?: false
@@ -269,8 +275,22 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     # false wholesale under a nil actor, so folding these into one OR
     # (`visibility == :published or creator_id == ^actor(:id)`) would hide
     # published sets from anonymous reads. As at HomebrewProject/SetKind/CardAlt.
+    #
+    # :by_creator_slug is waved through here and filtered by its own policy
+    # below (every applicable policy must pass, so admitting :unlisted can't
+    # live in a second policy alone). Do NOT add :unlisted to this filter:
+    # it would leak unlisted sets into every listing.
     policy action_type(:read) do
+      authorize_if action(:by_creator_slug)
       authorize_if expr(visibility == :published)
+      authorize_if expr(creator_id == ^actor(:id))
+    end
+
+    # The share-link path: anyone holding creator + slug sees a published or
+    # unlisted set; a private one stays creator-only. Separate checks for the
+    # same nil-actor reason as above.
+    policy action(:by_creator_slug) do
+      authorize_if expr(visibility in [:published, :unlisted])
       authorize_if expr(creator_id == ^actor(:id))
     end
 

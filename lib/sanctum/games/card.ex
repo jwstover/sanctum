@@ -235,6 +235,24 @@ defmodule Sanctum.Games.Card do
       filter expr(homebrew_set_id == ^arg(:homebrew_set_id))
       prepare build(load: [:primary_side], sort: [inserted_at: :asc])
     end
+
+    # The share-link counterpart of :for_homebrew_set, keyed on the same
+    # creator handle + slug as HomebrewSet :by_creator_slug. The one Card
+    # read that admits an :unlisted set's cards (see its policy) — so an
+    # unlisted set's cards are reachable by link but never by browse/search.
+    read :for_shared_set do
+      description "Custom cards in the set at /custom/@username/slug, shared primary side loaded, oldest first."
+
+      argument :username, :ci_string, allow_nil?: false
+      argument :slug, :string, allow_nil?: false
+
+      filter expr(
+               origin == :custom and homebrew_set.creator.username == ^arg(:username) and
+                 homebrew_set.slug == ^arg(:slug)
+             )
+
+      prepare build(load: [:shared_primary_side], sort: [inserted_at: :asc])
+    end
   end
 
   policies do
@@ -250,9 +268,21 @@ defmodule Sanctum.Games.Card do
     # one OR expression would hide the entire catalog from anonymous reads.
     # Convention: authorize?: false is reserved for catalog sync/system
     # WRITES; any read using it must carry an explicit origin filter.
+    #
+    # :for_shared_set is waved through here and filtered by its own policy
+    # below. Do NOT add :unlisted to this filter — it would leak unlisted
+    # sets' cards into browse and search.
     policy action_type(:read) do
+      authorize_if action(:for_shared_set)
       authorize_if expr(origin == :official)
       authorize_if expr(homebrew_set.visibility == :published)
+      authorize_if expr(homebrew_set.creator_id == ^actor(:id))
+    end
+
+    # The share-link path: a published or unlisted set's cards for anyone
+    # holding the link; a private set's only for its creator.
+    policy action(:for_shared_set) do
+      authorize_if expr(homebrew_set.visibility in [:published, :unlisted])
       authorize_if expr(homebrew_set.creator_id == ^actor(:id))
     end
 
@@ -319,6 +349,15 @@ defmodule Sanctum.Games.Card do
     has_one :primary_side, Sanctum.Games.CardSide do
       destination_attribute :card_id
       public? true
+      filter expr(is_primary_side == true)
+    end
+
+    # primary_side for the share-link read (:for_shared_set). Its read action
+    # admits an unlisted set's sides only when loaded through this
+    # relationship — the default CardSide filter never does.
+    has_one :shared_primary_side, Sanctum.Games.CardSide do
+      destination_attribute :card_id
+      read_action :for_shared_card
       filter expr(is_primary_side == true)
     end
 

@@ -146,6 +146,20 @@ defmodule Sanctum.Homebrew.SetSlugTest do
                Homebrew.get_set_by_creator_slug("matt_murdock", "elektra")
     end
 
+    test "an unlisted set resolves by its link for anyone", ctx do
+      unlisted =
+        ctx.project
+        |> set_fixture(ctx.creator, "Elektra")
+        |> then(&Homebrew.set_set_visibility!(&1, :unlisted, actor: ctx.creator))
+
+      for actor <- [nil, ctx.other, ctx.creator] do
+        assert %HomebrewSet{id: id} =
+                 Homebrew.get_set_by_creator_slug!("matt_murdock", "elektra", actor: actor)
+
+        assert id == unlisted.id
+      end
+    end
+
     test "a private set resolves only for its creator", ctx do
       private = set_fixture(ctx.project, ctx.creator, "Elektra")
 

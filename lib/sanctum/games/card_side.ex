@@ -134,6 +134,10 @@ defmodule Sanctum.Games.CardSide do
       argument :side_identifier, :string, allow_nil?: false
       filter expr(card_id == ^arg(:card_id) and side_identifier == ^arg(:side_identifier))
     end
+
+    # Read action of Card's :shared_primary_side — the share-link path. Its
+    # policy only answers loads through that relationship.
+    read :for_shared_card
   end
 
   policies do
@@ -146,9 +150,23 @@ defmodule Sanctum.Games.CardSide do
     # own policies on relationship loads, so both resources need the filter.
     # Separate checks on purpose: an expr referencing ^actor(:id) collapses
     # to false wholesale under a nil actor (see Card's read policy).
+    #
+    # :for_shared_card is waved through here and filtered by its own policy
+    # below; never add :unlisted to this filter (it would leak into :browse).
     policy action_type(:read) do
+      authorize_if action(:for_shared_card)
       authorize_if expr(card.origin == :official)
       authorize_if expr(card.homebrew_set.visibility == :published)
+      authorize_if expr(card.homebrew_set.creator_id == ^actor(:id))
+    end
+
+    # Unlisted sides are reachable only when loaded through
+    # Card :shared_primary_side (i.e. from Card :for_shared_set); a direct
+    # call of :for_shared_card is forbidden.
+    policy action(:for_shared_card) do
+      forbid_unless accessing_from(Sanctum.Games.Card, :shared_primary_side)
+      authorize_if expr(card.origin == :official)
+      authorize_if expr(card.homebrew_set.visibility in [:published, :unlisted])
       authorize_if expr(card.homebrew_set.creator_id == ^actor(:id))
     end
 

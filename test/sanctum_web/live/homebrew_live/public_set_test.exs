@@ -56,6 +56,44 @@ defmodule SanctumWeb.HomebrewLive.PublicSetTest do
     assert has_element?(lv, "#public-set-empty")
   end
 
+  describe "unlisted sets" do
+    setup ctx do
+      set =
+        %{homebrew_project_id: ctx.project.id, name: "Elektra"}
+        |> Homebrew.create_set!(actor: ctx.creator)
+        |> then(&Homebrew.set_set_visibility!(&1, :unlisted, actor: ctx.creator))
+
+      Games.create_custom_card!(
+        %{
+          homebrew_set_id: set.id,
+          card_sides: [%{name: "Sai", image_url: "https://img.test/sai.png"}]
+        },
+        actor: ctx.creator
+      )
+
+      %{unlisted: set}
+    end
+
+    test "an anonymous visitor opens one, cards included, by its link", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/custom/@matt_murdock/elektra")
+
+      assert has_element?(lv, "#set-unlisted")
+      refute has_element?(lv, "#set-unpublished")
+      assert has_element?(lv, "#public-set-cards", "Sai")
+    end
+
+    test "another signed-in user opens one by its link", %{conn: conn} do
+      conn = log_in_user(conn, user_fixture())
+      {:ok, lv, _html} = live(conn, ~p"/custom/@matt_murdock/elektra")
+      assert has_element?(lv, "#public-set-cards", "Sai")
+    end
+
+    test "back to private, the link 404s again", %{conn: conn} = ctx do
+      Homebrew.set_set_visibility!(ctx.unlisted, :private, actor: ctx.creator)
+      assert_error_sent 404, fn -> get(conn, ~p"/custom/@matt_murdock/elektra") end
+    end
+  end
+
   describe "404s" do
     test "unknown username", %{conn: conn} do
       assert_error_sent 404, fn -> get(conn, ~p"/custom/@nobody/daredevil") end

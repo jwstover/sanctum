@@ -364,4 +364,86 @@ defmodule Sanctum.Homebrew.CardPrivacyTest do
       end
     end
   end
+
+  # Unlisted = reachable by share link, invisible everywhere else. The only
+  # admitting paths are Card :for_shared_set (and its :shared_primary_side
+  # load); every default read keeps excluding unlisted cards.
+  describe "unlisted sets (share links)" do
+    setup ctx do
+      ctx.creator
+      |> Ash.Changeset.for_update(:update_profile, %{username: "privacy_creator"})
+      |> Ash.update!(authorize?: false)
+
+      project =
+        Homebrew.create_project!(%{name: "Shared Pack", attestation: true}, actor: ctx.creator)
+
+      set = project_set_fixture(project, ctx.creator)
+      card = custom_card!(project, ctx.creator, "unlisted-card.png")
+      set = Homebrew.set_set_visibility!(set, :unlisted, actor: ctx.creator)
+
+      %{unlisted_set: set, unlisted_card: card}
+    end
+
+    test "unlisted cards stay out of browse, gets, code lookups and loads", ctx do
+      card = ctx.unlisted_card
+      side = hd(card.card_sides)
+
+      for actor <- [ctx.other, nil] do
+        {ids, _} = browse_ids(actor)
+        refute card.id in ids
+        refute card.id in Enum.map(Ash.read!(Card, actor: actor), & &1.id)
+        assert {:error, _} = Ash.get(Card, card.id, actor: actor)
+        assert {:error, _} = Ash.get(CardSide, side.id, actor: actor)
+        assert [] = Games.list_card_sides_by_codes!([side.code], actor: actor)
+
+        # primary_side (the default relationship) never admits it either.
+        loaded = Ash.load!(card, :primary_side, actor: actor, authorize?: true)
+        assert loaded.primary_side == nil
+      end
+
+      {creator_ids, _} = browse_ids(ctx.creator)
+      assert card.id in creator_ids
+    end
+
+    test "the share-link read returns the cards and their sides to anyone", ctx do
+      for actor <- [nil, ctx.other, ctx.creator] do
+        assert [%Card{id: id, shared_primary_side: %CardSide{}}] =
+                 Games.list_shared_set_cards!("privacy_creator", ctx.unlisted_set.slug,
+                   actor: actor
+                 )
+
+        assert id == ctx.unlisted_card.id
+      end
+    end
+
+    test "the share-link read still hides a private set's cards", ctx do
+      Homebrew.set_set_visibility!(ctx.unlisted_set, :private, actor: ctx.creator)
+
+      for actor <- [nil, ctx.other] do
+        assert [] =
+                 Games.list_shared_set_cards!("privacy_creator", ctx.unlisted_set.slug,
+                   actor: actor
+                 )
+      end
+
+      assert [_] =
+               Games.list_shared_set_cards!("privacy_creator", ctx.unlisted_set.slug,
+                 actor: ctx.creator
+               )
+    end
+
+    test "the shared side read only answers loads through :shared_primary_side", ctx do
+      side = hd(ctx.unlisted_card.card_sides)
+
+      for actor <- [nil, ctx.other] do
+        result =
+          CardSide
+          |> Ash.Query.for_read(:for_shared_card, %{}, actor: actor)
+          |> Ash.Query.filter(id == ^side.id)
+          |> Ash.read(actor: actor)
+
+        assert match?({:error, %Ash.Error.Forbidden{}}, result) or result == {:ok, []}
+      end
+    end
+  end
 end

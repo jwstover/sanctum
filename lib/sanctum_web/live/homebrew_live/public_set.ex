@@ -4,8 +4,11 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
   `/custom/@username/slug`. Slugs are unique per creator, so the creator's
   handle + slug resolve to exactly one set (`Homebrew.get_set_by_creator_slug/3`).
 
-  Read policies decide visibility: anyone sees a published set, only its
-  creator sees a private one. Anything that doesn't resolve — unknown or
+  This is the share-link surface: the dedicated `:by_creator_slug` /
+  `Card :for_shared_set` reads let anyone holding the link see a published
+  or unlisted set and its cards, while a private set resolves only for its
+  creator. Unlisted sets stay out of every listing — only this page reaches
+  them. Anything that doesn't resolve — unknown or
   renamed username, unknown slug, a set the viewer may not see — raises the
   Ash not-found error, which ash_phoenix maps to an ordinary 404.
   """
@@ -33,9 +36,9 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
     hero_colors = Sanctum.Heroes.hero_color_map()
 
     tiles =
-      set.id
-      |> Games.list_homebrew_set_cards!(actor: actor)
-      |> Enum.map(&side_view(%{&1.primary_side | card: &1}, hero_colors))
+      username
+      |> Games.list_shared_set_cards!(slug, actor: actor)
+      |> Enum.map(&side_view(%{&1.shared_primary_side | card: &1}, hero_colors))
 
     {:ok,
      socket
@@ -52,8 +55,11 @@ defmodule SanctumWeb.HomebrewLive.PublicSet do
 
       <p class="-mt-3 mb-6 font-barlow-condensed text-base-content/70">
         by <span id="set-creator" class="font-bold">@{to_string(@set.creator.username)}</span>
-        <span :if={@set.visibility != :published} id="set-unpublished" class="ml-2 uppercase">
-          · {@set.visibility} — only you can see this
+        <span :if={@set.visibility == :private} id="set-unpublished" class="ml-2 uppercase">
+          · private — only you can see this
+        </span>
+        <span :if={@set.visibility == :unlisted} id="set-unlisted" class="ml-2 uppercase">
+          · unlisted — only people with the link can see this
         </span>
       </p>
 
