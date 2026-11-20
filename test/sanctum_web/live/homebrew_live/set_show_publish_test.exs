@@ -9,10 +9,9 @@ defmodule SanctumWeb.HomebrewLive.SetShowPublishTest do
   alias Sanctum.Homebrew
   alias Sanctum.Homebrew.HomebrewSet
 
-  # Homebrew is admin-gated at the router, so the creator is an admin. The
-  # publish gates check the set's creator, so that is who these exercise.
+  # The publish gates check the set's creator, so that is who these exercise.
   defp setup_set(conn, user_attrs) do
-    creator = admin_user_fixture(user_attrs)
+    creator = user_fixture(user_attrs)
     project = Homebrew.create_project!(%{name: "Test Pack", attestation: true}, actor: creator)
 
     set =
@@ -141,5 +140,19 @@ defmodule SanctumWeb.HomebrewLive.SetShowPublishTest do
       refute has_element?(lv, "#set-share-link")
       assert has_element?(lv, ~s(#share-needs-username a[href="/profile"]))
     end
+  end
+
+  test "a taken-down set says so and offers no way to share it", %{conn: conn} do
+    ctx = setup_set(conn, %{username: "wilson_fisk"})
+
+    ctx.set
+    |> Homebrew.set_set_visibility!(:published, %{attest: true}, authorize?: false)
+    |> Homebrew.take_down_set!(authorize?: false)
+
+    {:ok, lv, _html} = live(ctx.conn, ctx.path)
+
+    assert has_element?(lv, "#set-taken-down", "moderator took this set down")
+    refute has_element?(lv, "#start-publish")
+    refute has_element?(lv, "#make-unlisted")
   end
 end

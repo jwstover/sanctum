@@ -23,7 +23,7 @@ defmodule SanctumWeb.HomebrewLive.SetShowUploadsTest do
       end)
     end)
 
-    creator = admin_user_fixture()
+    creator = user_fixture()
     project = Homebrew.create_project!(%{name: "Test Pack", attestation: true}, actor: creator)
 
     set =

@@ -198,7 +198,7 @@ defmodule SanctumWeb.Layouts do
               Decks
             </.sidebar_link>
             <.sidebar_link
-              :if={@current_user && @current_user.admin}
+              :if={@current_user}
               navigate={~p"/homebrew"}
               active={@active_tab == :homebrew}
             >

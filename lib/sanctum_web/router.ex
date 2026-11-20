@@ -111,6 +111,13 @@ defmodule SanctumWeb.Router do
       # Public deck-collection stats.
       live "/stats", StatsLive.Index, :index
 
+      # Homebrew (custom content) workspace — creator-scoped by the resource
+      # policies; the LiveViews require sign-in.
+      live "/homebrew", HomebrewLive.Index, :index
+      live "/homebrew/:id", HomebrewLive.Show, :show
+      live "/homebrew/:project_id/sets/:set_id", HomebrewLive.SetShow, :show
+      live "/homebrew/:id/cards/:card_id", HomebrewLive.EditCard, :edit
+
       # Public directory of published homebrew sets (facets in the query string).
       live "/custom", HomebrewLive.Directory, :index
 
@@ -135,14 +142,6 @@ defmodule SanctumWeb.Router do
       # Admin landing page — system health + links to admin surfaces.
       live "/admin", AdminLive.Index, :index
 
-      # Homebrew (custom content) — TEMPORARILY admin-only while the feature
-      # incubates; move these back to :authenticated_routes to open it up.
-      # Resource policies stay creator-scoped, so nothing else changes then.
-      live "/homebrew", HomebrewLive.Index, :index
-      live "/homebrew/:id", HomebrewLive.Show, :show
-      live "/homebrew/:project_id/sets/:set_id", HomebrewLive.SetShow, :show
-      live "/homebrew/:id/cards/:card_id", HomebrewLive.EditCard, :edit
-
       # Admin card catalog management (data table + CRUD + sync).
       live "/admin/cards", CardLive.Index, :index
       live "/admin/cards/new", CardLive.Form, :new
@@ -151,6 +150,9 @@ defmodule SanctumWeb.Router do
 
       live "/admin/cards/:id", CardLive.Show, :show
       live "/admin/cards/:id/show/edit", CardLive.Show, :edit
+
+      # Homebrew moderation queue: open set reports, takedowns, restores.
+      live "/admin/reports", AdminLive.Reports, :index
     end
   end
 

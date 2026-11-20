@@ -21,7 +21,9 @@ defmodule Sanctum.Homebrew.HomebrewSet do
   guards against cycles; `:subtree` and `:ancestors` are the shared tree
   walks.
 
-  Sets start `:private`; visibility is walked only through `:set_visibility`.
+  Sets start `:private`; visibility is walked only through `:set_visibility`
+  — except an admin's `:take_down`, which drops a reported set to `:private`
+  and blocks re-sharing until `:restore` (see `Sanctum.Homebrew.SetReport`).
   An `:unlisted` set is reachable only through `:by_creator_slug` (its share
   link); the default read filter admits `:published` and the creator's own
   sets, never `:unlisted`, so unlisted sets stay out of every listing.
@@ -153,11 +155,45 @@ defmodule Sanctum.Homebrew.HomebrewSet do
 
       # before_action? so these run after the update policy.
       validate Sanctum.Homebrew.Validations.CreatorHasUsername, before_action?: true
+      validate Sanctum.Homebrew.Validations.NotTakenDown, before_action?: true
       change Sanctum.Homebrew.Changes.RecordPublishAttestation
 
       # Sets created before slugs existed get one on their way out; an
       # existing slug (and so a shared URL) is never touched here.
       change {Sanctum.Homebrew.Changes.GenerateSlug, only_if_missing?: true}
+    end
+
+    # Moderator takedown — an admin unpublish, distinct from destroy: the
+    # set drops to :private (content and the creator's workspace intact),
+    # is stamped taken down, and can't be shared again until :restore.
+    # Its open reports are marked :actioned in the same transaction. Only
+    # this set is affected; separately published descendants stay up.
+    update :take_down do
+      accept []
+      require_atomic? false
+
+      change set_attribute(:visibility, :private)
+      change set_attribute(:taken_down_at, &DateTime.utc_now/0)
+      change Sanctum.Homebrew.Changes.ActionOpenReports
+    end
+
+    # Lift a takedown. The set stays :private — republishing is the
+    # creator's call, through :set_visibility.
+    update :restore do
+      accept []
+      require_atomic? false
+
+      change set_attribute(:taken_down_at, nil)
+    end
+
+    # Sets currently taken down — the admin queue's restore list.
+    read :taken_down do
+      filter expr(not is_nil(taken_down_at))
+
+      prepare build(
+                load: [creator: [:username]],
+                sort: [taken_down_at: :desc, id: :desc]
+              )
     end
 
     # Re-derive the slug from the current name — the one way a rename moves
@@ -362,6 +398,13 @@ defmodule Sanctum.Homebrew.HomebrewSet do
       authorize_if expr(creator_id == ^actor(:id))
     end
 
+    # Moderation is admin-only (the bypass above). Without this the
+    # creator-scoped update policy would let a creator lift their own
+    # takedown.
+    policy action([:take_down, :restore, :taken_down]) do
+      forbid_if always()
+    end
+
     # Public: it reads through :directory, which only ever sees published sets.
     policy action(:directory_facets) do
       authorize_if always()
@@ -398,6 +441,10 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     # first publish, together with when it was made.
     attribute :attestation, :boolean, public?: true, allow_nil?: false, default: false
     attribute :attested_at, :utc_datetime_usec, public?: true
+
+    # Set by an admin's :take_down, cleared by :restore. While set, the set
+    # can't leave :private (Validations.NotTakenDown).
+    attribute :taken_down_at, :utc_datetime_usec, public?: true
 
     timestamps()
   end
@@ -441,6 +488,10 @@ defmodule Sanctum.Homebrew.HomebrewSet do
     end
 
     has_many :aspects, Sanctum.Games.Aspect do
+      destination_attribute :homebrew_set_id
+    end
+
+    has_many :reports, Sanctum.Homebrew.SetReport do
       destination_attribute :homebrew_set_id
     end
   end

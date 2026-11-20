@@ -122,13 +122,19 @@ defmodule SanctumWeb.HomebrewComponents do
       ]}
     >
       <.icon name="hero-exclamation-triangle" class="mt-0.5 size-4 flex-none text-warning" />
-      <p class="font-barlow-condensed text-sm text-base-content/70">
-        <span class="font-bold uppercase tracking-[0.08em] text-warning">
-          Unofficial fan content.
-        </span>
-        Made by the community — not affiliated with, endorsed by or produced by
-        Fantasy Flight Games or Marvel. Card images and text belong to their creators.
-      </p>
+      <div>
+        <p class="font-barlow-condensed text-sm text-base-content/70">
+          <span class="font-bold uppercase tracking-[0.08em] text-warning">
+            Unofficial fan content.
+          </span>
+          Made by the community — not affiliated with, endorsed by or produced by
+          Fantasy Flight Games or Marvel. Card images and text belong to their creators.
+        </p>
+        <p class="mt-1 font-ibm-mono text-[11px] text-base-content/50">
+          Marvel Champions: The Card Game © Fantasy Flight Games. Marvel characters
+          and properties © MARVEL.
+        </p>
+      </div>
     </div>
     """
   end

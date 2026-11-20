@@ -32,11 +32,8 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
     Ash.load!(card, [:card_sides, :primary_side], authorize?: false)
   end
 
-  # Homebrew is TEMPORARILY admin-gated at the router (see router.ex), so the
-  # page tests act as an admin. Cross-user privacy semantics stay covered by
-  # the data-layer tests (card_privacy_test etc.), which use plain users.
   setup %{conn: conn} do
-    creator = admin_user_fixture()
+    creator = user_fixture()
     project = project_fixture(creator)
 
     set =
@@ -56,9 +53,9 @@ defmodule SanctumWeb.HomebrewLive.SetShowTest do
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ctx.path)
   end
 
-  test "non-admins are redirected away", ctx do
+  test "another user can't open someone else's set", ctx do
     conn = Phoenix.ConnTest.build_conn() |> log_in_user(user_fixture())
-    assert {:error, {:redirect, %{to: "/"}}} = live(conn, ctx.path)
+    assert {:error, {:live_redirect, %{to: "/homebrew"}}} = live(conn, ctx.path)
   end
 
   test "a set from a different project is not found", ctx do

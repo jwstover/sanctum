@@ -30,10 +30,9 @@ defmodule SanctumWeb.HomebrewLive.SetShowNestingTest do
   defp parent_id(set), do: Ash.get!(HomebrewSet, set.id, authorize?: false).parent_set_id
   defp set_id_of(card), do: Ash.get!(Card, card.id, authorize?: false).homebrew_set_id
 
-  # Homebrew is admin-gated at the router for now (see set_show_test.exs).
   # root → child → grandchild, plus a sibling root.
   setup %{conn: conn} do
-    creator = admin_user_fixture()
+    creator = user_fixture()
     project = Homebrew.create_project!(%{name: "Test Pack", attestation: true}, actor: creator)
     root = set!(project, creator, "Campaign")
     child = set!(project, creator, "Scenario One", %{parent_set_id: root.id})
