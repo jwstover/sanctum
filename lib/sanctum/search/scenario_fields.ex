@@ -19,7 +19,6 @@ defmodule Sanctum.Search.ScenarioFields do
     expr(ilike(name, ^pattern) or ^villain_set_expr(pattern) or ^modular_expr(pattern))
   end
 
-  # TODO(#36): form placement when the scenario browser gets a filter sheet.
   @impl true
   def fields do
     [
@@ -55,6 +54,7 @@ defmodule Sanctum.Search.ScenarioFields do
         example: "is:mine",
         hint: "mine (needs sign-in) or official",
         ops: [:eq],
+        form: %{group: "Scenario", order: 10, label: "Scenario is…"},
         build: &flag_build/2
       }
     ]

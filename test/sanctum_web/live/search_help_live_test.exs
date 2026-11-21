@@ -22,12 +22,12 @@ defmodule SanctumWeb.SearchHelpLiveTest do
     assert html =~ "/decks?query="
   end
 
-  test "scenario fields are documented without links to a missing route", %{conn: conn} do
+  test "scenario fields are documented with try-links to the scenario browser", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/search-help")
 
     assert html =~ ~s(id="scenarios")
     assert html =~ "villain:rhino"
-    refute html =~ "/scenarios?query="
+    assert html =~ "/scenarios?query="
   end
 
   test "the card pool links to the help page", %{conn: conn} do
