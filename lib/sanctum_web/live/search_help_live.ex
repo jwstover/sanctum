@@ -3,14 +3,14 @@ defmodule SanctumWeb.SearchHelpLive do
   Reference page for the advanced search query language (`Sanctum.Search`).
 
   The field tables are generated from the live registries
-  (`Sanctum.Search.CardFields` / `DeckFields`), so this page can never drift
+  (`Sanctum.Search.CardFields` / `DeckFields` / `ScenarioFields`), so this page can never drift
   from what the language actually supports. Every example is a link that runs
   the query.
   """
 
   use SanctumWeb, :live_view
 
-  alias Sanctum.Search.{CardFields, DeckFields, Field}
+  alias Sanctum.Search.{CardFields, DeckFields, Field, ScenarioFields}
 
   @op_symbols [eq: ":", neq: "!=", lt: "<", gt: ">", lte: "<=", gte: ">="]
 
@@ -129,6 +129,15 @@ defmodule SanctumWeb.SearchHelpLive do
           <.fields_table fields={@deck_fields} base_path="/decks" />
         </section>
 
+        <section id="scenarios">
+          <.section_title>Scenario fields</.section_title>
+          <p class="mb-2.5 font-barlow text-base text-base-content/85">
+            Scenarios are searchable from the global search — add <.q c="in:scenarios" />
+            to see only them.
+          </p>
+          <.fields_table fields={@scenario_fields} base_path={nil} />
+        </section>
+
         <section>
           <.section_title>Example searches</.section_title>
           <table class="qh-table">
@@ -198,7 +207,9 @@ defmodule SanctumWeb.SearchHelpLive do
           <td class="!whitespace-normal">{matches(field)}</td>
           <td class="whitespace-nowrap font-mono text-sm">{ops(field)}</td>
           <td>
-            <.try_link :if={field.example} query={field.example} base_path={@base_path} />
+            <%!-- No base_path = no browse route to link to (yet): plain snippet. --%>
+            <.try_link :if={field.example && @base_path} query={field.example} base_path={@base_path} />
+            <.q :if={field.example && is_nil(@base_path)} c={field.example} />
           </td>
         </tr>
       </tbody>
@@ -213,6 +224,7 @@ defmodule SanctumWeb.SearchHelpLive do
       |> assign(:page_title, "Search Syntax")
       |> assign(:card_fields, CardFields.fields())
       |> assign(:deck_fields, DeckFields.fields())
+      |> assign(:scenario_fields, ScenarioFields.fields())
       |> assign(:global_types, Sanctum.Search.Global.type_values())
       |> assign(:card_examples, @card_examples)
       |> assign(:deck_examples, @deck_examples)
