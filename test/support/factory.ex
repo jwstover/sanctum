@@ -103,9 +103,14 @@ defmodule Sanctum.Factory do
 
     %{
       name: "Test Scenario #{unique_id}",
-      set: "test_scenario_#{unique_id}",
-      recommended_modular_sets: []
+      set: "test_scenario_#{unique_id}"
     }
+  end
+
+  def card_set_factory do
+    code = Faker.Util.format("set_%5d")
+
+    %{code: code, name: "Test Set #{code}", set_type: :modular}
   end
 
   def game_factory do
