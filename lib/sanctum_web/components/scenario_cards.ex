@@ -11,18 +11,26 @@ defmodule SanctumWeb.Components.ScenarioCards do
   import SanctumWeb.Components.Card, only: [mc_card: 1]
   import SanctumWeb.Components.ChampionsIcons, only: [champions_icon: 1]
 
-  # Card types counted in an encounter set's stats tiles, in display order.
-  # Villain/main-scheme cards are structural (one-of, not "content") and are
-  # left out on purpose.
+  # Card types counted in an encounter set's `type_counts`. Villain/main-scheme
+  # cards are structural (one-of, not "content") and are left out on purpose.
   @count_types [
+    :minion,
+    :treachery,
+    :side_scheme,
+    :attachment,
+    :upgrade,
+    :support,
+    :obligation,
+    :environment
+  ]
+
+  # The type tiles shown in the stats panel, in the design's display order.
+  # Other counted types still feed `type_counts` and the card total.
+  @tile_types [
     {:minion, "Minions"},
+    {:side_scheme, "Side schemes"},
     {:treachery, "Treacheries"},
-    {:side_scheme, "Side Schemes"},
-    {:attachment, "Attachments"},
-    {:upgrade, "Upgrades"},
-    {:support, "Support"},
-    {:obligation, "Obligations"},
-    {:environment, "Environment"}
+    {:attachment, "Attachments"}
   ]
 
   @boost_icon_types [:acceleration_icon, :amplify_icon, :crisis_icon, :hazard_icon]
@@ -95,7 +103,7 @@ defmodule SanctumWeb.Components.ScenarioCards do
     sum_weight = fn list -> list |> Enum.map(weight) |> Enum.sum() end
 
     type_counts =
-      for {type, _label} <- @count_types,
+      for type <- @count_types,
           group = Enum.filter(sides, fn {_card, side} -> side.type == type end),
           group != [],
           into: %{},
@@ -129,7 +137,7 @@ defmodule SanctumWeb.Components.ScenarioCards do
   def format_boost(avg) when is_number(avg), do: :erlang.float_to_binary(avg / 1, decimals: 1)
 
   @doc "Whether `stats` (from `combined_stats/1`) has anything worth rendering."
-  def stats_present?(stats), do: stats.type_counts != %{} or stats.icon_counts != %{}
+  def stats_present?(stats), do: tile_counts(stats) != [] or stats.icon_counts != %{}
 
   @doc """
   Renders an encounter set's content stats: deck-weighted type-count tiles and
@@ -139,16 +147,11 @@ defmodule SanctumWeb.Components.ScenarioCards do
   attr :class, :string, default: nil
 
   def encounter_stats(assigns) do
-    type_tiles =
-      for {type, label} <- @count_types, count = assigns.stats.type_counts[type], count do
-        {label, count}
-      end
-
-    assigns = assign(assigns, type_tiles: type_tiles)
+    assigns = assign(assigns, type_tiles: tile_counts(assigns.stats))
 
     ~H"""
     <div :if={@type_tiles != [] or @stats.icon_counts != %{}} class={["space-y-3", @class]}>
-      <div :if={@type_tiles != []} class="grid grid-cols-3 gap-x-3 gap-y-2 sm:grid-cols-4">
+      <div :if={@type_tiles != []} class="grid grid-cols-4 gap-x-3 gap-y-2">
         <div :for={{label, count} <- @type_tiles} class="min-w-0">
           <div class="font-anton text-xl leading-none text-secondary">{count}</div>
           <div class="mt-0.5 truncate font-barlow-condensed text-[11px] font-bold uppercase tracking-[0.08em] text-base-content/50">
@@ -165,6 +168,10 @@ defmodule SanctumWeb.Components.ScenarioCards do
       </div>
     </div>
     """
+  end
+
+  defp tile_counts(stats) do
+    for {type, label} <- @tile_types, count = stats.type_counts[type], count, do: {label, count}
   end
 
   defp icon_token(icon), do: icon |> Atom.to_string() |> String.replace_suffix("_icon", "")
