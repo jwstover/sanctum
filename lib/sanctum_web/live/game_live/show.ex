@@ -366,6 +366,9 @@ defmodule SanctumWeb.GameLive.Show do
     {:noreply, assign(socket, :selected_card, nil)}
   end
 
+  defp scenario_title(%Game{scenario: %{name: name}}), do: name
+  defp scenario_title(_), do: "Game"
+
   @spec assign_game(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
   defp assign_game(%{assigns: %{game_id: game_id, current_user: current_user}} = socket)
        when is_binary(game_id) do
@@ -385,7 +388,7 @@ defmodule SanctumWeb.GameLive.Show do
       {:ok, %Game{} = game} ->
         socket
         |> assign(:game, game)
-        |> assign(:page_title, game.scenario.name)
+        |> assign(:page_title, scenario_title(game))
 
       {:error, err} ->
         Logger.warning(

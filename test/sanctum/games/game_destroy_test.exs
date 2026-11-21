@@ -47,10 +47,13 @@ defmodule Sanctum.Games.GameDestroyTest do
   describe "destroy_game cascade" do
     setup do
       {:ok, scenario} =
-        Games.create_scenario(%{
-          name: "Destroy Scenario",
-          set: "destroy_scenario"
-        })
+        Games.create_scenario(
+          %{
+            name: "Destroy Scenario",
+            villain_set_id: villain_set!("destroy_scenario").id
+          },
+          authorize?: false
+        )
 
       # Villain card (drives game_villain creation)
       {:ok, _villain_card} =
