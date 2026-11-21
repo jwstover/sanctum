@@ -1,6 +1,6 @@
 defmodule SanctumWeb.ScenarioLive.Show do
   @moduledoc """
-  Public scenario detail: villain art, name, villain set, description (markdown), modular sets and author.
+  Public scenario detail: villain art, name, villain-set pack, description (markdown), modular sets and author.
   """
   use SanctumWeb, :live_view
 
@@ -40,9 +40,12 @@ defmodule SanctumWeb.ScenarioLive.Show do
 
         <div class="space-y-5">
           <!-- cover -->
-          <.panel class="flex flex-col gap-5 p-4 sm:flex-row sm:items-start">
+          <.panel
+            id="scenario-cover"
+            class="flex flex-col gap-6 border-b-[5px] border-b-[#9c8c7a] p-4 sm:flex-row sm:items-stretch sm:gap-9 sm:pt-5 sm:pr-7 sm:pb-6 sm:pl-5"
+          >
             <div
-              class="h-[300px] w-[214px] flex-none self-center border-2 border-neutral shadow-comic sm:self-start"
+              class="relative h-[300px] w-[214px] flex-none self-center border-[3px] border-[#d42a3a] shadow-comic sm:self-start lg:h-[392px] lg:w-[280px]"
               style="transform:rotate(-1.5deg);"
             >
               <.mc_card
@@ -52,25 +55,50 @@ defmodule SanctumWeb.ScenarioLive.Show do
                 image_url={@view.villain_image}
                 size="lg"
                 show_cost={false}
+                show_title={false}
               />
+              <div
+                id="scenario-villain-caption"
+                class="absolute inset-x-0 bottom-0 z-[3] bg-gradient-to-t from-[#070709] via-[#070709]/80 to-transparent px-4 pt-10 pb-3"
+              >
+                <div class="font-anton text-[30px] uppercase leading-none text-white [text-wrap:balance]">
+                  {@view.villain_name}
+                </div>
+                <div
+                  id="scenario-villain-stage"
+                  class="mt-1 font-barlow-condensed text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8e8d96]"
+                >
+                  {@view.villain_caption}
+                </div>
+              </div>
             </div>
 
-            <div class="flex min-w-0 flex-1 flex-col">
-              <div class="font-ibm-mono text-xs uppercase tracking-[0.25em] text-primary">
-                Scenario · {@view.villain_set_name}
+            <div class="flex min-w-0 flex-1 flex-col gap-4 sm:pt-2">
+              <div class="font-barlow-condensed text-[15px] font-semibold uppercase tracking-[0.3em] text-primary">
+                Scenario · Villain
               </div>
-              <h1 class="mt-1.5 font-anton text-4xl uppercase leading-[0.9] [text-wrap:balance] sm:text-5xl sm:leading-[0.88]">
-                {@scenario.name}
-              </h1>
-
-              <span
-                :if={@view.author && @view.author.official?}
-                class="mt-3 inline-flex w-fit"
+              <h2
+                :if={@view.villain_name}
+                id="scenario-villain-name"
+                class="break-words font-anton text-5xl uppercase leading-[0.9] [text-wrap:balance] sm:text-7xl lg:text-[96px]"
               >
-                <.official_badge />
-              </span>
+                {@view.villain_name}
+              </h2>
 
-              <div class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
+              <div class="flex flex-wrap gap-2">
+                <span class="inline-flex h-[26px] items-center border-2 border-[#d42a3a] px-2.5 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.14em] text-[#ff6b78]">
+                  Villain
+                </span>
+                <span
+                  :if={@view.pack_name}
+                  id="scenario-pack-tag"
+                  class="inline-flex h-[26px] items-center border-2 border-[#3d3d45] px-2.5 font-barlow-condensed text-[13px] font-bold uppercase tracking-[0.14em] text-[#b9b8bf]"
+                >
+                  {@view.pack_name}
+                </span>
+              </div>
+
+              <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
                 <div>
                   <div class="font-anton text-3xl leading-none">{length(@view.modular_sets)}</div>
                   <div class="mt-1 font-barlow-condensed text-xs font-bold uppercase tracking-[0.1em] text-base-content/50">
@@ -83,13 +111,26 @@ defmodule SanctumWeb.ScenarioLive.Show do
                     Encounter Cards
                   </div>
                 </div>
-                <div :if={@view.author && !@view.author.official?} class="flex items-center gap-2">
-                  <.avatar name={@view.author.name} url={@view.author.avatar} size="md" />
-                  <span class="font-barlow-condensed text-sm font-bold text-primary">
+              </div>
+
+              <div
+                id="scenario-author"
+                class="mt-auto flex flex-wrap items-center gap-2.5 pt-2"
+              >
+                <.official_badge :if={@view.author && @view.author.official?} />
+                <%= if @view.author && !@view.author.official? do %>
+                  <.avatar
+                    name={@view.author.name}
+                    url={@view.author.avatar}
+                    size="md"
+                    class="!size-[30px]"
+                  />
+                  <span class="font-barlow-condensed text-[15px] font-bold text-primary">
                     {@view.author.name}
                   </span>
-                </div>
-                <span class="font-barlow text-sm text-base-content/50">
+                <% end %>
+                <span class="font-barlow text-sm text-[#77767f]">
+                  <span :if={@view.author} aria-hidden="true">·</span>
                   Updated {Calendar.strftime(@scenario.updated_at, "%b %-d, %Y")}
                 </span>
               </div>
@@ -224,7 +265,7 @@ defmodule SanctumWeb.ScenarioLive.Show do
              :mine,
              :official,
              :owner,
-             villain_set: [cards: [:primary_side]],
+             villain_set: [:pack, cards: [:primary_side]],
              modular_sets: [cards: [:primary_side]],
              villains: [:primary_side]
            ]
@@ -240,7 +281,8 @@ defmodule SanctumWeb.ScenarioLive.Show do
     %{
       villain_image: villain_image(s),
       villain_name: villain_name(s),
-      villain_set_name: s.villain_set && s.villain_set.name,
+      villain_caption: villain_caption(s),
+      pack_name: pack_name(s),
       overall_stats: overall_stats,
       villain_set_stats: combined_stats([s.villain_set]),
       modular_stats: if(s.modular_sets != [], do: combined_stats(s.modular_sets)),
