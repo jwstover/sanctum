@@ -49,6 +49,17 @@ defmodule Sanctum.Games.ScenarioTest do
              )
   end
 
+  test "create accepts a description" do
+    vs = villain_set!("desc_x")
+
+    scenario =
+      Games.create_scenario!(%{name: "D", description_md: "Notes", villain_set_id: vs.id},
+        authorize?: false
+      )
+
+    assert scenario.description_md == "Notes"
+  end
+
   test "rejects a non-villain set" do
     modular = create(Sanctum.Catalog.CardSet, action: :upsert)
 
@@ -187,7 +198,18 @@ defmodule Sanctum.Games.ScenarioTest do
       assert {:error, %Ash.Error.Forbidden{}} =
                Games.set_scenario_modular_sets(s, %{modular_sets: []}, actor: other)
 
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Games.set_scenario_description(s, %{description_md: "X"}, actor: other)
+
       assert {:error, %Ash.Error.Forbidden{}} = Games.destroy_scenario(s, actor: other)
+    end
+
+    test "the owner can set the description" do
+      owner = user_fixture()
+      s = build!(owner)
+
+      updated = Games.set_scenario_description!(s, %{description_md: "**Notes**"}, actor: owner)
+      assert updated.description_md == "**Notes**"
     end
 
     test "official rows are forbidden to non-admins" do
@@ -200,6 +222,9 @@ defmodule Sanctum.Games.ScenarioTest do
 
       assert {:error, %Ash.Error.Forbidden{}} =
                Games.rename_scenario(official, %{name: "X"}, actor: user)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Games.set_scenario_description(official, %{description_md: "X"}, actor: user)
 
       assert {:error, %Ash.Error.Forbidden{}} = Games.destroy_scenario(official, actor: user)
       assert Ash.load!(official, :official, authorize?: false).official == true
