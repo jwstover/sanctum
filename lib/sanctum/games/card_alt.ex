@@ -155,6 +155,49 @@ defmodule Sanctum.Games.CardAlt do
       filter expr(homebrew_set.homebrew_project_id == ^arg(:homebrew_project_id))
       prepare build(load: [card: [:card_sides, :primary_side]], sort: [inserted_at: :asc])
     end
+
+    # The public alt-art gallery (/custom/alt-art). Pinned to custom alts in
+    # *published* sets explicitly — the read policy would also admit the
+    # actor's own private alts (and admins bypass it), and a public gallery
+    # must never list those. Facets are optional and combine with AND.
+    # Ordered by depicted character so the LiveView can group consecutive
+    # rows, newest first within a character.
+    read :gallery do
+      description "Custom alt art in published homebrew sets, grouped by depicted character."
+
+      argument :artist, :string, allow_nil?: true
+      argument :creator, :ci_string, allow_nil?: true
+      argument :card, :uuid, allow_nil?: true
+
+      filter expr(origin == :custom and homebrew_set.visibility == :published)
+      filter expr(is_nil(^arg(:artist)) or artist == ^arg(:artist))
+      filter expr(is_nil(^arg(:creator)) or creator.username == ^arg(:creator))
+      filter expr(is_nil(^arg(:card)) or card_id == ^arg(:card))
+
+      prepare build(
+                load: [
+                  :depicted,
+                  card: [:card_sides, :primary_side],
+                  homebrew_set: [:name, :slug],
+                  creator: [:username]
+                ],
+                sort: [depicted: :asc, inserted_at: :desc, id: :desc]
+              )
+
+      pagination offset?: true, default_limit: 60, countable: true, required?: false
+    end
+
+    # Artists, creators and target cards that occur on gallery alts — the
+    # gallery's facet options.
+    action :gallery_facets, :map do
+      constraints fields: [
+                    artists: [type: {:array, :string}, allow_nil?: false],
+                    creators: [type: {:array, :string}, allow_nil?: false],
+                    cards: [type: {:array, :map}, allow_nil?: false]
+                  ]
+
+      run Sanctum.Games.Actions.AltArtGalleryFacets
+    end
   end
 
   policies do
@@ -171,6 +214,11 @@ defmodule Sanctum.Games.CardAlt do
       authorize_if expr(origin == :official)
       authorize_if expr(homebrew_set.visibility == :published)
       authorize_if expr(creator_id == ^actor(:id))
+    end
+
+    # Public: it reads through :gallery, which only ever sees published sets.
+    policy action(:gallery_facets) do
+      authorize_if always()
     end
 
     # Direct create: the actor must own the target homebrew set. The
@@ -257,6 +305,15 @@ defmodule Sanctum.Games.CardAlt do
       public? true
       allow_nil? true
     end
+  end
+
+  calculations do
+    # Who the art depicts, for the gallery's grouping: the hero whose set the
+    # target card belongs to, else its card set (villain/modular encounter
+    # sets), else the target card's own name (aspect/basic allies etc.).
+    calculate :depicted,
+              :string,
+              expr(card.hero.display_name || card.card_set.name || card.primary_side.name)
   end
 
   identities do

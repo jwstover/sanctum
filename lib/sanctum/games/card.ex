@@ -378,6 +378,15 @@ defmodule Sanctum.Games.Card do
 
     many_to_many :decks, Sanctum.Decks.Deck, through: Sanctum.Decks.DeckCard
 
+    # The hero whose set this card belongs to (hero identity + signature
+    # cards). `Hero.set` is unique, so at most one. Nil for aspect/basic and
+    # encounter cards. The alt-art gallery groups by it.
+    has_one :hero, Sanctum.Heroes.Hero do
+      public? true
+      source_attribute :set
+      destination_attribute :set
+    end
+
     # Catalog taxonomy FKs (populated during sync). Nullable — player/basic cards
     # have a pack but no card set. The `set`/`pack` strings above are kept for now
     # (Scenario/Hero/Villain joins + game setup still read them); these become the

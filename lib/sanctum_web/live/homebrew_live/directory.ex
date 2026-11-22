@@ -135,7 +135,18 @@ defmodule SanctumWeb.HomebrewLive.Directory do
   def render(assigns) do
     ~H"""
     <Layouts.app current_user={@current_user} flash={@flash}>
-      <.header>Custom Content</.header>
+      <.header>
+        Custom Content
+        <:actions>
+          <.link
+            id="alt-art-gallery-link"
+            navigate={~p"/custom/alt-art"}
+            class="font-ibm-mono text-xs uppercase tracking-[0.16em] text-base-content/60 hover:text-primary"
+          >
+            Alt art gallery →
+          </.link>
+        </:actions>
+      </.header>
 
       <p class="-mt-3 mb-4 font-barlow-condensed text-base-content/70">
         Fan-made heroes, scenarios and cards published by the community.
