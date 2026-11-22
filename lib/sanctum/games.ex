@@ -109,6 +109,10 @@ defmodule Sanctum.Games do
 
       define :list_homebrew_set_alts, action: :for_homebrew_set, args: [:homebrew_set_id]
 
+      # Public alt-art gallery (/custom/alt-art) and its facet options.
+      define :list_alt_art_gallery, action: :gallery
+      define :alt_art_gallery_facets, action: :gallery_facets
+
       define :list_homebrew_project_alts,
         action: :for_homebrew_project,
         args: [:homebrew_project_id]

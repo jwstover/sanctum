@@ -114,6 +114,11 @@ defmodule SanctumWeb.Router do
       # Public directory of published homebrew sets (facets in the query string).
       live "/custom", HomebrewLive.Directory, :index
 
+      # Public gallery of custom alt art from published sets, browsed card by
+      # card (facets in the query string). Literal segment — no clash with
+      # the /custom/@:username routes below.
+      live "/custom/alt-art", HomebrewLive.AltArtGallery, :index
+
       # Public homebrew set pages. Slugs are unique per creator, so the
       # handle is part of the address; a renamed handle just 404s.
       live "/custom/@:username/:slug", HomebrewLive.PublicSet, :show
